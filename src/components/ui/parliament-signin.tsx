@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-mo
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Crown, Users, Shield, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from "@/lib/utils"
+import { useAuth } from '@/hooks/useAuth';
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
@@ -25,10 +26,12 @@ export function ParliamentSignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [credentials, setCredentials] = useState({
     loginId: '',
-    password: ''
+    password: 'Yi2025!' // Default password for all students
   });
   const [isLoading, setIsLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
+  
+  const { signIn } = useAuth();
 
   // For 3D card effect
   const mouseX = useMotionValue(0);
@@ -47,17 +50,13 @@ export function ParliamentSignIn() {
     mouseY.set(0);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // TODO: Implement actual authentication
-    console.log('Login attempt:', credentials);
+    const { error } = await signIn(credentials.loginId, credentials.password);
     
-    setTimeout(() => {
-      setIsLoading(false);
-      alert('Authentication will be implemented in Phase 2 with Supabase integration');
-    }, 1500);
+    setIsLoading(false);
   };
 
   return (
