@@ -51,46 +51,42 @@ export const LandingHero = () => {
         {/* Main Hero Section */}
         <div className="px-8 py-4">
           <div className="max-w-7xl mx-auto">
-            {/* Glass Hero Container */}
-            <div className="relative bg-white/10 backdrop-blur-lg rounded-3xl border border-white/20 shadow-2xl p-8 mb-16">
-              <div className="text-center">
-                <Badge className="mb-8 px-6 py-3 text-lg bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/30 shadow-lg">
-                  <Calendar className="w-5 h-5 mr-3" />
-                  Regional Round 2025 - Now Live
-                </Badge>
+            <div className="text-center mb-16">
+              <Badge className="mb-8 px-6 py-3 text-lg bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/30 shadow-lg">
+                <Calendar className="w-5 h-5 mr-3" />
+                Regional Round 2025 - Now Live
+              </Badge>
+              
+              <div className="flex items-center justify-center gap-8 mb-8">
+                <h1 className="text-7xl lg:text-9xl font-black tracking-tight drop-shadow-2xl">
+                  <span className="block text-transparent bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text">
+                    YOUNG
+                  </span>
+                  <span className="block text-transparent bg-gradient-to-r from-orange-600 via-slate-800 to-green-600 bg-clip-text">
+                    INDIANS
+                  </span>
+                  <span className="block text-transparent bg-gradient-to-r from-orange-600 via-slate-800 to-green-600 bg-clip-text">
+                    PARLIAMENT
+                  </span>
+                </h1>
                 
-                <div className="flex items-center justify-center gap-8 mb-8">
-                  <h1 className="text-7xl lg:text-9xl font-black tracking-tight drop-shadow-2xl">
-                    <span className="block text-transparent bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text">
-                      YOUNG
-                    </span>
-                    <span className="block text-transparent bg-gradient-to-r from-orange-600 via-slate-800 to-green-600 bg-clip-text">
-                      INDIANS
-                    </span>
-                    <span className="block text-transparent bg-gradient-to-r from-orange-600 via-slate-800 to-green-600 bg-clip-text">
-                      PARLIAMENT
-                    </span>
-                  </h1>
-                  
-                  <div className="relative hidden lg:block">
-                    <div className="absolute inset-0 bg-white/20 backdrop-blur-sm rounded-3xl border border-white/30 shadow-xl transform rotate-3"></div>
-                    <img 
-                      src="/lovable-uploads/acb05533-0bc0-4094-9302-9f7621f49697.png"
-                      alt="Young Indians Parliament Tiger Mascot" 
-                      className="relative w-80 h-80 object-contain hover:scale-110 transition-transform duration-300 drop-shadow-2xl"
-                    />
-                  </div>
+                <div className="relative hidden lg:block">
+                  <img 
+                    src="/lovable-uploads/acb05533-0bc0-4094-9302-9f7621f49697.png"
+                    alt="Young Indians Parliament Tiger Mascot" 
+                    className="w-80 h-80 object-contain hover:scale-110 transition-transform duration-300 drop-shadow-2xl"
+                  />
                 </div>
+              </div>
+              
+              <div className="mb-12">
+                <p className="text-5xl lg:text-6xl font-bold mb-4 text-slate-700 drop-shadow-lg">
+                  Madurai Regional Round
+                </p>
                 
-                <div className="bg-white/15 backdrop-blur-sm rounded-2xl border border-white/25 p-6 shadow-xl">
-                  <p className="text-5xl lg:text-6xl font-bold mb-4 text-slate-700 drop-shadow-lg">
-                    Madurai Regional Round
-                  </p>
-                  
-                  <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
-                    Where young minds debate and democracy thrives
-                  </p>
-                </div>
+                <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+                  Where young minds debate and democracy thrives
+                </p>
               </div>
             </div>
 
