@@ -131,11 +131,17 @@ export const LandingHero = () => {
                   <div className="absolute -top-6 -right-6 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-full text-lg font-bold shadow-xl animate-bounce">
                     🏆 LIVE NOW
                   </div>
-                  <div className="text-center text-6xl">
-                    🐯
-                    <div className="mt-4 text-white text-lg font-bold bg-orange-600 rounded-lg px-4 py-2 inline-block">
-                      YOUNG INDIANS<br/>PARLIAMENT
+                  <div className="flex items-center justify-center gap-8">
+                    <div className="text-center">
+                      <div className="text-white text-lg font-bold bg-orange-600 rounded-lg px-4 py-2 inline-block">
+                        YOUNG INDIANS<br/>PARLIAMENT
+                      </div>
                     </div>
+                    <img 
+                      src="/lovable-uploads/c4f27cb5-63cc-4d7b-bb83-f300fd7a28f9.png" 
+                      alt="Young Indians Parliament Mascot" 
+                      className="h-32 w-auto object-contain"
+                    />
                   </div>
                 </div>
               </div>
