@@ -5,7 +5,7 @@ import { Crown, Users, Award, Calendar } from "lucide-react";
 
 export const LandingHero = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-700 via-blue-700 to-indigo-700 relative overflow-hidden text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden text-white">
       {/* Dramatic animated background */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-full h-full opacity-40">
@@ -115,19 +115,17 @@ export const LandingHero = () => {
             {/* Partners Section */}
             <div className="text-center mb-16">
               <p className="text-blue-200/80 text-lg mb-8 uppercase tracking-wider font-semibold">Our Partners</p>
-              <div className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl py-6 px-12 mx-auto max-w-2xl">
-                <div className="flex items-center justify-center gap-16 flex-wrap">
-                  <img 
-                    src="/lovable-uploads/e7fefdf4-d36c-4867-80a7-fcb25c648693.png" 
-                    alt="Young Indians Logo" 
-                    className="h-16 w-auto object-contain hover:scale-110 transition-all duration-300"
-                  />
-                  <img 
-                    src="/lovable-uploads/905e95c2-3362-435c-8378-e962ab280559.png" 
-                    alt="Mahatma Global Schools Logo" 
-                    className="h-16 w-auto object-contain hover:scale-110 transition-all duration-300"
-                  />
-                </div>
+              <div className="flex items-center justify-center gap-16 flex-wrap">
+                <img 
+                  src="/lovable-uploads/e7fefdf4-d36c-4867-80a7-fcb25c648693.png" 
+                  alt="Young Indians Logo" 
+                  className="h-20 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110"
+                />
+                <img 
+                  src="/lovable-uploads/905e95c2-3362-435c-8378-e962ab280559.png" 
+                  alt="Mahatma Global Schools Logo" 
+                  className="h-20 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110"
+                />
               </div>
             </div>
             
