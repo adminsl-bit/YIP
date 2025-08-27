@@ -49,17 +49,30 @@ export const LandingHero = () => {
                 Regional Round 2025 - Now Live
               </Badge>
               
-              <h1 className="text-8xl lg:text-9xl font-black mb-8 tracking-tight">
-                <span className="block text-transparent bg-gradient-to-r from-orange-400 via-yellow-400 to-orange-500 bg-clip-text animate-pulse">
-                  YOUNG
-                </span>
-                <span className="block text-transparent bg-gradient-to-r from-white via-blue-200 to-green-400 bg-clip-text">
-                  INDIANS
-                </span>
-                <span className="block text-transparent bg-gradient-to-r from-green-400 via-blue-400 to-white bg-clip-text">
-                  PARLIAMENT
-                </span>
-              </h1>
+              <div className="flex items-center justify-center gap-8 mb-8">
+                <h1 className="text-6xl lg:text-8xl font-black tracking-tight">
+                  <span className="block text-transparent bg-gradient-to-r from-orange-400 via-yellow-400 to-orange-500 bg-clip-text animate-pulse">
+                    YOUNG
+                  </span>
+                  <span className="block text-transparent bg-gradient-to-r from-orange-500 via-white to-green-500 bg-clip-text">
+                    INDIANS
+                  </span>
+                  <span className="block text-transparent bg-gradient-to-r from-orange-500 via-white to-green-500 bg-clip-text">
+                    PARLIAMENT
+                  </span>
+                </h1>
+                
+                <div className="relative hidden lg:block">
+                  <img 
+                    src="/lovable-uploads/acb05533-0bc0-4094-9302-9f7621f49697.png"
+                    alt="Young Indians Parliament Tiger Mascot" 
+                    className="w-64 h-64 object-contain hover:scale-110 transition-transform duration-300"
+                  />
+                  <div className="absolute -top-4 -right-4 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-xl animate-pulse">
+                    🏆 LIVE NOW
+                  </div>
+                </div>
+              </div>
               
               <p className="text-3xl font-bold mb-6 text-blue-100">
                 Madurai Regional Round
@@ -71,31 +84,16 @@ export const LandingHero = () => {
               </p>
             </div>
 
-            {/* Hero Content with Mascot */}
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <div className="text-center lg:text-left">
-                <Button 
-                  size="xl"
-                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-2xl px-12 py-6 rounded-2xl shadow-2xl hover:shadow-orange-500/25 hover:scale-105 transition-all duration-300 mb-8"
-                  onClick={() => window.location.href = '/login'}
-                >
-                  <Crown className="w-8 h-8 mr-4" />
-                  ENTER PARLIAMENT
-                </Button>
-              </div>
-              
-              <div className="relative flex justify-center lg:justify-end">
-                <div className="relative">
-                  <img 
-                    src="/lovable-uploads/acb05533-0bc0-4094-9302-9f7621f49697.png"
-                    alt="Young Indians Parliament Tiger Mascot" 
-                    className="w-80 h-80 object-contain hover:scale-110 transition-transform duration-300"
-                  />
-                  <div className="absolute -top-4 -right-4 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-xl animate-pulse">
-                    🏆 LIVE NOW
-                  </div>
-                </div>
-              </div>
+            {/* CTA Section */}
+            <div className="text-center">
+              <Button 
+                size="xl"
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-2xl px-12 py-6 rounded-2xl shadow-2xl hover:shadow-orange-500/25 hover:scale-105 transition-all duration-300"
+                onClick={() => window.location.href = '/login'}
+              >
+                <Crown className="w-8 h-8 mr-4" />
+                ENTER PARLIAMENT
+              </Button>
             </div>
           </div>
         </div>
