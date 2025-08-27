@@ -24,11 +24,10 @@ export const LandingHero = () => {
         {/* Top Navigation */}
         <div className="flex justify-between items-center p-8">
           <div className="flex items-center gap-4">
-            <div className="w-20 h-16 bg-white rounded-2xl flex items-center justify-center p-2 shadow-2xl">
+            <div className="w-16 h-16">
               <div className="text-center">
-                <div className="text-2xl font-black text-gray-800">YI</div>
-                <div className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">WE CAN</div>
-                <div className="bg-green-600 text-white text-xs px-2 py-0.5 rounded mt-0.5">WE WILL</div>
+                <div className="text-2xl font-black text-orange-400">YI</div>
+                <div className="text-orange-400 text-xs font-bold">MADURAI</div>
               </div>
             </div>
             <div>
@@ -42,10 +41,10 @@ export const LandingHero = () => {
               <h2 className="text-xl font-bold">Mahatma Global Schools</h2>
               <p className="text-blue-200">Venue Partner</p>
             </div>
-            <div className="w-32 h-16 bg-white rounded-2xl flex items-center justify-center p-3 shadow-2xl">
+            <div className="w-24 h-16">
               <div className="text-center">
-                <div className="text-blue-600 font-bold text-lg">MAHATMA</div>
-                <div className="text-blue-600 text-xs tracking-wider">TRUTH TRIUMPHS</div>
+                <div className="text-blue-400 font-bold text-lg">MAHATMA</div>
+                <div className="text-blue-300 text-xs tracking-wider">GLOBAL SCHOOLS</div>
               </div>
             </div>
           </div>
