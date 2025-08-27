@@ -113,23 +113,23 @@ export const LandingHero = () => {
         <div className="px-8 py-16 bg-transparent">
           <div className="max-w-7xl mx-auto">
             {/* Partners Section */}
-            <div className="text-center mt-16 pt-8">
-              <p className="text-blue-200/80 text-sm mb-6 uppercase tracking-wider">Our Partners</p>
-              <div className="flex items-center justify-center gap-12 flex-wrap">
+            <div className="text-center mb-16">
+              <p className="text-blue-200/80 text-lg mb-8 uppercase tracking-wider font-semibold">Our Partners</p>
+              <div className="flex items-center justify-center gap-16 flex-wrap">
                 <img 
                   src="/lovable-uploads/e7fefdf4-d36c-4867-80a7-fcb25c648693.png" 
                   alt="Young Indians Logo" 
-                  className="h-12 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-300"
+                  className="h-20 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110"
                 />
                 <img 
                   src="/lovable-uploads/905e95c2-3362-435c-8378-e962ab280559.png" 
                   alt="Mahatma Global Schools Logo" 
-                  className="h-12 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-300"
+                  className="h-20 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110"
                 />
               </div>
             </div>
             
-            <div className="text-center mt-16 pt-8">
+            <div className="text-center pt-8">
               <div className="flex items-center justify-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                   <Crown className="w-6 h-6 text-white" />
