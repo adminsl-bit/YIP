@@ -95,7 +95,7 @@ export const LandingHero = () => {
             </div>
 
             {/* CTA Section */}
-            <div className="text-center">
+            <div className="text-center mb-12">
               <Button 
                 size="xl"
                 className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-2xl px-12 py-6 rounded-2xl shadow-2xl hover:shadow-orange-500/25 hover:scale-105 transition-all duration-300"
@@ -104,6 +104,19 @@ export const LandingHero = () => {
                 <Crown className="w-8 h-8 mr-4" />
                 ENTER PARLIAMENT
               </Button>
+              
+              {/* Glass Buttons Section */}
+              <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
+                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105">
+                  <span className="text-sm font-medium">Democracy in Action</span>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105">
+                  <span className="text-sm font-medium">Leadership Through Service</span>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105">
+                  <span className="text-sm font-medium">Building India's Future</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -134,13 +147,12 @@ export const LandingHero = () => {
         <div className="px-8 py-8 bg-transparent">
           <div className="max-w-7xl mx-auto">
             <div className="text-center">
-              <div className="flex items-center justify-center gap-4 mb-4">
+              <div className="flex items-center justify-center gap-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                   <Crown className="w-6 h-6 text-white" />
                 </div>
                 <span className="text-xl font-bold">Powered by Yi Madurai Chapter</span>
               </div>
-              <p className="text-blue-200">Democracy in Action • Leadership Through Service • Building India's Future</p>
             </div>
           </div>
         </div>
