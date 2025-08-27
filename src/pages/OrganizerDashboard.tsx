@@ -1,6 +1,11 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
-import { LogOut, Settings, Users, Activity, Shield, Database } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye } from "lucide-react";
+import { FeatureToggles } from "@/components/organizer/FeatureToggles";
+import { TimerControl } from "@/components/organizer/TimerControl";
+import { PollManagement } from "@/components/organizer/PollManagement";
+import { DuplicateLoginMonitor } from "@/components/organizer/DuplicateLoginMonitor";
 
 const OrganizerDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -10,9 +15,9 @@ const OrganizerDashboard = () => {
       {/* Navigation */}
       <nav className="p-4 flex justify-between items-center bg-white/20 backdrop-blur-sm border-b border-white/30">
         <div className="flex items-center space-x-4">
-          <Shield className="w-8 h-8 text-emerald-600" />
+          <ShieldCheck className="w-8 h-8 text-emerald-600" />
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Organizer Control</h1>
+            <h1 className="text-xl font-bold text-slate-800">Organizer Console</h1>
             <p className="text-sm text-slate-600">Young Indians Parliament</p>
           </div>
         </div>
@@ -21,7 +26,7 @@ const OrganizerDashboard = () => {
           {profile && (
             <div className="text-right">
               <p className="font-semibold text-slate-800">{profile.name}</p>
-              <p className="text-sm text-slate-600">Event Organizer</p>
+              <p className="text-sm text-slate-600">{profile.position}</p>
             </div>
           )}
           <Button 
@@ -35,117 +40,120 @@ const OrganizerDashboard = () => {
         </div>
       </nav>
 
+      {/* Header */}
+      <div className="p-6 bg-white/30 backdrop-blur-sm border-b border-white/30">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Parliament Control Center</h2>
+          <p className="text-slate-600">
+            Manage all aspects of the Young Indians Parliament session from this central console
+          </p>
+        </div>
+      </div>
+
       {/* Dashboard Content */}
       <div className="p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-slate-800 mb-4">
-              Event Management Console
-            </h2>
-            <p className="text-lg text-slate-600">
-              Complete control over parliament proceedings and participants
-            </p>
-          </div>
+        <div className="max-w-7xl mx-auto">
+          <Tabs defaultValue="controls" className="w-full">
+            <TabsList className="grid w-full grid-cols-6 mb-8">
+              <TabsTrigger value="controls" className="flex items-center space-x-2">
+                <Settings className="w-4 h-4" />
+                <span>Controls</span>
+              </TabsTrigger>
+              <TabsTrigger value="timer" className="flex items-center space-x-2">
+                <Clock className="w-4 h-4" />
+                <span>Timer</span>
+              </TabsTrigger>
+              <TabsTrigger value="polls" className="flex items-center space-x-2">
+                <BarChart3 className="w-4 h-4" />
+                <span>Polls</span>
+              </TabsTrigger>
+              <TabsTrigger value="students" className="flex items-center space-x-2">
+                <Users className="w-4 h-4" />
+                <span>Students</span>
+              </TabsTrigger>
+              <TabsTrigger value="security" className="flex items-center space-x-2">
+                <ShieldCheck className="w-4 h-4" />
+                <span>Security</span>
+              </TabsTrigger>
+              <TabsTrigger value="logs" className="flex items-center space-x-2">
+                <FileText className="w-4 h-4" />
+                <span>Logs</span>
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Admin Functions Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <div className="flex items-center space-x-3 mb-4">
-                <Users className="w-6 h-6 text-emerald-600" />
-                <h3 className="text-lg font-semibold text-slate-800">User Management</h3>
-              </div>
-              <p className="text-slate-600 text-sm mb-4">Manage student, jury & organizer accounts</p>
-              <Button className="w-full" variant="outline">Manage Users</Button>
-            </div>
+            <TabsContent value="controls" className="space-y-6">
+              <FeatureToggles />
+            </TabsContent>
 
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <div className="flex items-center space-x-3 mb-4">
-                <Activity className="w-6 h-6 text-blue-600" />
-                <h3 className="text-lg font-semibold text-slate-800">Session Control</h3>
-              </div>
-              <p className="text-slate-600 text-sm mb-4">Start, pause, and manage sessions</p>
-              <Button className="w-full" variant="outline">Control Session</Button>
-            </div>
+            <TabsContent value="timer" className="space-y-6">
+              <TimerControl />
+            </TabsContent>
 
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <div className="flex items-center space-x-3 mb-4">
-                <Database className="w-6 h-6 text-purple-600" />
-                <h3 className="text-lg font-semibold text-slate-800">Login Audit</h3>
-              </div>
-              <p className="text-slate-600 text-sm mb-4">Monitor duplicate logins and security</p>
-              <Button className="w-full" variant="outline">View Audit</Button>
-            </div>
+            <TabsContent value="polls" className="space-y-6">
+              <PollManagement />
+            </TabsContent>
 
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <div className="flex items-center space-x-3 mb-4">
-                <Settings className="w-6 h-6 text-orange-600" />
-                <h3 className="text-lg font-semibold text-slate-800">Event Settings</h3>
-              </div>
-              <p className="text-slate-600 text-sm mb-4">Configure parliament parameters</p>
-              <Button className="w-full" variant="outline">Settings</Button>
-            </div>
-
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <div className="flex items-center space-x-3 mb-4">
-                <Activity className="w-6 h-6 text-red-500" />
-                <h3 className="text-lg font-semibold text-slate-800">Live Monitoring</h3>
-              </div>
-              <p className="text-slate-600 text-sm mb-4">Real-time session monitoring</p>
-              <Button className="w-full" variant="outline">Live View</Button>
-            </div>
-
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <div className="flex items-center space-x-3 mb-4">
-                <Database className="w-6 h-6 text-teal-600" />
-                <h3 className="text-lg font-semibold text-slate-800">Reports & Export</h3>
-              </div>
-              <p className="text-slate-600 text-sm mb-4">Generate event reports</p>
-              <Button className="w-full" variant="outline">Generate Reports</Button>
-            </div>
-          </div>
-
-          {/* Admin Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <h3 className="text-xl font-bold text-slate-800 mb-4">Event Status</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Total Students:</span>
-                  <span className="font-semibold text-slate-800">--</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Active Sessions:</span>
-                  <span className="font-semibold text-green-600">0</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Jury Members:</span>
-                  <span className="font-semibold text-slate-800">--</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-600">Duplicate Logins:</span>
-                  <span className="font-semibold text-red-500">0</span>
+            <TabsContent value="students" className="space-y-6">
+              <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
+                <h3 className="text-xl font-bold text-slate-800 mb-4">Student Management</h3>
+                <p className="text-slate-600 mb-4">
+                  Comprehensive student data management including bulk import, individual editing, and password reset capabilities.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Button variant="outline" className="flex items-center justify-center p-6 h-auto">
+                    <div className="text-center">
+                      <Users className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+                      <div className="font-medium">Bulk Import</div>
+                      <div className="text-sm text-muted-foreground">Import from Excel/CSV</div>
+                    </div>
+                  </Button>
+                  <Button variant="outline" className="flex items-center justify-center p-6 h-auto">
+                    <div className="text-center">
+                      <Settings className="w-8 h-8 mx-auto mb-2 text-green-600" />
+                      <div className="font-medium">Manage Students</div>
+                      <div className="text-sm text-muted-foreground">Add, edit, delete</div>
+                    </div>
+                  </Button>
+                  <Button variant="outline" className="flex items-center justify-center p-6 h-auto">
+                    <div className="text-center">
+                      <ShieldCheck className="w-8 h-8 mx-auto mb-2 text-purple-600" />
+                      <div className="font-medium">Reset Passwords</div>
+                      <div className="text-sm text-muted-foreground">Student access recovery</div>
+                    </div>
+                  </Button>
                 </div>
               </div>
-            </div>
+            </TabsContent>
 
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <h3 className="text-xl font-bold text-slate-800 mb-4">Quick Actions</h3>
-              <div className="space-y-3">
-                <Button className="w-full justify-start" variant="outline">
-                  Create New User Account
-                </Button>
-                <Button className="w-full justify-start" variant="outline">
-                  Bulk Import Students
-                </Button>
-                <Button className="w-full justify-start" variant="outline">
-                  Reset All Passwords
-                </Button>
-                <Button className="w-full justify-start" variant="outline">
-                  Download Event Data
-                </Button>
+            <TabsContent value="security" className="space-y-6">
+              <DuplicateLoginMonitor />
+            </TabsContent>
+
+            <TabsContent value="logs" className="space-y-6">
+              <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
+                <h3 className="text-xl font-bold text-slate-800 mb-4">System Logs</h3>
+                <p className="text-slate-600 mb-4">
+                  Access comprehensive audit trails and system logs with advanced filtering capabilities.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button variant="outline" className="flex items-center justify-center p-6 h-auto">
+                    <div className="text-center">
+                      <FileText className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+                      <div className="font-medium">Audit Logs</div>
+                      <div className="text-sm text-muted-foreground">User actions & changes</div>
+                    </div>
+                  </Button>
+                  <Button variant="outline" className="flex items-center justify-center p-6 h-auto">
+                    <div className="text-center">
+                      <Eye className="w-8 h-8 mx-auto mb-2 text-green-600" />
+                      <div className="font-medium">Access Logs</div>
+                      <div className="text-sm text-muted-foreground">Login & session tracking</div>
+                    </div>
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
