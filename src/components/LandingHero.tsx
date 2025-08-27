@@ -127,8 +127,13 @@ export const LandingHero = () => {
                 />
               </div>
             </div>
-            
-            <div className="text-center pt-8">
+          </div>
+        </div>
+        
+        {/* Powered By Section - Moved to bottom */}
+        <div className="px-8 py-8 bg-transparent">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center">
               <div className="flex items-center justify-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                   <Crown className="w-6 h-6 text-white" />
