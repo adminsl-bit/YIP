@@ -14,7 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          city: string | null
+          constituency: string | null
+          created_at: string
+          id: string
+          name: string
+          party_number: number
+          photo_url: string | null
+          position: string
+          serial_number: number
+          state: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          constituency?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          party_number: number
+          photo_url?: string | null
+          position: string
+          serial_number: number
+          state?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          constituency?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          party_number?: number
+          photo_url?: string | null
+          position?: string
+          serial_number?: number
+          state?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
