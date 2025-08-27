@@ -66,6 +66,35 @@ export const LandingHero = () => {
               </p>
             </div>
 
+            {/* Features Section */}
+            <div className="mb-16">
+              <div className="grid md:grid-cols-3 gap-12 text-center max-w-5xl mx-auto">
+                <div className="group">
+                  <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Users className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Future Leaders</h3>
+                  <p className="text-blue-200/80 text-sm">Shaping tomorrow's democratic leaders through debate and discourse</p>
+                </div>
+                
+                <div className="group">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Crown className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Democratic Values</h3>
+                  <p className="text-blue-200/80 text-sm">Building strong democratic foundations for India's future</p>
+                </div>
+                
+                <div className="group">
+                  <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <Award className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2">Excellence</h3>
+                  <p className="text-blue-200/80 text-sm">Recognizing outstanding parliamentary performance and leadership</p>
+                </div>
+              </div>
+            </div>
+
             {/* CTA Section */}
             <div className="text-center">
               <Button 
@@ -83,32 +112,6 @@ export const LandingHero = () => {
         {/* Bottom Section */}
         <div className="px-8 py-16 bg-transparent">
           <div className="max-w-7xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-12 text-center">
-              <div>
-                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Users className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">Future Leaders</h3>
-                <p className="text-blue-200">Shaping tomorrow's democratic leaders through debate and discourse</p>
-              </div>
-              
-              <div>
-                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Crown className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">Democratic Values</h3>
-                <p className="text-blue-200">Building strong democratic foundations for India's future</p>
-              </div>
-              
-              <div>
-                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Award className="w-8 h-8 text-white" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">Excellence</h3>
-                <p className="text-blue-200">Recognizing outstanding parliamentary performance and leadership</p>
-              </div>
-            </div>
-            
             {/* Partners Section */}
             <div className="text-center mt-16 pt-8">
               <p className="text-blue-200/80 text-sm mb-6 uppercase tracking-wider">Our Partners</p>
