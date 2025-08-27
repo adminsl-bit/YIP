@@ -117,16 +117,20 @@ export const LandingHero = () => {
               <p className="text-blue-200/80 text-lg mb-8 uppercase tracking-wider font-semibold">Our Partners</p>
               <div className="bg-white/10 backdrop-blur-lg border border-white/20 rounded-2xl py-6 px-12 mx-auto max-w-2xl">
                 <div className="flex items-center justify-center gap-16 flex-wrap">
-                  <img 
-                    src="/lovable-uploads/e7fefdf4-d36c-4867-80a7-fcb25c648693.png" 
-                    alt="Young Indians Logo" 
-                    className="h-16 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-150 contrast-125"
-                  />
-                  <img 
-                    src="/lovable-uploads/905e95c2-3362-435c-8378-e962ab280559.png" 
-                    alt="Mahatma Global Schools Logo" 
-                    className="h-16 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-150 contrast-125"
-                  />
+                  <div className="bg-white/90 rounded-xl p-4 hover:bg-white transition-all duration-300 hover:scale-110">
+                    <img 
+                      src="/lovable-uploads/e7fefdf4-d36c-4867-80a7-fcb25c648693.png" 
+                      alt="Young Indians Logo" 
+                      className="h-12 w-auto object-contain"
+                    />
+                  </div>
+                  <div className="bg-white/90 rounded-xl p-4 hover:bg-white transition-all duration-300 hover:scale-110">
+                    <img 
+                      src="/lovable-uploads/905e95c2-3362-435c-8378-e962ab280559.png" 
+                      alt="Mahatma Global Schools Logo" 
+                      className="h-12 w-auto object-contain"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
