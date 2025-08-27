@@ -113,19 +113,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // Defer profile fetch to avoid auth state change conflicts
           setTimeout(async () => {
             await fetchProfile(session.user.id);
-            if (event === 'SIGNED_IN') {
-              await logUserLogin(session.user.id);
-              // Get profile to determine redirect
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('user_type')
-                .eq('user_id', session.user.id)
-                .maybeSingle();
-              
-              if (profileData?.user_type) {
-                redirectByRole(profileData.user_type);
-              }
-            }
           }, 0);
         } else {
           setProfile(null);
@@ -168,7 +155,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         email = `${loginId}@yip.org`;
       }
       
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
@@ -177,6 +164,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         toast.error(error.message);
       } else {
         toast.success('Welcome to Young Indians Parliament!');
+        
+        // Only log user login and redirect after successful sign in
+        if (data.user) {
+          await logUserLogin(data.user.id);
+          
+          // Get profile to determine redirect
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('user_type')
+            .eq('user_id', data.user.id)
+            .maybeSingle();
+          
+          if (profileData?.user_type) {
+            // Small delay to ensure auth state is updated
+            setTimeout(() => {
+              redirectByRole(profileData.user_type);
+            }, 100);
+          }
+        }
       }
 
       return { error };
