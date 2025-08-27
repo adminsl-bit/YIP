@@ -33,7 +33,7 @@ export const LandingHero = () => {
           
           <div className="flex items-center gap-4">
             <img 
-              src="/images/mahatma-logo.png" 
+              src="/lovable-uploads/905e95c2-3362-435c-8378-e962ab280559.png" 
               alt="Mahatma Global Schools Logo" 
               className="h-16 w-auto object-contain"
             />
