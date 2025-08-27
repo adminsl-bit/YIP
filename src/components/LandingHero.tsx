@@ -140,12 +140,12 @@ export const LandingHero = () => {
                 <img 
                   src="/lovable-uploads/e7fefdf4-d36c-4867-80a7-fcb25c648693.png" 
                   alt="Young Indians Logo" 
-                  className="h-32 lg:h-40 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110 drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                  className="h-32 lg:h-40 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110"
                 />
                 <img 
                   src="/lovable-uploads/905e95c2-3362-435c-8378-e962ab280559.png" 
                   alt="Mahatma Global Schools Logo" 
-                  className="h-32 lg:h-40 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110 drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]"
+                  className="h-32 lg:h-40 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110"
                 />
               </div>
             </div>
