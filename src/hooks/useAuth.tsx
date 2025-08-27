@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
@@ -62,6 +63,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const logUserLogin = async (userId: string) => {
+    try {
+      const sessionId = crypto.randomUUID();
+      const { data, error } = await supabase.rpc('log_user_login', {
+        p_user_id: userId,
+        p_session_id: sessionId,
+        p_ip_address: null, // Could be enhanced to get real IP
+        p_user_agent: navigator.userAgent
+      });
+
+      if (error) {
+        console.error('Error logging user login:', error);
+        return;
+      }
+
+      if (data && typeof data === 'object' && 'is_duplicate_session' in data && data.is_duplicate_session) {
+        toast.warning('Another session detected. Previous session has been terminated.');
+      }
+    } catch (error) {
+      console.error('Error in logUserLogin:', error);
+    }
+  };
+
+  const redirectByRole = (userType: string) => {
+    switch (userType) {
+      case 'student':
+        window.location.href = '/student';
+        break;
+      case 'jury':
+        window.location.href = '/jury';
+        break;
+      case 'organizer':
+        window.location.href = '/organizer';
+        break;
+      default:
+        window.location.href = '/';
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -71,8 +111,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         
         if (session?.user) {
           // Defer profile fetch to avoid auth state change conflicts
-          setTimeout(() => {
-            fetchProfile(session.user.id);
+          setTimeout(async () => {
+            await fetchProfile(session.user.id);
+            if (event === 'SIGNED_IN') {
+              await logUserLogin(session.user.id);
+              // Get profile to determine redirect
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('user_type')
+                .eq('user_id', session.user.id)
+                .maybeSingle();
+              
+              if (profileData?.user_type) {
+                redirectByRole(profileData.user_type);
+              }
+            }
           }, 0);
         } else {
           setProfile(null);
@@ -101,9 +154,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signIn = async (loginId: string, password: string) => {
     try {
-      // For YIP, login ID format is serial+party (e.g., "11", "25", "34")
-      // We'll use this as email format: loginId@yip.parliament
-      const email = `${loginId}@yip.parliament`;
+      let email: string;
+      
+      // Check if this is a student login (numeric) or jury/organizer (email format)
+      if (/^\d+$/.test(loginId)) {
+        // Student login: serial+party format -> email format
+        email = `${loginId}@yip.parliament`;
+      } else if (loginId.includes('@')) {
+        // Jury/Organizer: direct email
+        email = loginId;
+      } else {
+        // Jury/Organizer: username -> convert to email format
+        email = `${loginId}@yip.org`;
+      }
       
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -125,11 +188,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
+      // Clear session in database if it's a student
+      if (profile?.user_type === 'student') {
+        await supabase
+          .from('profiles')
+          .update({ session_id: null })
+          .eq('user_id', user?.id);
+      }
+      
       const { error } = await supabase.auth.signOut();
       if (error) {
         toast.error(error.message);
       } else {
         toast.success('Signed out successfully');
+        window.location.href = '/';
       }
     } catch (error) {
       toast.error('Error signing out');

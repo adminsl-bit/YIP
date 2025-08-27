@@ -14,48 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
+      login_audit: {
+        Row: {
+          created_at: string
+          id: string
+          ip_address: string | null
+          is_duplicate_session: boolean | null
+          login_attempt_at: string
+          previous_session_id: string | null
+          session_id: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_duplicate_session?: boolean | null
+          login_attempt_at?: string
+          previous_session_id?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          is_duplicate_session?: boolean | null
+          login_attempt_at?: string
+          previous_session_id?: string | null
+          session_id?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           city: string | null
           constituency: string | null
           created_at: string
+          email: string | null
           id: string
+          is_active: boolean | null
+          last_login_at: string | null
           name: string
           party_number: number
           photo_url: string | null
           position: string
           serial_number: number
+          session_id: string | null
           state: string | null
           updated_at: string
           user_id: string
+          user_type: Database["public"]["Enums"]["user_type"]
         }
         Insert: {
           city?: string | null
           constituency?: string | null
           created_at?: string
+          email?: string | null
           id?: string
+          is_active?: boolean | null
+          last_login_at?: string | null
           name: string
           party_number: number
           photo_url?: string | null
           position: string
           serial_number: number
+          session_id?: string | null
           state?: string | null
           updated_at?: string
           user_id: string
+          user_type?: Database["public"]["Enums"]["user_type"]
         }
         Update: {
           city?: string | null
           constituency?: string | null
           created_at?: string
+          email?: string | null
           id?: string
+          is_active?: boolean | null
+          last_login_at?: string | null
           name?: string
           party_number?: number
           photo_url?: string | null
           position?: string
           serial_number?: number
+          session_id?: string | null
           state?: string | null
           updated_at?: string
           user_id?: string
+          user_type?: Database["public"]["Enums"]["user_type"]
         }
         Relationships: []
       }
@@ -77,9 +128,18 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_user_login: {
+        Args: {
+          p_ip_address?: string
+          p_session_id?: string
+          p_user_agent?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
-      [_ in never]: never
+      user_type: "student" | "jury" | "organizer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -206,6 +266,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      user_type: ["student", "jury", "organizer"],
+    },
   },
 } as const

@@ -211,7 +211,7 @@ export function ParliamentSignIn() {
                         
                         <Input
                           type="text"
-                          placeholder="Login ID (SNO, Party Number, or Username)"
+                          placeholder="Login ID (Students: SNO+Party | Jury/Organizer: Email/Username)"
                           value={credentials.loginId}
                           onChange={(e) => setCredentials(prev => ({ ...prev, loginId: e.target.value }))}
                           onFocus={() => setFocusedInput("loginId")}
