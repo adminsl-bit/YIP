@@ -61,8 +61,7 @@ export const LandingHero = () => {
               </p>
               
               <p className="text-xl text-blue-200 max-w-3xl mx-auto mb-12 leading-relaxed">
-                Where young minds debate, democracy thrives, and future leaders are born. 
-                Join 170 participants in the most prestigious parliamentary debate competition.
+                Where young minds debats and democracy thrives
               </p>
             </div>
 
