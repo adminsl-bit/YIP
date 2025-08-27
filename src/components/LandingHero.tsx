@@ -71,16 +71,31 @@ export const LandingHero = () => {
               </p>
             </div>
 
-            {/* Mascot and CTA Section */}
-            <div className="text-center">
-              <Button 
-                size="xl"
-                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-2xl px-12 py-6 rounded-2xl shadow-2xl hover:shadow-orange-500/25 hover:scale-105 transition-all duration-300 mb-8"
-                onClick={() => window.location.href = '/login'}
-              >
-                <Crown className="w-8 h-8 mr-4" />
-                ENTER PARLIAMENT
-              </Button>
+            {/* Hero Content with Mascot */}
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div className="text-center lg:text-left">
+                <Button 
+                  size="xl"
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-2xl px-12 py-6 rounded-2xl shadow-2xl hover:shadow-orange-500/25 hover:scale-105 transition-all duration-300 mb-8"
+                  onClick={() => window.location.href = '/login'}
+                >
+                  <Crown className="w-8 h-8 mr-4" />
+                  ENTER PARLIAMENT
+                </Button>
+              </div>
+              
+              <div className="relative flex justify-center lg:justify-end">
+                <div className="relative">
+                  <img 
+                    src="/lovable-uploads/acb05533-0bc0-4094-9302-9f7621f49697.png"
+                    alt="Young Indians Parliament Tiger Mascot" 
+                    className="w-80 h-80 object-contain animate-bounce hover:scale-110 transition-transform duration-300"
+                  />
+                  <div className="absolute -top-4 -right-4 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-xl animate-pulse">
+                    🏆 LIVE NOW
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
