@@ -24,29 +24,19 @@ export const LandingHero = () => {
         {/* Top Navigation */}
         <div className="flex justify-between items-center p-8">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16">
-              <div className="text-center">
-                <div className="text-2xl font-black text-orange-400">YI</div>
-                <div className="text-orange-400 text-xs font-bold">MADURAI</div>
-              </div>
-            </div>
-            <div>
-              <h2 className="text-xl font-bold">Yi Madurai</h2>
-              <p className="text-blue-200">Chapter</p>
-            </div>
+            <img 
+              src="/images/yi-logo.png" 
+              alt="Young Indians Logo" 
+              className="h-16 w-auto object-contain"
+            />
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="text-right">
-              <h2 className="text-xl font-bold">Mahatma Global Schools</h2>
-              <p className="text-blue-200">Venue Partner</p>
-            </div>
-            <div className="w-24 h-16">
-              <div className="text-center">
-                <div className="text-blue-400 font-bold text-lg">MAHATMA</div>
-                <div className="text-blue-300 text-xs tracking-wider">GLOBAL SCHOOLS</div>
-              </div>
-            </div>
+            <img 
+              src="/images/mahatma-logo.png" 
+              alt="Mahatma Global Schools Logo" 
+              className="h-16 w-auto object-contain"
+            />
           </div>
         </div>
 
