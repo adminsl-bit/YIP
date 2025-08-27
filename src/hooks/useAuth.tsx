@@ -33,6 +33,7 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
@@ -89,16 +90,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const redirectByRole = (userType: string) => {
     switch (userType) {
       case 'student':
-        window.location.href = '/student';
+        navigate('/student');
         break;
       case 'jury':
-        window.location.href = '/jury';
+        navigate('/jury');
         break;
       case 'organizer':
-        window.location.href = '/organizer';
+        navigate('/organizer');
         break;
       default:
-        window.location.href = '/';
+        navigate('/');
     }
   };
 
@@ -207,7 +208,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         toast.error(error.message);
       } else {
         toast.success('Signed out successfully');
-        window.location.href = '/';
+        navigate('/');
       }
     } catch (error) {
       toast.error('Error signing out');
