@@ -81,21 +81,6 @@ export const LandingHero = () => {
                 <Crown className="w-8 h-8 mr-4" />
                 ENTER PARLIAMENT
               </Button>
-              
-              <div className="flex flex-wrap justify-center gap-6 text-lg">
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-green-400 rounded-full animate-pulse"></div>
-                  <span className="text-blue-200">Platform Online</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-orange-400 rounded-full animate-pulse delay-75"></div>
-                  <span className="text-blue-200">Jury Ready</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 bg-blue-400 rounded-full animate-pulse delay-150"></div>
-                  <span className="text-blue-200">Voting Live</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
