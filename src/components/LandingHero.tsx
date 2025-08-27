@@ -41,7 +41,7 @@ export const LandingHero = () => {
         </div>
 
         {/* Main Hero Section */}
-        <div className="px-8 py-16">
+        <div className="px-8 py-4">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
               <Badge className="mb-8 px-6 py-3 text-lg bg-white/10 border-white/20 text-white hover:bg-white/20">
