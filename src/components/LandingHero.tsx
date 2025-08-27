@@ -1,8 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import tigerMascot from "@/assets/tiger-mascot.png";
-import mahatmaLogo from "@/assets/mahatma-logo.png";
 import { Crown, Users, Award, Calendar } from "lucide-react";
 
 export const LandingHero = () => {
@@ -26,8 +24,12 @@ export const LandingHero = () => {
         {/* Top Navigation */}
         <div className="flex justify-between items-center p-8">
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-2xl">
-              <Crown className="w-8 h-8 text-white" />
+            <div className="w-20 h-16 bg-white rounded-2xl flex items-center justify-center p-2 shadow-2xl">
+              <div className="text-center">
+                <div className="text-2xl font-black text-gray-800">YI</div>
+                <div className="bg-orange-500 text-white text-xs px-2 py-0.5 rounded">WE CAN</div>
+                <div className="bg-green-600 text-white text-xs px-2 py-0.5 rounded mt-0.5">WE WILL</div>
+              </div>
             </div>
             <div>
               <h2 className="text-xl font-bold">Yi Madurai</h2>
@@ -40,12 +42,11 @@ export const LandingHero = () => {
               <h2 className="text-xl font-bold">Mahatma Global Schools</h2>
               <p className="text-blue-200">Venue Partner</p>
             </div>
-            <div className="w-24 h-16 bg-white rounded-2xl flex items-center justify-center p-3 shadow-2xl">
-              <img 
-                src={mahatmaLogo} 
-                alt="Mahatma Global Schools" 
-                className="w-full h-full object-contain"
-              />
+            <div className="w-32 h-16 bg-white rounded-2xl flex items-center justify-center p-3 shadow-2xl">
+              <div className="text-center">
+                <div className="text-blue-600 font-bold text-lg">MAHATMA</div>
+                <div className="text-blue-600 text-xs tracking-wider">TRUTH TRIUMPHS</div>
+              </div>
             </div>
           </div>
         </div>
@@ -141,11 +142,12 @@ export const LandingHero = () => {
                   <div className="absolute -top-6 -right-6 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-full text-lg font-bold shadow-xl animate-bounce">
                     🏆 LIVE NOW
                   </div>
-                  <img 
-                    src={tigerMascot} 
-                    alt="Parliament Tiger Mascot"
-                    className="w-full h-auto drop-shadow-2xl hover:scale-105 transition-transform duration-500"
-                  />
+                  <div className="text-center text-6xl">
+                    🐯
+                    <div className="mt-4 text-white text-lg font-bold bg-orange-600 rounded-lg px-4 py-2 inline-block">
+                      YOUNG INDIANS<br/>PARLIAMENT
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
