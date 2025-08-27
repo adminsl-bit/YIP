@@ -1,6 +1,10 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
-import { LogOut, Users, BookOpen, Calendar, Award } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LogOut, User, Users, Vote, Award } from "lucide-react";
+import { StudentProfile } from "@/components/student/StudentProfile";
+import { ParliamentTree } from "@/components/student/ParliamentTree";
+import { VotingInterface } from "@/components/student/VotingInterface";
 
 const StudentDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -37,7 +41,7 @@ const StudentDashboard = () => {
 
       {/* Dashboard Content */}
       <div className="p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
             <h2 className="text-3xl font-bold text-slate-800 mb-4">
               Welcome, {profile?.name?.split(' ')[0]}!
@@ -47,68 +51,70 @@ const StudentDashboard = () => {
             </p>
           </div>
 
-          {/* Quick Actions Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <div className="flex items-center space-x-3 mb-4">
-                <Users className="w-6 h-6 text-blue-600" />
-                <h3 className="text-lg font-semibold text-slate-800">Parliament Members</h3>
-              </div>
-              <p className="text-slate-600 text-sm mb-4">View all members and their positions</p>
-              <Button className="w-full" variant="outline">View Members</Button>
-            </div>
+          <Tabs defaultValue="profile" className="w-full">
+            <TabsList className="grid w-full grid-cols-4 mb-8">
+              <TabsTrigger value="profile" className="flex items-center space-x-2">
+                <User className="w-4 h-4" />
+                <span>My Profile</span>
+              </TabsTrigger>
+              <TabsTrigger value="members" className="flex items-center space-x-2">
+                <Users className="w-4 h-4" />
+                <span>Parliament Tree</span>
+              </TabsTrigger>
+              <TabsTrigger value="voting" className="flex items-center space-x-2">
+                <Vote className="w-4 h-4" />
+                <span>Voting</span>
+              </TabsTrigger>
+              <TabsTrigger value="schedule" className="flex items-center space-x-2">
+                <Award className="w-4 h-4" />
+                <span>Schedule</span>
+              </TabsTrigger>
+            </TabsList>
 
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <div className="flex items-center space-x-3 mb-4">
-                <BookOpen className="w-6 h-6 text-green-600" />
-                <h3 className="text-lg font-semibold text-slate-800">Bills & Proposals</h3>
+            <TabsContent value="profile" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="flex justify-center">
+                  {profile && (
+                    <StudentProfile profile={profile} isOwnProfile={true} />
+                  )}
+                </div>
+                <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
+                  <h3 className="text-xl font-bold text-slate-800 mb-6">Quick Actions</h3>
+                  <div className="space-y-4">
+                    <Button variant="outline" className="w-full justify-start">
+                      <Users className="w-4 h-4 mr-2" />
+                      View All Parliament Members
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start">
+                      <Vote className="w-4 h-4 mr-2" />
+                      Check Voting Sessions
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start">
+                      <Award className="w-4 h-4 mr-2" />
+                      View Session Schedule
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <p className="text-slate-600 text-sm mb-4">Review and vote on bills</p>
-              <Button className="w-full" variant="outline">View Bills</Button>
-            </div>
+            </TabsContent>
 
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <div className="flex items-center space-x-3 mb-4">
-                <Calendar className="w-6 h-6 text-orange-600" />
-                <h3 className="text-lg font-semibold text-slate-800">Sessions</h3>
-              </div>
-              <p className="text-slate-600 text-sm mb-4">Upcoming parliament sessions</p>
-              <Button className="w-full" variant="outline">View Schedule</Button>
-            </div>
-          </div>
+            <TabsContent value="members">
+              <ParliamentTree />
+            </TabsContent>
 
-          {/* Profile Information */}
-          {profile && (
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <h3 className="text-xl font-bold text-slate-800 mb-4">Your Parliament Profile</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                  <p className="text-slate-600">Serial Number:</p>
-                  <p className="font-semibold text-slate-800">{profile.serial_number}</p>
-                </div>
-                <div>
-                  <p className="text-slate-600">Party Number:</p>
-                  <p className="font-semibold text-slate-800">{profile.party_number}</p>
-                </div>
-                <div>
-                  <p className="text-slate-600">Position:</p>
-                  <p className="font-semibold text-slate-800">{profile.position}</p>
-                </div>
-                <div>
-                  <p className="text-slate-600">Constituency:</p>
-                  <p className="font-semibold text-slate-800">{profile.constituency}</p>
-                </div>
-                <div>
-                  <p className="text-slate-600">State:</p>
-                  <p className="font-semibold text-slate-800">{profile.state}</p>
-                </div>
-                <div>
-                  <p className="text-slate-600">City:</p>
-                  <p className="font-semibold text-slate-800">{profile.city}</p>
-                </div>
+            <TabsContent value="voting">
+              <VotingInterface />
+            </TabsContent>
+
+            <TabsContent value="schedule">
+              <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg text-center">
+                <Award className="w-16 h-16 mx-auto mb-4 text-slate-400" />
+                <h3 className="text-xl font-bold text-slate-800 mb-2">Session Schedule</h3>
+                <p className="text-slate-600">Parliament session schedules will be available here.</p>
+                <p className="text-sm text-slate-500 mt-2">Check back later for updates from the organizers.</p>
               </div>
-            </div>
-          )}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

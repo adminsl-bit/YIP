@@ -110,6 +110,77 @@ export type Database = {
         }
         Relationships: []
       }
+      votes: {
+        Row: {
+          created_at: string
+          id: string
+          vote_choice: string
+          voter_id: string
+          voting_session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          vote_choice: string
+          voter_id: string
+          voting_session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          vote_choice?: string
+          voter_id?: string
+          voting_session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votes_voting_session_id_fkey"
+            columns: ["voting_session_id"]
+            isOneToOne: false
+            referencedRelation: "voting_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voting_sessions: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          end_time: string | null
+          id: string
+          is_active: boolean
+          start_time: string | null
+          title: string
+          updated_at: string
+          vote_type: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          is_active?: boolean
+          start_time?: string | null
+          title: string
+          updated_at?: string
+          vote_type: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_time?: string | null
+          id?: string
+          is_active?: boolean
+          start_time?: string | null
+          title?: string
+          updated_at?: string
+          vote_type?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
