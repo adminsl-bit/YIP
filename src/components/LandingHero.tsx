@@ -71,33 +71,6 @@ export const LandingHero = () => {
               </p>
             </div>
 
-            {/* Stats Section */}
-            <div className="grid md:grid-cols-3 gap-8 mb-16">
-              <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 text-center border border-white/20 hover:bg-white/20 transition-all duration-500 hover:scale-105">
-                <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
-                  <Users className="w-10 h-10 text-white" />
-                </div>
-                <div className="text-5xl font-black mb-4">170</div>
-                <div className="text-xl font-semibold text-blue-200">Young Parliamentarians</div>
-              </div>
-              
-              <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 text-center border border-white/20 hover:bg-white/20 transition-all duration-500 hover:scale-105">
-                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
-                  <Crown className="w-10 h-10 text-white" />
-                </div>
-                <div className="text-5xl font-black mb-4">3</div>
-                <div className="text-xl font-semibold text-blue-200">Leadership Roles</div>
-              </div>
-              
-              <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 text-center border border-white/20 hover:bg-white/20 transition-all duration-500 hover:scale-105">
-                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
-                  <Award className="w-10 h-10 text-white" />
-                </div>
-                <div className="text-5xl font-black mb-4">1</div>
-                <div className="text-xl font-semibold text-blue-200">Champion Winner</div>
-              </div>
-            </div>
-
             {/* Mascot and CTA Section */}
             <div className="grid lg:grid-cols-2 gap-16 items-center">
               <div className="text-center lg:text-left">
