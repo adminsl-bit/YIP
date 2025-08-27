@@ -5,12 +5,9 @@ import { Crown, Users, Award, Calendar } from "lucide-react";
 
 export const LandingHero = () => {
   return (
-    <div className="min-h-screen bg-white bg-geometric-pattern relative overflow-hidden text-gray-900">
+    <div className="min-h-screen bg-gradient-hero relative overflow-hidden text-gray-900">
       {/* Modern gradient overlay with geometric patterns */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 opacity-60"></div>
-        <div className="absolute inset-0 bg-gradient-to-tr from-orange-50/30 via-transparent to-green-50/30"></div>
-        
         {/* Floating geometric elements */}
         <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-to-br from-primary/20 to-primary/10 rounded-full blur-xl floating"></div>
         <div className="absolute top-1/3 right-20 w-48 h-48 bg-gradient-to-bl from-secondary/20 to-secondary/10 rounded-full blur-2xl floating-delayed"></div>
