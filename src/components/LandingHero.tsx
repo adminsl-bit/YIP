@@ -1,7 +1,8 @@
 import { Button } from "@/components/ui/button";
+import { Button as MovingBorderButton } from "@/components/ui/moving-border";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Crown, Users, Award, Calendar } from "lucide-react";
+import { Crown, Users, Award } from "lucide-react";
 
 export const LandingHero = () => {
   return (
@@ -52,10 +53,19 @@ export const LandingHero = () => {
         <div className="px-8 py-4">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-              <Badge className="mb-8 px-6 py-3 text-lg bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/30 shadow-lg">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-3 shadow-lg shadow-green-500/50 animate-pulse"></div>
-                Regional Round 2025 - Now Live
-              </Badge>
+              <MovingBorderButton
+                borderRadius="2rem"
+                duration={3000}
+                containerClassName="mb-8 inline-block"
+                borderClassName="h-16 w-16 opacity-80 bg-[conic-gradient(from_0deg,var(--orange-500),var(--white),var(--green-500),var(--orange-500))]"
+                className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/30 text-lg px-6 py-3 h-auto w-auto shadow-lg"
+                as="div"
+              >
+                <div className="flex items-center">
+                  <div className="w-3 h-3 bg-green-500 rounded-full mr-3 shadow-lg shadow-green-500/50 animate-pulse"></div>
+                  Regional Round 2025 - Now Live
+                </div>
+              </MovingBorderButton>
               
               <div className="flex items-center justify-center gap-8 mb-8">
                 <h1 className="text-7xl lg:text-9xl font-black tracking-tight drop-shadow-2xl">
