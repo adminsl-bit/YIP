@@ -36,13 +36,13 @@ export const LandingHero = () => {
               
               <div className="flex items-center justify-center gap-8 mb-8">
                 <h1 className="text-7xl lg:text-9xl font-black tracking-tight">
-                  <span className="block text-transparent bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text animate-pulse">
+                  <span className="block text-transparent bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text">
                     YOUNG
                   </span>
-                  <span className="block text-transparent bg-gradient-to-r from-orange-500 via-white to-green-600 bg-clip-text" style={{WebkitTextStroke: '1px rgba(0,0,0,0.1)'}}>
+                  <span className="block text-transparent bg-gradient-to-r from-orange-600 via-slate-800 to-green-600 bg-clip-text">
                     INDIANS
                   </span>
-                  <span className="block text-transparent bg-gradient-to-r from-orange-500 via-white to-green-600 bg-clip-text" style={{WebkitTextStroke: '1px rgba(0,0,0,0.1)'}}>
+                  <span className="block text-transparent bg-gradient-to-r from-orange-600 via-slate-800 to-green-600 bg-clip-text">
                     PARLIAMENT
                   </span>
                 </h1>
