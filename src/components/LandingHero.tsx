@@ -143,7 +143,7 @@ export const LandingHero = () => {
               </div>
               
               {/* Enhanced Glass Buttons Section */}
-              <div className="flex flex-wrap items-center justify-center gap-6 mt-12">
+              <div className="flex flex-wrap items-center justify-center gap-6 mt-20">
                 <div className="group bg-white/20 backdrop-blur-lg border border-white/30 rounded-2xl px-8 py-5 text-slate-800 hover:bg-white/35 transition-all duration-500 hover:scale-110 hover:shadow-2xl hover:shadow-green-500/20 shadow-lg cursor-pointer animate-fade-in">
                   <div className="flex items-center gap-4">
                     <div className="relative">
