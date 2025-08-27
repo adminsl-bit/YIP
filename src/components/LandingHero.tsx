@@ -72,44 +72,28 @@ export const LandingHero = () => {
             </div>
 
             {/* Mascot and CTA Section */}
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-              <div className="text-center lg:text-left">
-                <Button 
-                  size="xl"
-                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-2xl px-12 py-6 rounded-2xl shadow-2xl hover:shadow-orange-500/25 hover:scale-105 transition-all duration-300 mb-8"
-                  onClick={() => window.location.href = '/login'}
-                >
-                  <Crown className="w-8 h-8 mr-4" />
-                  ENTER PARLIAMENT
-                </Button>
-                
-                <div className="flex flex-wrap justify-center lg:justify-start gap-6 text-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-blue-200">Platform Online</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 bg-orange-400 rounded-full animate-pulse delay-75"></div>
-                    <span className="text-blue-200">Jury Ready</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 bg-blue-400 rounded-full animate-pulse delay-150"></div>
-                    <span className="text-blue-200">Voting Live</span>
-                  </div>
-                </div>
-              </div>
+            <div className="text-center">
+              <Button 
+                size="xl"
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-2xl px-12 py-6 rounded-2xl shadow-2xl hover:shadow-orange-500/25 hover:scale-105 transition-all duration-300 mb-8"
+                onClick={() => window.location.href = '/login'}
+              >
+                <Crown className="w-8 h-8 mr-4" />
+                ENTER PARLIAMENT
+              </Button>
               
-              <div className="relative">
-                <div className="relative bg-white/10 backdrop-blur-lg rounded-3xl p-12 border border-white/20 shadow-2xl">
-                  <div className="absolute -top-6 -right-6 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-full text-lg font-bold shadow-xl animate-bounce">
-                    🏆 LIVE NOW
-                  </div>
-                  <div className="text-center text-6xl">
-                    🐯
-                    <div className="mt-4 text-white text-lg font-bold bg-orange-600 rounded-lg px-4 py-2 inline-block">
-                      YOUNG INDIANS<br/>PARLIAMENT
-                    </div>
-                  </div>
+              <div className="flex flex-wrap justify-center gap-6 text-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 bg-green-400 rounded-full animate-pulse"></div>
+                  <span className="text-blue-200">Platform Online</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 bg-orange-400 rounded-full animate-pulse delay-75"></div>
+                  <span className="text-blue-200">Jury Ready</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 bg-blue-400 rounded-full animate-pulse delay-150"></div>
+                  <span className="text-blue-200">Voting Live</span>
                 </div>
               </div>
             </div>
