@@ -21,23 +21,8 @@ export const LandingHero = () => {
 
       {/* Hero Content */}
       <div className="relative z-10">
-        {/* Top Navigation */}
-        <div className="flex justify-between items-center p-8">
-          <div className="flex items-center gap-4">
-            <img 
-              src="/lovable-uploads/e7fefdf4-d36c-4867-80a7-fcb25c648693.png" 
-              alt="Young Indians Logo" 
-              className="h-16 w-auto object-contain"
-            />
-          </div>
-          
-          <div className="flex items-center gap-4">
-            <img 
-              src="/lovable-uploads/905e95c2-3362-435c-8378-e962ab280559.png" 
-              alt="Mahatma Global Schools Logo" 
-              className="h-16 w-auto object-contain"
-            />
-          </div>
+        {/* Top Navigation - Simplified */}
+        <div className="flex justify-center items-center p-8">
         </div>
 
         {/* Main Hero Section */}
@@ -121,6 +106,23 @@ export const LandingHero = () => {
                 </div>
                 <h3 className="text-xl font-bold mb-2">Excellence</h3>
                 <p className="text-blue-200">Recognizing outstanding parliamentary performance and leadership</p>
+              </div>
+            </div>
+            
+            {/* Partners Section */}
+            <div className="text-center mt-16 pt-8">
+              <p className="text-blue-200/80 text-sm mb-6 uppercase tracking-wider">Our Partners</p>
+              <div className="flex items-center justify-center gap-12 flex-wrap">
+                <img 
+                  src="/lovable-uploads/e7fefdf4-d36c-4867-80a7-fcb25c648693.png" 
+                  alt="Young Indians Logo" 
+                  className="h-12 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-300"
+                />
+                <img 
+                  src="/lovable-uploads/905e95c2-3362-435c-8378-e962ab280559.png" 
+                  alt="Mahatma Global Schools Logo" 
+                  className="h-12 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-300"
+                />
               </div>
             </div>
             
