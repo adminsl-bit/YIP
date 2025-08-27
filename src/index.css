@@ -47,26 +47,18 @@ All colors MUST be HSL.
     --heritage-cream: 45 20% 95%;
     --official-navy: 220 40% 15%;
 
-    /* Modern Gradients for Impact */
+    /* Gradients for Impact */
     --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
     --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
     --gradient-parliament: linear-gradient(180deg, hsl(var(--heritage-cream)), hsl(var(--background)));
-    --gradient-modern: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    --gradient-subtle: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-    --gradient-glass: linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
 
-    /* Modern Shadows with depth */
+    /* Shadows with Indian theme colors */
     --shadow-primary: 0 10px 30px -10px hsl(var(--primary) / 0.3);
     --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.4);
     --shadow-elevated: 0 20px 40px -12px hsl(var(--parliament-blue) / 0.25);
-    --shadow-glass: 0 8px 32px rgba(31, 38, 135, 0.15);
-    --shadow-floating: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-    --shadow-interactive: 0 4px 20px rgba(0, 0, 0, 0.1);
 
-    /* Advanced transitions and animations */
+    /* Smooth transitions */
     --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-    --transition-micro: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -125,83 +117,5 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
-  }
-}
-
-@layer utilities {
-  /* Glassmorphism utilities */
-  .glass {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
-  
-  .glass-card {
-    background: linear-gradient(145deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: var(--shadow-glass);
-  }
-
-  .floating {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  .floating-delayed {
-    animation: float 6s ease-in-out infinite;
-    animation-delay: -3s;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-  }
-
-  /* Interactive hover effects */
-  .hover-lift {
-    transition: var(--transition-smooth);
-  }
-  
-  .hover-lift:hover {
-    transform: translateY(-8px);
-    box-shadow: var(--shadow-floating);
-  }
-
-  .hover-glow:hover {
-    box-shadow: var(--shadow-glow);
-    transform: scale(1.02);
-  }
-
-  /* Micro-interaction button */
-  .btn-micro {
-    position: relative;
-    overflow: hidden;
-    transition: var(--transition-bounce);
-  }
-
-  .btn-micro:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-floating);
-  }
-
-  .btn-micro:active {
-    transform: translateY(0);
-  }
-
-  .btn-micro::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    transition: left 0.5s;
-  }
-
-  .btn-micro:hover::before {
-    left: 100%;
   }
 }
