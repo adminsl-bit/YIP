@@ -156,12 +156,11 @@ export const LandingHero = () => {
         <div className="px-8 py-8 bg-transparent">
           <div className="max-w-7xl mx-auto">
             <div className="text-center">
-              <div className="flex items-center justify-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                  <Crown className="w-6 h-6 text-white" />
-                </div>
-                <span className="text-xl font-bold">Powered by Yi Madurai Chapter</span>
+              <div className="flex items-center justify-center gap-4 mb-2">
+                <Award className="w-6 h-6 text-blue-300" />
+                <span className="text-lg font-medium text-blue-200">Powered by Strawlabs for Yi Madurai chapter</span>
               </div>
+              <p className="text-sm text-blue-300/60">© 2025 All rights reserved</p>
             </div>
           </div>
         </div>
