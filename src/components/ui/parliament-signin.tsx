@@ -176,16 +176,6 @@ export function ParliamentSignIn() {
 
                 {/* Logo and header */}
                 <div className="text-center space-y-2 mb-8">
-                  <motion.div
-                    initial={{ scale: 0.5, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    transition={{ type: "spring", duration: 0.8 }}
-                    className="mx-auto w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl flex items-center justify-center relative overflow-hidden shadow-lg shadow-orange-500/30"
-                  >
-                    <Crown className="w-8 h-8 text-white" />
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-50" />
-                  </motion.div>
-
                   <motion.h1
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -203,22 +193,6 @@ export function ParliamentSignIn() {
                   >
                     Young Indians Parliament - Madurai Regional Round
                   </motion.p>
-
-                  {/* Role Selection Badges */}
-                  <div className="flex flex-wrap justify-center gap-2 mt-4">
-                    <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-3 py-1 text-xs text-slate-700 flex items-center gap-1">
-                      <Users className="w-3 h-3" />
-                      Student
-                    </div>
-                    <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-3 py-1 text-xs text-slate-700 flex items-center gap-1">
-                      <Shield className="w-3 h-3" />
-                      Jury
-                    </div>
-                    <div className="bg-white/20 backdrop-blur-sm border border-white/30 rounded-xl px-3 py-1 text-xs text-slate-700 flex items-center gap-1">
-                      <Crown className="w-3 h-3" />
-                      Organizer
-                    </div>
-                  </div>
                 </div>
 
                 {/* Login form */}
@@ -312,9 +286,6 @@ export function ParliamentSignIn() {
                           />
                         )}
                       </div>
-                      <p className="text-xs text-slate-600 mt-1 ml-1">
-                        Students: Common password • Jury/Organizer: Personal password
-                      </p>
                     </motion.div>
                   </motion.div>
 
@@ -358,28 +329,6 @@ export function ParliamentSignIn() {
                     </div>
                   </motion.button>
 
-                  {/* System Status */}
-                  <div className="pt-6 border-t border-white/20">
-                    <div className="text-center space-y-2">
-                      <p className="text-sm text-slate-700 font-medium">
-                        System Status
-                      </p>
-                      <div className="flex items-center justify-center gap-4 text-xs">
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                          <span className="text-slate-600">Platform Online</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.5s'}}></div>
-                          <span className="text-slate-600">Database Ready</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" style={{animationDelay: '1s'}}></div>
-                          <span className="text-slate-600">Auth Pending</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </form>
               </div>
             </div>
