@@ -5,7 +5,7 @@ import { Crown, Users, Award, Calendar } from "lucide-react";
 
 export const LandingHero = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 relative overflow-hidden text-white">
       {/* Dramatic animated background */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-full h-full opacity-40">
