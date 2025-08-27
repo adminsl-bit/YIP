@@ -134,10 +134,10 @@ export const LandingHero = () => {
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-indigo-500/30 rounded-3xl blur-xl"></div>
                 <Button 
                   size="xl"
-                  className="relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-2xl px-12 py-6 rounded-3xl shadow-2xl hover:shadow-blue-500/40 hover:scale-105 transition-all duration-300 border border-white/20"
+                  className="relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-3xl px-16 py-8 rounded-3xl shadow-2xl hover:shadow-blue-500/40 hover:scale-105 transition-all duration-300 border border-white/20"
                   onClick={() => window.location.href = '/login'}
                 >
-                  <Crown className="w-8 h-8 mr-4" />
+                  <Crown className="w-10 h-10 mr-6" />
                   ENTER PARLIAMENT
                 </Button>
               </div>
