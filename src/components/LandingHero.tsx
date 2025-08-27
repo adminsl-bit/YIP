@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import tigerMascot from "@/assets/tiger-mascot.png";
+import mahatmaLogo from "@/assets/mahatma-logo.png";
 import { Crown, Users, Award, Calendar } from "lucide-react";
 
 export const LandingHero = () => {
@@ -32,8 +33,12 @@ export const LandingHero = () => {
               <h3 className="font-bold text-parliament-navy">Mahatma Global Schools</h3>
               <p className="text-sm text-muted-foreground">Venue Partner</p>
             </div>
-            <div className="w-12 h-12 bg-secondary/10 rounded-lg flex items-center justify-center">
-              <Award className="w-6 h-6 text-secondary" />
+            <div className="w-16 h-12 bg-white rounded-lg flex items-center justify-center p-1 border border-parliament-gold/20">
+              <img 
+                src={mahatmaLogo} 
+                alt="Mahatma Global Schools - Truth Triumphs" 
+                className="w-full h-full object-contain"
+              />
             </div>
           </div>
         </header>
