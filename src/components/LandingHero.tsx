@@ -143,23 +143,32 @@ export const LandingHero = () => {
               </div>
               
               {/* Enhanced Glass Buttons Section */}
-              <div className="flex flex-wrap items-center justify-center gap-4 mt-12">
-                <div className="bg-white/20 backdrop-blur-lg border border-white/30 rounded-2xl px-8 py-4 text-slate-800 hover:bg-white/30 transition-all duration-300 hover:scale-105 shadow-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-green-500 rounded-full shadow-lg shadow-green-500/50 animate-pulse"></div>
-                    <span className="font-medium">Democracy in Action</span>
+              <div className="flex flex-wrap items-center justify-center gap-6 mt-12">
+                <div className="group bg-white/20 backdrop-blur-lg border border-white/30 rounded-2xl px-8 py-5 text-slate-800 hover:bg-white/35 transition-all duration-500 hover:scale-110 hover:shadow-2xl hover:shadow-green-500/20 shadow-lg cursor-pointer animate-fade-in">
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-4 h-4 bg-green-500 rounded-full shadow-lg shadow-green-500/60 animate-pulse group-hover:animate-bounce"></div>
+                      <div className="absolute inset-0 w-4 h-4 bg-green-400/30 rounded-full animate-ping group-hover:animate-none"></div>
+                    </div>
+                    <span className="font-semibold text-lg group-hover:text-green-700 transition-colors duration-300">Democracy in Action</span>
                   </div>
                 </div>
-                <div className="bg-white/20 backdrop-blur-lg border border-white/30 rounded-2xl px-8 py-4 text-slate-800 hover:bg-white/30 transition-all duration-300 hover:scale-105 shadow-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-slate-800 rounded-full shadow-lg shadow-slate-800/50 animate-pulse" style={{animationDelay: '1s'}}></div>
-                    <span className="font-medium">Leadership Through Service</span>
+                <div className="group bg-white/20 backdrop-blur-lg border border-white/30 rounded-2xl px-8 py-5 text-slate-800 hover:bg-white/35 transition-all duration-500 hover:scale-110 hover:shadow-2xl hover:shadow-slate-800/20 shadow-lg cursor-pointer animate-fade-in" style={{animationDelay: '0.2s'}}>
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-4 h-4 bg-slate-800 rounded-full shadow-lg shadow-slate-800/60 animate-pulse group-hover:animate-bounce" style={{animationDelay: '1s'}}></div>
+                      <div className="absolute inset-0 w-4 h-4 bg-slate-600/30 rounded-full animate-ping group-hover:animate-none" style={{animationDelay: '1s'}}></div>
+                    </div>
+                    <span className="font-semibold text-lg group-hover:text-slate-900 transition-colors duration-300">Leadership Through Service</span>
                   </div>
                 </div>
-                <div className="bg-white/20 backdrop-blur-lg border border-white/30 rounded-2xl px-8 py-4 text-slate-800 hover:bg-white/30 transition-all duration-300 hover:scale-105 shadow-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-3 h-3 bg-orange-500 rounded-full shadow-lg shadow-orange-500/50 animate-pulse" style={{animationDelay: '2s'}}></div>
-                    <span className="font-medium">Building India's Future</span>
+                <div className="group bg-white/20 backdrop-blur-lg border border-white/30 rounded-2xl px-8 py-5 text-slate-800 hover:bg-white/35 transition-all duration-500 hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/20 shadow-lg cursor-pointer animate-fade-in" style={{animationDelay: '0.4s'}}>
+                  <div className="flex items-center gap-4">
+                    <div className="relative">
+                      <div className="w-4 h-4 bg-orange-500 rounded-full shadow-lg shadow-orange-500/60 animate-pulse group-hover:animate-bounce" style={{animationDelay: '2s'}}></div>
+                      <div className="absolute inset-0 w-4 h-4 bg-orange-400/30 rounded-full animate-ping group-hover:animate-none" style={{animationDelay: '2s'}}></div>
+                    </div>
+                    <span className="font-semibold text-lg group-hover:text-orange-700 transition-colors duration-300">Building India's Future</span>
                   </div>
                 </div>
               </div>
