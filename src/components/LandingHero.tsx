@@ -108,13 +108,22 @@ export const LandingHero = () => {
               {/* Glass Buttons Section */}
               <div className="flex flex-wrap items-center justify-center gap-4 mt-8">
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105">
-                  <span className="text-sm font-medium">Democracy in Action</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium">Democracy in Action</span>
+                  </div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105">
-                  <span className="text-sm font-medium">Leadership Through Service</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                    <span className="text-sm font-medium">Leadership Through Service</span>
+                  </div>
                 </div>
                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-6 py-3 text-white hover:bg-white/20 transition-all duration-300 hover:scale-105">
-                  <span className="text-sm font-medium">Building India's Future</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <span className="text-sm font-medium">Building India's Future</span>
+                  </div>
                 </div>
               </div>
             </div>
