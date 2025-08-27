@@ -205,8 +205,6 @@ export function ParliamentSignIn() {
                       whileHover={{ scale: 1.01 }}
                       transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     >
-                      <div className="absolute -inset-[0.5px] bg-gradient-to-r from-orange-400/20 via-white/10 to-green-400/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300" />
-                      
                       <div className="relative flex items-center overflow-hidden rounded-lg">
                         <Mail className={`absolute left-3 w-4 h-4 transition-all duration-300 ${
                           focusedInput === "loginId" ? 'text-slate-800' : 'text-slate-500'
@@ -246,8 +244,6 @@ export function ParliamentSignIn() {
                       whileHover={{ scale: 1.01 }}
                       transition={{ type: "spring", stiffness: 400, damping: 25 }}
                     >
-                      <div className="absolute -inset-[0.5px] bg-gradient-to-r from-orange-400/20 via-white/10 to-green-400/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300" />
-                      
                       <div className="relative flex items-center overflow-hidden rounded-lg">
                         <Lock className={`absolute left-3 w-4 h-4 transition-all duration-300 ${
                           focusedInput === "password" ? 'text-slate-800' : 'text-slate-500'
