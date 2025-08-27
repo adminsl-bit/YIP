@@ -7,209 +7,192 @@ import { Crown, Users, Award, Calendar } from "lucide-react";
 
 export const LandingHero = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-primary/5 relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-10 -left-10 w-96 h-96 bg-primary/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-1/2 -right-10 w-80 h-80 bg-secondary/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute bottom-20 left-1/3 w-64 h-64 bg-parliament-gold/10 rounded-full blur-3xl animate-pulse delay-500"></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden text-white">
+      {/* Dramatic animated background */}
+      <div className="absolute inset-0">
+        <div className="absolute top-0 left-0 w-full h-full opacity-40">
+          <div className="absolute inset-0 bg-white/5" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            backgroundSize: '60px 60px'
+          }}></div>
+        </div>
+        <div className="absolute -top-40 -left-40 w-80 h-80 bg-gradient-to-br from-orange-500/30 to-transparent rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-1/2 -right-40 w-96 h-96 bg-gradient-to-bl from-green-500/30 to-transparent rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-0 left-1/2 w-72 h-72 bg-gradient-to-t from-blue-500/30 to-transparent rounded-full blur-3xl animate-pulse delay-500"></div>
       </div>
 
-      {/* Navigation Header */}
-      <nav className="relative z-10 py-6">
-        <div className="container mx-auto px-4">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3 animate-fade-in">
-              <div className="w-12 h-12 bg-gradient-hero rounded-xl flex items-center justify-center shadow-lg">
-                <Crown className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h3 className="font-bold text-parliament-navy">Yi Madurai</h3>
-                <p className="text-sm text-muted-foreground">Chapter</p>
-              </div>
+      {/* Hero Content */}
+      <div className="relative z-10">
+        {/* Top Navigation */}
+        <div className="flex justify-between items-center p-8">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl flex items-center justify-center shadow-2xl">
+              <Crown className="w-8 h-8 text-white" />
             </div>
-            
-            <div className="flex items-center gap-3 animate-fade-in">
-              <div className="text-right">
-                <h3 className="font-bold text-parliament-navy">Mahatma Global Schools</h3>
-                <p className="text-sm text-muted-foreground">Venue Partner</p>
-              </div>
-              <div className="w-20 h-12 bg-white rounded-xl flex items-center justify-center p-2 border border-parliament-gold/20 shadow-md">
-                <img 
-                  src={mahatmaLogo} 
-                  alt="Mahatma Global Schools - Truth Triumphs" 
-                  className="w-full h-full object-contain"
-                />
-              </div>
+            <div>
+              <h2 className="text-xl font-bold">Yi Madurai</h2>
+              <p className="text-blue-200">Chapter</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <h2 className="text-xl font-bold">Mahatma Global Schools</h2>
+              <p className="text-blue-200">Venue Partner</p>
+            </div>
+            <div className="w-24 h-16 bg-white rounded-2xl flex items-center justify-center p-3 shadow-2xl">
+              <img 
+                src={mahatmaLogo} 
+                alt="Mahatma Global Schools" 
+                className="w-full h-full object-contain"
+              />
             </div>
           </div>
         </div>
-      </nav>
 
-      {/* Main Hero Section */}
-      <div className="container mx-auto px-4 py-12 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-16 items-center min-h-[70vh]">
-          {/* Left Content */}
-          <div className="space-y-8 animate-fade-in">
-            <div className="space-y-6">
-              <Badge variant="secondary" className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium animate-scale-in">
-                <Calendar className="w-4 h-4" />
-                Regional Round 2025
+        {/* Main Hero Section */}
+        <div className="px-8 py-16">
+          <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-16">
+              <Badge className="mb-8 px-6 py-3 text-lg bg-white/10 border-white/20 text-white hover:bg-white/20">
+                <Calendar className="w-5 h-5 mr-3" />
+                Regional Round 2025 - Now Live
               </Badge>
               
-              <div className="space-y-4">
-                <h1 className="text-6xl lg:text-7xl font-bold text-parliament-navy leading-tight">
-                  Young Indians{" "}
-                  <span className="text-transparent bg-gradient-hero bg-clip-text animate-pulse">
-                    Parliament
-                  </span>
-                </h1>
-                
-                <div className="text-2xl text-parliament-blue font-semibold">
-                  Madurai Regional Round
+              <h1 className="text-8xl lg:text-9xl font-black mb-8 tracking-tight">
+                <span className="block text-transparent bg-gradient-to-r from-orange-400 via-yellow-400 to-orange-500 bg-clip-text animate-pulse">
+                  YOUNG
+                </span>
+                <span className="block text-transparent bg-gradient-to-r from-white via-blue-200 to-green-400 bg-clip-text">
+                  INDIANS
+                </span>
+                <span className="block text-transparent bg-gradient-to-r from-green-400 via-blue-400 to-white bg-clip-text">
+                  PARLIAMENT
+                </span>
+              </h1>
+              
+              <p className="text-3xl font-bold mb-6 text-blue-100">
+                Madurai Regional Round
+              </p>
+              
+              <p className="text-xl text-blue-200 max-w-3xl mx-auto mb-12 leading-relaxed">
+                Where young minds debate, democracy thrives, and future leaders are born. 
+                Join 170 participants in the most prestigious parliamentary debate competition.
+              </p>
+            </div>
+
+            {/* Stats Section */}
+            <div className="grid md:grid-cols-3 gap-8 mb-16">
+              <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 text-center border border-white/20 hover:bg-white/20 transition-all duration-500 hover:scale-105">
+                <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
+                  <Users className="w-10 h-10 text-white" />
                 </div>
-                
-                <p className="text-lg text-muted-foreground max-w-xl leading-relaxed">
-                  Empowering the next generation of democratic leaders through debate, discussion, and democratic participation.
-                </p>
+                <div className="text-5xl font-black mb-4">170</div>
+                <div className="text-xl font-semibold text-blue-200">Young Parliamentarians</div>
+              </div>
+              
+              <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 text-center border border-white/20 hover:bg-white/20 transition-all duration-500 hover:scale-105">
+                <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
+                  <Crown className="w-10 h-10 text-white" />
+                </div>
+                <div className="text-5xl font-black mb-4">3</div>
+                <div className="text-xl font-semibold text-blue-200">Leadership Roles</div>
+              </div>
+              
+              <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 text-center border border-white/20 hover:bg-white/20 transition-all duration-500 hover:scale-105">
+                <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
+                  <Award className="w-10 h-10 text-white" />
+                </div>
+                <div className="text-5xl font-black mb-4">1</div>
+                <div className="text-xl font-semibold text-blue-200">Champion Winner</div>
               </div>
             </div>
 
-            {/* Enhanced Stats Cards */}
-            <div className="grid grid-cols-3 gap-6">
-              <Card className="p-6 text-center border-primary/20 hover:shadow-glow transition-all duration-500 hover:scale-105 animate-fade-in group">
-                <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors">
-                  <Users className="w-6 h-6 text-primary" />
-                </div>
-                <div className="text-3xl font-bold text-parliament-navy mb-2">170</div>
-                <div className="text-sm text-muted-foreground">Participants</div>
-              </Card>
-              
-              <Card className="p-6 text-center border-secondary/20 hover:shadow-primary transition-all duration-500 hover:scale-105 animate-fade-in delay-100 group">
-                <div className="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-secondary/20 transition-colors">
-                  <Crown className="w-6 h-6 text-secondary" />
-                </div>
-                <div className="text-3xl font-bold text-parliament-navy mb-2">3</div>
-                <div className="text-sm text-muted-foreground">Key Roles</div>
-              </Card>
-              
-              <Card className="p-6 text-center border-parliament-gold/20 hover:shadow-elevated transition-all duration-500 hover:scale-105 animate-fade-in delay-200 group">
-                <div className="w-12 h-12 bg-parliament-gold/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-parliament-gold/20 transition-colors">
-                  <Award className="w-6 h-6 text-parliament-gold" />
-                </div>
-                <div className="text-3xl font-bold text-parliament-navy mb-2">1</div>
-                <div className="text-sm text-muted-foreground">Winner</div>
-              </Card>
-            </div>
-
-            {/* Enhanced CTA */}
-            <div className="pt-6">
-              <Button 
-                variant="hero" 
-                size="xl" 
-                className="group relative overflow-hidden px-8 py-4 text-lg font-semibold hover:scale-105 transition-all duration-300"
-                onClick={() => window.location.href = '/login'}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-white/20 to-primary/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                <Crown className="w-5 h-5 mr-3 relative z-10" />
-                <span className="relative z-10">Enter Parliament</span>
-              </Button>
-              
-              <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                  <span>Platform Ready</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-secondary rounded-full animate-pulse delay-75"></div>
-                  <span>Jury Online</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-parliament-gold rounded-full animate-pulse delay-150"></div>
-                  <span>Voting Active</span>
+            {/* Mascot and CTA Section */}
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div className="text-center lg:text-left">
+                <Button 
+                  size="xl"
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-2xl px-12 py-6 rounded-2xl shadow-2xl hover:shadow-orange-500/25 hover:scale-105 transition-all duration-300 mb-8"
+                  onClick={() => window.location.href = '/login'}
+                >
+                  <Crown className="w-8 h-8 mr-4" />
+                  ENTER PARLIAMENT
+                </Button>
+                
+                <div className="flex flex-wrap justify-center lg:justify-start gap-6 text-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 bg-green-400 rounded-full animate-pulse"></div>
+                    <span className="text-blue-200">Platform Online</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 bg-orange-400 rounded-full animate-pulse delay-75"></div>
+                    <span className="text-blue-200">Jury Ready</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 bg-blue-400 rounded-full animate-pulse delay-150"></div>
+                    <span className="text-blue-200">Voting Live</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          {/* Right Content - Enhanced Mascot Section */}
-          <div className="relative lg:justify-self-end animate-fade-in delay-300">
-            <div className="relative max-w-lg">
-              {/* Floating Background Elements */}
-              <div className="absolute -top-8 -left-8 w-32 h-32 bg-gradient-hero/20 rounded-full blur-xl animate-pulse"></div>
-              <div className="absolute -bottom-8 -right-8 w-40 h-40 bg-secondary/20 rounded-full blur-xl animate-pulse delay-1000"></div>
               
-              {/* Main Mascot Container */}
-              <div className="relative bg-white/80 backdrop-blur-sm rounded-3xl p-12 border border-parliament-gold/30 shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-parliament-cream/50 to-white/50 rounded-3xl"></div>
-                <img 
-                  src={tigerMascot} 
-                  alt="Bengal Tiger mascot representing Young Indians Parliament - a friendly tiger wearing a Gandhi cap and holding a gavel, symbolizing democratic leadership and Indian heritage"
-                  className="w-full h-auto relative z-10 drop-shadow-2xl hover:scale-105 transition-transform duration-500"
-                />
-                
-                {/* Floating Badge */}
-                <div className="absolute -top-4 -right-4 bg-gradient-hero text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg animate-bounce">
-                  🇮🇳 Democracy
+              <div className="relative">
+                <div className="relative bg-white/10 backdrop-blur-lg rounded-3xl p-12 border border-white/20 shadow-2xl">
+                  <div className="absolute -top-6 -right-6 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-full text-lg font-bold shadow-xl animate-bounce">
+                    🏆 LIVE NOW
+                  </div>
+                  <img 
+                    src={tigerMascot} 
+                    alt="Parliament Tiger Mascot"
+                    className="w-full h-auto drop-shadow-2xl hover:scale-105 transition-transform duration-500"
+                  />
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Bottom Achievement Section */}
-        <div className="mt-20 text-center animate-fade-in delay-500">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <h2 className="text-2xl font-bold text-parliament-navy">
-              Empowering Young Leaders • Building Democratic Values • Shaping India's Future
-            </h2>
+        {/* Bottom Section */}
+        <div className="px-8 py-16 bg-black/20 backdrop-blur-lg border-t border-white/10">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid md:grid-cols-3 gap-12 text-center">
+              <div>
+                <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Future Leaders</h3>
+                <p className="text-blue-200">Shaping tomorrow's democratic leaders through debate and discourse</p>
+              </div>
+              
+              <div>
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Crown className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Democratic Values</h3>
+                <p className="text-blue-200">Building strong democratic foundations for India's future</p>
+              </div>
+              
+              <div>
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Award className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Excellence</h3>
+                <p className="text-blue-200">Recognizing outstanding parliamentary performance and leadership</p>
+              </div>
+            </div>
             
-            <div className="grid md:grid-cols-3 gap-8 mt-12">
-              <div className="text-center group">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors">
-                  <Users className="w-8 h-8 text-primary" />
+            <div className="text-center mt-16 pt-8 border-t border-white/10">
+              <div className="flex items-center justify-center gap-4 mb-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center">
+                  <Crown className="w-6 h-6 text-white" />
                 </div>
-                <h3 className="font-semibold text-parliament-navy mb-2">Future Leaders</h3>
-                <p className="text-sm text-muted-foreground">Nurturing the next generation of democratic leaders</p>
+                <span className="text-xl font-bold">Powered by Yi Madurai Chapter</span>
               </div>
-              
-              <div className="text-center group">
-                <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-secondary/20 transition-colors">
-                  <Crown className="w-8 h-8 text-secondary" />
-                </div>
-                <h3 className="font-semibold text-parliament-navy mb-2">Democratic Values</h3>
-                <p className="text-sm text-muted-foreground">Instilling principles of democracy and governance</p>
-              </div>
-              
-              <div className="text-center group">
-                <div className="w-16 h-16 bg-parliament-gold/10 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-parliament-gold/20 transition-colors">
-                  <Award className="w-8 h-8 text-parliament-gold" />
-                </div>
-                <h3 className="font-semibold text-parliament-navy mb-2">Excellence</h3>
-                <p className="text-sm text-muted-foreground">Recognizing outstanding parliamentary performance</p>
-              </div>
+              <p className="text-blue-200">Democracy in Action • Leadership Through Service • Building India's Future</p>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Enhanced Footer */}
-      <footer className="relative z-10 mt-16 py-8 bg-parliament-navy/5 border-t border-parliament-gold/20">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-hero rounded-full flex items-center justify-center">
-                <Crown className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-medium">Powered by Yi Madurai Chapter</span>
-            </div>
-            <div className="text-center md:text-right">
-              <div className="font-medium text-parliament-navy">Democracy in Action • Leadership Through Service</div>
-              <div className="text-xs">Building India's Democratic Future</div>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 };
