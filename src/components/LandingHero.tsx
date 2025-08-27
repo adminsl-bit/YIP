@@ -33,7 +33,7 @@ export const LandingHero = () => {
               <h3 className="font-bold text-parliament-navy">Mahatma Global Schools</h3>
               <p className="text-sm text-muted-foreground">Venue Partner</p>
             </div>
-            <div className="w-16 h-12 bg-white rounded-lg flex items-center justify-center p-1 border border-parliament-gold/20">
+            <div className="w-20 h-12 bg-white rounded-lg flex items-center justify-center p-2 border border-parliament-gold/20">
               <img 
                 src={mahatmaLogo} 
                 alt="Mahatma Global Schools - Truth Triumphs" 
