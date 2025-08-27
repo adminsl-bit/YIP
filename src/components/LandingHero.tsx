@@ -25,7 +25,7 @@ export const LandingHero = () => {
         <div className="flex justify-between items-center p-8">
           <div className="flex items-center gap-4">
             <img 
-              src="/images/yi-logo.png" 
+              src="/lovable-uploads/e7fefdf4-d36c-4867-80a7-fcb25c648693.png" 
               alt="Young Indians Logo" 
               className="h-16 w-auto object-contain"
             />
