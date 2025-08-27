@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      assessment_locks: {
+        Row: {
+          id: string
+          is_global_lock: boolean
+          locked_at: string
+          locked_by: string
+          reason: string | null
+        }
+        Insert: {
+          id?: string
+          is_global_lock?: boolean
+          locked_at?: string
+          locked_by: string
+          reason?: string | null
+        }
+        Update: {
+          id?: string
+          is_global_lock?: boolean
+          locked_at?: string
+          locked_by?: string
+          reason?: string | null
+        }
+        Relationships: []
+      }
+      assessments: {
+        Row: {
+          created_at: string
+          id: string
+          jury_id: string
+          notes: string | null
+          scores: Json
+          seat_role: string
+          status: string
+          student_id: string
+          submitted_at: string | null
+          total_score: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          jury_id: string
+          notes?: string | null
+          scores?: Json
+          seat_role: string
+          status?: string
+          student_id: string
+          submitted_at?: string | null
+          total_score?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          jury_id?: string
+          notes?: string | null
+          scores?: Json
+          seat_role?: string
+          status?: string
+          student_id?: string
+          submitted_at?: string | null
+          total_score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       login_audit: {
         Row: {
           created_at: string
@@ -186,6 +252,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_total_score: {
+        Args: { scores_json: Json }
+        Returns: number
+      }
       create_user_profile: {
         Args: {
           p_city: string

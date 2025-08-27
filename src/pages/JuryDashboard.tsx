@@ -1,18 +1,63 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
-import { LogOut, Gavel, BarChart3, FileText, Clock } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { LogOut, Users, BarChart3, Gavel, User } from "lucide-react";
+import { JuryStudentList } from "@/components/jury/JuryStudentList";
+import { JuryDashboardStats } from "@/components/jury/JuryDashboardStats";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const JuryDashboard = () => {
-  const { profile, signOut } = useAuth();
+  const { user, profile, signOut } = useAuth();
+  const [assessmentStats, setAssessmentStats] = useState({
+    totalStudents: 0,
+    assessedStudents: 0
+  });
+
+  useEffect(() => {
+    if (user) {
+      fetchAssessmentStats();
+    }
+  }, [user]);
+
+  const fetchAssessmentStats = async () => {
+    try {
+      const { data: students, error: studentsError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_type', 'student');
+
+      if (studentsError) throw studentsError;
+
+      const { data: assessments, error: assessmentsError } = await supabase
+        .from('assessments')
+        .select('id')
+        .eq('jury_id', user?.id)
+        .eq('status', 'submitted');
+
+      if (assessmentsError) throw assessmentsError;
+
+      setAssessmentStats({
+        totalStudents: students?.length || 0,
+        assessedStudents: assessments?.length || 0
+      });
+    } catch (error) {
+      console.error('Error fetching assessment stats:', error);
+    }
+  };
+
+  const progressPercentage = assessmentStats.totalStudents > 0 
+    ? Math.round((assessmentStats.assessedStudents / assessmentStats.totalStudents) * 100)
+    : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50">
-      {/* Navigation */}
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
       <nav className="p-4 flex justify-between items-center bg-white/20 backdrop-blur-sm border-b border-white/30">
         <div className="flex items-center space-x-4">
           <Gavel className="w-8 h-8 text-purple-600" />
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Jury Panel</h1>
+            <h1 className="text-xl font-bold text-slate-800">Jury Portal</h1>
             <p className="text-sm text-slate-600">Young Indians Parliament</p>
           </div>
         </div>
@@ -21,7 +66,7 @@ const JuryDashboard = () => {
           {profile && (
             <div className="text-right">
               <p className="font-semibold text-slate-800">{profile.name}</p>
-              <p className="text-sm text-slate-600">Jury Member</p>
+              <p className="text-sm text-slate-600">{profile.position}</p>
             </div>
           )}
           <Button 
@@ -35,71 +80,77 @@ const JuryDashboard = () => {
         </div>
       </nav>
 
-      {/* Dashboard Content */}
+      <div className="p-6 bg-white/30 backdrop-blur-sm border-b border-white/30">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">Assessment Progress</h2>
+              <p className="text-slate-600">Track your evaluation progress across all students</p>
+            </div>
+            <div className="text-right">
+              <div className="text-3xl font-bold text-purple-600">
+                {assessmentStats.assessedStudents} / {assessmentStats.totalStudents}
+              </div>
+              <p className="text-sm text-slate-600">Students Assessed</p>
+            </div>
+          </div>
+          <Progress value={progressPercentage} className="h-3" />
+          <p className="text-sm text-slate-600 mt-2">
+            {progressPercentage}% Complete • {assessmentStats.totalStudents - assessmentStats.assessedStudents} Remaining
+          </p>
+        </div>
+      </div>
+
       <div className="p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-slate-800 mb-4">
-              Jury Dashboard
-            </h2>
-            <p className="text-lg text-slate-600">
-              Monitor and evaluate parliament proceedings
-            </p>
-          </div>
+        <div className="max-w-7xl mx-auto">
+          <Tabs defaultValue="assess" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-8">
+              <TabsTrigger value="assess" className="flex items-center space-x-2">
+                <Users className="w-4 h-4" />
+                <span>Assess Students</span>
+              </TabsTrigger>
+              <TabsTrigger value="dashboard" className="flex items-center space-x-2">
+                <BarChart3 className="w-4 h-4" />
+                <span>Dashboard</span>
+              </TabsTrigger>
+              <TabsTrigger value="profile" className="flex items-center space-x-2">
+                <User className="w-4 h-4" />
+                <span>My Profile</span>
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Jury Functions Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <div className="flex items-center space-x-3 mb-4">
-                <BarChart3 className="w-6 h-6 text-purple-600" />
-                <h3 className="text-lg font-semibold text-slate-800">Performance Analytics</h3>
-              </div>
-              <p className="text-slate-600 text-sm mb-4">View student performance metrics</p>
-              <Button className="w-full" variant="outline">View Analytics</Button>
-            </div>
+            <TabsContent value="assess">
+              {user && <JuryStudentList juryId={user.id} />}
+            </TabsContent>
 
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <div className="flex items-center space-x-3 mb-4">
-                <FileText className="w-6 h-6 text-indigo-600" />
-                <h3 className="text-lg font-semibold text-slate-800">Evaluation Forms</h3>
-              </div>
-              <p className="text-slate-600 text-sm mb-4">Assess student presentations</p>
-              <Button className="w-full" variant="outline">Start Evaluation</Button>
-            </div>
+            <TabsContent value="dashboard">
+              {user && <JuryDashboardStats juryId={user.id} />}
+            </TabsContent>
 
-            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-              <div className="flex items-center space-x-3 mb-4">
-                <Clock className="w-6 h-6 text-orange-600" />
-                <h3 className="text-lg font-semibold text-slate-800">Session Timer</h3>
+            <TabsContent value="profile">
+              <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg max-w-2xl mx-auto">
+                <h3 className="text-xl font-bold text-slate-800 mb-6">Jury Profile</h3>
+                {profile && (
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-slate-600">Name:</p>
+                      <p className="font-semibold text-slate-800">{profile.name}</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-600">Position:</p>
+                      <p className="font-semibold text-slate-800">{profile.position}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-slate-600">Assessment Progress:</p>
+                      <p className="font-semibold text-slate-800">
+                        {assessmentStats.assessedStudents} of {assessmentStats.totalStudents} students assessed ({progressPercentage}%)
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
-              <p className="text-slate-600 text-sm mb-4">Manage session timing</p>
-              <Button className="w-full" variant="outline">Session Control</Button>
-            </div>
-          </div>
-
-          <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-            <h3 className="text-xl font-bold text-slate-800 mb-4">Jury Responsibilities</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h4 className="font-semibold text-slate-800 mb-2">Evaluation Criteria</h4>
-                <ul className="text-sm text-slate-600 space-y-1">
-                  <li>• Parliamentary procedure adherence</li>
-                  <li>• Quality of arguments and debate</li>
-                  <li>• Leadership and collaboration</li>
-                  <li>• Overall presentation skills</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold text-slate-800 mb-2">Current Session</h4>
-                <p className="text-sm text-slate-600">
-                  Madurai Regional Round - Young Indians Parliament
-                </p>
-                <p className="text-sm text-slate-600 mt-2">
-                  Status: <span className="font-semibold text-green-600">Active</span>
-                </p>
-              </div>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>
