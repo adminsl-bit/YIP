@@ -44,8 +44,8 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
-    seatRole: "",
-    partyNumber: "",
+    seatRole: "all",
+    partyNumber: "all",
     constituency: "",
     state: ""
   });
@@ -107,7 +107,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     }
 
     // Apply role filter
-    if (filters.seatRole) {
+    if (filters.seatRole && filters.seatRole !== "all") {
       filtered = filtered.filter(student => {
         const role = getSeatRole(student.position);
         return role === filters.seatRole;
@@ -115,7 +115,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     }
 
     // Apply party filter
-    if (filters.partyNumber) {
+    if (filters.partyNumber && filters.partyNumber !== "all") {
       filtered = filtered.filter(student => 
         student.party_number.toString() === filters.partyNumber
       );
@@ -280,7 +280,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                 <SelectValue placeholder="Filter by Role" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Roles</SelectItem>
+                <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="speaker">Speaker</SelectItem>
                 <SelectItem value="deputy_speaker">Deputy Speaker</SelectItem>
                 <SelectItem value="mp">MP</SelectItem>
@@ -292,7 +292,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                 <SelectValue placeholder="Filter by Party" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Parties</SelectItem>
+                <SelectItem value="all">All Parties</SelectItem>
                 {[...new Set(students.map(s => s.party_number))].sort().map(party => (
                   <SelectItem key={party} value={party.toString()}>Party {party}</SelectItem>
                 ))}
@@ -319,7 +319,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
               size="sm"
               onClick={() => {
                 setSearchTerm("");
-                setFilters({ seatRole: "", partyNumber: "", constituency: "", state: "" });
+                setFilters({ seatRole: "all", partyNumber: "all", constituency: "", state: "" });
               }}
             >
               Clear Filters
