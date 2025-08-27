@@ -39,10 +39,10 @@ export const LandingHero = () => {
                   <span className="block text-transparent bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text animate-pulse">
                     YOUNG
                   </span>
-                  <span className="block text-transparent bg-gradient-to-r from-orange-500 via-slate-100 to-green-600 bg-clip-text drop-shadow-lg">
+                  <span className="block text-transparent bg-gradient-to-r from-orange-500 via-white to-green-600 bg-clip-text" style={{WebkitTextStroke: '1px rgba(0,0,0,0.1)'}}>
                     INDIANS
                   </span>
-                  <span className="block text-transparent bg-gradient-to-r from-orange-500 via-slate-100 to-green-600 bg-clip-text drop-shadow-lg">
+                  <span className="block text-transparent bg-gradient-to-r from-orange-500 via-white to-green-600 bg-clip-text" style={{WebkitTextStroke: '1px rgba(0,0,0,0.1)'}}>
                     PARLIAMENT
                   </span>
                 </h1>
