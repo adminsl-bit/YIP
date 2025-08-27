@@ -35,7 +35,7 @@ export const LandingHero = () => {
               </Badge>
               
               <div className="flex items-center justify-center gap-8 mb-8">
-                <h1 className="text-6xl lg:text-8xl font-black tracking-tight">
+                <h1 className="text-7xl lg:text-9xl font-black tracking-tight">
                   <span className="block text-transparent bg-gradient-to-r from-orange-400 via-yellow-400 to-orange-500 bg-clip-text animate-pulse">
                     YOUNG
                   </span>
@@ -51,7 +51,7 @@ export const LandingHero = () => {
                   <img 
                     src="/lovable-uploads/acb05533-0bc0-4094-9302-9f7621f49697.png"
                     alt="Young Indians Parliament Tiger Mascot" 
-                    className="w-64 h-64 object-contain hover:scale-110 transition-transform duration-300"
+                    className="w-80 h-80 object-contain hover:scale-110 transition-transform duration-300"
                   />
                 </div>
               </div>
