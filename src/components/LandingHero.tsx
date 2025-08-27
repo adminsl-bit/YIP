@@ -56,7 +56,7 @@ export const LandingHero = () => {
                 </div>
               </div>
               
-              <p className="text-3xl font-bold mb-6 text-blue-100">
+              <p className="text-5xl lg:text-6xl font-bold mb-6 text-blue-100">
                 Madurai Regional Round
               </p>
               
