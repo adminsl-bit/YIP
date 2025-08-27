@@ -89,7 +89,7 @@ export const LandingHero = () => {
                   <img 
                     src="/lovable-uploads/acb05533-0bc0-4094-9302-9f7621f49697.png"
                     alt="Young Indians Parliament Tiger Mascot" 
-                    className="w-80 h-80 object-contain animate-bounce hover:scale-110 transition-transform duration-300"
+                    className="w-80 h-80 object-contain hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute -top-4 -right-4 bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-sm font-bold shadow-xl animate-pulse">
                     🏆 LIVE NOW
