@@ -96,7 +96,7 @@ export const LandingHero = () => {
         </div>
 
         {/* Bottom Section */}
-        <div className="px-8 py-16 bg-black/20 backdrop-blur-lg border-t border-white/10">
+        <div className="px-8 py-16 bg-transparent">
           <div className="max-w-7xl mx-auto">
             <div className="grid md:grid-cols-3 gap-12 text-center">
               <div>
@@ -124,7 +124,7 @@ export const LandingHero = () => {
               </div>
             </div>
             
-            <div className="text-center mt-16 pt-8 border-t border-white/10">
+            <div className="text-center mt-16 pt-8">
               <div className="flex items-center justify-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                   <Crown className="w-6 h-6 text-white" />
