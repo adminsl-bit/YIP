@@ -8,15 +8,33 @@ export const LandingHero = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 relative overflow-hidden text-slate-800">
       {/* Dramatic animated background */}
       <div className="absolute inset-0">
+        {/* Subtle dot pattern */}
         <div className="absolute top-0 left-0 w-full h-full opacity-40">
           <div className="absolute inset-0 bg-white/5" style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
             backgroundSize: '60px 60px'
           }}></div>
         </div>
+        
+        {/* Flowing gradient orbs */}
         <div className="absolute -top-40 -left-40 w-80 h-80 bg-gradient-to-br from-orange-500/30 to-transparent rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute top-1/2 -right-40 w-96 h-96 bg-gradient-to-bl from-green-500/30 to-transparent rounded-full blur-3xl animate-pulse delay-1000"></div>
         <div className="absolute bottom-0 left-1/2 w-72 h-72 bg-gradient-to-t from-blue-500/30 to-transparent rounded-full blur-3xl animate-pulse delay-500"></div>
+        
+        {/* Floating bubbles */}
+        <div className="absolute top-1/4 left-1/4 w-4 h-4 bg-orange-400/20 rounded-full blur-sm animate-bounce" style={{animationDelay: '0s', animationDuration: '3s'}}></div>
+        <div className="absolute top-3/4 left-1/3 w-6 h-6 bg-green-400/15 rounded-full blur-sm animate-bounce" style={{animationDelay: '1s', animationDuration: '4s'}}></div>
+        <div className="absolute top-1/2 right-1/4 w-3 h-3 bg-blue-400/25 rounded-full blur-sm animate-bounce" style={{animationDelay: '2s', animationDuration: '3.5s'}}></div>
+        <div className="absolute top-1/6 right-1/3 w-5 h-5 bg-orange-300/20 rounded-full blur-sm animate-bounce" style={{animationDelay: '0.5s', animationDuration: '4.5s'}}></div>
+        <div className="absolute bottom-1/4 left-1/6 w-4 h-4 bg-green-300/18 rounded-full blur-sm animate-bounce" style={{animationDelay: '3s', animationDuration: '3.8s'}}></div>
+        <div className="absolute bottom-1/3 right-1/6 w-7 h-7 bg-blue-300/12 rounded-full blur-sm animate-bounce" style={{animationDelay: '1.5s', animationDuration: '4.2s'}}></div>
+        
+        {/* Subtle flowing lines */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
+          <div className="absolute top-20 left-0 w-96 h-px bg-gradient-to-r from-transparent via-orange-400/30 to-transparent transform rotate-12 animate-pulse" style={{animationDuration: '6s'}}></div>
+          <div className="absolute top-40 right-0 w-80 h-px bg-gradient-to-r from-transparent via-green-400/25 to-transparent transform -rotate-12 animate-pulse" style={{animationDelay: '2s', animationDuration: '5s'}}></div>
+          <div className="absolute bottom-32 left-1/4 w-72 h-px bg-gradient-to-r from-transparent via-blue-400/20 to-transparent transform rotate-6 animate-pulse" style={{animationDelay: '4s', animationDuration: '7s'}}></div>
+        </div>
       </div>
 
       {/* Hero Content */}
