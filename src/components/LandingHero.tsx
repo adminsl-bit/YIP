@@ -5,7 +5,7 @@ import { Crown, Users, Award, Calendar } from "lucide-react";
 
 export const LandingHero = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 relative overflow-hidden text-white">
+    <div className="min-h-screen bg-white relative overflow-hidden text-gray-900">
       {/* Dramatic animated background */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-full h-full opacity-40">
@@ -44,28 +44,28 @@ export const LandingHero = () => {
         <div className="px-8 py-16">
           <div className="max-w-7xl mx-auto">
             <div className="text-center mb-16">
-              <Badge className="mb-8 px-6 py-3 text-lg bg-white/10 border-white/20 text-white hover:bg-white/20">
+              <Badge className="mb-8 px-6 py-3 text-lg bg-blue-100 border-blue-200 text-blue-800 hover:bg-blue-200">
                 <Calendar className="w-5 h-5 mr-3" />
                 Regional Round 2025 - Now Live
               </Badge>
               
               <h1 className="text-8xl lg:text-9xl font-black mb-8 tracking-tight">
-                <span className="block text-transparent bg-gradient-to-r from-orange-400 via-yellow-400 to-orange-500 bg-clip-text animate-pulse">
+                <span className="block text-transparent bg-gradient-to-r from-orange-500 via-orange-400 to-red-500 bg-clip-text animate-pulse">
                   YOUNG
                 </span>
-                <span className="block text-transparent bg-gradient-to-r from-white via-blue-200 to-green-400 bg-clip-text">
+                <span className="block text-transparent bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 bg-clip-text">
                   INDIANS
                 </span>
-                <span className="block text-transparent bg-gradient-to-r from-green-400 via-blue-400 to-white bg-clip-text">
+                <span className="block text-transparent bg-gradient-to-r from-green-600 via-emerald-500 to-teal-600 bg-clip-text">
                   PARLIAMENT
                 </span>
               </h1>
               
-              <p className="text-3xl font-bold mb-6 text-blue-100">
+              <p className="text-3xl font-bold mb-6 text-gray-700">
                 Madurai Regional Round
               </p>
               
-              <p className="text-xl text-blue-200 max-w-3xl mx-auto mb-12 leading-relaxed">
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-12 leading-relaxed">
                 Where young minds debate, democracy thrives, and future leaders are born. 
                 Join 170 participants in the most prestigious parliamentary debate competition.
               </p>
@@ -73,28 +73,28 @@ export const LandingHero = () => {
 
             {/* Stats Section */}
             <div className="grid md:grid-cols-3 gap-8 mb-16">
-              <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 text-center border border-white/20 hover:bg-white/20 transition-all duration-500 hover:scale-105">
+              <div className="bg-gray-50 backdrop-blur-lg rounded-3xl p-8 text-center border border-gray-200 hover:bg-gray-100 transition-all duration-500 hover:scale-105">
                 <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
                   <Users className="w-10 h-10 text-white" />
                 </div>
-                <div className="text-5xl font-black mb-4">170</div>
-                <div className="text-xl font-semibold text-blue-200">Young Parliamentarians</div>
+                <div className="text-5xl font-black mb-4 text-gray-900">170</div>
+                <div className="text-xl font-semibold text-gray-600">Young Parliamentarians</div>
               </div>
               
-              <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 text-center border border-white/20 hover:bg-white/20 transition-all duration-500 hover:scale-105">
+              <div className="bg-gray-50 backdrop-blur-lg rounded-3xl p-8 text-center border border-gray-200 hover:bg-gray-100 transition-all duration-500 hover:scale-105">
                 <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
                   <Crown className="w-10 h-10 text-white" />
                 </div>
-                <div className="text-5xl font-black mb-4">3</div>
-                <div className="text-xl font-semibold text-blue-200">Leadership Roles</div>
+                <div className="text-5xl font-black mb-4 text-gray-900">3</div>
+                <div className="text-xl font-semibold text-gray-600">Leadership Roles</div>
               </div>
               
-              <div className="bg-white/10 backdrop-blur-lg rounded-3xl p-8 text-center border border-white/20 hover:bg-white/20 transition-all duration-500 hover:scale-105">
+              <div className="bg-gray-50 backdrop-blur-lg rounded-3xl p-8 text-center border border-gray-200 hover:bg-gray-100 transition-all duration-500 hover:scale-105">
                 <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl">
                   <Award className="w-10 h-10 text-white" />
                 </div>
-                <div className="text-5xl font-black mb-4">1</div>
-                <div className="text-xl font-semibold text-blue-200">Champion Winner</div>
+                <div className="text-5xl font-black mb-4 text-gray-900">1</div>
+                <div className="text-xl font-semibold text-gray-600">Champion Winner</div>
               </div>
             </div>
 
@@ -113,21 +113,21 @@ export const LandingHero = () => {
                 <div className="flex flex-wrap justify-center lg:justify-start gap-6 text-lg">
                   <div className="flex items-center gap-3">
                     <div className="w-4 h-4 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className="text-blue-200">Platform Online</span>
+                    <span className="text-gray-600">Platform Online</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-4 h-4 bg-orange-400 rounded-full animate-pulse delay-75"></div>
-                    <span className="text-blue-200">Jury Ready</span>
+                    <span className="text-gray-600">Jury Ready</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-4 h-4 bg-blue-400 rounded-full animate-pulse delay-150"></div>
-                    <span className="text-blue-200">Voting Live</span>
+                    <span className="text-gray-600">Voting Live</span>
                   </div>
                 </div>
               </div>
               
               <div className="relative">
-                <div className="relative bg-white/10 backdrop-blur-lg rounded-3xl p-12 border border-white/20 shadow-2xl">
+                <div className="relative bg-gray-50 backdrop-blur-lg rounded-3xl p-12 border border-gray-200 shadow-2xl">
                   <div className="absolute -top-6 -right-6 bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-full text-lg font-bold shadow-xl animate-bounce">
                     🏆 LIVE NOW
                   </div>
@@ -144,42 +144,42 @@ export const LandingHero = () => {
         </div>
 
         {/* Bottom Section */}
-        <div className="px-8 py-16 bg-black/20 backdrop-blur-lg border-t border-white/10">
+        <div className="px-8 py-16 bg-gray-100 backdrop-blur-lg border-t border-gray-200">
           <div className="max-w-7xl mx-auto">
             <div className="grid md:grid-cols-3 gap-12 text-center">
               <div>
                 <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Users className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-bold mb-2">Future Leaders</h3>
-                <p className="text-blue-200">Shaping tomorrow's democratic leaders through debate and discourse</p>
+                <h3 className="text-xl font-bold mb-2 text-gray-900">Future Leaders</h3>
+                <p className="text-gray-600">Shaping tomorrow's democratic leaders through debate and discourse</p>
               </div>
               
               <div>
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Crown className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-bold mb-2">Democratic Values</h3>
-                <p className="text-blue-200">Building strong democratic foundations for India's future</p>
+                <h3 className="text-xl font-bold mb-2 text-gray-900">Democratic Values</h3>
+                <p className="text-gray-600">Building strong democratic foundations for India's future</p>
               </div>
               
               <div>
                 <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Award className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-bold mb-2">Excellence</h3>
-                <p className="text-blue-200">Recognizing outstanding parliamentary performance and leadership</p>
+                <h3 className="text-xl font-bold mb-2 text-gray-900">Excellence</h3>
+                <p className="text-gray-600">Recognizing outstanding parliamentary performance and leadership</p>
               </div>
             </div>
             
-            <div className="text-center mt-16 pt-8 border-t border-white/10">
+            <div className="text-center mt-16 pt-8 border-t border-gray-200">
               <div className="flex items-center justify-center gap-4 mb-4">
                 <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-full flex items-center justify-center">
                   <Crown className="w-6 h-6 text-white" />
                 </div>
-                <span className="text-xl font-bold">Powered by Yi Madurai Chapter</span>
+                <span className="text-xl font-bold text-gray-900">Powered by Yi Madurai Chapter</span>
               </div>
-              <p className="text-blue-200">Democracy in Action • Leadership Through Service • Building India's Future</p>
+              <p className="text-gray-600">Democracy in Action • Leadership Through Service • Building India's Future</p>
             </div>
           </div>
         </div>
