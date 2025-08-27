@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
@@ -17,10 +17,15 @@ interface TimerSession {
 const TimerDisplay = () => {
   const [timer, setTimer] = useState<TimerSession | null>(null);
   const [loading, setLoading] = useState(true);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const previousRemainingRef = useRef<number | null>(null);
 
   useEffect(() => {
     fetchActiveTimer();
-    
+
+    // Initialize audio
+    audioRef.current = new Audio();
+
     // Set up real-time subscription
     const subscription = supabase
       .channel('timer_changes')
@@ -36,6 +41,35 @@ const TimerDisplay = () => {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Bell sound effect when timer reaches 0
+  useEffect(() => {
+    if (timer && previousRemainingRef.current !== null) {
+      if (previousRemainingRef.current > 0 && timer.remaining_seconds === 0) {
+        // Timer just reached 0, play bell sound
+        const createBeepSound = () => {
+          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const oscillator = audioContext.createOscillator();
+          const gainNode = audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          
+          oscillator.frequency.value = 800;
+          oscillator.type = 'sine';
+          
+          gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
+          
+          oscillator.start(audioContext.currentTime);
+          oscillator.stop(audioContext.currentTime + 2);
+        };
+        
+        createBeepSound();
+      }
+    }
+    previousRemainingRef.current = timer?.remaining_seconds || null;
+  }, [timer?.remaining_seconds]);
 
   const fetchActiveTimer = async () => {
     try {

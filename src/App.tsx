@@ -10,6 +10,7 @@ import StudentDashboard from "./pages/StudentDashboard";
 import JuryDashboard from "./pages/JuryDashboard";
 import OrganizerDashboard from "./pages/OrganizerDashboard";
 import TimerDisplay from "./pages/TimerDisplay";
+import LeaderboardDisplay from "./pages/LeaderboardDisplay";
 import NotFound from "./pages/NotFound";
 import { AuthenticatedRoute } from "./components/AuthenticatedRoute";
 
@@ -41,6 +42,7 @@ const App = () => (
               </AuthenticatedRoute>
             } />
             <Route path="/display/timer" element={<TimerDisplay />} />
+            <Route path="/display/leaderboard" element={<LeaderboardDisplay />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogOut, User, Users, Vote, Award } from "lucide-react";
 import { StudentProfile } from "@/components/student/StudentProfile";
-import { ParliamentTree } from "@/components/student/ParliamentTree";
+import InteractiveParliamentTree from "@/components/student/InteractiveParliamentTree";
 import { VotingInterface } from "@/components/student/VotingInterface";
 
 const StudentDashboard = () => {
@@ -99,7 +99,7 @@ const StudentDashboard = () => {
             </TabsContent>
 
             <TabsContent value="members">
-              <ParliamentTree />
+              <InteractiveParliamentTree />
             </TabsContent>
 
             <TabsContent value="voting">
