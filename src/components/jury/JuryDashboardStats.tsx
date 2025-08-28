@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Users, CheckCircle, Clock, Trophy, Download, FileText } from "lucide-react";
 import jsPDF from 'jspdf';
 
@@ -365,8 +365,6 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
     ? Math.round((stats.assessedStudents / stats.totalStudents) * 100)
     : 0;
 
-  const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7300', '#8dd1e1'];
-
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -560,22 +558,21 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
             </div>
             <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-4">
               <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={chartData.scoreDistribution}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ range, count }) => `${range}: ${count}`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="count"
-                  >
-                    {chartData.scoreDistribution.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
+                <BarChart data={chartData.scoreDistribution}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.3)" />
+                  <XAxis 
+                    dataKey="range" 
+                    tick={{ fontSize: 12, fill: '#475569' }}
+                    axisLine={{ stroke: '#94A3B8', strokeWidth: 1 }}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12, fill: '#475569' }}
+                    axisLine={{ stroke: '#94A3B8', strokeWidth: 1 }}
+                    label={{ value: 'Number of Students', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#475569' } }}
+                  />
                   <Tooltip 
+                    formatter={(value, name) => [value, 'Students']}
+                    labelFormatter={(label) => `Score Range: ${label}`}
                     contentStyle={{
                       backgroundColor: 'rgba(255, 255, 255, 0.95)',
                       backdropFilter: 'blur(10px)',
@@ -584,7 +581,14 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
                       boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
                     }}
                   />
-                </PieChart>
+                  <Bar dataKey="count" fill="url(#violetGradient)" radius={[4, 4, 0, 0]} />
+                  <defs>
+                    <linearGradient id="violetGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.9} />
+                      <stop offset="95%" stopColor="#7C3AED" stopOpacity={0.7} />
+                    </linearGradient>
+                  </defs>
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
