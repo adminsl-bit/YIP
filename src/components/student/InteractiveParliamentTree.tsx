@@ -3,9 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Crown, Gavel, Users, MapPin, Mail, Building, Search, Hash } from 'lucide-react';
+import { Crown, Gavel, Users, MapPin, Search } from 'lucide-react';
+import GlassmorphismProfileCard from './GlassmorphismProfileCard';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Student {
@@ -277,88 +278,10 @@ const InteractiveParliamentTree = () => {
 
       {/* Student Profile Modal */}
       <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
-        <DialogContent className="max-w-md bg-white/20 backdrop-blur-lg border border-white/25">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-black text-slate-800 text-center">Student Profile</DialogTitle>
-          </DialogHeader>
-          
+        <DialogContent className="max-w-md bg-transparent border-0 shadow-none p-0">
           {selectedStudent && (
-            <div className="space-y-6">
-              <div className="text-center">
-                <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-white/50 shadow-xl">
-                  <AvatarImage src={selectedStudent.photo_url} alt={selectedStudent.name} />
-                  <AvatarFallback className={`bg-gradient-to-br ${getPartyColor(selectedStudent.party_number)} text-white text-2xl font-bold`}>
-                    {selectedStudent.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                  </AvatarFallback>
-                </Avatar>
-                
-                <h3 className="text-2xl font-black text-slate-800 mb-2">{selectedStudent.name}</h3>
-                
-                <div className="flex items-center justify-center gap-2 mb-3">
-                  {getPositionIcon(selectedStudent.position)}
-                  <span className="font-bold text-slate-700">{selectedStudent.position}</span>
-                </div>
-                
-                <div className="flex items-center justify-center gap-3">
-                  <Badge className={`bg-gradient-to-r ${getPartyColor(selectedStudent.party_number)} text-white font-bold px-4 py-2`}>
-                    Party {selectedStudent.party_number}
-                  </Badge>
-                  <Badge className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white font-bold px-4 py-2">
-                    <Hash className="w-3 h-3 mr-1" />
-                    {selectedStudent.serial_number}
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30 space-y-3">
-                {selectedStudent.constituency && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-                      <MapPin className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-medium text-slate-500 block">Constituency</span>
-                      <span className="text-sm font-bold text-slate-800">{selectedStudent.constituency}</span>
-                    </div>
-                  </div>
-                )}
-
-                {selectedStudent.state && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-xl flex items-center justify-center">
-                      <Building className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-medium text-slate-500 block">State</span>
-                      <span className="text-sm font-bold text-slate-800">{selectedStudent.state}</span>
-                    </div>
-                  </div>
-                )}
-
-                {selectedStudent.city && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center">
-                      <MapPin className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-medium text-slate-500 block">City</span>
-                      <span className="text-sm font-bold text-slate-800">{selectedStudent.city}</span>
-                    </div>
-                  </div>
-                )}
-
-                {selectedStudent.email && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center">
-                      <Mail className="w-4 h-4 text-white" />
-                    </div>
-                    <div>
-                      <span className="text-xs font-medium text-slate-500 block">Email</span>
-                      <span className="text-sm font-bold text-slate-800">{selectedStudent.email}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
+            <div className="flex items-center justify-center p-4">
+              <GlassmorphismProfileCard student={selectedStudent} />
             </div>
           )}
         </DialogContent>
