@@ -198,10 +198,10 @@ const JuryDashboard = () => {
       </div>
 
       {/* Dashboard Content */}
-      <div className="relative z-10 p-8">
+      <div className="relative z-10 p-8 pt-16">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-12 sm:mb-16">
-            <div className="relative inline-block mb-8 sm:mb-12">
+          <div className="text-center mb-16 sm:mb-20">
+            <div className="relative inline-block mb-10 sm:mb-14">
               <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-transparent bg-gradient-to-r from-purple-600 via-slate-800 to-indigo-600 bg-clip-text tracking-tight drop-shadow-lg">
                 Jury Assessment Center
               </h2>
