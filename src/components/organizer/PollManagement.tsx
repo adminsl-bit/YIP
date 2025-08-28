@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash, Play, Pause, BarChart3 } from "lucide-react";
+import { Plus, Edit, Trash, Play, Pause, BarChart3, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface Poll {
@@ -275,6 +275,24 @@ export const PollManagement = () => {
     return results.reduce((total, result) => total + result.count, 0);
   };
 
+  const openStageView = () => {
+    const stageUrl = '/display/polls';
+    console.log('Opening poll stage view at:', stageUrl);
+    const newWindow = window.open(stageUrl, '_blank', 'width=1200,height=800,fullscreen=yes');
+    if (!newWindow) {
+      toast({
+        title: "Popup Blocked",
+        description: "Please allow popups and try again, or manually navigate to /display/polls",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Stage View Opened",
+        description: "Poll display opened in new window"
+      });
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -436,6 +454,14 @@ export const PollManagement = () => {
                       onClick={() => toggleResultsVisibility(poll)}
                     >
                       <BarChart3 className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={openStageView}
+                      title="Open Stage View"
+                    >
+                      <ExternalLink className="w-4 h-4" />
                     </Button>
                     <Button
                       variant="outline"

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import PollVoting from "./PollVoting";
+import PollResults from "./PollResults";
 import { VotingInterface } from "./VotingInterface";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
@@ -9,10 +10,12 @@ export const StudentVotingTab = () => {
   const [votingEnabled, setVotingEnabled] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [hasActivePolls, setHasActivePolls] = useState<boolean>(false);
+  const [hasPublicResults, setHasPublicResults] = useState<boolean>(false);
 
   useEffect(() => {
     fetchSetting();
     fetchActivePolls();
+    fetchPublicResults();
 
     const settingsChannel = supabase
       .channel('settings_changes')
@@ -21,7 +24,10 @@ export const StudentVotingTab = () => {
 
     const pollsChannel = supabase
       .channel('polls_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () => fetchActivePolls())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () => {
+        fetchActivePolls();
+        fetchPublicResults();
+      })
       .subscribe();
 
     return () => {
@@ -60,6 +66,21 @@ export const StudentVotingTab = () => {
     } catch (err) {
       console.error('Failed to load active polls', err);
       setHasActivePolls(false);
+    }
+  };
+
+  const fetchPublicResults = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('polls')
+        .select('id')
+        .eq('show_results_publicly', true)
+        .limit(1);
+      if (error) throw error;
+      setHasPublicResults(!!(data && data.length));
+    } catch (err) {
+      console.error('Failed to load public results', err);
+      setHasPublicResults(false);
     }
   };
   if (loading) {
@@ -123,6 +144,8 @@ export const StudentVotingTab = () => {
         </div>
       ) : hasActivePolls ? (
         <PollVoting />
+      ) : hasPublicResults ? (
+        <PollResults />
       ) : (
         <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-12 border border-white/25 shadow-xl text-center">
           <div className="relative inline-block mb-6">
