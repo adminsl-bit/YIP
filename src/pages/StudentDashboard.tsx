@@ -73,7 +73,7 @@ const StudentDashboard = () => {
               <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-transparent bg-gradient-to-r from-orange-600 via-slate-800 to-green-600 bg-clip-text tracking-tight drop-shadow-lg">
                 Welcome, {profile?.name?.split(' ')[0]}!
               </h2>
-              <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-orange-400 to-red-400 rounded-full animate-bounce shadow-lg"></div>
+              <div className="absolute -top-2 right-8 w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-orange-400/30 to-red-400/20 rounded-full animate-bounce shadow-lg"></div>
             </div>
             <div className="bg-white/20 backdrop-blur-lg rounded-2xl sm:rounded-3xl border border-white/25 p-4 sm:p-6 shadow-xl max-w-xl sm:max-w-2xl mx-auto">
               <p className="text-base sm:text-xl text-slate-700 font-semibold">
