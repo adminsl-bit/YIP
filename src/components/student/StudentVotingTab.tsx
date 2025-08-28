@@ -8,15 +8,25 @@ import { AlertCircle, CheckCircle2 } from "lucide-react";
 export const StudentVotingTab = () => {
   const [votingEnabled, setVotingEnabled] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
+  const [hasActivePolls, setHasActivePolls] = useState<boolean>(false);
 
   useEffect(() => {
     fetchSetting();
-    const channel = supabase
+    fetchActivePolls();
+
+    const settingsChannel = supabase
       .channel('settings_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings' }, () => fetchSetting())
       .subscribe();
+
+    const pollsChannel = supabase
+      .channel('polls_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () => fetchActivePolls())
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(settingsChannel);
+      supabase.removeChannel(pollsChannel);
     };
   }, []);
 
@@ -38,6 +48,20 @@ export const StudentVotingTab = () => {
     }
   };
 
+  const fetchActivePolls = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('polls')
+        .select('id')
+        .eq('is_active', true)
+        .limit(1);
+      if (error) throw error;
+      setHasActivePolls(!!(data && data.length));
+    } catch (err) {
+      console.error('Failed to load active polls', err);
+      setHasActivePolls(false);
+    }
+  };
   if (loading) {
     return (
       <Card>
@@ -70,10 +94,11 @@ export const StudentVotingTab = () => {
 
   return (
     <div className="space-y-8">
-      {/* Live Polls */}
-      <PollVoting />
-      {/* Session-based Voting (if used) */}
-      <VotingInterface />
+      {hasActivePolls ? (
+        <PollVoting />
+      ) : (
+        <VotingInterface />
+      )}
       <div className="text-sm text-green-700 flex items-center gap-2">
         <CheckCircle2 className="w-4 h-4" />
         Live updates enabled. Changes by organizers reflect instantly.
