@@ -46,7 +46,7 @@ const RUBRICS: Record<string, Record<string, RubricCriteria>> = {
     time_management: { name: "Time Management", maxScore: 10 }
   },
   deputy_speaker: {
-    support_speaker: { name: "Support to Speaker", maxScore: 30 },
+    support_speaker: { name: "Support to the Speaker", maxScore: 30 },
     impartiality: { name: "Impartiality", maxScore: 25 },
     leadership: { name: "Leadership", maxScore: 20 },
     communication_skills: { name: "Communication Skills", maxScore: 15 },
@@ -56,29 +56,78 @@ const RUBRICS: Record<string, Record<string, RubricCriteria>> = {
     content_substance: { 
       name: "Content & Substance", 
       maxScore: 30,
-      subcriteria: { relevance: 10, research: 10, originality: 10 }
+      subcriteria: { 
+        relevance: 10, // Relevance to the topic
+        research: 10,  // Research  
+        originality: 10 // Originality/Creativity
+      }
     },
     communication_delivery: {
       name: "Communication & Delivery",
       maxScore: 25,
-      subcriteria: { clarity: 10, confidence: 10, fluency: 5 }
+      subcriteria: { 
+        clarity: 10,     // Clarity & Articulation
+        confidence: 10,  // Confidence & Pose
+        fluency: 5       // Fluency & Language
+      }
     },
     parliamentary_conduct: {
       name: "Parliamentary Conduct & Decorum",
       maxScore: 20,
-      subcriteria: { rules: 10, engagement: 5, respect: 5 }
+      subcriteria: { 
+        rules: 10,       // Respect for Rules & Procedures
+        engagement: 5,   // Engagement & Responsiveness
+        respect: 5       // Respect for others
+      }
     },
     argumentation_persuasion: {
       name: "Argumentation & Persuasion",
       maxScore: 15,
-      subcriteria: { strength: 10, appeal: 5 }
+      subcriteria: { 
+        strength: 10,    // Strength of Argument
+        appeal: 5        // Emotional & Logical Appeal
+      }
     },
     teamwork_collaboration: {
       name: "Teamwork & Collaboration",
       maxScore: 10,
-      subcriteria: { coordination: 5, active_listening: 5 }
+      subcriteria: { 
+        coordination: 5,      // Coordination with Team Members
+        active_learning: 5    // Active Learning
+      }
     }
   }
+};
+
+// Function to get proper labels for subcriteria
+const getSubcriteriaLabel = (criteriaKey: string, subKey: string): string => {
+  const labels: Record<string, Record<string, string>> = {
+    content_substance: {
+      relevance: "Relevance to the topic",
+      research: "Research",
+      originality: "Originality/Creativity"
+    },
+    communication_delivery: {
+      clarity: "Clarity & Articulation",
+      confidence: "Confidence & Pose",
+      fluency: "Fluency & Language"
+    },
+    parliamentary_conduct: {
+      rules: "Respect for Rules & Procedures",
+      engagement: "Engagement & Responsiveness",
+      respect: "Respect for others"
+    },
+    argumentation_persuasion: {
+      strength: "Strength of Argument",
+      appeal: "Emotional & Logical Appeal"
+    },
+    teamwork_collaboration: {
+      coordination: "Coordination with Team Members",
+      active_learning: "Active Learning"
+    }
+  };
+  
+  return labels[criteriaKey]?.[subKey] || subKey.replace('_', ' ');
 };
 
 export const AssessmentForm = ({ 
@@ -284,7 +333,7 @@ export const AssessmentForm = ({
                     <div key={subKey} className="space-y-2">
                       <div className="flex items-center justify-between">
                         <label className="text-sm font-medium capitalize">
-                          {subKey.replace('_', ' ')}
+                          {getSubcriteriaLabel(criteriaKey, subKey)}
                         </label>
                         <span className="text-sm">
                           {scores[criteriaKey]?.[subKey] || 0} / {maxScore}
