@@ -14,6 +14,7 @@ const JuryDashboard = () => {
     totalStudents: 0,
     assessedStudents: 0
   });
+  const [isRealTimeConnected, setIsRealTimeConnected] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -36,7 +37,11 @@ const JuryDashboard = () => {
             fetchAssessmentStats();
           }
         )
-        .subscribe();
+        .subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            setIsRealTimeConnected(true);
+          }
+        });
 
       // Also listen to profile changes for student count updates
       const profileChannel = supabase
@@ -163,7 +168,15 @@ const JuryDashboard = () => {
                   </div>
                   <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-400/40 rounded-full animate-bounce"></div>
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-800 mb-2">Assessment Progress</h2>
+                <div className="flex items-center gap-2 mb-2">
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-800">Assessment Progress</h2>
+                  {isRealTimeConnected && (
+                    <div className="flex items-center gap-1 bg-green-100/80 backdrop-blur-sm rounded-full px-3 py-1 border border-green-200/50">
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                      <span className="text-xs font-bold text-green-800">LIVE</span>
+                    </div>
+                  )}
+                </div>
                 <p className="text-slate-600 font-semibold text-lg">Track your evaluation progress across all students</p>
               </div>
               <div className="text-center bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
