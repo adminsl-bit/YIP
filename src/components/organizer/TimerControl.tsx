@@ -54,20 +54,22 @@ export const TimerControl = () => {
       const { data, error } = await supabase
         .from('timer_sessions')
         .select('*')
-        .in('status', ['running', 'paused'])
+        .in('status', ['running', 'paused', 'stopped'])
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error) throw error;
       
-      if (data) {
-        setCurrentTimer(data as TimerSession);
-        setTitle(data.title);
-        setDuration(data.duration_seconds);
+      if (data && data.length > 0) {
+        setCurrentTimer(data[0] as TimerSession);
+        setTitle(data[0].title);
+        setDuration(data[0].duration_seconds);
+      } else {
+        setCurrentTimer(null);
       }
     } catch (error) {
       console.error('Error fetching timer:', error);
+      setCurrentTimer(null);
     }
   };
 
@@ -93,8 +95,8 @@ export const TimerControl = () => {
           return { ...prev, remaining_seconds: 0, status: 'completed' as const };
         }
 
-        // Update in database every 5 seconds
-        if (newRemaining % 5 === 0) {
+        // Update in database every 10 seconds or when timer completes
+        if (newRemaining % 10 === 0 || newRemaining === 0) {
           updateTimerInDB(prev.id, { remaining_seconds: newRemaining });
         }
 

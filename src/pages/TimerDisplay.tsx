@@ -19,6 +19,7 @@ const TimerDisplay = () => {
   const [loading, setLoading] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousRemainingRef = useRef<number | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchActiveTimer();
@@ -39,8 +40,49 @@ const TimerDisplay = () => {
 
     return () => {
       subscription.unsubscribe();
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
     };
   }, []);
+
+  // Start/stop countdown interval based on timer status
+  useEffect(() => {
+    if (timer?.status === 'running') {
+      startCountdown();
+    } else {
+      stopCountdown();
+    }
+  }, [timer?.status]);
+
+  const startCountdown = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+
+    intervalRef.current = setInterval(() => {
+      setTimer(prev => {
+        if (!prev || prev.status !== 'running') return prev;
+
+        const newRemaining = Math.max(0, prev.remaining_seconds - 1);
+        
+        if (newRemaining === 0) {
+          // Timer completed, stop countdown
+          clearInterval(intervalRef.current!);
+          return { ...prev, remaining_seconds: 0, status: 'completed' as const };
+        }
+
+        return { ...prev, remaining_seconds: newRemaining };
+      });
+    }, 1000);
+  };
+
+  const stopCountdown = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
 
   // Bell sound effect when timer reaches 0
   useEffect(() => {
@@ -78,16 +120,15 @@ const TimerDisplay = () => {
         .select('*')
         .in('status', ['running', 'paused', 'stopped', 'completed'])
         .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
+        .limit(1);
 
-      if (error && error.code !== 'PGRST116') {
-        console.log('No active timer found');
-        setTimer(null);
-        return;
-      }
+      if (error) throw error;
       
-      setTimer(data as TimerSession);
+      if (data && data.length > 0) {
+        setTimer(data[0] as TimerSession);
+      } else {
+        setTimer(null);
+      }
     } catch (error) {
       console.error('Error fetching timer:', error);
       setTimer(null);
