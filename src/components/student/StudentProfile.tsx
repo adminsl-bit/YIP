@@ -25,7 +25,7 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
   const initials = profile.name.split(' ').map(n => n[0]).join('').toUpperCase();
 
   return (
-    <Card className="w-full max-w-3xl mx-auto">
+    <Card className="w-full bg-white/15 backdrop-blur-lg rounded-3xl border border-white/25 shadow-xl">
       <CardContent className="p-6">
         <section className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
           <Avatar className="w-28 h-28 flex-shrink-0 ring-2 ring-primary/20">

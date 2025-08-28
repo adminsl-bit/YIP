@@ -123,39 +123,10 @@ const StudentDashboard = () => {
             </TabsList>
 
             <TabsContent value="profile" className="space-y-6">
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 items-start">
-                <div className="w-full flex justify-center">
-                  {profile && (
-                    <div className="w-full max-w-md">
-                      <StudentProfile profile={profile} isOwnProfile={true} />
-                    </div>
-                  )}
-                </div>
-                <div className="w-full">
-                  <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-6 md:p-8 border border-white/25 shadow-xl h-full">
-                    <h3 className="text-xl md:text-2xl font-black text-slate-800 mb-6 md:mb-8 text-center">Quick Actions</h3>
-                    <div className="space-y-4 md:space-y-6">
-                      <Button className="w-full flex items-center justify-start gap-4 bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 p-4 md:p-6 text-base md:text-lg font-semibold rounded-2xl min-h-[60px]">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Users className="w-5 h-5" />
-                        </div>
-                        <span className="text-left">View All Parliament Members</span>
-                      </Button>
-                      <Button className="w-full flex items-center justify-start gap-4 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 p-4 md:p-6 text-base md:text-lg font-semibold rounded-2xl min-h-[60px]">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Vote className="w-5 h-5" />
-                        </div>
-                        <span className="text-left">Check Voting Sessions</span>
-                      </Button>
-                      <Button className="w-full flex items-center justify-start gap-4 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600 text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 p-4 md:p-6 text-base md:text-lg font-semibold rounded-2xl min-h-[60px]">
-                        <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
-                          <Award className="w-5 h-5" />
-                        </div>
-                        <span className="text-left">View Session Schedule</span>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+              <div className="w-full">
+                {profile && (
+                  <StudentProfile profile={profile} isOwnProfile={true} />
+                )}
               </div>
             </TabsContent>
 
