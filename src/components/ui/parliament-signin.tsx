@@ -231,16 +231,6 @@ export function ParliamentSignIn() {
                           />
                         )}
                       </div>
-                      
-                      {/* Info section with icon */}
-                      <div className="flex items-start gap-2 mt-2 p-2 bg-blue-50/50 backdrop-blur-sm rounded-lg border border-blue-200/30">
-                        <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                        <div className="text-xs text-blue-700 space-y-1">
-                          <p className="font-medium">Login Instructions:</p>
-                          <p><span className="font-semibold">Students:</span> Use Serial Number + Party Number (e.g., 12+3)</p>
-                          <p><span className="font-semibold">Jury/Organizer:</span> Use your email or username</p>
-                        </div>
-                      </div>
                     </motion.div>
 
                     {/* Password input */}
@@ -332,6 +322,39 @@ export function ParliamentSignIn() {
                   </motion.button>
 
                 </form>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Login Instructions Card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="mt-6"
+          >
+            <div className="bg-white/15 backdrop-blur-xl rounded-2xl p-6 border border-white/20 shadow-lg">
+              <div className="flex items-start gap-3">
+                <Info className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="space-y-3">
+                  <h3 className="text-slate-800 font-semibold text-sm">Login Instructions</h3>
+                  <div className="space-y-2 text-sm text-slate-700">
+                    <div className="flex items-start gap-2">
+                      <Users className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span className="font-semibold text-green-700">Students:</span>
+                        <p className="text-slate-600">Use Serial Number + Party Number (e.g., 12+3)</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2">
+                      <Shield className="w-4 h-4 text-orange-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <span className="font-semibold text-orange-700">Jury/Organizer:</span>
+                        <p className="text-slate-600">Use your email or username</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
