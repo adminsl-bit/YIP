@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, User, Users, Vote, Award } from "lucide-react";
+import { LogOut, User, Users, Vote, Calendar, Award } from "lucide-react";
 import { StudentProfile } from "@/components/student/StudentProfile";
 import InteractiveParliamentTree from "@/components/student/InteractiveParliamentTree";
 import { VotingInterface } from "@/components/student/VotingInterface";
@@ -116,7 +116,7 @@ const StudentDashboard = () => {
                 className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
               >
                 <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                  <Award className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                  <Calendar className="w-4 h-4 md:w-5 md:h-5 text-white" />
                 </div>
                 <span className="text-center md:text-left">Schedule</span>
               </TabsTrigger>
@@ -142,7 +142,7 @@ const StudentDashboard = () => {
               <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-12 border border-white/25 shadow-xl text-center">
                 <div className="relative inline-block mb-8">
                   <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-orange-500/30">
-                    <Award className="w-12 h-12 text-white" />
+                    <Calendar className="w-12 h-12 text-white" />
                   </div>
                   <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-400/40 rounded-full animate-bounce"></div>
                 </div>
