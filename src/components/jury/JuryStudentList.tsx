@@ -254,32 +254,33 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
   return (
     <div className="space-y-6">
       {/* Search and Filters */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Search className="w-5 h-5" />
-            <span>Search & Filter Students</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+            <Search className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-xl font-black text-slate-800">Search & Filter Students</h3>
+        </div>
+
+        <div className="space-y-4">
           {/* Search Bar */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-500 w-5 h-5" />
             <Input
               placeholder="Search by name, serial no, party number, position, or constituency..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-12 h-12 bg-white/30 backdrop-blur-sm border-white/40 text-slate-800 placeholder:text-slate-500 rounded-2xl"
             />
           </div>
 
           {/* Filters */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Select value={filters.seatRole} onValueChange={(value) => setFilters(prev => ({ ...prev, seatRole: value }))}>
-              <SelectTrigger>
+              <SelectTrigger className="h-12 bg-white/30 backdrop-blur-sm border-white/40 rounded-2xl">
                 <SelectValue placeholder="Filter by Role" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white/95 backdrop-blur-lg border-white/40">
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="speaker">Speaker</SelectItem>
                 <SelectItem value="deputy_speaker">Deputy Speaker</SelectItem>
@@ -288,10 +289,10 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
             </Select>
 
             <Select value={filters.partyNumber} onValueChange={(value) => setFilters(prev => ({ ...prev, partyNumber: value }))}>
-              <SelectTrigger>
+              <SelectTrigger className="h-12 bg-white/30 backdrop-blur-sm border-white/40 rounded-2xl">
                 <SelectValue placeholder="Filter by Party" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white/95 backdrop-blur-lg border-white/40">
                 <SelectItem value="all">All Parties</SelectItem>
                 {[...new Set(students.map(s => s.party_number))].sort().map(party => (
                   <SelectItem key={party} value={party.toString()}>Party {party}</SelectItem>
@@ -303,17 +304,21 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
               placeholder="Filter by Constituency"
               value={filters.constituency}
               onChange={(e) => setFilters(prev => ({ ...prev, constituency: e.target.value }))}
+              className="h-12 bg-white/30 backdrop-blur-sm border-white/40 rounded-2xl"
             />
 
             <Input
               placeholder="Filter by State"
               value={filters.state}
               onChange={(e) => setFilters(prev => ({ ...prev, state: e.target.value }))}
+              className="h-12 bg-white/30 backdrop-blur-sm border-white/40 rounded-2xl"
             />
           </div>
 
-          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-            <span>Showing {filteredStudents.length} of {students.length} students</span>
+          <div className="flex items-center justify-between">
+            <span className="text-slate-600 font-medium">
+              Showing {filteredStudents.length} of {students.length} students
+            </span>
             <Button
               variant="ghost"
               size="sm"
@@ -321,67 +326,83 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                 setSearchTerm("");
                 setFilters({ seatRole: "all", partyNumber: "all", constituency: "", state: "" });
               }}
+              className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-700 hover:bg-white/35 rounded-xl"
             >
               Clear Filters
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Student List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStudents.map((student) => {
           const status = getAssessmentStatus(student.id);
           const assessment = getAssessment(student.id);
           const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
 
           return (
-            <Card
+            <div
               key={student.id}
-              className="cursor-pointer hover:shadow-md transition-shadow duration-200"
+              className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl cursor-pointer hover:shadow-2xl hover:scale-105 transition-all duration-300"
               onClick={() => setSelectedStudent(student)}
             >
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3 mb-3">
-                  <Avatar className="w-12 h-12">
-                    <AvatarImage src={student.photo_url} alt={student.name} />
-                    <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate">{student.name}</h3>
-                    <p className="text-sm text-muted-foreground truncate">{student.position}</p>
-                  </div>
+              <div className="flex items-center gap-4 mb-4">
+                <Avatar className="w-16 h-16 ring-4 ring-white/20">
+                  <AvatarImage src={student.photo_url} alt={student.name} />
+                  <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-purple-500 to-indigo-500 text-white">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-black text-slate-800 text-lg truncate">{student.name}</h3>
+                  <p className="text-slate-600 font-semibold truncate">{student.position}</p>
+                </div>
+                <div className="flex-shrink-0">
                   {getStatusIcon(status)}
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-3">
-                  <div>Serial: {student.serial_number}</div>
-                  <div>Party: {student.party_number}</div>
-                  <div className="col-span-2 truncate">
-                    {student.constituency}, {student.state}
-                  </div>
+              <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+                <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
+                  <p className="text-slate-500 font-medium">Serial</p>
+                  <p className="font-bold text-slate-800">{student.serial_number}</p>
                 </div>
+                <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
+                  <p className="text-slate-500 font-medium">Party</p>
+                  <p className="font-bold text-slate-800">{student.party_number}</p>
+                </div>
+              </div>
 
-                <div className="flex items-center justify-between">
-                  {getStatusBadge(status)}
-                  {assessment && (
-                    <span className="text-sm font-medium">
+              <div className="mb-4">
+                <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
+                  <p className="text-slate-500 font-medium text-sm">Location</p>
+                  <p className="font-semibold text-slate-800 text-sm truncate">
+                    {student.constituency}, {student.state}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                {getStatusBadge(status)}
+                {assessment && (
+                  <div className="bg-white/30 backdrop-blur-sm rounded-xl px-3 py-1">
+                    <span className="text-sm font-bold text-slate-800">
                       Score: {assessment.total_score}
                     </span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                )}
+              </div>
+            </div>
           );
         })}
       </div>
 
       {filteredStudents.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>No students found matching your criteria.</p>
+        <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-12 border border-white/25 shadow-xl text-center">
+          <Users className="w-16 h-16 mx-auto mb-4 text-slate-400" />
+          <h3 className="text-xl font-black text-slate-800 mb-2">No Students Found</h3>
+          <p className="text-slate-600">No students found matching your criteria. Try adjusting your filters.</p>
         </div>
       )}
 

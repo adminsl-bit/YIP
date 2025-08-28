@@ -2,7 +2,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { LogOut, Users, BarChart3, Gavel, User, Activity, ClipboardCheck, Target } from "lucide-react";
+import { LogOut, Users, BarChart3, Gavel, User, Activity, ClipboardCheck, Target, CheckCircle } from "lucide-react";
 import { JuryStudentList } from "@/components/jury/JuryStudentList";
 import { JuryDashboardStats } from "@/components/jury/JuryDashboardStats";
 import { useState, useEffect } from "react";
@@ -221,7 +221,7 @@ const JuryDashboard = () => {
             </TabsContent>
 
             <TabsContent value="profile" className="space-y-6">
-              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl max-w-3xl mx-auto">
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl max-w-5xl mx-auto">
                 <div className="text-center mb-8">
                   <div className="relative inline-block mb-4">
                     <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-red-500/30">
@@ -233,32 +233,68 @@ const JuryDashboard = () => {
                   <p className="text-slate-600 font-medium">Your information and assessment progress overview</p>
                 </div>
                 {profile && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
-                      <h4 className="text-lg font-bold text-slate-800 mb-4">Personal Information</h4>
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-slate-600 font-medium">Name:</p>
-                          <p className="font-bold text-slate-800 text-lg">{profile.name}</p>
-                        </div>
-                        <div>
-                          <p className="text-slate-600 font-medium">Position:</p>
-                          <p className="font-bold text-slate-800 text-lg">{profile.position}</p>
-                        </div>
+                  <div className="bg-white/20 backdrop-blur-lg rounded-3xl border border-white/25 shadow-xl overflow-hidden">
+                    <div className="flex flex-col lg:flex-row min-h-[400px]">
+                      {/* Left side - Profile Image/Avatar */}
+                      <div className="lg:w-1/2 relative">
+                        {profile.photo_url ? (
+                          <img 
+                            src={profile.photo_url} 
+                            alt={`${profile.name} profile photo`}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
+                            <span className="text-6xl font-black text-white">
+                              {profile.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                    <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
-                      <h4 className="text-lg font-bold text-slate-800 mb-4">Assessment Progress</h4>
-                      <div className="space-y-3">
-                        <div>
-                          <p className="text-slate-600 font-medium">Students Assessed:</p>
-                          <p className="font-bold text-slate-800 text-lg">
-                            {assessmentStats.assessedStudents} of {assessmentStats.totalStudents}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-slate-600 font-medium">Completion Rate:</p>
-                          <p className="font-bold text-slate-800 text-lg">{progressPercentage}%</p>
+
+                      {/* Right side - Profile Details */}
+                      <div className="lg:w-1/2 p-8 flex flex-col justify-center space-y-6">
+                        <header className="space-y-4">
+                          <h4 className="text-4xl font-black text-slate-800 leading-tight">
+                            {profile.name}
+                          </h4>
+                          <div className="inline-block px-6 py-3 text-lg font-bold bg-purple-100 text-purple-800 border-none rounded-xl">
+                            {profile.position}
+                          </div>
+                        </header>
+
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-white/30 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                              <Users className="w-6 h-6 text-slate-600" />
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-base font-bold text-slate-600">Role</p>
+                              <p className="text-2xl font-black text-slate-800">Jury Member</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-white/30 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                              <CheckCircle className="w-6 h-6 text-slate-600" />
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-base font-bold text-slate-600">Students Assessed</p>
+                              <p className="text-2xl font-black text-slate-800">
+                                {assessmentStats.assessedStudents} of {assessmentStats.totalStudents}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-white/30 backdrop-blur-sm rounded-xl flex items-center justify-center flex-shrink-0">
+                              <Target className="w-6 h-6 text-slate-600" />
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-base font-bold text-slate-600">Completion Rate</p>
+                              <p className="text-2xl font-black text-slate-800">{progressPercentage}%</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>

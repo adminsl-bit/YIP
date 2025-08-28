@@ -238,150 +238,186 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
     <div className="space-y-6">
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Progress</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+        <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wide">Progress</h3>
+          </div>
+          <div className="space-y-2">
+            <div className="text-3xl font-black text-slate-800">
               {stats.assessedStudents} / {stats.totalStudents}
             </div>
-            <Progress value={progressPercentage} className="mt-2" />
-            <p className="text-xs text-muted-foreground mt-2">
+            <Progress value={progressPercentage} className="h-3 bg-white/30" />
+            <p className="text-sm font-semibold text-slate-600">
               {progressPercentage}% Complete
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Assessed</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.assessedStudents}</div>
-            <p className="text-xs text-muted-foreground">
-              Students evaluated
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Remaining</CardTitle>
-            <Clock className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats.totalStudents - stats.assessedStudents}
+        <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <CheckCircle className="w-6 h-6 text-white" />
             </div>
-            <p className="text-xs text-muted-foreground">
-              Students pending
-            </p>
-          </CardContent>
-        </Card>
+            <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wide">Assessed</h3>
+          </div>
+          <div className="text-3xl font-black text-slate-800 mb-2">{stats.assessedStudents}</div>
+          <p className="text-sm font-semibold text-slate-600">Students evaluated</p>
+        </div>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Score</CardTitle>
-            <Trophy className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.averageScore}</div>
-            <p className="text-xs text-muted-foreground">
-              Out of 100
-            </p>
-          </CardContent>
-        </Card>
+        <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <Clock className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wide">Remaining</h3>
+          </div>
+          <div className="text-3xl font-black text-slate-800 mb-2">
+            {stats.totalStudents - stats.assessedStudents}
+          </div>
+          <p className="text-sm font-semibold text-slate-600">Students pending</p>
+        </div>
+
+        <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-sm font-bold text-slate-600 uppercase tracking-wide">Average</h3>
+          </div>
+          <div className="text-3xl font-black text-slate-800 mb-2">{stats.averageScore}</div>
+          <p className="text-sm font-semibold text-slate-600">Out of 100</p>
+        </div>
       </div>
 
       {/* Top Performers */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Trophy className="w-5 h-5" />
-            <span>Top 5 Performers</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {stats.topPerformers.length > 0 ? (
-            <div className="space-y-3">
-              {stats.topPerformers.map((performer, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Badge variant={index === 0 ? "default" : "secondary"}>
-                      #{index + 1}
-                    </Badge>
-                    <div>
-                      <p className="font-medium">{performer.name}</p>
-                      <p className="text-sm text-muted-foreground">{performer.position}</p>
-                    </div>
+      <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-lg">
+            <Trophy className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-xl font-black text-slate-800">Top 5 Performers</h3>
+        </div>
+        
+        {stats.topPerformers.length > 0 ? (
+          <div className="space-y-4">
+            {stats.topPerformers.map((performer, index) => (
+              <div key={index} className="flex items-center justify-between bg-white/30 backdrop-blur-sm rounded-2xl p-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-white ${
+                    index === 0 ? 'bg-gradient-to-br from-yellow-500 to-orange-500' :
+                    index === 1 ? 'bg-gradient-to-br from-gray-400 to-gray-500' :
+                    index === 2 ? 'bg-gradient-to-br from-orange-600 to-yellow-600' :
+                    'bg-gradient-to-br from-slate-500 to-slate-600'
+                  }`}>
+                    #{index + 1}
                   </div>
-                  <div className="text-xl font-bold text-primary">
-                    {performer.score}
+                  <div>
+                    <p className="font-bold text-slate-800">{performer.name}</p>
+                    <p className="text-sm font-semibold text-slate-600">{performer.position}</p>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-muted-foreground text-center py-4">
-              No assessments completed yet
-            </p>
-          )}
-        </CardContent>
-      </Card>
+                <div className="bg-white/40 backdrop-blur-sm rounded-xl px-4 py-2">
+                  <span className="text-xl font-black text-slate-800">{performer.score}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Trophy className="w-12 h-12 mx-auto mb-3 text-slate-400" />
+            <p className="text-slate-600 font-semibold">No assessments completed yet</p>
+          </div>
+        )}
+      </div>
 
       {/* Charts */}
       {chartData.partyData.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Party Performance Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance by Party</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <BarChart className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-black text-slate-800">Performance by Party</h3>
+            </div>
+            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-4">
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData.partyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.3)" />
                   <XAxis dataKey="party" />
                   <YAxis />
                   <Tooltip 
                     formatter={(value, name) => [value, name === 'averageScore' ? 'Average Score' : name]}
                     labelFormatter={(label) => `Party ${label}`}
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(10px)',
+                      border: 'none',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+                    }}
                   />
-                  <Bar dataKey="averageScore" fill="#8884d8" />
+                  <Bar dataKey="averageScore" fill="url(#blueGradient)" radius={[4, 4, 0, 0]} />
+                  <defs>
+                    <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#6366F1" stopOpacity={0.6} />
+                    </linearGradient>
+                  </defs>
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Role Performance Chart */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Performance by Role</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <BarChart className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-black text-slate-800">Performance by Role</h3>
+            </div>
+            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-4">
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={chartData.roleData}>
-                  <CartesianGrid strokeDasharray="3 3" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148, 163, 184, 0.3)" />
                   <XAxis dataKey="role" />
                   <YAxis />
                   <Tooltip 
                     formatter={(value, name) => [value, name === 'averageScore' ? 'Average Score' : name]}
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(10px)',
+                      border: 'none',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+                    }}
                   />
-                  <Bar dataKey="averageScore" fill="#82ca9d" />
+                  <Bar dataKey="averageScore" fill="url(#greenGradient)" radius={[4, 4, 0, 0]} />
+                  <defs>
+                    <linearGradient id="greenGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.8} />
+                      <stop offset="95%" stopColor="#059669" stopOpacity={0.6} />
+                    </linearGradient>
+                  </defs>
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Score Distribution */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle>Score Distribution</CardTitle>
-            </CardHeader>
-            <CardContent>
+          <div className="lg:col-span-2 bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-violet-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <BarChart className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-xl font-black text-slate-800">Score Distribution</h3>
+            </div>
+            <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-4">
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
@@ -398,32 +434,50 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip 
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(10px)',
+                      border: 'none',
+                      borderRadius: '12px',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
                 </PieChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Export Buttons */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Export Data</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex space-x-4">
-            <Button variant="outline" onClick={exportToCSV}>
-              <FileText className="w-4 h-4 mr-2" />
-              Export CSV
-            </Button>
-            <Button variant="outline" onClick={exportToPDF}>
-              <Download className="w-4 h-4 mr-2" />
-              Export PDF
-            </Button>
+      <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
+            <Download className="w-6 h-6 text-white" />
           </div>
-        </CardContent>
-      </Card>
+          <h3 className="text-xl font-black text-slate-800">Export Data</h3>
+        </div>
+        
+        <div className="flex flex-wrap gap-4">
+          <Button 
+            variant="outline" 
+            onClick={exportToCSV}
+            className="bg-white/30 backdrop-blur-sm border-white/40 text-slate-800 hover:bg-white/40 hover:scale-105 transition-all duration-300 rounded-2xl px-6 py-3 font-semibold"
+          >
+            <FileText className="w-5 h-5 mr-2" />
+            Export CSV
+          </Button>
+          <Button 
+            variant="outline" 
+            onClick={exportToPDF}
+            className="bg-white/30 backdrop-blur-sm border-white/40 text-slate-800 hover:bg-white/40 hover:scale-105 transition-all duration-300 rounded-2xl px-6 py-3 font-semibold"
+          >
+            <Download className="w-5 h-5 mr-2" />
+            Export PDF
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };
