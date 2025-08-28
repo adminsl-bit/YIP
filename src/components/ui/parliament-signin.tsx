@@ -343,7 +343,7 @@ export function ParliamentSignIn() {
                       <Users className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                       <div>
                         <span className="font-semibold text-green-700">Students:</span>
-                        <p className="text-slate-600">Use Serial Number + Party Number (e.g., 12+3)</p>
+                        <p className="text-slate-600">Serial Number (e.g. 12) + Party Number (3) = Login ID (123)</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-2">
