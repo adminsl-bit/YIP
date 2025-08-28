@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LogOut, User, Users, Vote, Calendar, Award, GraduationCap } from "lucide-react";
 import { StudentProfile } from "@/components/student/StudentProfile";
 import InteractiveParliamentTree from "@/components/student/InteractiveParliamentTree";
-import { VotingInterface } from "@/components/student/VotingInterface";
+import { StudentVotingTab } from "@/components/student/StudentVotingTab";
 
 const StudentDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -135,7 +135,7 @@ const StudentDashboard = () => {
             </TabsContent>
 
             <TabsContent value="voting">
-              <VotingInterface />
+              <StudentVotingTab />
             </TabsContent>
 
             <TabsContent value="schedule">
