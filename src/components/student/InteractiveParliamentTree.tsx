@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Crown, Gavel, Users, MapPin, Mail, Building } from 'lucide-react';
+import { Crown, Gavel, Users, MapPin, Mail, Building, Search, Hash } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Student {
@@ -119,8 +119,16 @@ const InteractiveParliamentTree = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+        <div className="flex items-center justify-center gap-4 mb-6">
+          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg">
+            <Users className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-2xl font-black text-slate-800">Parliament Tree</h2>
+        </div>
+        <div className="flex items-center justify-center h-32">
+          <div className="animate-spin rounded-full h-10 w-10 border-4 border-green-500 border-t-transparent shadow-lg"></div>
+        </div>
       </div>
     );
   }
@@ -129,24 +137,45 @@ const InteractiveParliamentTree = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-        <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-          Parliament Tree
-        </h2>
-        <div className="w-full md:w-96">
-          <Input
-            placeholder="Search by name, position, constituency..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full"
-          />
+      <div className="text-center mb-8">
+        <div className="flex items-center justify-center gap-4 mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-3xl flex items-center justify-center shadow-lg shadow-green-500/30">
+            <Users className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-4xl font-black text-transparent bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text">
+            Parliament Tree
+          </h2>
+        </div>
+        <p className="text-lg text-slate-600 font-semibold mb-6">
+          Meet all parliament members organized by their respective parties
+        </p>
+        
+        <div className="max-w-md mx-auto">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Input
+              placeholder="Search by name, position, constituency..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-12 bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 placeholder:text-slate-500 focus:bg-white/30 focus:border-white/50 rounded-2xl h-12 text-lg font-medium"
+            />
+          </div>
         </div>
       </div>
 
       {Object.keys(groupedStudents).length === 0 ? (
-        <Card className="p-8 text-center">
-          <p className="text-muted-foreground">No students found matching your search.</p>
-        </Card>
+        <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-12 border border-white/25 shadow-xl text-center">
+          <div className="relative inline-block mb-6">
+            <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
+              <Users className="w-10 h-10 text-white" />
+            </div>
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gray-400/40 rounded-full animate-bounce"></div>
+          </div>
+          <h3 className="text-2xl font-black text-slate-800 mb-4">No Members Found</h3>
+          <p className="text-lg text-slate-600 font-medium">
+            No parliament members found matching your search criteria.
+          </p>
+        </div>
       ) : (
         <div className="space-y-8">
           {Object.entries(groupedStudents)
@@ -157,108 +186,90 @@ const InteractiveParliamentTree = () => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
+                className="bg-white/15 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl"
               >
-                <Card className={`p-6 border-2 ${getPartyBorderColor(parseInt(partyNumber))}`}>
-                  <div className="mb-6">
-                    <div className={`inline-block px-4 py-2 rounded-lg bg-gradient-to-r ${getPartyColor(parseInt(partyNumber))} text-white font-bold text-lg`}>
-                      Party {partyNumber} ({partyStudents.length} members)
-                    </div>
+                <div className="mb-6 text-center">
+                  <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r ${getPartyColor(parseInt(partyNumber))} text-white font-black text-xl shadow-lg`}>
+                    <Users className="w-6 h-6" />
+                    Party {partyNumber}
+                    <Badge className="bg-white/20 text-white font-bold">
+                      {partyStudents.length} members
+                    </Badge>
                   </div>
+                </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
-                    <AnimatePresence>
-                      {partyStudents
-                        .sort((a, b) => a.serial_number - b.serial_number)
-                        .map((student, index) => (
-                          <motion.div
-                            key={student.id}
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.8 }}
-                            transition={{ 
-                              duration: 0.3,
-                              delay: index * 0.05 
-                            }}
-                            whileHover={{ 
-                              scale: 1.05,
-                              transition: { duration: 0.2 }
-                            }}
-                            className="relative"
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  <AnimatePresence>
+                    {partyStudents
+                      .sort((a, b) => a.serial_number - b.serial_number)
+                      .map((student, index) => (
+                        <motion.div
+                          key={student.id}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          transition={{ 
+                            duration: 0.3,
+                            delay: index * 0.05 
+                          }}
+                        >
+                          <Card
+                            className="cursor-pointer bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30 hover:border-white/50 hover:shadow-xl hover:scale-105 transition-all duration-300 rounded-2xl overflow-hidden"
+                            onClick={() => setSelectedStudent(student)}
                           >
-                            <Card
-                              className={`cursor-pointer transition-all duration-200 hover:shadow-lg border-2 ${
-                                hoveredStudent === student.id 
-                                  ? `${getPartyBorderColor(student.party_number)} shadow-xl` 
-                                  : 'border-border hover:border-primary/50'
-                              }`}
-                              onClick={() => setSelectedStudent(student)}
-                              onMouseEnter={() => setHoveredStudent(student.id)}
-                              onMouseLeave={() => setHoveredStudent(null)}
-                            >
-                              <CardContent className="p-4 text-center">
-                                <div className="relative mb-3">
-                                  <Avatar className="w-16 h-16 mx-auto border-2 border-background">
+                            <CardContent className="p-0">
+                              <div className="flex items-center gap-4 p-4">
+                                {/* Profile Image - Left Side */}
+                                <div className="relative flex-shrink-0">
+                                  <Avatar className="w-16 h-16 border-2 border-white/50 shadow-lg">
                                     <AvatarImage src={student.photo_url} alt={student.name} />
-                                    <AvatarFallback className={`bg-gradient-to-br ${getPartyColor(student.party_number)} text-white font-bold`}>
+                                    <AvatarFallback className={`bg-gradient-to-br ${getPartyColor(student.party_number)} text-white font-bold text-lg`}>
                                       {student.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                                     </AvatarFallback>
                                   </Avatar>
                                   
-                                  {/* Party color bar */}
-                                  <div className={`absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-12 h-2 bg-gradient-to-r ${getPartyColor(student.party_number)} rounded-full`} />
-                                  
                                   {/* Serial number badge */}
                                   <Badge 
-                                    variant="secondary" 
-                                    className="absolute -top-2 -right-2 w-6 h-6 p-0 flex items-center justify-center text-xs font-bold"
+                                    className="absolute -top-2 -right-2 w-6 h-6 p-0 flex items-center justify-center text-xs font-bold bg-gradient-to-r from-orange-500 to-yellow-500 text-white border-0 shadow-lg"
                                   >
                                     {student.serial_number}
                                   </Badge>
                                 </div>
 
-                                <h4 className="font-semibold text-sm mb-1 line-clamp-2">{student.name}</h4>
-                                
-                                <div className="flex items-center justify-center gap-1 mb-2">
-                                  {getPositionIcon(student.position)}
-                                  <span className="text-xs text-muted-foreground truncate">
-                                    {student.position}
-                                  </span>
-                                </div>
-
-                                {student.constituency && (
-                                  <p className="text-xs text-muted-foreground truncate">
-                                    {student.constituency}
-                                  </p>
-                                )}
-                              </CardContent>
-                            </Card>
-
-                            {/* Hover tooltip */}
-                            <AnimatePresence>
-                              {hoveredStudent === student.id && (
-                                <motion.div
-                                  initial={{ opacity: 0, y: 10 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  exit={{ opacity: 0, y: 10 }}
-                                  className="absolute z-10 -top-16 left-1/2 transform -translate-x-1/2 bg-popover border rounded-lg shadow-lg p-3 min-w-48"
-                                >
-                                  <div className="text-sm font-semibold">{student.name}</div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {student.position} • Serial #{student.serial_number}
+                                {/* Details - Right Side */}
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-black text-slate-800 text-lg mb-1 truncate">{student.name}</h4>
+                                  
+                                  <div className="flex items-center gap-2 mb-2">
+                                    {getPositionIcon(student.position)}
+                                    <span className="text-sm font-semibold text-slate-600 truncate">
+                                      {student.position}
+                                    </span>
                                   </div>
+
                                   {student.constituency && (
-                                    <div className="text-xs text-muted-foreground">
-                                      {student.constituency}
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                      <span className="text-xs text-slate-500 truncate">
+                                        {student.constituency}
+                                      </span>
                                     </div>
                                   )}
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </motion.div>
-                        ))}
-                    </AnimatePresence>
-                  </div>
-                </Card>
+
+                                  <div className="flex items-center gap-2">
+                                    <div className={`w-4 h-2 bg-gradient-to-r ${getPartyColor(student.party_number)} rounded-full`} />
+                                    <span className="text-xs font-medium text-slate-600">
+                                      Party {student.party_number}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      ))}
+                  </AnimatePresence>
+                </div>
               </motion.div>
             ))}
         </div>
@@ -266,67 +277,85 @@ const InteractiveParliamentTree = () => {
 
       {/* Student Profile Modal */}
       <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-white/20 backdrop-blur-lg border border-white/25">
           <DialogHeader>
-            <DialogTitle>Student Profile</DialogTitle>
+            <DialogTitle className="text-2xl font-black text-slate-800 text-center">Student Profile</DialogTitle>
           </DialogHeader>
           
           {selectedStudent && (
             <div className="space-y-6">
               <div className="text-center">
-                <Avatar className="w-24 h-24 mx-auto mb-4">
+                <Avatar className="w-24 h-24 mx-auto mb-4 border-4 border-white/50 shadow-xl">
                   <AvatarImage src={selectedStudent.photo_url} alt={selectedStudent.name} />
                   <AvatarFallback className={`bg-gradient-to-br ${getPartyColor(selectedStudent.party_number)} text-white text-2xl font-bold`}>
                     {selectedStudent.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                   </AvatarFallback>
                 </Avatar>
                 
-                <h3 className="text-xl font-bold mb-2">{selectedStudent.name}</h3>
+                <h3 className="text-2xl font-black text-slate-800 mb-2">{selectedStudent.name}</h3>
                 
                 <div className="flex items-center justify-center gap-2 mb-3">
                   {getPositionIcon(selectedStudent.position)}
-                  <span className="font-medium">{selectedStudent.position}</span>
+                  <span className="font-bold text-slate-700">{selectedStudent.position}</span>
                 </div>
                 
-                <Badge className={`bg-gradient-to-r ${getPartyColor(selectedStudent.party_number)} text-white`}>
-                  Party {selectedStudent.party_number} • Serial #{selectedStudent.serial_number}
-                </Badge>
+                <div className="flex items-center justify-center gap-3">
+                  <Badge className={`bg-gradient-to-r ${getPartyColor(selectedStudent.party_number)} text-white font-bold px-4 py-2`}>
+                    Party {selectedStudent.party_number}
+                  </Badge>
+                  <Badge className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white font-bold px-4 py-2">
+                    <Hash className="w-3 h-3 mr-1" />
+                    {selectedStudent.serial_number}
+                  </Badge>
+                </div>
               </div>
 
-              <div className="space-y-3">
+              <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30 space-y-3">
                 {selectedStudent.constituency && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      <strong>Constituency:</strong> {selectedStudent.constituency}
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                      <MapPin className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-slate-500 block">Constituency</span>
+                      <span className="text-sm font-bold text-slate-800">{selectedStudent.constituency}</span>
+                    </div>
                   </div>
                 )}
 
                 {selectedStudent.state && (
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      <strong>State:</strong> {selectedStudent.state}
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-xl flex items-center justify-center">
+                      <Building className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-slate-500 block">State</span>
+                      <span className="text-sm font-bold text-slate-800">{selectedStudent.state}</span>
+                    </div>
                   </div>
                 )}
 
                 {selectedStudent.city && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      <strong>City:</strong> {selectedStudent.city}
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center">
+                      <MapPin className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-slate-500 block">City</span>
+                      <span className="text-sm font-bold text-slate-800">{selectedStudent.city}</span>
+                    </div>
                   </div>
                 )}
 
                 {selectedStudent.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm">
-                      <strong>Email:</strong> {selectedStudent.email}
-                    </span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center">
+                      <Mail className="w-4 h-4 text-white" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-medium text-slate-500 block">Email</span>
+                      <span className="text-sm font-bold text-slate-800">{selectedStudent.email}</span>
+                    </div>
                   </div>
                 )}
               </div>
