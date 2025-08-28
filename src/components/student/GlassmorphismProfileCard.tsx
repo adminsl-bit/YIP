@@ -56,39 +56,39 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
       icon: Hash,
       label: 'Roll Number',
       value: student.serial_number.toString(),
-      color: 'bg-primary/10',
-      iconColor: 'text-primary'
+      color: 'bg-gray-100',
+      iconColor: 'text-gray-600'
     },
     {
       id: 'constituency',
       icon: Building,
       label: 'Constituency',
       value: student.constituency,
-      color: 'bg-secondary/20',
-      iconColor: 'text-secondary-foreground'
+      color: 'bg-gray-100',
+      iconColor: 'text-gray-600'
     },
     {
       id: 'location',
       icon: MapPin,
       label: 'Location',
       value: [student.city, student.state].filter(Boolean).join(', '),
-      color: 'bg-accent/20',
-      iconColor: 'text-accent-foreground'
+      color: 'bg-gray-100',
+      iconColor: 'text-gray-600'
     },
     {
       id: 'email',
       icon: Mail,
       label: 'Email',
       value: student.email,
-      color: 'bg-muted/30',
-      iconColor: 'text-muted-foreground'
+      color: 'bg-gray-100',
+      iconColor: 'text-gray-600'
     }
   ].filter(item => item.value);
 
   return (
     <div className="relative w-full max-w-sm">
       <div 
-        className="relative flex flex-col items-center p-8 rounded-3xl border transition-all duration-500 ease-out backdrop-blur-xl bg-background/80 border-border/20 shadow-2xl"
+        className="relative flex flex-col items-center p-8 rounded-3xl border transition-all duration-500 ease-out backdrop-blur-xl bg-white border-border/20 shadow-2xl"
       >
         {/* Avatar */}
         <div className="w-24 h-24 mb-4 rounded-full p-1 border-2 border-border/30">
@@ -143,7 +143,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
 const InfoItem = ({ item, setHoveredItem, hoveredItem }: any) => (
   <div className="relative">
     <div
-      className="flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ease-out group overflow-hidden bg-secondary/30 hover:bg-secondary/50"
+      className="flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ease-out group overflow-hidden bg-gray-50 hover:bg-gray-100"
       onMouseEnter={() => setHoveredItem(item.id)}
       onMouseLeave={() => setHoveredItem(null)}
     >
