@@ -2,6 +2,26 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Crown, Users, Award, Calendar } from "lucide-react";
+import { LogoCarousel } from "@/components/ui/logo-carousel";
+import { GradientHeading } from "@/components/ui/gradient-heading";
+import { 
+  YoungIndiansIcon, 
+  ThalirIcon, 
+  CIIIcon, 
+  MahatmaIcon, 
+  SriKaliSwariIcon, 
+  BharatRisingIcon 
+} from "@/components/ui/partner-logos";
+
+// Logo data for the carousel
+const partnerLogos = [
+  { name: "Young Indians", id: 1, img: YoungIndiansIcon },
+  { name: "Thalir", id: 2, img: ThalirIcon },
+  { name: "CII", id: 3, img: CIIIcon },
+  { name: "Mahatma Global Schools", id: 4, img: MahatmaIcon },
+  { name: "Sri Kali Swari", id: 5, img: SriKaliSwariIcon },
+  { name: "Bharat Rising", id: 6, img: BharatRisingIcon },
+];
 
 export const LandingHero = () => {
   return (
@@ -176,74 +196,35 @@ export const LandingHero = () => {
           </div>
         </div>
 
-        {/* Partners & Sponsors Section */}
+        {/* Partners & Sponsors Carousel Section */}
         <div className="px-8 py-16 bg-transparent">
           <div className="max-w-7xl mx-auto">
-            {/* Partners Section */}
             <div className="text-center mb-16">
-              <p className="text-slate-700 text-2xl lg:text-3xl mb-12 uppercase tracking-wider font-bold">Our Partners</p>
-              <div className="flex items-center justify-center gap-16 flex-wrap mb-8">
-                <div className="text-center">
-                  <img 
-                    src="/lovable-uploads/e7fefdf4-d36c-4867-80a7-fcb25c648693.png" 
-                    alt="Young Indians Logo" 
-                    className="h-24 lg:h-32 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110 mx-auto"
-                  />
-                  <p className="text-sm text-slate-600 mt-2 font-medium">Young Indians</p>
-                </div>
-                <div className="text-center">
-                  <img 
-                    src="/lovable-uploads/51bd559c-38cf-4423-ac8a-e15bdde4c73d.png" 
-                    alt="Thalir Logo" 
-                    className="h-24 lg:h-32 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110 mx-auto"
-                  />
-                  <p className="text-sm text-slate-600 mt-2 font-medium">Thalir</p>
-                </div>
-                <div className="text-center">
-                  <img 
-                    src="/lovable-uploads/890e5e46-c859-4a52-be82-59c5eefec1b3.png" 
-                    alt="CII Logo" 
-                    className="h-24 lg:h-32 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110 mx-auto"
-                  />
-                  <p className="text-sm text-slate-600 mt-2 font-medium">Confederation of Indian Industry</p>
-                </div>
+              <GradientHeading size="lg" variant="secondary" className="mb-8">
+                Our Partners & Sponsors
+              </GradientHeading>
+              <p className="text-slate-600 text-lg mb-12 max-w-2xl mx-auto">
+                Proud to collaborate with leading organizations who share our vision for India's future
+              </p>
+              
+              {/* Animated Logo Carousel */}
+              <div className="flex justify-center">
+                <LogoCarousel columnCount={3} logos={partnerLogos} />
               </div>
-            </div>
-
-            {/* Venue Partner Section */}
-            <div className="text-center mb-16">
-              <p className="text-slate-700 text-xl lg:text-2xl mb-8 uppercase tracking-wider font-bold">Venue Partner</p>
-              <div className="flex items-center justify-center">
-                <div className="text-center">
-                  <img 
-                    src="/lovable-uploads/905e95c2-3362-435c-8378-e962ab280559.png" 
-                    alt="Mahatma Global Schools Logo" 
-                    className="h-28 lg:h-36 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110 mx-auto"
-                  />
-                  <p className="text-sm text-slate-600 mt-2 font-medium">Mahatma Global Schools</p>
+              
+              {/* Partner Categories */}
+              <div className="grid md:grid-cols-3 gap-8 mt-16 max-w-4xl mx-auto">
+                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
+                  <h4 className="text-lg font-bold text-slate-800 mb-2">Partners</h4>
+                  <p className="text-sm text-slate-600">Young Indians • Thalir • CII</p>
                 </div>
-              </div>
-            </div>
-
-            {/* Sponsors Section */}
-            <div className="text-center mb-16">
-              <p className="text-slate-700 text-xl lg:text-2xl mb-8 uppercase tracking-wider font-bold">Our Sponsors</p>
-              <div className="flex items-center justify-center gap-16 flex-wrap">
-                <div className="text-center">
-                  <img 
-                    src="/lovable-uploads/5606d448-6a86-49f4-8937-c58744cbbbb7.png" 
-                    alt="Sri Kali Swari Packaging Logo" 
-                    className="h-20 lg:h-28 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110 mx-auto"
-                  />
-                  <p className="text-sm text-slate-600 mt-2 font-medium">Sri Kali Swari Packaging</p>
+                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
+                  <h4 className="text-lg font-bold text-slate-800 mb-2">Venue Partner</h4>
+                  <p className="text-sm text-slate-600">Mahatma Global Schools</p>
                 </div>
-                <div className="text-center">
-                  <img 
-                    src="/lovable-uploads/a210c9d6-7fcf-4bbf-be7c-0b50feba822b.png" 
-                    alt="Bharat Rising Logo" 
-                    className="h-20 lg:h-28 w-auto object-contain hover:scale-110 transition-all duration-300 filter brightness-110 mx-auto"
-                  />
-                  <p className="text-sm text-slate-600 mt-2 font-medium">Bharat Rising</p>
+                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
+                  <h4 className="text-lg font-bold text-slate-800 mb-2">Sponsors</h4>
+                  <p className="text-sm text-slate-600">Sri Kali Swari • Bharat Rising</p>
                 </div>
               </div>
             </div>
