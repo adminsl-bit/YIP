@@ -1,7 +1,7 @@
 'use client'
 import React, { useState } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Crown, Users, Shield, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Crown, Users, Shield, ArrowLeft, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { cn } from "@/lib/utils"
 import { useAuth } from '@/hooks/useAuth';
@@ -211,7 +211,7 @@ export function ParliamentSignIn() {
                         
                         <Input
                           type="text"
-                          placeholder="Login ID (Students: SNO+Party | Jury/Organizer: Email/Username)"
+                          placeholder="Login ID"
                           value={credentials.loginId}
                           onChange={(e) => setCredentials(prev => ({ ...prev, loginId: e.target.value }))}
                           onFocus={() => setFocusedInput("loginId")}
@@ -231,9 +231,16 @@ export function ParliamentSignIn() {
                           />
                         )}
                       </div>
-                      <p className="text-xs text-slate-600 mt-1 ml-1">
-                        Students: Use your Serial Number or Party Number
-                      </p>
+                      
+                      {/* Info section with icon */}
+                      <div className="flex items-start gap-2 mt-2 p-2 bg-blue-50/50 backdrop-blur-sm rounded-lg border border-blue-200/30">
+                        <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                        <div className="text-xs text-blue-700 space-y-1">
+                          <p className="font-medium">Login Instructions:</p>
+                          <p><span className="font-semibold">Students:</span> Use Serial Number + Party Number (e.g., 12+3)</p>
+                          <p><span className="font-semibold">Jury/Organizer:</span> Use your email or username</p>
+                        </div>
+                      </div>
                     </motion.div>
 
                     {/* Password input */}
