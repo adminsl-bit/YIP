@@ -93,13 +93,52 @@ export const StudentVotingTab = () => {
   }
 
   return (
-    <div className="space-y-8">
-      {hasActivePolls ? (
+    <div className="space-y-6">
+      <div className="text-center mb-8">
+        <div className="flex items-center justify-center gap-4 mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <CheckCircle2 className="w-8 h-8 text-white" />
+          </div>
+          <h2 className="text-4xl font-black text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">
+            Voting Sessions
+          </h2>
+        </div>
+        <p className="text-lg text-slate-600 font-semibold">
+          Participate in active voting sessions and view your voting history
+        </p>
+      </div>
+
+      {!votingEnabled ? (
+        <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-12 border border-white/25 shadow-xl text-center">
+          <div className="relative inline-block mb-6">
+            <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
+              <AlertCircle className="w-10 h-10 text-white" />
+            </div>
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-400/40 rounded-full animate-bounce"></div>
+          </div>
+          <h3 className="text-2xl font-black text-slate-800 mb-4">Voting is Disabled</h3>
+          <p className="text-lg text-slate-600 font-medium">
+            Voting will appear here when organizers enable it.
+          </p>
+        </div>
+      ) : hasActivePolls ? (
         <PollVoting />
       ) : (
-        <VotingInterface />
+        <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-12 border border-white/25 shadow-xl text-center">
+          <div className="relative inline-block mb-6">
+            <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
+              <CheckCircle2 className="w-10 h-10 text-white" />
+            </div>
+            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gray-400/40 rounded-full animate-bounce"></div>
+          </div>
+          <h3 className="text-2xl font-black text-slate-800 mb-4">No Voting Sessions Available</h3>
+          <p className="text-lg text-slate-600 font-medium">
+            There are currently no voting sessions available. Check back later or contact the organizers.
+          </p>
+        </div>
       )}
-      <div className="text-sm text-green-700 flex items-center gap-2">
+
+      <div className="text-sm text-green-700 flex items-center justify-center gap-2">
         <CheckCircle2 className="w-4 h-4" />
         Live updates enabled. Changes by organizers reflect instantly.
       </div>
