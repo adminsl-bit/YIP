@@ -1,104 +1,73 @@
-import React, { type SVGProps } from "react";
+import React from "react";
 
-// Young Indians Logo
-export function YoungIndiansIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      viewBox="0 0 200 100"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <rect width="200" height="100" fill="#FF6B35" rx="10"/>
-      <text x="100" y="35" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold">YOUNG</text>
-      <text x="100" y="55" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold">INDIANS</text>
-      <circle cx="100" cy="75" r="8" fill="white"/>
-    </svg>
-  );
+// Component to render actual logo images
+interface LogoImageProps {
+  src: string;
+  alt: string;
+  className?: string;
 }
 
-// Thalir Logo 
-export function ThalirIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      viewBox="0 0 200 100"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <rect width="200" height="100" fill="#8BC34A" rx="10"/>
-      <path d="M50 30 Q100 20 150 30 Q150 50 100 60 Q50 50 50 30 Z" fill="white"/>
-      <text x="100" y="45" textAnchor="middle" fill="#2E7D32" fontSize="14" fontWeight="bold">thalir</text>
-      <text x="100" y="75" textAnchor="middle" fill="white" fontSize="10">LET'S NURTURE FROM SCHOOL</text>
-    </svg>
-  );
-}
+const LogoImage: React.FC<LogoImageProps> = ({ src, alt, className }) => (
+  <img 
+    src={src} 
+    alt={alt} 
+    className={`h-20 w-20 max-h-[80%] max-w-[80%] object-contain md:h-32 md:w-32 ${className}`}
+  />
+);
 
-// CII Logo
-export function CIIIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      viewBox="0 0 200 100"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <rect width="200" height="100" fill="#1565C0" rx="10"/>
-      <rect x="30" y="30" width="140" height="20" fill="white" rx="2"/>
-      <text x="100" y="43" textAnchor="middle" fill="#1565C0" fontSize="14" fontWeight="bold">CII</text>
-      <text x="100" y="70" textAnchor="middle" fill="white" fontSize="8">Confederation of Indian Industry</text>
-    </svg>
-  );
-}
+// Updated partner logo components using actual images
+export const YoungIndiansIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <LogoImage 
+    src="/lovable-uploads/b93a2667-930b-46e3-8255-3dd39f221efa.png"
+    alt="Young Indians Logo"
+    {...props}
+  />
+);
 
-// Mahatma Global Schools Logo
-export function MahatmaIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      viewBox="0 0 200 100"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <rect width="200" height="100" fill="#4CAF50" rx="10"/>
-      <circle cx="100" cy="40" r="15" fill="white"/>
-      <text x="100" y="46" textAnchor="middle" fill="#4CAF50" fontSize="10" fontWeight="bold">MGS</text>
-      <text x="100" y="70" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">MAHATMA</text>
-      <text x="100" y="85" textAnchor="middle" fill="white" fontSize="8">Global Schools</text>
-    </svg>
-  );
-}
+export const ThalirIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <LogoImage 
+    src="/lovable-uploads/e2443cf2-1a59-4c3f-bc2d-bff47813fca2.png"
+    alt="Thalir Logo"
+    {...props}
+  />
+);
 
-// Sri Kali Swari Logo (Cock Brand)
-export function SriKaliSwariIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      viewBox="0 0 200 100"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <rect width="200" height="100" fill="#FFD600" rx="10"/>
-      <circle cx="50" cy="50" r="25" fill="white"/>
-      <path d="M45 40 Q50 35 55 40 Q55 50 50 60 Q45 50 45 40 Z" fill="#FF5722"/>
-      <path d="M48 35 Q50 30 52 35" stroke="#FF5722" strokeWidth="2" fill="none"/>
-      <text x="130" y="35" fill="#2E7D32" fontSize="12" fontWeight="bold">SRI KALI SWARI</text>
-      <text x="130" y="55" fill="#2E7D32" fontSize="10" fontWeight="bold">PACKAGING (P) LTD</text>
-      <text x="130" y="75" fill="#FF5722" fontSize="8">COCK BRAND</text>
-    </svg>
-  );
-}
+export const CIIIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <LogoImage 
+    src="/lovable-uploads/db62c137-04e3-4da3-9a7b-0c5e69a9a9ed.png"
+    alt="CII Logo"
+    {...props}
+  />
+);
 
-// Bharat Rising Logo
-export function BharatRisingIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      viewBox="0 0 200 100"
-      xmlns="http://www.w3.org/2000/svg"
-      {...props}
-    >
-      <rect width="200" height="100" fill="#FF9800" rx="10"/>
-      <text x="100" y="40" textAnchor="middle" fill="white" fontSize="18" fontWeight="bold">BHARAT</text>
-      <text x="100" y="65" textAnchor="middle" fill="white" fontSize="14" fontWeight="bold">RISING</text>
-      <path d="M160 25 L170 35 L160 45 Z" fill="#4CAF50"/>
-      <rect x="80" y="75" width="40" height="3" fill="#4CAF50"/>
-      <rect x="80" y="81" width="40" height="3" fill="white"/>
-      <rect x="80" y="87" width="40" height="3" fill="#FF5722"/>
-    </svg>
-  );
-}
+export const MahatmaIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <LogoImage 
+    src="/lovable-uploads/777acbc8-8619-4301-8157-ecc04d8a3bd5.png"
+    alt="Mahatma Truth Triumphs Logo"
+    {...props}
+  />
+);
+
+export const SriKaliSwariIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <LogoImage 
+    src="/lovable-uploads/af8acb1d-8b4a-4953-8417-d68cb25de6b7.png"
+    alt="Sri Kali Swari Packaging Logo"
+    {...props}
+  />
+);
+
+export const BharatRisingIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <LogoImage 
+    src="/lovable-uploads/695b5310-e626-4f28-a51f-ef93a30f00d1.png"
+    alt="Bharat Rising Logo"
+    {...props}
+  />
+);
+
+export const WondrDiamondsIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <LogoImage 
+    src="/lovable-uploads/00711fa5-1798-4c2f-9e0f-1c92b1be1dda.png"
+    alt="Wondr Diamonds Logo"
+    {...props}
+  />
+);

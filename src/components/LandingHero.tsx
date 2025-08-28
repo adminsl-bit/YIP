@@ -10,7 +10,8 @@ import {
   CIIIcon, 
   MahatmaIcon, 
   SriKaliSwariIcon, 
-  BharatRisingIcon 
+  BharatRisingIcon,
+  WondrDiamondsIcon
 } from "@/components/ui/partner-logos";
 
 // Logo data for the carousel
@@ -21,6 +22,7 @@ const partnerLogos = [
   { name: "Mahatma Global Schools", id: 4, img: MahatmaIcon },
   { name: "Sri Kali Swari", id: 5, img: SriKaliSwariIcon },
   { name: "Bharat Rising", id: 6, img: BharatRisingIcon },
+  { name: "Wondr Diamonds", id: 7, img: WondrDiamondsIcon },
 ];
 
 export const LandingHero = () => {
