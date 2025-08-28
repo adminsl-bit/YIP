@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Play, Pause, Square, RotateCcw, Clock, ExternalLink, Volume2 } from "lucide-react";
+import { Play, Pause, Square, RotateCcw, Clock, ExternalLink, Volume2, Trash2, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface TimerSession {
@@ -241,8 +241,61 @@ export const TimerControl = () => {
     }
   };
 
+  const deleteTimer = async () => {
+    if (!currentTimer || !user) return;
+
+    const confirmDelete = window.confirm(`Are you sure you want to delete the timer "${currentTimer.title}"? This action cannot be undone.`);
+    if (!confirmDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('timer_sessions')
+        .delete()
+        .eq('id', currentTimer.id);
+
+      if (error) throw error;
+
+      await supabase.rpc('log_audit_event', {
+        p_user_id: user.id,
+        p_action: 'timer_deleted',
+        p_resource_type: 'timer_session',
+        p_resource_id: currentTimer.id
+      });
+
+      setCurrentTimer(null);
+      setTitle("Parliament Session");
+      setDuration(300);
+
+      toast({
+        title: "Timer Deleted",
+        description: "Timer has been permanently deleted"
+      });
+    } catch (error) {
+      console.error('Error deleting timer:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete timer",
+        variant: "destructive"
+      });
+    }
+  };
+
   const openStageView = () => {
-    window.open('/display/timer', '_blank');
+    const stageUrl = '/display/timer';
+    console.log('Opening stage view at:', stageUrl);
+    const newWindow = window.open(stageUrl, '_blank', 'width=1200,height=800,fullscreen=yes');
+    if (!newWindow) {
+      toast({
+        title: "Popup Blocked",
+        description: "Please allow popups and try again, or manually navigate to /display/timer",
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Stage View Opened",
+        description: "Timer display opened in new window"
+      });
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -266,108 +319,150 @@ export const TimerControl = () => {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Clock className="w-5 h-5" />
-          <span>Session Timer</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Timer Setup */}
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Clock className="w-5 h-5 text-slate-700" />
+          <h2 className="text-xl font-bold text-slate-800">Session Timer</h2>
+        </div>
         {!currentTimer && (
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="timer-title">Session Title</Label>
-              <Input
-                id="timer-title"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Parliament Session"
-              />
-            </div>
-            <div>
-              <Label htmlFor="timer-duration">Duration (seconds)</Label>
-              <Input
-                id="timer-duration"
-                type="number"
-                value={duration}
-                onChange={(e) => setDuration(parseInt(e.target.value) || 300)}
-                min={60}
-                max={3600}
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                Default: 300 seconds (5 minutes)
-              </p>
-            </div>
-            <Button onClick={createTimer} disabled={loading} className="w-full">
-              Create Timer
-            </Button>
+          <div className="flex items-center space-x-2 text-sm text-slate-600">
+            <Plus className="w-4 h-4" />
+            <span>Create a new timer to get started</span>
           </div>
         )}
+      </div>
 
-        {/* Active Timer */}
-        {currentTimer && (
-          <div className="space-y-4">
-            <div className="text-center">
-              <h3 className="text-lg font-semibold mb-2">{currentTimer.title}</h3>
-              <div className={`text-4xl font-mono font-bold ${getTimerColor()}`}>
-                {formatTime(currentTimer.remaining_seconds)}
-              </div>
-              <Progress value={getProgressValue()} className="mt-4" />
-              <div className="flex items-center justify-between text-sm text-muted-foreground mt-2">
-                <span>0:00</span>
-                <Badge variant={
-                  currentTimer.status === 'running' ? 'default' :
-                  currentTimer.status === 'paused' ? 'secondary' :
-                  currentTimer.status === 'completed' ? 'destructive' : 'outline'
-                }>
-                  {currentTimer.status.toUpperCase()}
-                </Badge>
-                <span>{formatTime(currentTimer.duration_seconds)}</span>
-              </div>
+      {/* Timer Setup */}
+      {!currentTimer && (
+        <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg space-y-4">
+          <h3 className="text-lg font-semibold text-slate-800 mb-4">Create New Timer</h3>
+          <div>
+            <label className="text-sm font-medium text-slate-700">Session Title</label>
+            <Input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Parliament Session"
+              className="bg-white/50"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-slate-700">Duration (seconds)</label>
+            <Input
+              type="number"
+              value={duration}
+              onChange={(e) => setDuration(parseInt(e.target.value) || 300)}
+              min={60}
+              max={3600}
+              className="bg-white/50"
+            />
+            <p className="text-xs text-slate-600 mt-1">
+              Default: 300 seconds (5 minutes)
+            </p>
+          </div>
+          <button 
+            onClick={createTimer} 
+            disabled={loading} 
+            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-3 px-6 rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            {loading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <span>Creating...</span>
+              </>
+            ) : (
+              <>
+                <Plus className="w-4 h-4" />
+                <span>Create Timer</span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* Active Timer */}
+      {currentTimer && (
+        <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg space-y-6">
+          <div className="text-center">
+            <h3 className="text-xl font-bold text-slate-800 mb-2">{currentTimer.title}</h3>
+            <div className={`text-6xl font-mono font-bold mb-4 ${getTimerColor()}`}>
+              {formatTime(currentTimer.remaining_seconds)}
             </div>
-
-            {/* Timer Controls */}
-            <div className="flex space-x-2">
-              {currentTimer.status === 'stopped' || currentTimer.status === 'paused' ? (
-                <Button onClick={startTimer} className="flex-1">
-                  <Play className="w-4 h-4 mr-2" />
-                  {currentTimer.status === 'paused' ? 'Resume' : 'Start'}
-                </Button>
-              ) : (
-                <Button onClick={pauseTimer} variant="outline" className="flex-1">
-                  <Pause className="w-4 h-4 mr-2" />
-                  Pause
-                </Button>
-              )}
-              
-              <Button onClick={resetTimer} variant="outline" className="flex-1">
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Reset
-              </Button>
+            <Progress value={getProgressValue()} className="mb-4" />
+            <div className="flex items-center justify-between text-sm text-slate-600 mb-4">
+              <span>0:00</span>
+              <Badge variant={
+                currentTimer.status === 'running' ? 'default' :
+                currentTimer.status === 'paused' ? 'secondary' :
+                currentTimer.status === 'completed' ? 'destructive' : 'outline'
+              }>
+                {currentTimer.status.toUpperCase()}
+              </Badge>
+              <span>{formatTime(currentTimer.duration_seconds)}</span>
             </div>
+          </div>
 
-            {/* Stage View Button */}
-            <Button onClick={openStageView} variant="outline" className="w-full">
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Open Stage View
-            </Button>
+          {/* Timer Controls */}
+          <div className="grid grid-cols-2 gap-3">
+            {currentTimer.status === 'stopped' || currentTimer.status === 'paused' ? (
+              <button 
+                onClick={startTimer}
+                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-2"
+              >
+                <Play className="w-4 h-4" />
+                <span>{currentTimer.status === 'paused' ? 'Resume' : 'Start'}</span>
+              </button>
+            ) : (
+              <button 
+                onClick={pauseTimer}
+                className="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white font-bold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-2"
+              >
+                <Pause className="w-4 h-4" />
+                <span>Pause</span>
+              </button>
+            )}
+            
+            <button 
+              onClick={resetTimer}
+              className="bg-gradient-to-r from-gray-600 to-slate-600 hover:from-gray-700 hover:to-slate-700 text-white font-bold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-2"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>Reset</span>
+            </button>
+          </div>
 
-            {currentTimer.status === 'completed' && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <Volume2 className="w-5 h-5 text-red-600" />
-                  <div>
-                    <h4 className="font-medium text-red-900">Time's Up!</h4>
-                    <p className="text-sm text-red-700">The session timer has completed.</p>
-                  </div>
+          {/* Action Buttons */}
+          <div className="grid grid-cols-1 gap-3">
+            <button 
+              onClick={openStageView}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-2"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span>Open Stage View</span>
+            </button>
+            
+            <button 
+              onClick={deleteTimer}
+              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Delete Timer</span>
+            </button>
+          </div>
+
+          {currentTimer.status === 'completed' && (
+            <div className="p-4 bg-red-50/80 border border-red-200 rounded-2xl">
+              <div className="flex items-center space-x-2">
+                <Volume2 className="w-5 h-5 text-red-600" />
+                <div>
+                  <h4 className="font-medium text-red-900">Time's Up!</h4>
+                  <p className="text-sm text-red-700">The session timer has completed.</p>
                 </div>
               </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };

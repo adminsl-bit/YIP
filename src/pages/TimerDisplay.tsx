@@ -76,16 +76,21 @@ const TimerDisplay = () => {
       const { data, error } = await supabase
         .from('timer_sessions')
         .select('*')
-        .in('status', ['running', 'paused'])
+        .in('status', ['running', 'paused', 'stopped', 'completed'])
         .order('created_at', { ascending: false })
         .limit(1)
         .single();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error && error.code !== 'PGRST116') {
+        console.log('No active timer found');
+        setTimer(null);
+        return;
+      }
       
       setTimer(data as TimerSession);
     } catch (error) {
       console.error('Error fetching timer:', error);
+      setTimer(null);
     } finally {
       setLoading(false);
     }
