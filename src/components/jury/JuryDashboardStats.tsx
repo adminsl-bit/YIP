@@ -44,6 +44,50 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
 
   useEffect(() => {
     fetchDashboardData();
+    
+    // Set up real-time subscription for assessments
+    const channel = supabase
+      .channel('jury-dashboard-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: 'public',
+          table: 'assessments',
+          filter: `jury_id=eq.${juryId}` // Only listen to this jury's assessments
+        },
+        (payload) => {
+          console.log('Dashboard assessment update received:', payload);
+          // Refresh dashboard data when any assessment changes
+          fetchDashboardData();
+        }
+      )
+      .subscribe();
+
+    // Also listen to profile changes for student data updates
+    const profileChannel = supabase
+      .channel('jury-dashboard-student-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles',
+          filter: `user_type=eq.student`
+        },
+        (payload) => {
+          console.log('Dashboard student profile update received:', payload);
+          // Refresh dashboard data when student profiles change
+          fetchDashboardData();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscriptions on unmount
+    return () => {
+      supabase.removeChannel(channel);
+      supabase.removeChannel(profileChannel);
+    };
   }, [juryId]);
 
   const fetchDashboardData = async () => {
