@@ -25,79 +25,56 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
   const initials = profile.name.split(' ').map(n => n[0]).join('').toUpperCase();
 
   return (
-    <Card className="w-full bg-white/15 backdrop-blur-lg rounded-3xl border border-white/25 shadow-xl">
+    <Card className="w-full max-w-md mx-auto bg-card rounded-3xl shadow-lg overflow-hidden transition-transform duration-700 hover:scale-[1.02]">
       <CardContent className="p-0">
-        <section className="flex">
-          {/* Left side - Avatar */}
-          <div className="w-48 flex-shrink-0 p-8 flex items-center justify-center bg-gradient-to-br from-white/10 to-white/5 rounded-l-3xl">
-            <Avatar className="w-32 h-32 ring-4 ring-white/30 shadow-2xl">
-              <AvatarImage src={profile.photo_url} alt={`${profile.name} profile photo`} />
-              <AvatarFallback className="text-3xl bg-gradient-to-br from-primary to-primary-glow text-white font-bold">
-                {initials}
-              </AvatarFallback>
+        {/* Large Profile Image Section */}
+        <div className="relative overflow-hidden group">
+          <div className="w-full aspect-square">
+            {profile.photo_url ? (
+              <img 
+                src={profile.photo_url} 
+                alt={`${profile.name} profile photo`}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+            ) : (
+              <div className="w-full h-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center">
+                <span className="text-6xl font-bold text-primary-foreground">{initials}</span>
+              </div>
+            )}
+          </div>
+          
+          {/* Gradient Overlay */}
+          <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
+          
+          {/* Name Overlay */}
+          <div className="absolute top-6 left-6">
+            <h2 className="text-2xl font-serif font-bold text-white drop-shadow-lg">{profile.name}</h2>
+            <Badge variant="secondary" className="mt-2 bg-white/20 text-white border-white/30 hover:bg-white/30">
+              {profile.position}
+            </Badge>
+          </div>
+        </div>
+        
+        {/* Bottom Info Section */}
+        <div className="p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Avatar className="w-8 h-8 ring-2 ring-border transition-transform duration-500 hover:scale-110">
+              <AvatarImage src={profile.photo_url} alt={`${profile.name} avatar`} />
+              <AvatarFallback className="text-xs bg-muted">{initials}</AvatarFallback>
             </Avatar>
-          </div>
-
-          {/* Right side - Profile Details */}
-          <div className="flex-1 p-8">
-            <header className="mb-6">
-              <CardTitle className="text-3xl font-serif font-bold text-slate-800 mb-3">
-                {profile.name}
-              </CardTitle>
-              <Badge variant="secondary" className="px-4 py-2 text-sm font-semibold bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-slate-700 border-none">
-                {profile.position}
-              </Badge>
-            </header>
-
-            <div className="grid grid-cols-2 gap-6 mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl flex items-center justify-center">
-                  <Hash className="w-5 h-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">Roll Number</p>
-                  <p className="text-lg font-bold text-slate-800">{profile.serial_number}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl flex items-center justify-center">
-                  <Users className="w-5 h-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">Party</p>
-                  <p className="text-lg font-bold text-slate-800">Party {profile.party_number}</p>
-                </div>
-              </div>
+            <div className="transition-transform duration-500 hover:translate-x-1">
+              <div className="text-sm font-medium text-foreground">Roll #{profile.serial_number}</div>
+              <div className="text-xs text-muted-foreground">Party {profile.party_number}</div>
             </div>
-
-            {profile.constituency && (
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl flex items-center justify-center">
-                  <Building className="w-5 h-5 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">Constituency</p>
-                  <p className="text-lg font-semibold text-slate-800">{profile.constituency}</p>
-                </div>
-              </div>
-            )}
-
-            {(profile.city || profile.state) && (
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-orange-500/20 to-orange-600/20 rounded-xl flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">Location</p>
-                  <p className="text-lg font-semibold text-slate-800">
-                    {[profile.city, profile.state].filter(Boolean).join(', ')}
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
-        </section>
+          
+          <div className="text-right">
+            <div className="text-sm font-medium text-foreground">{profile.constituency || 'N/A'}</div>
+            <div className="text-xs text-muted-foreground">
+              {[profile.city, profile.state].filter(Boolean).join(', ') || 'Location N/A'}
+            </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
