@@ -270,74 +270,111 @@ export const AssessmentForm = ({
   return (
     <div className="space-y-6">
       {/* Student Header */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center space-x-6">
-            <Avatar className="w-20 h-20">
+      <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
+        <div className="flex items-center gap-6">
+          <div className="relative">
+            <Avatar className="w-20 h-20 ring-4 ring-white/20 shadow-lg">
               <AvatarImage src={student.photo_url} alt={student.name} />
-              <AvatarFallback className="text-2xl bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+              <AvatarFallback className="text-2xl font-black bg-gradient-to-br from-purple-500 to-indigo-500 text-white">
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1">
-              <div className="flex items-center space-x-3 mb-2">
-                <h2 className="text-2xl font-bold">{student.name}</h2>
-                <Badge variant="secondary" className="text-lg px-3 py-1">
-                  {student.position}
-                </Badge>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-sm text-muted-foreground">
-                <div>Serial: <span className="font-medium">{student.serial_number}</span></div>
-                <div>Party: <span className="font-medium">{student.party_number}</span></div>
-                <div>Constituency: <span className="font-medium">{student.constituency}</span></div>
-                <div>State: <span className="font-medium">{student.state}</span></div>
+            <div className="absolute -top-1 -right-1 w-6 h-6 bg-purple-400/40 rounded-full animate-bounce"></div>
+          </div>
+          
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-3">
+              <h2 className="text-2xl font-black text-slate-800">{student.name}</h2>
+              <div className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-xl shadow-lg">
+                {student.position}
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-primary">{total}</div>
-              <div className="text-sm text-muted-foreground">out of {maxTotal}</div>
-              <Progress value={percentage} className="mt-2 w-24" />
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
+                <p className="text-slate-500 font-medium text-sm">Serial</p>
+                <p className="font-black text-slate-800">{student.serial_number}</p>
+              </div>
+              <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
+                <p className="text-slate-500 font-medium text-sm">Party</p>
+                <p className="font-black text-slate-800">{student.party_number}</p>
+              </div>
+              <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
+                <p className="text-slate-500 font-medium text-sm">Constituency</p>
+                <p className="font-bold text-slate-800 text-sm">{student.constituency}</p>
+              </div>
+              <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
+                <p className="text-slate-500 font-medium text-sm">State</p>
+                <p className="font-bold text-slate-800 text-sm">{student.state}</p>
+              </div>
             </div>
           </div>
-        </CardHeader>
-      </Card>
+          
+          <div className="text-center bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
+            <div className="text-4xl font-black text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text mb-2">
+              {total}
+            </div>
+            <div className="text-sm font-bold text-slate-600 mb-3">out of {maxTotal}</div>
+            <div className="w-24">
+              <Progress value={percentage} className="h-3 bg-white/40" />
+              <p className="text-xs font-bold text-slate-600 mt-1">{percentage}%</p>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Assessment Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span>{seatRole.replace('_', ' ').toUpperCase()} Assessment Rubric</span>
-            {lastSaved && (
-              <span className="text-sm text-muted-foreground">
+      <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-3xl flex items-center justify-center shadow-lg">
+              <Edit className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h3 className="text-2xl font-black text-slate-800">
+                {seatRole.replace('_', ' ').toUpperCase()} Assessment Rubric
+              </h3>
+              <p className="text-slate-600 font-semibold">Evaluate student performance across all criteria</p>
+            </div>
+          </div>
+          
+          {lastSaved && (
+            <div className="bg-white/30 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/30">
+              <span className="text-sm font-semibold text-slate-600">
                 Last saved: {lastSaved.toLocaleTimeString()}
               </span>
-            )}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-6">
           {Object.entries(rubric).map(([criteriaKey, criteria]) => (
-            <div key={criteriaKey} className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">{criteria.name}</h3>
-                <span className="text-sm text-muted-foreground">
-                  {criteria.subcriteria 
-                    ? `${Object.values(scores[criteriaKey] || {}).reduce((a: number, b: number) => a + b, 0)} / ${criteria.maxScore}`
-                    : `${scores[criteriaKey] || 0} / ${criteria.maxScore}`
-                  }
-                </span>
+            <div key={criteriaKey} className="bg-white/15 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-xl font-black text-slate-800">{criteria.name}</h4>
+                <div className="bg-white/40 backdrop-blur-sm rounded-xl px-4 py-2">
+                  <span className="text-lg font-black text-slate-800">
+                    {criteria.subcriteria 
+                      ? `${Object.values(scores[criteriaKey] || {}).reduce((a: number, b: number) => a + b, 0)} / ${criteria.maxScore}`
+                      : `${scores[criteriaKey] || 0} / ${criteria.maxScore}`
+                    }
+                  </span>
+                </div>
               </div>
 
               {criteria.subcriteria ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pl-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {Object.entries(criteria.subcriteria).map(([subKey, maxScore]) => (
-                    <div key={subKey} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <label className="text-sm font-medium capitalize">
+                    <div key={subKey} className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="text-sm font-bold text-slate-700">
                           {getSubcriteriaLabel(criteriaKey, subKey)}
                         </label>
-                        <span className="text-sm">
-                          {scores[criteriaKey]?.[subKey] || 0} / {maxScore}
-                        </span>
+                        <div className="bg-white/40 backdrop-blur-sm rounded-lg px-3 py-1">
+                          <span className="text-sm font-black text-slate-800">
+                            {scores[criteriaKey]?.[subKey] || 0} / {maxScore}
+                          </span>
+                        </div>
                       </div>
                       <Slider
                         value={[scores[criteriaKey]?.[subKey] || 0]}
@@ -347,56 +384,80 @@ export const AssessmentForm = ({
                         className="w-full"
                         disabled={isLocked || initialStatus === 'locked'}
                       />
+                      <div className="flex justify-between text-xs font-semibold text-slate-500 mt-2">
+                        <span>0</span>
+                        <span>{Math.floor(maxScore / 2)}</span>
+                        <span>{maxScore}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <Slider
-                    value={[scores[criteriaKey] || 0]}
-                    onValueChange={([value]) => updateScore(criteriaKey, value)}
-                    max={criteria.maxScore}
-                    step={1}
-                    className="w-full"
-                    disabled={isLocked || initialStatus === 'locked'}
-                  />
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                  <div className="mb-3">
+                    <div className="flex justify-between text-xs font-semibold text-slate-500 mb-2">
+                      <span>0</span>
+                      <span>{Math.floor(criteria.maxScore / 2)}</span>
+                      <span>{criteria.maxScore}</span>
+                    </div>
+                    <Slider
+                      value={[scores[criteriaKey] || 0]}
+                      onValueChange={([value]) => updateScore(criteriaKey, value)}
+                      max={criteria.maxScore}
+                      step={1}
+                      className="w-full"
+                      disabled={isLocked || initialStatus === 'locked'}
+                    />
+                  </div>
                 </div>
               )}
             </div>
           ))}
 
           {/* Notes Section */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Additional Notes</label>
+          <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Edit className="w-6 h-6 text-white" />
+              </div>
+              <h4 className="text-xl font-black text-slate-800">Additional Notes</h4>
+            </div>
             <Textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any additional observations or comments..."
+              placeholder="Add any additional observations, comments, or feedback about the student's performance..."
               rows={4}
               disabled={isLocked || initialStatus === 'locked'}
+              className="bg-white/30 backdrop-blur-sm border-white/40 text-slate-800 placeholder:text-slate-500 rounded-xl font-medium"
             />
           </div>
 
           {/* Action Buttons */}
           {!isLocked && initialStatus !== 'locked' && (
-            <div className="flex space-x-4 pt-4">
+            <div className="flex flex-wrap gap-4 pt-6">
               <Button
                 onClick={() => handleSubmit('draft')}
                 variant="outline"
                 disabled={isSubmitting}
+                className="bg-white/30 backdrop-blur-sm border-white/40 text-slate-800 hover:bg-white/40 hover:scale-105 transition-all duration-300 rounded-2xl px-6 py-3 font-bold"
               >
-                <Save className="w-4 h-4 mr-2" />
+                <Save className="w-5 h-5 mr-2" />
                 Save Draft
               </Button>
               <Button
                 onClick={() => handleSubmit('submitted')}
                 disabled={isSubmitting || total === 0}
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white hover:scale-105 transition-all duration-300 rounded-2xl px-6 py-3 font-bold shadow-lg"
               >
-                <Send className="w-4 h-4 mr-2" />
+                <Send className="w-5 h-5 mr-2" />
                 Submit Assessment
               </Button>
               {initialStatus === 'submitted' && (
-                <Button variant="ghost" size="sm">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-700 hover:bg-white/30 rounded-2xl px-4 py-2 font-semibold"
+                >
                   <Edit className="w-4 h-4 mr-2" />
                   Edit Submitted
                 </Button>
@@ -405,13 +466,20 @@ export const AssessmentForm = ({
           )}
 
           {(isLocked || initialStatus === 'locked') && (
-            <div className="flex items-center space-x-2 p-4 bg-muted rounded-lg">
-              <Lock className="w-4 h-4" />
-              <span className="text-sm">This assessment has been locked by the organizer.</span>
+            <div className="bg-red-100/80 backdrop-blur-sm rounded-2xl p-6 border border-red-200/50 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Lock className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h4 className="text-lg font-black text-red-800">Assessment Locked</h4>
+                  <p className="text-red-700 font-semibold">This assessment has been locked by the organizer and cannot be modified.</p>
+                </div>
+              </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };
