@@ -114,11 +114,13 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
       const studentIds = (assessments || []).map((a) => a.student_id).filter(Boolean);
       let profilesMap: Record<string, any> = {};
       if (studentIds.length > 0) {
+        console.log('Student IDs to fetch:', studentIds);
         const { data: studentProfiles, error: profilesError } = await supabase
           .from('profiles')
           .select('user_id, name, position, party_number, serial_number')
           .in('user_id', Array.from(new Set(studentIds)));
         if (profilesError) throw profilesError;
+        console.log('Student profiles fetched:', studentProfiles);
         profilesMap = (studentProfiles || []).reduce((acc, p) => {
           acc[p.user_id] = p;
           return acc;
@@ -126,13 +128,9 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
       }
 
       console.log('Fetched assessments:', assessments);
-      console.log('Profiles map size:', Object.keys(profilesMap).length);
+      console.log('Profiles map:', profilesMap);
       console.log('Total students:', students?.length);
       console.log('Assessed count:', assessments?.length);
-      console.log('Total students:', students?.length);
-      console.log('Assessed count:', assessments?.length);
-
-      if (assessmentsError) throw assessmentsError;
 
       // Calculate stats
       const totalStudents = students?.length || 0;
@@ -211,10 +209,12 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
           else scoreRanges['81-100']++;
         });
 
-        const scoreDistribution = Object.entries(scoreRanges).map(([range, count]) => ({
-          range,
-          count
-        }));
+        const scoreDistribution = Object.entries(scoreRanges)
+          .filter(([range, count]) => count > 0) // Only include ranges with data
+          .map(([range, count]) => ({
+            range,
+            count
+          }));
 
         setChartData({
           partyData: partyData.sort((a, b) => a.party - b.party),
@@ -326,7 +326,6 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
       const profilesMap = (profiles || []).reduce((acc, p) => {
         acc[p.user_id] = p;
         return acc;
-        
       }, {} as Record<string, any>);
 
       // Create CSV content
