@@ -5,7 +5,7 @@ import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, 
 import { FeatureToggles } from "@/components/organizer/FeatureToggles";
 import { TimerControl } from "@/components/organizer/TimerControl";
 import { PollManagement } from "@/components/organizer/PollManagement";
-import { DuplicateLoginMonitor } from "@/components/organizer/DuplicateLoginMonitor";
+import { SecurityLogsManager } from "@/components/organizer/SecurityLogsManager";
 import { OrganizerStats } from "@/components/organizer/OrganizerStats";
 import { OrganizerStudentList } from "@/components/organizer/OrganizerStudentList";
 
@@ -86,60 +86,51 @@ const OrganizerDashboard = () => {
           </div>
 
           <Tabs defaultValue="controls" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
+            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-5 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
               <TabsTrigger 
                 value="controls" 
-                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
               >
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                  <Settings className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Settings className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-center md:text-left">Controls</span>
+                <span className="text-center">Controls</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="timer" 
-                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
               >
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                  <Clock className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Clock className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-center md:text-left">Timer</span>
+                <span className="text-center">Timer</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="polls" 
-                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
               >
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                  <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <BarChart3 className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-center md:text-left">Polls</span>
+                <span className="text-center">Polls</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="students" 
-                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
               >
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                  <Users className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Users className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-center md:text-left">Students</span>
+                <span className="text-center">Students</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="security" 
-                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
               >
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                  <ShieldCheck className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <ShieldCheck className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-center md:text-left">Security</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="logs" 
-                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
-              >
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                  <FileText className="w-4 h-4 md:w-5 md:h-5 text-white" />
-                </div>
-                <span className="text-center md:text-left">Logs</span>
+                <span className="text-center">Security</span>
               </TabsTrigger>
             </TabsList>
 
@@ -195,48 +186,7 @@ const OrganizerDashboard = () => {
 
             <TabsContent value="security" className="space-y-6">
               <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
-                <div className="text-center mb-8">
-                  <div className="relative inline-block mb-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-red-500/30">
-                      <ShieldCheck className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-400/40 rounded-full animate-bounce"></div>
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-800 mb-2">Security Monitor</h3>
-                  <p className="text-slate-600 font-medium">Track duplicate logins and security incidents</p>
-                </div>
-                <DuplicateLoginMonitor />
-              </div>
-            </TabsContent>
-
-            <TabsContent value="logs" className="space-y-6">
-              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl text-center">
-                <div className="relative inline-block mb-8">
-                  <div className="w-24 h-24 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-cyan-500/30">
-                    <FileText className="w-12 h-12 text-white" />
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-cyan-400/40 rounded-full animate-bounce"></div>
-                </div>
-                <h3 className="text-3xl font-black text-slate-800 mb-4">System Logs</h3>
-                <p className="text-xl text-slate-600 font-semibold mb-6">
-                  Access comprehensive audit trails and system logs with advanced filtering capabilities.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30 hover:scale-105 transition-all duration-300 shadow-lg group">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                      <FileText className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="font-bold text-slate-800 text-lg mb-2">Audit Logs</div>
-                    <div className="text-sm text-slate-600">User actions & system changes</div>
-                  </div>
-                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30 hover:scale-105 transition-all duration-300 shadow-lg group">
-                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
-                      <Eye className="w-6 h-6 text-white" />
-                    </div>
-                    <div className="font-bold text-slate-800 text-lg mb-2">Access Logs</div>
-                    <div className="text-sm text-slate-600">Login & session tracking</div>
-                  </div>
-                </div>
+                <SecurityLogsManager />
               </div>
             </TabsContent>
           </Tabs>

@@ -83,42 +83,42 @@ const StudentDashboard = () => {
           </div>
 
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
               <TabsTrigger 
                 value="profile" 
-                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
               >
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                  <User className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <User className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-center md:text-left">My Profile</span>
+                <span className="text-center">My Profile</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="members" 
-                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
               >
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                  <Users className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Users className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-center md:text-left">Parliament Tree</span>
+                <span className="text-center">Parliament Tree</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="voting" 
-                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
               >
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                  <Vote className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Vote className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-center md:text-left">Voting</span>
+                <span className="text-center">Voting</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="schedule" 
-                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
               >
-                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                  <Calendar className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Calendar className="w-4 h-4 text-white" />
                 </div>
-                <span className="text-center md:text-left">Schedule</span>
+                <span className="text-center">Schedule</span>
               </TabsTrigger>
             </TabsList>
 
