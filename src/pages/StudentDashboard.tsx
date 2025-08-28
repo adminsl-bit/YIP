@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, User, Users, Vote, Calendar, Award } from "lucide-react";
+import { LogOut, User, Users, Vote, Calendar, Award, GraduationCap } from "lucide-react";
 import { StudentProfile } from "@/components/student/StudentProfile";
 import InteractiveParliamentTree from "@/components/student/InteractiveParliamentTree";
 import { VotingInterface } from "@/components/student/VotingInterface";
@@ -37,7 +37,7 @@ const StudentDashboard = () => {
         <div className="flex items-center gap-4 sm:gap-6">
           <div className="relative">
             <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-lg shadow-orange-500/30">
-              <Award className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+              <GraduationCap className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-orange-400/40 rounded-full animate-bounce"></div>
           </div>
