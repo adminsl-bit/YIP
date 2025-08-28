@@ -211,22 +211,6 @@ export const LandingHero = () => {
               <div className="flex justify-center">
                 <LogoCarousel columnCount={3} logos={partnerLogos} />
               </div>
-              
-              {/* Partner Categories */}
-              <div className="grid md:grid-cols-3 gap-8 mt-16 max-w-4xl mx-auto">
-                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
-                  <h4 className="text-lg font-bold text-slate-800 mb-2">Partners</h4>
-                  <p className="text-sm text-slate-600">Young Indians • Thalir • CII</p>
-                </div>
-                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
-                  <h4 className="text-lg font-bold text-slate-800 mb-2">Venue Partner</h4>
-                  <p className="text-sm text-slate-600">Mahatma Global Schools</p>
-                </div>
-                <div className="text-center p-6 bg-white/10 backdrop-blur-sm rounded-2xl border border-white/20">
-                  <h4 className="text-lg font-bold text-slate-800 mb-2">Sponsors</h4>
-                  <p className="text-sm text-slate-600">Sri Kali Swari • Bharat Rising</p>
-                </div>
-              </div>
             </div>
           </div>
         </div>
