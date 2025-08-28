@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { User, MapPin, Building, Users } from "lucide-react";
+import { Hash, MapPin, Building, Users } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -52,10 +52,10 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
             <div className="grid grid-cols-2 gap-6 mb-6">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl flex items-center justify-center">
-                  <User className="w-5 h-5 text-blue-600" />
+                  <Hash className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">Serial Number</p>
+                  <p className="text-sm font-medium text-slate-500 mb-1">Roll Number</p>
                   <p className="text-lg font-bold text-slate-800">{profile.serial_number}</p>
                 </div>
               </div>
@@ -65,8 +65,8 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
                   <Users className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-slate-500 mb-1">Party Number</p>
-                  <p className="text-lg font-bold text-slate-800">{profile.party_number}</p>
+                  <p className="text-sm font-medium text-slate-500 mb-1">Party</p>
+                  <p className="text-lg font-bold text-slate-800">Party {profile.party_number}</p>
                 </div>
               </div>
             </div>
