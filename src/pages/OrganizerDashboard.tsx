@@ -1,155 +1,241 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye } from "lucide-react";
+import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap } from "lucide-react";
 import { FeatureToggles } from "@/components/organizer/FeatureToggles";
 import { TimerControl } from "@/components/organizer/TimerControl";
 import { PollManagement } from "@/components/organizer/PollManagement";
 import { DuplicateLoginMonitor } from "@/components/organizer/DuplicateLoginMonitor";
+import { OrganizerStats } from "@/components/organizer/OrganizerStats";
+import { OrganizerStudentList } from "@/components/organizer/OrganizerStudentList";
 
 const OrganizerDashboard = () => {
   const { profile, signOut } = useAuth();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50">
-      {/* Navigation */}
-      <nav className="p-4 flex justify-between items-center bg-white/20 backdrop-blur-sm border-b border-white/30">
-        <div className="flex items-center space-x-4">
-          <ShieldCheck className="w-8 h-8 text-emerald-600" />
-          <div>
-            <h1 className="text-xl font-bold text-slate-800">Organizer Console</h1>
-            <p className="text-sm text-slate-600">Young Indians Parliament</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 relative overflow-hidden">
+      {/* Enhanced animated background matching student dashboard */}
+      <div className="absolute inset-0">
+        {/* Enhanced dot pattern */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-40">
+          <div className="absolute inset-0 bg-white/8" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.08'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+            backgroundSize: '60px 60px'
+          }}></div>
+        </div>
+        
+        {/* Flowing gradient orbs */}
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-gradient-to-br from-orange-500/30 to-orange-300/20 rounded-full blur-2xl animate-pulse"></div>
+        <div className="absolute top-1/2 -right-40 w-[28rem] h-[28rem] bg-gradient-to-bl from-green-500/25 to-green-300/15 rounded-full blur-2xl animate-pulse delay-1000"></div>
+        <div className="absolute bottom-0 left-1/2 w-80 h-80 bg-gradient-to-t from-blue-500/30 to-blue-300/15 rounded-full blur-2xl animate-pulse delay-500"></div>
+        
+        {/* Floating bubbles */}
+        <div className="absolute top-1/4 left-1/4 w-6 h-6 bg-orange-400/30 rounded-full animate-bounce shadow-lg shadow-orange-400/20" style={{animationDelay: '0s', animationDuration: '3s'}}></div>
+        <div className="absolute top-3/4 left-1/3 w-8 h-8 bg-green-400/25 rounded-full animate-bounce shadow-lg shadow-green-400/20" style={{animationDelay: '1s', animationDuration: '4s'}}></div>
+        <div className="absolute top-1/2 right-1/4 w-5 h-5 bg-blue-400/35 rounded-full animate-bounce shadow-lg shadow-blue-400/20" style={{animationDelay: '2s', animationDuration: '3.5s'}}></div>
+      </div>
+
+      {/* Navigation with enhanced glass morphism */}
+      <nav className="relative z-10 p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/15 backdrop-blur-lg border-b border-white/25 shadow-xl">
+        <div className="flex items-center gap-4 sm:gap-6">
+          <div className="relative">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
+              <ShieldCheck className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+            </div>
+            <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-emerald-400/40 rounded-full animate-bounce"></div>
+          </div>
+          <div className="text-center sm:text-left">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">Organizer Console</h1>
+            <p className="text-sm sm:text-lg font-semibold text-slate-600">Young Indians Parliament</p>
           </div>
         </div>
         
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           {profile && (
-            <div className="text-right">
-              <p className="font-semibold text-slate-800">{profile.name}</p>
-              <p className="text-sm text-slate-600">{profile.position}</p>
+            <div className="text-center sm:text-right bg-white/20 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-white/30 order-2 sm:order-1">
+              <p className="font-bold text-slate-800 text-base sm:text-lg">{profile.name}</p>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium">{profile.position}</p>
             </div>
           )}
           <Button 
             onClick={signOut}
             variant="outline"
-            className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/30"
+            className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 hover:scale-105 transition-all duration-300 shadow-lg px-4 sm:px-6 py-2 sm:py-3 text-base sm:text-lg font-semibold order-1 sm:order-2"
           >
-            <LogOut className="w-4 h-4 mr-2" />
+            <LogOut className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             Sign Out
           </Button>
         </div>
       </nav>
 
-      {/* Header */}
-      <div className="p-6 bg-white/30 backdrop-blur-sm border-b border-white/30">
-        <div className="max-w-7xl mx-auto">
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Parliament Control Center</h2>
-          <p className="text-slate-600">
-            Manage all aspects of the Young Indians Parliament session from this central console
-          </p>
-        </div>
-      </div>
-
       {/* Dashboard Content */}
-      <div className="p-8">
+      <div className="relative z-10 p-8">
         <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-8 sm:mb-12">
+            <div className="relative inline-block mb-6 sm:mb-8">
+              <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-transparent bg-gradient-to-r from-emerald-600 via-slate-800 to-teal-600 bg-clip-text tracking-tight drop-shadow-lg">
+                Parliament Control Center
+              </h2>
+              <div className="absolute -top-2 right-8 w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-emerald-400/30 to-teal-400/20 rounded-full animate-bounce shadow-lg"></div>
+            </div>
+            <div className="bg-white/20 backdrop-blur-lg rounded-2xl sm:rounded-3xl border border-white/25 p-4 sm:p-6 shadow-xl max-w-xl sm:max-w-2xl mx-auto">
+              <p className="text-base sm:text-xl text-slate-700 font-semibold">
+                Manage all aspects of the <span className="font-black text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text">Young Indians Parliament</span> session from this central console
+              </p>
+            </div>
+          </div>
+
           <Tabs defaultValue="controls" className="w-full">
-            <TabsList className="grid w-full grid-cols-6 mb-8">
-              <TabsTrigger value="controls" className="flex items-center space-x-2">
-                <Settings className="w-4 h-4" />
-                <span>Controls</span>
+            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
+              <TabsTrigger 
+                value="controls" 
+                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+              >
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Settings className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                </div>
+                <span className="text-center md:text-left">Controls</span>
               </TabsTrigger>
-              <TabsTrigger value="timer" className="flex items-center space-x-2">
-                <Clock className="w-4 h-4" />
-                <span>Timer</span>
+              <TabsTrigger 
+                value="timer" 
+                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+              >
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Clock className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                </div>
+                <span className="text-center md:text-left">Timer</span>
               </TabsTrigger>
-              <TabsTrigger value="polls" className="flex items-center space-x-2">
-                <BarChart3 className="w-4 h-4" />
-                <span>Polls</span>
+              <TabsTrigger 
+                value="polls" 
+                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+              >
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <BarChart3 className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                </div>
+                <span className="text-center md:text-left">Polls</span>
               </TabsTrigger>
-              <TabsTrigger value="students" className="flex items-center space-x-2">
-                <Users className="w-4 h-4" />
-                <span>Students</span>
+              <TabsTrigger 
+                value="students" 
+                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+              >
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Users className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                </div>
+                <span className="text-center md:text-left">Students</span>
               </TabsTrigger>
-              <TabsTrigger value="security" className="flex items-center space-x-2">
-                <ShieldCheck className="w-4 h-4" />
-                <span>Security</span>
+              <TabsTrigger 
+                value="security" 
+                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+              >
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <ShieldCheck className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                </div>
+                <span className="text-center md:text-left">Security</span>
               </TabsTrigger>
-              <TabsTrigger value="logs" className="flex items-center space-x-2">
-                <FileText className="w-4 h-4" />
-                <span>Logs</span>
+              <TabsTrigger 
+                value="logs" 
+                className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-2 md:gap-3 px-4 py-6 md:px-6 md:py-4 rounded-2xl text-sm md:text-lg font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px] md:min-h-[60px]"
+              >
+                <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <FileText className="w-4 h-4 md:w-5 md:h-5 text-white" />
+                </div>
+                <span className="text-center md:text-left">Logs</span>
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="controls" className="space-y-6">
-              <FeatureToggles />
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <FeatureToggles />
+              </div>
             </TabsContent>
 
             <TabsContent value="timer" className="space-y-6">
-              <TimerControl />
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <TimerControl />
+              </div>
             </TabsContent>
 
             <TabsContent value="polls" className="space-y-6">
-              <PollManagement />
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <PollManagement />
+              </div>
             </TabsContent>
 
             <TabsContent value="students" className="space-y-6">
-              <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-                <h3 className="text-xl font-bold text-slate-800 mb-4">Student Management</h3>
-                <p className="text-slate-600 mb-4">
-                  Comprehensive student data management including bulk import, individual editing, and password reset capabilities.
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Button variant="outline" className="flex items-center justify-center p-6 h-auto">
-                    <div className="text-center">
-                      <Users className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-                      <div className="font-medium">Bulk Import</div>
-                      <div className="text-sm text-muted-foreground">Import from Excel/CSV</div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                  <div className="text-center mb-8">
+                    <div className="relative inline-block mb-4">
+                      <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-orange-500/30">
+                        <Activity className="w-8 h-8 text-white" />
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-400/40 rounded-full animate-bounce"></div>
                     </div>
-                  </Button>
-                  <Button variant="outline" className="flex items-center justify-center p-6 h-auto">
-                    <div className="text-center">
-                      <Settings className="w-8 h-8 mx-auto mb-2 text-green-600" />
-                      <div className="font-medium">Manage Students</div>
-                      <div className="text-sm text-muted-foreground">Add, edit, delete</div>
+                    <h3 className="text-2xl font-black text-slate-800 mb-2">Student Overview</h3>
+                    <p className="text-slate-600 font-medium">Performance and assessment statistics</p>
+                  </div>
+                  <OrganizerStats />
+                </div>
+                
+                <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                  <div className="text-center mb-8">
+                    <div className="relative inline-block mb-4">
+                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-blue-500/30">
+                        <Users className="w-8 h-8 text-white" />
+                      </div>
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-400/40 rounded-full animate-bounce"></div>
                     </div>
-                  </Button>
-                  <Button variant="outline" className="flex items-center justify-center p-6 h-auto">
-                    <div className="text-center">
-                      <ShieldCheck className="w-8 h-8 mx-auto mb-2 text-purple-600" />
-                      <div className="font-medium">Reset Passwords</div>
-                      <div className="text-sm text-muted-foreground">Student access recovery</div>
-                    </div>
-                  </Button>
+                    <h3 className="text-2xl font-black text-slate-800 mb-2">Student Management</h3>
+                    <p className="text-slate-600 font-medium">View and manage student profiles</p>
+                  </div>
+                  <OrganizerStudentList />
                 </div>
               </div>
             </TabsContent>
 
             <TabsContent value="security" className="space-y-6">
-              <DuplicateLoginMonitor />
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <div className="text-center mb-8">
+                  <div className="relative inline-block mb-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-red-500/30">
+                      <ShieldCheck className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-400/40 rounded-full animate-bounce"></div>
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-800 mb-2">Security Monitor</h3>
+                  <p className="text-slate-600 font-medium">Track duplicate logins and security incidents</p>
+                </div>
+                <DuplicateLoginMonitor />
+              </div>
             </TabsContent>
 
             <TabsContent value="logs" className="space-y-6">
-              <div className="bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/40 shadow-lg">
-                <h3 className="text-xl font-bold text-slate-800 mb-4">System Logs</h3>
-                <p className="text-slate-600 mb-4">
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl text-center">
+                <div className="relative inline-block mb-8">
+                  <div className="w-24 h-24 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-cyan-500/30">
+                    <FileText className="w-12 h-12 text-white" />
+                  </div>
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-cyan-400/40 rounded-full animate-bounce"></div>
+                </div>
+                <h3 className="text-3xl font-black text-slate-800 mb-4">System Logs</h3>
+                <p className="text-xl text-slate-600 font-semibold mb-6">
                   Access comprehensive audit trails and system logs with advanced filtering capabilities.
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Button variant="outline" className="flex items-center justify-center p-6 h-auto">
-                    <div className="text-center">
-                      <FileText className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-                      <div className="font-medium">Audit Logs</div>
-                      <div className="text-sm text-muted-foreground">User actions & changes</div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30 hover:scale-105 transition-all duration-300 shadow-lg group">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <FileText className="w-6 h-6 text-white" />
                     </div>
-                  </Button>
-                  <Button variant="outline" className="flex items-center justify-center p-6 h-auto">
-                    <div className="text-center">
-                      <Eye className="w-8 h-8 mx-auto mb-2 text-green-600" />
-                      <div className="font-medium">Access Logs</div>
-                      <div className="text-sm text-muted-foreground">Login & session tracking</div>
+                    <div className="font-bold text-slate-800 text-lg mb-2">Audit Logs</div>
+                    <div className="text-sm text-slate-600">User actions & system changes</div>
+                  </div>
+                  <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30 hover:scale-105 transition-all duration-300 shadow-lg group">
+                    <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                      <Eye className="w-6 h-6 text-white" />
                     </div>
-                  </Button>
+                    <div className="font-bold text-slate-800 text-lg mb-2">Access Logs</div>
+                    <div className="text-sm text-slate-600">Login & session tracking</div>
+                  </div>
                 </div>
               </div>
             </TabsContent>
