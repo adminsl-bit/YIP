@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { ArrowUpRight, Hash, MapPin, Building, Mail, Crown, Gavel, Users } from 'lucide-react';
+import { Hash, MapPin, Building, Mail, Crown, Gavel, Users } from 'lucide-react';
 
 interface Student {
   id: string;
@@ -56,45 +56,42 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
       icon: Hash,
       label: 'Roll Number',
       value: student.serial_number.toString(),
-      color: 'from-blue-500/20 to-blue-600/20',
-      iconColor: 'text-blue-600'
+      color: 'bg-primary/10',
+      iconColor: 'text-primary'
     },
     {
       id: 'constituency',
       icon: Building,
       label: 'Constituency',
       value: student.constituency,
-      color: 'from-purple-500/20 to-purple-600/20',
-      iconColor: 'text-purple-600'
+      color: 'bg-secondary/20',
+      iconColor: 'text-secondary-foreground'
     },
     {
       id: 'location',
       icon: MapPin,
       label: 'Location',
       value: [student.city, student.state].filter(Boolean).join(', '),
-      color: 'from-orange-500/20 to-orange-600/20',
-      iconColor: 'text-orange-600'
+      color: 'bg-accent/20',
+      iconColor: 'text-accent-foreground'
     },
     {
       id: 'email',
       icon: Mail,
       label: 'Email',
       value: student.email,
-      color: 'from-green-500/20 to-green-600/20',
-      iconColor: 'text-green-600'
+      color: 'bg-muted/30',
+      iconColor: 'text-muted-foreground'
     }
   ].filter(item => item.value);
 
   return (
     <div className="relative w-full max-w-sm">
       <div 
-        className="relative flex flex-col items-center p-8 rounded-3xl border transition-all duration-500 ease-out backdrop-blur-xl bg-card/40 border-white/10"
-        style={{
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-        }}
+        className="relative flex flex-col items-center p-8 rounded-3xl border transition-all duration-500 ease-out backdrop-blur-xl bg-background/80 border-border/20 shadow-2xl"
       >
         {/* Avatar */}
-        <div className="w-24 h-24 mb-4 rounded-full p-1 border-2 border-white/20">
+        <div className="w-24 h-24 mb-4 rounded-full p-1 border-2 border-border/30">
           <Avatar className="w-full h-full">
             <AvatarImage 
               src={student.photo_url} 
@@ -124,7 +121,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
         <div className="w-1/2 h-px my-4 rounded-full bg-border" />
 
         {/* Info Items */}
-        <div className="w-full space-y-3 mb-6">
+        <div className="w-full space-y-3">
           {infoItems.map((item) => (
             <InfoItem 
               key={item.id} 
@@ -134,9 +131,6 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
             />
           ))}
         </div>
-
-        {/* Action Button */}
-        <ActionButton student={student} />
       </div>
       
       {/* Background Glow */}
@@ -153,7 +147,7 @@ const InfoItem = ({ item, setHoveredItem, hoveredItem }: any) => (
       onMouseEnter={() => setHoveredItem(item.id)}
       onMouseLeave={() => setHoveredItem(null)}
     >
-      <div className={`w-8 h-8 bg-gradient-to-br ${item.color} rounded-lg flex items-center justify-center`}>
+      <div className={`w-8 h-8 ${item.color} rounded-lg flex items-center justify-center`}>
         <item.icon className={`w-4 h-4 ${item.iconColor}`} />
       </div>
       <div className="flex-1 min-w-0">
@@ -165,19 +159,6 @@ const InfoItem = ({ item, setHoveredItem, hoveredItem }: any) => (
   </div>
 );
 
-const ActionButton = ({ student }: { student: Student }) => (
-  <button
-    className="flex items-center gap-2 px-6 py-3 rounded-full font-semibold text-base backdrop-blur-sm transition-all duration-300 ease-out hover:scale-[1.03] active:scale-95 group bg-primary text-primary-foreground"
-    style={{ boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}
-    onClick={(e) => {
-      e.preventDefault();
-      // Add contact functionality here
-    }}
-  >
-    <span>View Profile</span>
-    <ArrowUpRight size={16} className="transition-transform duration-300 ease-out group-hover:rotate-45" />
-  </button>
-);
 
 const Tooltip = ({ item, hoveredItem }: any) => (
   <div 
