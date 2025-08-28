@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Users, CheckCircle, Clock, Trophy, Download, FileText } from "lucide-react";
+import jsPDF from 'jspdf';
 
 interface DashboardStats {
   totalStudents: number;
@@ -110,6 +111,10 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
         .eq('jury_id', juryId)
         .eq('status', 'submitted');
 
+      console.log('Fetched assessments:', assessments);
+      console.log('Total students:', students?.length);
+      console.log('Assessed count:', assessments?.length);
+
       if (assessmentsError) throw assessmentsError;
 
       // Calculate stats
@@ -211,9 +216,63 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
     return 'mp';
   };
 
-  const exportToPDF = () => {
-    // This would typically use a library like jsPDF
-    console.log('Export to PDF functionality would be implemented here');
+  const exportToPDF = async () => {
+    try {
+      const { data: assessments, error } = await supabase
+        .from('assessments')
+        .select(`
+          *,
+          profiles!assessments_student_id_fkey(name, position, party_number, serial_number)
+        `)
+        .eq('jury_id', juryId)
+        .eq('status', 'submitted');
+
+      if (error) throw error;
+
+      if (!assessments || assessments.length === 0) {
+        alert('No assessments to export');
+        return;
+      }
+
+      const pdf = new jsPDF();
+      
+      // Title
+      pdf.setFontSize(20);
+      pdf.text('Jury Assessment Report', 20, 20);
+      
+      // Date
+      pdf.setFontSize(12);
+      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 35);
+      
+      // Summary stats
+      pdf.text(`Total Students: ${stats.totalStudents}`, 20, 50);
+      pdf.text(`Assessed Students: ${stats.assessedStudents}`, 20, 60);
+      pdf.text(`Average Score: ${stats.averageScore}`, 20, 70);
+      
+      // Assessments table
+      let yPosition = 90;
+      pdf.setFontSize(14);
+      pdf.text('Individual Assessments:', 20, yPosition);
+      yPosition += 15;
+      
+      pdf.setFontSize(10);
+      assessments.forEach((assessment, index) => {
+        if (yPosition > 270) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+        
+        const profile = (assessment as any).profiles;
+        const line = `${index + 1}. ${profile?.name || 'Unknown'} - ${profile?.position || 'Unknown'} - Score: ${assessment.total_score}`;
+        pdf.text(line, 20, yPosition);
+        yPosition += 10;
+      });
+      
+      pdf.save(`jury-assessments-${new Date().toISOString().split('T')[0]}.pdf`);
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      alert('Failed to export PDF');
+    }
   };
 
   const exportToCSV = async () => {
