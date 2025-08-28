@@ -56,7 +56,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
       icon: Hash,
       label: 'Roll Number',
       value: student.serial_number.toString(),
-      color: 'bg-gray-100',
+      color: 'bg-gray-200',
       iconColor: 'text-gray-600'
     },
     {
@@ -64,7 +64,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
       icon: Building,
       label: 'Constituency',
       value: student.constituency,
-      color: 'bg-gray-100',
+      color: 'bg-gray-200',
       iconColor: 'text-gray-600'
     },
     {
@@ -72,7 +72,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
       icon: MapPin,
       label: 'Location',
       value: [student.city, student.state].filter(Boolean).join(', '),
-      color: 'bg-gray-100',
+      color: 'bg-gray-200',
       iconColor: 'text-gray-600'
     },
     {
@@ -80,7 +80,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
       icon: Mail,
       label: 'Email',
       value: student.email,
-      color: 'bg-gray-100',
+      color: 'bg-gray-200',
       iconColor: 'text-gray-600'
     }
   ].filter(item => item.value);
@@ -143,7 +143,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
 const InfoItem = ({ item, setHoveredItem, hoveredItem }: any) => (
   <div className="relative">
     <div
-      className="flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ease-out group overflow-hidden bg-gray-50 hover:bg-gray-100"
+      className="flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ease-out group overflow-hidden bg-gray-100 hover:bg-gray-200"
       onMouseEnter={() => setHoveredItem(item.id)}
       onMouseLeave={() => setHoveredItem(null)}
     >
