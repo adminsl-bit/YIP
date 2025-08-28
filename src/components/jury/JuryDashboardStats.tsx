@@ -101,17 +101,34 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
 
       if (studentsError) throw studentsError;
 
-      // Fetch assessments by this jury with student profiles
+      // Fetch assessments by this jury
       const { data: assessments, error: assessmentsError } = await supabase
         .from('assessments')
-        .select(`
-          *,
-          profiles!assessments_student_id_fkey(name, position, party_number, serial_number)
-        `)
+        .select('id, student_id, total_score, updated_at, seat_role, status')
         .eq('jury_id', juryId)
         .eq('status', 'submitted');
 
+      if (assessmentsError) throw assessmentsError;
+
+      // Build profiles map for assessed students
+      const studentIds = (assessments || []).map((a) => a.student_id).filter(Boolean);
+      let profilesMap: Record<string, any> = {};
+      if (studentIds.length > 0) {
+        const { data: studentProfiles, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, name, position, party_number, serial_number')
+          .in('user_id', Array.from(new Set(studentIds)));
+        if (profilesError) throw profilesError;
+        profilesMap = (studentProfiles || []).reduce((acc, p) => {
+          acc[p.user_id] = p;
+          return acc;
+        }, {} as Record<string, any>);
+      }
+
       console.log('Fetched assessments:', assessments);
+      console.log('Profiles map size:', Object.keys(profilesMap).length);
+      console.log('Total students:', students?.length);
+      console.log('Assessed count:', assessments?.length);
       console.log('Total students:', students?.length);
       console.log('Assessed count:', assessments?.length);
 
@@ -128,11 +145,14 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
       const topPerformers = assessments
         ?.sort((a, b) => b.total_score - a.total_score)
         .slice(0, 5)
-        .map(a => ({
-          name: (a as any).profiles?.name || 'Unknown',
-          score: a.total_score,
-          position: (a as any).profiles?.position || 'Unknown'
-        })) || [];
+        .map(a => {
+          const profile = (profilesMap as any)[a.student_id];
+          return {
+            name: profile?.name || 'Unknown',
+            score: a.total_score,
+            position: profile?.position || 'Unknown'
+          };
+        }) || [];
 
       setStats({
         totalStudents,
@@ -145,7 +165,7 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
       if (assessments && assessments.length > 0) {
         // Party performance data
         const partyGroups = assessments.reduce((acc, assessment) => {
-          const party = (assessment as any).profiles?.party_number || 0;
+          const party = ((profilesMap as any)[assessment.student_id]?.party_number) ?? 0;
           if (!acc[party]) acc[party] = { scores: [], count: 0 };
           acc[party].scores.push(assessment.total_score);
           acc[party].count++;
@@ -160,7 +180,7 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
 
         // Role performance data
         const roleGroups = assessments.reduce((acc, assessment) => {
-          const role = getSeatRole((assessment as any).profiles?.position || 'mp');
+          const role = getSeatRole(((profilesMap as any)[assessment.student_id]?.position) || 'mp');
           if (!acc[role]) acc[role] = { scores: [], count: 0 };
           acc[role].scores.push(assessment.total_score);
           acc[role].count++;
@@ -218,21 +238,29 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
 
   const exportToPDF = async () => {
     try {
-      const { data: assessments, error } = await supabase
+      const { data: assessments, error: assessErr } = await supabase
         .from('assessments')
-        .select(`
-          *,
-          profiles!assessments_student_id_fkey(name, position, party_number, serial_number)
-        `)
+        .select('id, student_id, total_score, updated_at')
         .eq('jury_id', juryId)
         .eq('status', 'submitted');
 
-      if (error) throw error;
+      if (assessErr) throw assessErr;
 
       if (!assessments || assessments.length === 0) {
         alert('No assessments to export');
         return;
       }
+
+      const studentIds = Array.from(new Set(assessments.map(a => a.student_id).filter(Boolean)));
+      const { data: profiles, error: profErr } = await supabase
+        .from('profiles')
+        .select('user_id, name, position')
+        .in('user_id', studentIds);
+      if (profErr) throw profErr;
+      const profilesMap = (profiles || []).reduce((acc, p) => {
+        acc[p.user_id] = p;
+        return acc;
+      }, {} as Record<string, any>);
 
       const pdf = new jsPDF();
       
@@ -261,8 +289,7 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
           pdf.addPage();
           yPosition = 20;
         }
-        
-        const profile = (assessment as any).profiles;
+        const profile = (profilesMap as any)[assessment.student_id];
         const line = `${index + 1}. ${profile?.name || 'Unknown'} - ${profile?.position || 'Unknown'} - Score: ${assessment.total_score}`;
         pdf.text(line, 20, yPosition);
         yPosition += 10;
@@ -277,34 +304,46 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
 
   const exportToCSV = async () => {
     try {
-      const { data: assessments, error } = await supabase
+      const { data: assessments, error: assessErr } = await supabase
         .from('assessments')
-        .select(`
-          *,
-          profiles!assessments_student_id_fkey(name, position, party_number, serial_number)
-        `)
+        .select('id, student_id, total_score, updated_at')
         .eq('jury_id', juryId)
         .eq('status', 'submitted');
 
-      if (error) throw error;
+      if (assessErr) throw assessErr;
 
       if (!assessments || assessments.length === 0) {
         alert('No assessments to export');
         return;
       }
 
+      const studentIds = Array.from(new Set(assessments.map(a => a.student_id).filter(Boolean)));
+      const { data: profiles, error: profErr } = await supabase
+        .from('profiles')
+        .select('user_id, name, position, party_number, serial_number')
+        .in('user_id', studentIds);
+      if (profErr) throw profErr;
+      const profilesMap = (profiles || []).reduce((acc, p) => {
+        acc[p.user_id] = p;
+        return acc;
+        
+      }, {} as Record<string, any>);
+
       // Create CSV content
       const headers = ['Student Name', 'Position', 'Party', 'Serial', 'Total Score', 'Assessment Date'];
       const csvContent = [
         headers.join(','),
-        ...assessments.map(a => [
-          `"${(a as any).profiles?.name || 'Unknown'}"`,
-          `"${(a as any).profiles?.position || 'Unknown'}"`,
-          (a as any).profiles?.party_number || 0,
-          (a as any).profiles?.serial_number || 0,
-          a.total_score,
-          new Date(a.updated_at).toLocaleDateString()
-        ].join(','))
+        ...assessments.map(a => {
+          const p = (profilesMap as any)[a.student_id] || {};
+          return [
+            `"${p.name || 'Unknown'}"`,
+            `"${p.position || 'Unknown'}"`,
+            p.party_number ?? 0,
+            p.serial_number ?? 0,
+            a.total_score,
+            new Date(a.updated_at).toLocaleDateString()
+          ].join(',');
+        })
       ].join('\n');
 
       // Download CSV
