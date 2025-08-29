@@ -76,6 +76,14 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
       color: 'bg-gray-200',
       iconColor: 'text-gray-600'
     },
+    {
+      id: 'city',
+      icon: Mail,
+      label: 'Student City',
+      value: student.city,
+      color: 'bg-gray-200',
+      iconColor: 'text-gray-600'
+    }
   ].filter(item => item.value);
 
   return (
