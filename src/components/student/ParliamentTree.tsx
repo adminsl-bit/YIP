@@ -18,6 +18,7 @@ interface Student {
   state?: string;
   city?: string;
   photo_url?: string;
+  updated_at?: string;
   user_type: string;
 }
 
@@ -140,7 +141,7 @@ export const ParliamentTree = () => {
                           <CardContent className="p-3">
                             <div className="flex items-center space-x-3">
                               <Avatar className="w-12 h-12">
-                                <AvatarImage src={student.photo_url} alt={student.name} />
+                                <AvatarImage src={student.photo_url ? `${student.photo_url}${student.photo_url.includes('?') ? '&' : '?'}cb=${student.updated_at ? new Date(student.updated_at).getTime() : ''}` : undefined} alt={student.name} />
                                 <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                                   {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                                 </AvatarFallback>

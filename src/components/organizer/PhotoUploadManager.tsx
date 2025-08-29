@@ -78,9 +78,11 @@ const PhotoUploadManager = () => {
         .from('student-photos')
         .getPublicUrl(fileName);
 
+      const updatedUrl = `${publicUrl}?v=${Date.now()}`;
+
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ photo_url: publicUrl })
+        .update({ photo_url: updatedUrl })
         .eq('id', studentId);
 
       if (updateError) throw updateError;

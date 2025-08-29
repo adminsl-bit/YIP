@@ -13,6 +13,7 @@ interface Student {
   state?: string;
   city?: string;
   photo_url?: string;
+  updated_at?: string;
   email?: string;
   user_type: string;
 }
@@ -95,9 +96,13 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
           <Avatar className="w-full h-full">
             <AvatarImage 
               src={student.photo_url
-                ? (student.photo_url.includes('/file/d/')
-                  ? `https://drive.google.com/uc?export=view&id=${student.photo_url.split('/d/')[1]?.split('/')[0]}`
-                  : student.photo_url)
+                ? (() => {
+                    const raw = student.photo_url.includes('/file/d/')
+                      ? `https://drive.google.com/uc?export=view&id=${student.photo_url.split('/d/')[1]?.split('/')[0]}`
+                      : student.photo_url;
+                    const suffix = raw.includes('?') ? '&' : '?';
+                    return `${raw}${suffix}cb=${student.updated_at ? new Date(student.updated_at).getTime() : ''}`;
+                  })()
                 : undefined}
               alt={`${student.name}'s Avatar`}
               className="object-cover"

@@ -13,6 +13,7 @@ interface Profile {
   state?: string;
   city?: string;
   photo_url?: string;
+  updated_at?: string;
   user_type: string;
 }
 
@@ -32,9 +33,22 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
           <div className="w-1/2 relative">
             {profile.photo_url ? (
               <img 
-                src={profile.photo_url} 
+                src={`${profile.photo_url}${profile.photo_url.includes('?') ? '&' : '?'}cb=${profile.updated_at ? new Date(profile.updated_at).getTime() : Date.now()}`}
+                data-src={profile.photo_url}
                 alt={`${profile.name} profile photo`}
                 className="w-full h-full object-cover"
+                loading="lazy"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement;
+                  const original = target.getAttribute('data-src') || target.src;
+                  const retried = target.getAttribute('data-retried') === 'true';
+                  if (!retried) {
+                    target.setAttribute('data-retried', 'true');
+                    target.src = `${original}${original.includes('?') ? '&' : '?'}cb=${Date.now()}`;
+                    return;
+                  }
+                  target.style.display = 'none';
+                }}
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center">
