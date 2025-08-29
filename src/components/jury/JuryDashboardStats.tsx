@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Users, CheckCircle, Clock, Trophy, Download, FileText } from "lucide-react";
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface DashboardStats {
   totalStudents: number;
@@ -42,6 +43,7 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
     scoreDistribution: []
   });
   const [loading, setLoading] = useState(true);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchDashboardData();
@@ -123,21 +125,39 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
       
       if (studentIds.length > 0) {
         console.log('Student IDs to fetch:', studentIds);
-        const { data: studentProfiles, error: profilesError } = await supabase
+        const uniqueIds = Array.from(new Set(studentIds));
+        const { data: byUserId, error: profilesError1 } = await supabase
           .from('profiles')
-          .select('user_id, name, position, party_number, serial_number')
-          .in('user_id', Array.from(new Set(studentIds)));
+          .select('id, user_id, name, position, party_number, serial_number')
+          .in('user_id', uniqueIds);
         
-        if (profilesError) {
-          console.error('Profiles query error:', profilesError);
-          throw profilesError;
+        if (profilesError1) {
+          console.error('Profiles query error (user_id):', profilesError1);
+          throw profilesError1;
         }
         
-        console.log('Student profiles fetched:', studentProfiles);
-        profilesMap = (studentProfiles || []).reduce((acc, p) => {
+        console.log('Student profiles fetched (user_id):', byUserId);
+        profilesMap = (byUserId || []).reduce((acc, p) => {
           acc[p.user_id] = p;
           return acc;
         }, {} as Record<string, any>);
+
+        const missing = uniqueIds.filter((id) => !profilesMap[id]);
+        if (missing.length) {
+          console.log('Missing profiles for user_id, trying id lookup:', missing);
+          const { data: byId, error: profilesError2 } = await supabase
+            .from('profiles')
+            .select('id, user_id, name, position, party_number, serial_number')
+            .in('id', missing);
+          if (profilesError2) {
+            console.error('Profiles query error (id):', profilesError2);
+            throw profilesError2;
+          }
+          (byId || []).forEach((p) => {
+            if (p.user_id) profilesMap[p.user_id] = p;
+            profilesMap[p.id] = p;
+          });
+        }
         console.log('Profiles map:', profilesMap);
       }
 
@@ -251,64 +271,47 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
 
   const exportToPDF = async () => {
     try {
-      const { data: assessments, error: assessErr } = await supabase
-        .from('assessments')
-        .select('id, student_id, total_score, updated_at')
-        .eq('jury_id', juryId)
-        .eq('status', 'submitted');
-
-      if (assessErr) throw assessErr;
-
-      if (!assessments || assessments.length === 0) {
-        alert('No assessments to export');
+      const container = reportRef.current;
+      if (!container) {
+        alert('Report not ready to export');
         return;
       }
 
-      const studentIds = Array.from(new Set(assessments.map(a => a.student_id).filter(Boolean)));
-      const { data: profiles, error: profErr } = await supabase
-        .from('profiles')
-        .select('user_id, name, position')
-        .in('user_id', studentIds);
-      if (profErr) throw profErr;
-      const profilesMap = (profiles || []).reduce((acc, p) => {
-        acc[p.user_id] = p;
-        return acc;
-      }, {} as Record<string, any>);
+      const originalBg = container.style.backgroundColor;
+      container.style.backgroundColor = '#ffffff';
 
-      const pdf = new jsPDF();
-      
-      // Title
-      pdf.setFontSize(20);
-      pdf.text('Jury Assessment Report', 20, 20);
-      
-      // Date
-      pdf.setFontSize(12);
-      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 35);
-      
-      // Summary stats
-      pdf.text(`Total Students: ${stats.totalStudents}`, 20, 50);
-      pdf.text(`Assessed Students: ${stats.assessedStudents}`, 20, 60);
-      pdf.text(`Average Score: ${stats.averageScore}`, 20, 70);
-      
-      // Assessments table
-      let yPosition = 90;
-      pdf.setFontSize(14);
-      pdf.text('Individual Assessments:', 20, yPosition);
-      yPosition += 15;
-      
-      pdf.setFontSize(10);
-      assessments.forEach((assessment, index) => {
-        if (yPosition > 270) {
-          pdf.addPage();
-          yPosition = 20;
-        }
-        const profile = (profilesMap as any)[assessment.student_id];
-        const line = `${index + 1}. ${profile?.name || 'Unknown'} - ${profile?.position || 'Unknown'} - Score: ${assessment.total_score}`;
-        pdf.text(line, 20, yPosition);
-        yPosition += 10;
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
       });
-      
-      pdf.save(`jury-assessments-${new Date().toISOString().split('T')[0]}.pdf`);
+
+      container.style.backgroundColor = originalBg;
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const imgWidth = pdfWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save(`jury-dashboard-${new Date().toISOString().split('T')[0]}.pdf`);
     } catch (error) {
       console.error('Error exporting PDF:', error);
       alert('Failed to export PDF');
@@ -387,7 +390,7 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div ref={reportRef} className="space-y-6">
       {/* Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
