@@ -223,7 +223,7 @@ const InteractiveParliamentTree = () => {
                                 {/* Profile Image - Left Side */}
                                 <div className="relative flex-shrink-0">
                                   <Avatar className="w-16 h-16 border-2 border-white/50 shadow-lg">
-                                    <AvatarImage src={student.photo_url} alt={student.name} />
+                                    <AvatarImage src={student.photo_url} alt={student.name} referrerPolicy="no-referrer" loading="lazy" decoding="async" />
                                     <AvatarFallback className={`bg-gradient-to-br ${getPartyColor(student.party_number)} text-white font-bold text-lg`}>
                                       {student.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                                     </AvatarFallback>

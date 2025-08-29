@@ -94,9 +94,12 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
         <div className="w-24 h-24 mb-4 rounded-full p-1 border-2 border-border/30">
           <Avatar className="w-full h-full">
             <AvatarImage 
-              src={student.photo_url} 
+              src={student.photo_url}
               alt={`${student.name}'s Avatar`}
               className="object-cover"
+              referrerPolicy="no-referrer"
+              loading="lazy"
+              decoding="async"
               onError={() => console.log('Image failed to load for:', student.name, 'URL:', student.photo_url)}
               onLoad={() => console.log('Image loaded for:', student.name, 'URL:', student.photo_url)}
             />
