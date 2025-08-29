@@ -266,187 +266,198 @@ export const SecurityLogsManager = () => {
 
   return (
     <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="relative inline-block mb-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-purple-500/30">
-            <Shield className="w-8 h-8 text-white" />
-          </div>
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-400/40 rounded-full animate-bounce"></div>
-        </div>
-        <h3 className="text-2xl font-black text-slate-800 mb-2">Security & Logs</h3>
-        <p className="text-slate-600 font-medium">Monitor system activity and user access</p>
-      </div>
+      <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
+        <CardHeader className="border-b border-border/10">
+          <CardTitle className="flex items-center gap-2 text-2xl font-bold">
+            <Shield className="w-6 h-6 text-primary" />
+            Security & Logs
+          </CardTitle>
+          <p className="text-muted-foreground">
+            Monitor system activity and user access
+          </p>
+        </CardHeader>
+        <CardContent className="p-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 gap-2 mb-6 bg-accent/50 p-2 rounded-2xl">
+              <TabsTrigger 
+                value="audit" 
+                className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md"
+              >
+                <FileText className="w-4 h-4" />
+                Audit Logs
+              </TabsTrigger>
+              <TabsTrigger 
+                value="access" 
+                className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md"
+              >
+                <Eye className="w-4 h-4" />
+                Access Logs
+              </TabsTrigger>
+            </TabsList>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 gap-2 mb-6 bg-white rounded-2xl border border-border/20 p-2 shadow-md">
-          <TabsTrigger 
-            value="audit" 
-            className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg"
-          >
-            <FileText className="w-4 h-4" />
-            Audit Logs
-          </TabsTrigger>
-          <TabsTrigger 
-            value="access" 
-            className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg"
-          >
-            <Eye className="w-4 h-4" />
-            Access Logs
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="audit" className="space-y-6">
-          <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FileText className="w-5 h-5" />
-                <span>System Audit Logs</span>
-                <Badge variant="secondary">{auditLogs.length} entries</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {auditLogs.length > 0 ? (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {auditLogs.map((log) => (
-                    <div key={log.id} className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="outline" className="bg-white/20">
-                              {log.action}
-                            </Badge>
-                            <Badge variant="secondary" className="bg-white/20">
-                              {log.resource_type}
-                            </Badge>
-                          </div>
-                          <div className="text-sm space-y-1">
-                            <div><strong>User:</strong> {log.user_name}</div>
-                            <div><strong>Time:</strong> {new Date(log.created_at).toLocaleString()}</div>
-                            {log.resource_id && <div><strong>Resource ID:</strong> {log.resource_id}</div>}
-                            {log.ip_address && <div><strong>IP:</strong> {log.ip_address}</div>}
-                          </div>
-                        </div>
-                        <Activity className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                      </div>
+            <TabsContent value="audit" className="space-y-6">
+              <Card className="bg-gradient-to-r from-background to-accent/5 border border-border/20 rounded-2xl">
+                <CardHeader className="border-b border-border/10">
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-primary" />
+                    System Audit Logs
+                    <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">{auditLogs.length} entries</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {auditLogs.length > 0 ? (
+                    <div className="space-y-4 max-h-96 overflow-y-auto">
+                      {auditLogs.map((log) => (
+                        <Card key={log.id} className="bg-white border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md">
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5">
+                                    {log.action}
+                                  </Badge>
+                                  <Badge variant="secondary" className="border-muted text-muted-foreground">
+                                    {log.resource_type}
+                                  </Badge>
+                                </div>
+                                <div className="text-sm space-y-1 text-muted-foreground">
+                                  <div><strong className="text-foreground">User:</strong> {log.user_name}</div>
+                                  <div><strong className="text-foreground">Time:</strong> {new Date(log.created_at).toLocaleString()}</div>
+                                  {log.resource_id && <div><strong className="text-foreground">Resource ID:</strong> {log.resource_id}</div>}
+                                  {log.ip_address && <div><strong className="text-foreground">IP:</strong> {log.ip_address}</div>}
+                                </div>
+                              </div>
+                              <Activity className="w-4 h-4 text-primary flex-shrink-0" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No audit logs available.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  ) : (
+                    <div className="text-center py-12">
+                      <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                      <h3 className="text-xl font-semibold text-muted-foreground mb-2">No audit logs available</h3>
+                      <p className="text-muted-foreground">System activity will appear here when available</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-        <TabsContent value="access" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Active Users */}
-            <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Eye className="w-5 h-5" />
-                  <span>Active Users</span>
-                  <Badge variant="secondary">{activeUsers.length} online</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {activeUsers.length > 0 ? (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {activeUsers.map((user) => (
-                      <div key={user.user_id} className="bg-white/10 backdrop-blur-sm rounded-lg p-3 border border-white/20">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="font-medium">{user.name}</div>
-                            <div className="text-sm text-muted-foreground">{user.position}</div>
-                            <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                              <Clock className="w-3 h-3" />
-                              Last login: {new Date(user.last_login_at).toLocaleString()}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge 
-                              variant={user.session_id ? "default" : "secondary"}
-                              className="bg-green-500/20 text-green-700"
-                            >
-                              {user.session_id ? "Active" : "Offline"}
-                            </Badge>
-                            {user.session_id && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => forceLogoutUser(user.user_id, user.name)}
-                                className="bg-white/20 border-white/30"
-                              >
-                                <LogOut className="w-3 h-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
+            <TabsContent value="access" className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Active Users */}
+                <Card className="bg-gradient-to-r from-background to-accent/5 border border-border/20 rounded-2xl">
+                  <CardHeader className="border-b border-border/10">
+                    <CardTitle className="flex items-center gap-2">
+                      <Eye className="w-5 h-5 text-primary" />
+                      Active Users
+                      <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">{activeUsers.length} online</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    {activeUsers.length > 0 ? (
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {activeUsers.map((user) => (
+                          <Card key={user.user_id} className="bg-white border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md">
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="font-medium text-foreground">{user.name}</div>
+                                  <div className="text-sm text-muted-foreground">{user.position}</div>
+                                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                                    <Clock className="w-3 h-3" />
+                                    Last login: {new Date(user.last_login_at).toLocaleString()}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge 
+                                    variant={user.session_id ? "default" : "secondary"}
+                                    className={user.session_id ? "bg-green-100 text-green-700 border-green-200" : ""}
+                                  >
+                                    {user.session_id ? "Active" : "Offline"}
+                                  </Badge>
+                                  {user.session_id && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => forceLogoutUser(user.user_id, user.name)}
+                                      className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+                                    >
+                                      <LogOut className="w-3 h-3" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Eye className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No active users found.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    ) : (
+                      <div className="text-center py-12">
+                        <Eye className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                        <h3 className="text-xl font-semibold text-muted-foreground mb-2">No active users</h3>
+                        <p className="text-muted-foreground">Active users will appear here when available</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
-            {/* Duplicate Login Monitor */}
-            <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <AlertTriangle className="w-5 h-5" />
-                  <span>Security Incidents</span>
-                  <Badge variant="destructive">{duplicateLogins.length} alerts</Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {duplicateLogins.length > 0 ? (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {duplicateLogins.map((login, index) => (
-                      <div key={`${login.user_id}-${index}`} className="bg-red-500/10 backdrop-blur-sm rounded-lg p-3 border border-red-500/20">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="font-medium">{login.name}</div>
-                            <div className="text-sm text-muted-foreground">{login.position}</div>
-                            <div className="text-xs text-red-600 flex items-center gap-1 mt-1">
-                              <AlertTriangle className="w-3 h-3" />
-                              Duplicate session detected
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {new Date(login.last_login_at).toLocaleString()}
-                            </div>
-                          </div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => forceLogoutUser(login.user_id, login.name)}
-                            className="bg-red-500/20 border-red-500/30 text-red-700"
-                          >
-                            <LogOut className="w-3 h-3 mr-1" />
-                            Force Logout
-                          </Button>
-                        </div>
+                {/* Security Incidents */}
+                <Card className="bg-gradient-to-r from-background to-accent/5 border border-border/20 rounded-2xl">
+                  <CardHeader className="border-b border-border/10">
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-destructive" />
+                      Security Incidents
+                      <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">{duplicateLogins.length} alerts</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    {duplicateLogins.length > 0 ? (
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {duplicateLogins.map((login, index) => (
+                          <Card key={`${login.user_id}-${index}`} className="bg-white border border-destructive/20 hover:border-destructive/40 transition-all duration-200 hover:shadow-md">
+                            <CardContent className="p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <div className="font-medium text-foreground">{login.name}</div>
+                                  <div className="text-sm text-muted-foreground">{login.position}</div>
+                                  <div className="text-xs text-destructive flex items-center gap-1 mt-1">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    Duplicate session detected
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    {new Date(login.last_login_at).toLocaleString()}
+                                  </div>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => forceLogoutUser(login.user_id, login.name)}
+                                  className="bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20"
+                                >
+                                  <LogOut className="w-3 h-3 mr-1" />
+                                  Force Logout
+                                </Button>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <AlertTriangle className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p>No security incidents detected.</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-      </Tabs>
+                    ) : (
+                      <div className="text-center py-12">
+                        <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                        <h3 className="text-xl font-semibold text-muted-foreground mb-2">No security incidents</h3>
+                        <p className="text-muted-foreground">Security alerts will appear here when detected</p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };
