@@ -52,9 +52,9 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
 
   const infoItems = [
     {
-      id: 'roll',
+      id: 'serial',
       icon: Hash,
-      label: 'Roll Number',
+      label: 'Serial Number',
       value: student.serial_number.toString(),
       color: 'bg-gray-200',
       iconColor: 'text-gray-600'
@@ -68,18 +68,18 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
       iconColor: 'text-gray-600'
     },
     {
-      id: 'location',
+      id: 'state',
       icon: MapPin,
-      label: 'Location',
-      value: [student.city, student.state].filter(Boolean).join(', '),
+      label: 'State',
+      value: student.state,
       color: 'bg-gray-200',
       iconColor: 'text-gray-600'
     },
     {
-      id: 'email',
+      id: 'city',
       icon: Mail,
-      label: 'Email',
-      value: student.email,
+      label: 'Student City',
+      value: student.city,
       color: 'bg-gray-200',
       iconColor: 'text-gray-600'
     }
