@@ -216,6 +216,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
+    console.log('SignOut function called. Current state:', { user: !!user, session: !!session, profile: !!profile });
     try {
       // Always clear local state first to prevent UI issues
       setUser(null);
