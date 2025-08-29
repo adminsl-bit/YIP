@@ -14,13 +14,11 @@ interface StudentPhoto {
   photo_url: string;
 }
 
-serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+// Background migration function
+async function performMigration() {
   try {
+    console.log('Starting background migration...');
+    
     // Create admin client with service role key
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -41,26 +39,18 @@ serve(async (req) => {
       .like('photo_url', '%drive.google.com%');
 
     if (fetchError) {
-      throw new Error(`Failed to fetch students: ${fetchError.message}`);
+      console.error('Failed to fetch students:', fetchError.message);
+      return;
     }
 
-    const results = { 
-      total: students?.length || 0, 
-      success: 0, 
-      failed: 0, 
-      errors: [] as string[] 
-    };
-
     if (!students || students.length === 0) {
-      return new Response(JSON.stringify({
-        ...results,
-        message: 'No Google Drive photos found to migrate'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      console.log('No Google Drive photos found to migrate');
+      return;
     }
 
     console.log(`Starting migration for ${students.length} students`);
+    let success = 0;
+    let failed = 0;
 
     for (const student of students as StudentPhoto[]) {
       try {
@@ -130,29 +120,81 @@ serve(async (req) => {
           throw new Error(`Database update failed: ${updateError.message}`);
         }
 
-        results.success++;
+        success++;
         console.log(`✅ Successfully migrated ${student.name}`);
 
       } catch (error) {
-        results.failed++;
-        const errorMsg = `${student.name}: ${error.message}`;
-        results.errors.push(errorMsg);
+        failed++;
         console.error(`❌ Failed to migrate ${student.name}:`, error);
       }
     }
 
-    console.log(`Migration completed: ${results.success} success, ${results.failed} failed`);
+    console.log(`Migration completed: ${success} success, ${failed} failed`);
+  } catch (error) {
+    console.error('Background migration error:', error);
+  }
+}
 
-    return new Response(JSON.stringify(results), {
+serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Create admin client to check for pending migrations
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
+    // Quick check for Google Drive photos
+    const { data: students, error: fetchError } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('user_type', 'student')
+      .like('photo_url', '%drive.google.com%');
+
+    if (fetchError) {
+      throw new Error(`Failed to fetch students: ${fetchError.message}`);
+    }
+
+    const count = students?.length || 0;
+
+    if (count === 0) {
+      return new Response(JSON.stringify({
+        success: true,
+        message: 'No Google Drive photos found to migrate',
+        total: 0
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Start the migration in the background
+    EdgeRuntime.waitUntil(performMigration());
+
+    // Return immediately
+    return new Response(JSON.stringify({
+      success: true,
+      message: `Migration started for ${count} photos`,
+      total: count,
+      note: 'Migration is running in the background. Check the function logs for progress.'
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
+
   } catch (error) {
     console.error('Error in migrate-photos function:', error);
     return new Response(JSON.stringify({ 
-      total: 0,
-      success: 0, 
-      failed: 0, 
-      errors: [error instanceof Error ? error.message : 'Unknown error'] 
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error' 
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -107,7 +107,7 @@ const PhotoUploadManager = () => {
         description: `Starting migration of ${studentsWithGooglePhotos.length} photos...`,
       });
 
-      // Call the edge function to handle migration
+      // Call the edge function to start migration
       const { data, error } = await supabase.functions.invoke('migrate-photos', {
         body: {}
       });
@@ -117,29 +117,42 @@ const PhotoUploadManager = () => {
       }
 
       const result = data;
-      setMigrationProgress(100);
-
-      if (result.failed === 0) {
+      
+      if (result.success) {
+        setMigrationProgress(100);
         setMigrationStatus('completed');
-        toast({
-          title: 'Migration Complete',
-          description: `Successfully migrated ${result.success} out of ${result.total} photos`,
-        });
-      } else {
-        setMigrationStatus('error');
-        toast({
-          title: 'Migration Issues',
-          description: `Completed: ${result.success}, Failed: ${result.failed}. Some photos couldn't be migrated.`,
-          variant: result.failed > result.success ? 'destructive' : 'default',
-        });
         
-        // Log errors to console for debugging
-        if (result.errors && result.errors.length > 0) {
-          console.error('Migration errors:', result.errors);
-        }
-      }
+        toast({
+          title: 'Migration Started Successfully',
+          description: `${result.message}. The migration is running in the background. Photos will appear as they complete.`,
+        });
 
-      await fetchStudents();
+        // Start polling to refresh the student list periodically
+        const pollInterval = setInterval(async () => {
+          await fetchStudents();
+          
+          // Check if migration is complete by counting remaining Google Drive photos
+          const remainingGooglePhotos = students.filter(s => 
+            s.photo_url && s.photo_url.includes('drive.google.com')
+          ).length;
+          
+          if (remainingGooglePhotos === 0) {
+            clearInterval(pollInterval);
+            toast({
+              title: 'Migration Complete',
+              description: 'All photos have been successfully migrated to Supabase Storage!',
+            });
+          }
+        }, 3000); // Check every 3 seconds
+
+        // Clear interval after 5 minutes to avoid infinite polling
+        setTimeout(() => {
+          clearInterval(pollInterval);
+        }, 300000);
+
+      } else {
+        throw new Error(result.error || 'Migration failed');
+      }
 
     } catch (error) {
       setMigrationStatus('error');
