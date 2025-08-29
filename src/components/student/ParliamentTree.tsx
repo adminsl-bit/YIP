@@ -87,7 +87,7 @@ export const ParliamentTree = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, user_id, name, position, party_number, party_name, serial_number, constituency, state, photo_url, updated_at, user_type')
         .eq('user_type', 'student')
         .order('party_number', { ascending: true })
         .order('serial_number', { ascending: true });

@@ -90,7 +90,7 @@ const InteractiveParliamentTree = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, user_id, name, position, party_number, party_name, serial_number, constituency, state, photo_url, email, user_type')
         .eq('user_type', 'student')
         .order('party_number')
         .order('serial_number');
