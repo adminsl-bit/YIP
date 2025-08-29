@@ -360,65 +360,96 @@ export const OrganizerStudentList = () => {
               className="overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5"
             >
               <CardContent className="p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Avatar className="w-12 h-12">
+                {/* Header with Avatar and Name */}
+                <div className="flex items-center gap-4 mb-4">
+                  <Avatar className="w-16 h-16 border-2 border-border/20">
                     <AvatarImage src={student.photo_url} alt={student.name} />
-                    <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                    <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold">
                       {initials}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-foreground truncate">{student.name}</h3>
-                    <p className="text-sm text-muted-foreground truncate">{student.position}</p>
-                  </div>
-                  {getStatusIcon(status)}
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-4">
-                  <div>Serial: {student.serial_number}</div>
-                  <div>Party: {student.party_number}</div>
-                  <div className="col-span-2 truncate">
-                    {student.constituency}, {student.state}
+                    <h3 className="font-bold text-lg text-foreground truncate mb-1">{student.name}</h3>
+                    <p className="text-sm text-muted-foreground truncate mb-2">{student.position}</p>
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(status)}
+                      {getStatusBadge(status)}
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    {getStatusBadge(status)}
-                    {assessmentCount > 0 && (
-                      <span className="text-sm font-medium text-foreground">
-                        Avg: {averageScore}
-                      </span>
-                    )}
+                {/* Student Details Grid */}
+                <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-accent/20 rounded-xl">
+                  <div className="space-y-1">
+                    <div className="text-xs font-medium text-muted-foreground">Serial Number</div>
+                    <div className="text-sm font-bold text-foreground">{student.serial_number}</div>
                   </div>
-
-                  <div className="text-xs text-muted-foreground">
-                    Assessments: {assessmentCount}
-                    {student.last_login_at && (
-                      <div>Last login: {new Date(student.last_login_at).toLocaleDateString()}</div>
-                    )}
+                  <div className="space-y-1">
+                    <div className="text-xs font-medium text-muted-foreground">Party</div>
+                    <div className="text-sm font-bold text-foreground">{student.party_number}</div>
                   </div>
+                  <div className="space-y-1 col-span-2">
+                    <div className="text-xs font-medium text-muted-foreground">Location</div>
+                    <div className="text-sm text-foreground truncate">
+                      {student.constituency}{student.state ? `, ${student.state}` : ''}
+                    </div>
+                  </div>
+                </div>
 
-                  <div className="flex space-x-2">
+                {/* Assessment Information */}
+                <div className="flex items-center justify-between mb-4 p-3 bg-primary/5 rounded-xl">
+                  <div className="space-y-1">
+                    <div className="text-xs font-medium text-muted-foreground">Assessments</div>
+                    <div className="text-sm font-bold text-foreground">{assessmentCount} completed</div>
+                  </div>
+                  {assessmentCount > 0 && (
+                    <div className="space-y-1 text-right">
+                      <div className="text-xs font-medium text-muted-foreground">Average Score</div>
+                      <div className="text-lg font-bold text-primary">{averageScore}</div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Last Login Info */}
+                {student.last_login_at && (
+                  <div className="mb-4 p-2 bg-muted/30 rounded-lg">
+                    <div className="text-xs text-muted-foreground">
+                      Last login: {new Date(student.last_login_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => toggleStudentStatus(student.user_id, student.is_active || false)}
+                    className={`flex-1 h-10 ${student.is_active ? 'hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30' : 'hover:bg-green-50 hover:text-green-700 hover:border-green-300'}`}
+                  >
+                    {student.is_active ? (
+                      <>
+                        <UserX className="w-4 h-4 mr-2" />
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <UserCheck className="w-4 h-4 mr-2" />
+                        Activate
+                      </>
+                    )}
+                  </Button>
+                  {student.session_id && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => toggleStudentStatus(student.user_id, student.is_active || false)}
-                      className="flex-1 text-xs"
+                      onClick={() => forceLogout(student.user_id, student.name)}
+                      className="flex-1 h-10 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
                     >
-                      {student.is_active ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
+                      <Shield className="w-4 h-4 mr-2" />
+                      Force Logout
                     </Button>
-                    {student.session_id && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => forceLogout(student.user_id, student.name)}
-                        className="flex-1 text-xs"
-                      >
-                        <Shield className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
