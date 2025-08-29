@@ -13,6 +13,11 @@ interface DashboardStats {
   totalStudents: number;
   assessedStudents: number;
   averageScore: number;
+  topPerformers: Array<{
+    name: string;
+    score: number;
+    position: string;
+  }>;
 }
 
 interface ChartData {
@@ -29,7 +34,8 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
   const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
     assessedStudents: 0,
-    averageScore: 0
+    averageScore: 0,
+    topPerformers: []
   });
   const [chartData, setChartData] = useState<ChartData>({
     partyData: [],
@@ -162,10 +168,25 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
         ? Math.round(assessments.reduce((sum, a) => sum + a.total_score, 0) / assessments.length)
         : 0;
 
+      // Get top 5 performers with better error handling
+      const topPerformers = assessments
+        ?.sort((a, b) => b.total_score - a.total_score)
+        .slice(0, 5)
+        .map(a => {
+          const profile = profilesMap[a.student_id];
+          console.log(`Processing student ${a.student_id}:`, profile);
+          return {
+            name: profile?.name || 'Student Name Not Found',
+            score: a.total_score,
+            position: profile?.position || 'Position Not Found'
+          };
+        }) || [];
+
       setStats({
         totalStudents,
         assessedStudents,
-        averageScore
+        averageScore,
+        topPerformers
       });
 
       // Calculate chart data
@@ -294,6 +315,28 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
     } catch (error) {
       console.error('Error exporting PDF:', error);
       alert('Failed to export PDF');
+    }
+  };
+
+  const resetAssessments = async () => {
+    if (!confirm('Are you sure you want to reset all your assessments? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('assessments')
+        .delete()
+        .eq('jury_id', juryId);
+
+      if (error) throw error;
+
+      // Refresh dashboard data
+      fetchDashboardData();
+      alert('All assessments have been reset successfully.');
+    } catch (error) {
+      console.error('Error resetting assessments:', error);
+      alert('Failed to reset assessments');
     }
   };
 
@@ -426,6 +469,46 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
         </div>
       </div>
 
+      {/* Top Performers */}
+      <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl flex items-center justify-center shadow-lg">
+            <Trophy className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-xl font-black text-slate-800">Top 5 Performers</h3>
+        </div>
+        
+        {stats.topPerformers.length > 0 ? (
+          <div className="space-y-4">
+            {stats.topPerformers.map((performer, index) => (
+              <div key={index} className="flex items-center justify-between bg-white/30 backdrop-blur-sm rounded-2xl p-4">
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-white ${
+                    index === 0 ? 'bg-gradient-to-br from-yellow-500 to-orange-500' :
+                    index === 1 ? 'bg-gradient-to-br from-gray-400 to-gray-500' :
+                    index === 2 ? 'bg-gradient-to-br from-orange-600 to-yellow-600' :
+                    'bg-gradient-to-br from-slate-500 to-slate-600'
+                  }`}>
+                    #{index + 1}
+                  </div>
+                  <div>
+                    <p className="font-bold text-slate-800">{performer.name}</p>
+                    <p className="text-sm font-semibold text-slate-600">{performer.position}</p>
+                  </div>
+                </div>
+                <div className="bg-white/40 backdrop-blur-sm rounded-xl px-4 py-2">
+                  <span className="text-xl font-black text-slate-800">{performer.score}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <Trophy className="w-12 h-12 mx-auto mb-3 text-slate-400" />
+            <p className="text-slate-600 font-semibold">No assessments completed yet</p>
+          </div>
+        )}
+      </div>
 
       {/* Charts */}
       {chartData.partyData.length > 0 && (
@@ -550,13 +633,13 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
         </div>
       )}
 
-      {/* Export Buttons */}
+      {/* Export and Reset Buttons */}
       <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
             <Download className="w-6 h-6 text-white" />
           </div>
-          <h3 className="text-xl font-black text-slate-800">Export Data</h3>
+          <h3 className="text-xl font-black text-slate-800">Export Data & Reset</h3>
         </div>
         
         <div className="flex flex-wrap gap-4">
@@ -575,6 +658,14 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
           >
             <Download className="w-5 h-5 mr-2" />
             Export PDF
+          </Button>
+          <Button 
+            variant="destructive" 
+            onClick={resetAssessments}
+            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white hover:scale-105 transition-all duration-300 rounded-2xl px-6 py-3 font-semibold"
+          >
+            <Trophy className="w-5 h-5 mr-2" />
+            Reset All Assessments
           </Button>
         </div>
       </div>
