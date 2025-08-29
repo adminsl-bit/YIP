@@ -14,6 +14,7 @@ interface Student {
   serial_number: number;
   name: string;
   photo_url?: string;
+  updated_at?: string;
 }
 
 const PhotoUploadManager = () => {
@@ -27,7 +28,7 @@ const PhotoUploadManager = () => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, serial_number, name, photo_url')
+        .select('id, serial_number, name, photo_url, updated_at')
         .eq('user_type', 'student')
         .order('serial_number');
 
@@ -275,7 +276,7 @@ const PhotoUploadManager = () => {
                     {student.photo_url ? (
                       <>
                         <img
-                          src={student.photo_url}
+                          src={`${student.photo_url}${student.photo_url.includes('?') ? '&' : '?'}cb=${student.updated_at ? new Date(student.updated_at).getTime() : ''}`}
                           data-src={student.photo_url}
                           alt={student.name}
                           loading="lazy"
