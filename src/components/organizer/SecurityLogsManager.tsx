@@ -112,7 +112,7 @@ export const SecurityLogsManager = () => {
 
   const fetchDuplicateLogins = async () => {
     try {
-      // First, get all users with active sessions
+      // Get all users with active sessions
       const { data: activeSessionUsers, error: activeError } = await supabase
         .from('profiles')
         .select('user_id, name, email, position, session_id, last_login_at')
@@ -126,10 +126,11 @@ export const SecurityLogsManager = () => {
         return;
       }
 
-      // Now check for recent duplicate login attempts for users with active sessions
       const activeUserIds = activeSessionUsers.map(u => u.user_id);
-      
-      const { data: recentDuplicates, error: duplicateError } = await supabase
+      const windowStart = new Date(Date.now() - 10 * 60 * 1000).toISOString(); // last 10 minutes
+
+      // Fetch recent login activity for these users (both normal and duplicate)
+      const { data: recentLogins, error: loginErr } = await supabase
         .from('login_audit')
         .select(`
           user_id,
@@ -141,34 +142,51 @@ export const SecurityLogsManager = () => {
           user_agent
         `)
         .in('user_id', activeUserIds)
-        .eq('is_duplicate_session', true)
-        .gte('login_attempt_at', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()) // Last 2 hours only
-        .order('login_attempt_at', { ascending: false });
+        .gte('login_attempt_at', windowStart)
+        .order('login_attempt_at', { ascending: false })
+        .limit(300);
 
-      if (duplicateError) throw duplicateError;
+      if (loginErr) throw loginErr;
 
-      // Only show incidents for users who STILL have active sessions AND had recent duplicates
-      const realIncidents: DuplicateLogin[] = [];
-      
-      if (recentDuplicates && recentDuplicates.length > 0) {
-        recentDuplicates.forEach(incident => {
-          const activeUser = activeSessionUsers.find(u => u.user_id === incident.user_id);
-          if (activeUser) {
-            realIncidents.push({
-              user_id: incident.user_id,
-              name: activeUser.name || 'Unknown',
-              email: activeUser.email || 'Unknown',
-              position: activeUser.position || 'Unknown',
-              is_duplicate_session: incident.is_duplicate_session,
-              session_id: incident.session_id,
-              previous_session_id: incident.previous_session_id,
-              last_login_at: incident.login_attempt_at
-            });
-          }
+      const incidents: DuplicateLogin[] = [];
+
+      // Group by user
+      const byUser: Record<string, typeof recentLogins> = {} as any;
+      (recentLogins || []).forEach((row) => {
+        if (!byUser[row.user_id]) byUser[row.user_id] = [] as any;
+        (byUser[row.user_id] as any).push(row);
+      });
+
+      Object.entries(byUser).forEach(([userId, rows]) => {
+        const activeUser = activeSessionUsers.find(u => u.user_id === userId);
+        if (!activeUser) return;
+
+        // Find any duplicate within last 2 minutes where the duplicate session is different from the current active session
+        const nowWindowStart = Date.now() - 2 * 60 * 1000; // 2 minutes
+        const hasActiveAndDuplicate = (rows as any[]).some((r) => {
+          const t = new Date(r.login_attempt_at).getTime();
+          return r.is_duplicate_session === true && r.session_id && r.session_id !== activeUser.session_id && t >= nowWindowStart;
         });
-      }
 
-      setDuplicateLogins(realIncidents);
+        // Confirm there was also a login with the currently active session within the 10-minute window (indicates two distinct sessions recently)
+        const hasCurrentSessionSeen = (rows as any[]).some((r) => r.session_id && r.session_id === activeUser.session_id);
+
+        if (hasActiveAndDuplicate && hasCurrentSessionSeen) {
+          const latestDup = (rows as any[]).find((r) => r.is_duplicate_session);
+          incidents.push({
+            user_id: userId,
+            name: activeUser.name || 'Unknown',
+            email: activeUser.email || 'Unknown',
+            position: activeUser.position || 'Unknown',
+            is_duplicate_session: true,
+            session_id: latestDup?.session_id,
+            previous_session_id: latestDup?.previous_session_id,
+            last_login_at: latestDup?.login_attempt_at || activeUser.last_login_at,
+          });
+        }
+      });
+
+      setDuplicateLogins(incidents);
     } catch (error) {
       console.error('Error fetching duplicate logins:', error);
       setDuplicateLogins([]);
