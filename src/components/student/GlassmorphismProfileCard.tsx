@@ -97,6 +97,8 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
               src={student.photo_url} 
               alt={`${student.name}'s Avatar`}
               className="object-cover"
+              onError={() => console.log('Image failed to load for:', student.name, 'URL:', student.photo_url)}
+              onLoad={() => console.log('Image loaded for:', student.name, 'URL:', student.photo_url)}
             />
             <AvatarFallback className={`bg-gradient-to-br ${getPartyColor(student.party_number)} text-white text-xl font-bold`}>
               {initials}
