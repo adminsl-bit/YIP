@@ -267,17 +267,17 @@ export const SecurityLogsManager = () => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 gap-2 mb-6 bg-accent/50 p-2 rounded-2xl">
+        <TabsList className="grid w-full grid-cols-2 gap-1 mb-6 bg-muted p-1 rounded-2xl h-14">
           <TabsTrigger 
             value="audit" 
-            className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md"
+            className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:text-foreground"
           >
             <FileText className="w-4 h-4" />
             Audit Logs
           </TabsTrigger>
           <TabsTrigger 
             value="access" 
-            className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-md"
+            className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:text-foreground"
           >
             <Eye className="w-4 h-4" />
             Access Logs
