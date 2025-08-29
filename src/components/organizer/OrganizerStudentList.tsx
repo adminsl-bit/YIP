@@ -347,7 +347,7 @@ export const OrganizerStudentList = () => {
       </Card>
 
       {/* Student List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
         {filteredStudents.map((student) => {
           const status = getStudentStatus(student.user_id);
           const assessmentCount = getAssessmentCount(student.user_id);
@@ -357,9 +357,9 @@ export const OrganizerStudentList = () => {
           return (
             <Card
               key={student.id}
-              className="overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5"
+              className="h-full flex flex-col overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5"
             >
-              <CardContent className="p-6">
+              <CardContent className="p-6 flex flex-col h-full">
                 {/* Header with Avatar and Name */}
                 <div className="flex items-center gap-4 mb-4">
                   <Avatar className="w-16 h-16 border-2 border-border/20">
@@ -379,7 +379,7 @@ export const OrganizerStudentList = () => {
                 </div>
 
                 {/* Student Details Grid */}
-                <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-accent/20 rounded-xl">
+                <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-accent/20 rounded-xl min-h-[88px]">
                   <div className="space-y-1">
                     <div className="text-xs font-medium text-muted-foreground">Serial Number</div>
                     <div className="text-sm font-bold text-foreground">{student.serial_number}</div>
@@ -397,7 +397,7 @@ export const OrganizerStudentList = () => {
                 </div>
 
                 {/* Assessment Information */}
-                <div className="flex items-center justify-between mb-4 p-3 bg-primary/5 rounded-xl">
+                <div className="flex items-center justify-between mb-4 p-3 bg-primary/5 rounded-xl min-h-[64px]">
                   <div className="space-y-1">
                     <div className="text-xs font-medium text-muted-foreground">Assessments</div>
                     <div className="text-sm font-bold text-foreground">{assessmentCount} completed</div>
@@ -420,7 +420,7 @@ export const OrganizerStudentList = () => {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex gap-3">
+                <div className="mt-auto flex gap-3">
                   <Button
                     variant="outline"
                     size="sm"
