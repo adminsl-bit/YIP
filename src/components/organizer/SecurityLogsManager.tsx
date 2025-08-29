@@ -112,6 +112,7 @@ export const SecurityLogsManager = () => {
 
   const fetchDuplicateLogins = async () => {
     try {
+      // Get all duplicate session entries
       const { data: auditData, error: auditError } = await supabase
         .from('login_audit')
         .select(`
@@ -119,10 +120,12 @@ export const SecurityLogsManager = () => {
           is_duplicate_session,
           session_id,
           previous_session_id,
-          created_at
+          login_attempt_at,
+          ip_address,
+          user_agent
         `)
         .eq('is_duplicate_session', true)
-        .order('created_at', { ascending: false })
+        .order('login_attempt_at', { ascending: false })
         .limit(50);
 
       if (auditError) throw auditError;
@@ -132,7 +135,7 @@ export const SecurityLogsManager = () => {
         
         const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('user_id, name, email, position, last_login_at')
+          .select('user_id, name, email, position')
           .in('user_id', userIds);
 
         if (profileError) throw profileError;
@@ -147,7 +150,7 @@ export const SecurityLogsManager = () => {
             is_duplicate_session: audit.is_duplicate_session,
             session_id: audit.session_id,
             previous_session_id: audit.previous_session_id,
-            last_login_at: profile?.last_login_at || audit.created_at
+            last_login_at: audit.login_attempt_at
           };
         });
 
@@ -157,6 +160,7 @@ export const SecurityLogsManager = () => {
       }
     } catch (error) {
       console.error('Error fetching duplicate logins:', error);
+      setDuplicateLogins([]);
     }
   };
 
@@ -225,10 +229,10 @@ export const SecurityLogsManager = () => {
 
       if (profileError) throw profileError;
 
-      // Filter for recently active users (within last 24 hours)
-      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      // Filter for recently active users (within last 4 hours) or those with active sessions
+      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
       const recentlyActive = profileData?.filter(user => 
-        new Date(user.last_login_at) > oneDayAgo
+        new Date(user.last_login_at) > fourHoursAgo || user.session_id !== null
       ) || [];
 
       setActiveUsers(recentlyActive);
@@ -526,20 +530,18 @@ export const SecurityLogsManager = () => {
                               <div className="flex items-center gap-2">
                                 <Badge 
                                   variant={user.session_id ? "default" : "secondary"}
-                                  className={user.session_id ? "bg-green-100 text-green-700 border-green-200" : ""}
+                                  className={user.session_id ? "bg-green-100 text-green-700 border-green-200" : "bg-blue-100 text-blue-700 border-blue-200"}
                                 >
-                                  {user.session_id ? "Active" : "Offline"}
+                                  {user.session_id ? "Active Session" : "Recent Activity"}
                                 </Badge>
-                                {user.session_id && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => forceLogoutUser(user.user_id, user.name)}
-                                    className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 h-8 px-3"
-                                  >
-                                    <LogOut className="w-3 h-3" />
-                                  </Button>
-                                )}
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => forceLogoutUser(user.user_id, user.name)}
+                                  className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 h-8 px-3"
+                                >
+                                  <LogOut className="w-3 h-3" />
+                                </Button>
                               </div>
                             </div>
                           </CardContent>
