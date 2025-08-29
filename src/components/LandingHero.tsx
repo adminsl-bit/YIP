@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Crown, Users, Award, Calendar } from "lucide-react";
 import { LogoCarousel } from "@/components/ui/logo-carousel";
 import { GradientHeading } from "@/components/ui/gradient-heading";
+import { Link } from "react-router-dom";
 import { 
   YoungIndiansIcon, 
   ThalirIcon, 
@@ -154,14 +155,15 @@ export const LandingHero = () => {
             <div className="text-center mb-8 sm:mb-12 px-4">
               <div className="relative inline-block">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-indigo-500/30 rounded-2xl sm:rounded-3xl blur-xl"></div>
-                <Button 
-                  size="lg"
-                  className="relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xl sm:text-2xl lg:text-3xl px-8 sm:px-12 lg:px-16 py-4 sm:py-6 lg:py-8 rounded-2xl sm:rounded-3xl shadow-2xl hover:shadow-blue-500/40 hover:scale-105 transition-all duration-300 border border-white/20 touch-target"
-                  onClick={() => window.location.href = '/login'}
-                >
-                  <Crown className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 mr-3 sm:mr-4 lg:mr-6" />
-                  ENTER PARLIAMENT
-                </Button>
+                <Link to="/login">
+                  <Button 
+                    size="lg"
+                    className="relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xl sm:text-2xl lg:text-3xl px-8 sm:px-12 lg:px-16 py-4 sm:py-6 lg:py-8 rounded-2xl sm:rounded-3xl shadow-2xl hover:shadow-blue-500/40 hover:scale-105 transition-all duration-300 border border-white/20 touch-target"
+                  >
+                    <Crown className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 mr-3 sm:mr-4 lg:mr-6" />
+                    ENTER PARLIAMENT
+                  </Button>
+                </Link>
               </div>
               
               {/* Enhanced Glass Buttons Section */}
