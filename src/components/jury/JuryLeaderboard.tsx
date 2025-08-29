@@ -481,7 +481,14 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="w-10 h-10 border-2 border-white/25">
-                            <AvatarImage src={entry.photo_url} alt={entry.name} />
+                             <AvatarImage 
+                               src={entry.photo_url ? (entry.photo_url.includes('/file/d/') ? `https://drive.google.com/uc?export=view&id=${entry.photo_url.split('/d/')[1]?.split('/')[0]}` : entry.photo_url) : undefined} 
+                               alt={entry.name}
+                               referrerPolicy="no-referrer"
+                               loading="lazy"
+                               decoding="async"
+                               onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/mahatma-logo.png'; }}
+                             />
                             <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-600 text-white font-semibold">
                               {entry.name.split(' ').map(n => n[0]).join('')}
                             </AvatarFallback>

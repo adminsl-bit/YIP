@@ -322,9 +322,15 @@ const JuryDashboard = () => {
                       <div className="lg:w-1/2 relative">
                         {profile.photo_url ? (
                           <img 
-                            src={profile.photo_url} 
+                            src={profile.photo_url && profile.photo_url.includes('/file/d/') 
+                              ? `https://drive.google.com/uc?export=view&id=${profile.photo_url.split('/d/')[1]?.split('/')[0]}` 
+                              : profile.photo_url}
                             alt={`${profile.name} profile photo`}
                             className="w-full h-full object-cover"
+                            loading="lazy"
+                            decoding="async"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).src = '/images/mahatma-logo.png'; }}
                           />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center">
