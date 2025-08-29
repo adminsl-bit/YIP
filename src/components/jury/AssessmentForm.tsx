@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { Save, Send, Edit, Lock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface RubricCriteria {
   name: string;
@@ -142,6 +143,7 @@ export const AssessmentForm = ({
   const [notes, setNotes] = useState(initialNotes);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [assessmentsLocked, setAssessmentsLocked] = useState(false);
 
   // Determine seat role from position
   const getSeatRole = (position: string): keyof typeof RUBRICS => {
@@ -172,6 +174,27 @@ export const AssessmentForm = ({
       setScores(initialScoreState);
     }
   }, [rubric, scores]);
+
+  // Check assessment lock setting
+  useEffect(() => {
+    const checkAssessmentLock = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('system_settings')
+          .select('setting_value')
+          .eq('setting_key', 'assessments_locked')
+          .limit(1);
+        
+        if (error) throw error;
+        const lockValue = data && data.length ? data[0].setting_value : false;
+        setAssessmentsLocked(lockValue === true || lockValue === 'true');
+      } catch (error) {
+        console.error('Error checking assessment lock:', error);
+      }
+    };
+    
+    checkAssessmentLock();
+  }, []);
 
   // Auto-save to localStorage every 2 seconds
   useEffect(() => {
@@ -382,7 +405,7 @@ export const AssessmentForm = ({
                         max={maxScore}
                         step={1}
                         className="w-full"
-                        disabled={isLocked || initialStatus === 'locked'}
+                        disabled={isLocked || initialStatus === 'locked' || assessmentsLocked}
                       />
                       <div className="flex justify-between text-xs font-semibold text-slate-500 mt-2">
                         <span>0</span>
@@ -406,7 +429,7 @@ export const AssessmentForm = ({
                       max={criteria.maxScore}
                       step={1}
                       className="w-full"
-                      disabled={isLocked || initialStatus === 'locked'}
+                      disabled={isLocked || initialStatus === 'locked' || assessmentsLocked}
                     />
                   </div>
                 </div>
@@ -427,13 +450,13 @@ export const AssessmentForm = ({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any additional observations, comments, or feedback about the student's performance..."
               rows={4}
-              disabled={isLocked || initialStatus === 'locked'}
+              disabled={isLocked || initialStatus === 'locked' || assessmentsLocked}
               className="bg-white/30 backdrop-blur-sm border-white/40 text-slate-800 placeholder:text-slate-500 rounded-xl font-medium"
             />
           </div>
 
           {/* Action Buttons */}
-          {!isLocked && initialStatus !== 'locked' && (
+          {!isLocked && initialStatus !== 'locked' && !assessmentsLocked && (
             <div className="flex flex-wrap gap-4 pt-6">
               <Button
                 onClick={() => handleSubmit('draft')}
@@ -465,7 +488,7 @@ export const AssessmentForm = ({
             </div>
           )}
 
-          {(isLocked || initialStatus === 'locked') && (
+          {(isLocked || initialStatus === 'locked' || assessmentsLocked) && (
             <div className="bg-red-100/80 backdrop-blur-sm rounded-2xl p-6 border border-red-200/50 shadow-lg">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
@@ -473,7 +496,12 @@ export const AssessmentForm = ({
                 </div>
                 <div>
                   <h4 className="text-lg font-black text-red-800">Assessment Locked</h4>
-                  <p className="text-red-700 font-semibold">This assessment has been locked by the organizer and cannot be modified.</p>
+                  <p className="text-red-700 font-semibold">
+                    {assessmentsLocked 
+                      ? "Assessments have been globally locked by the organizer and cannot be modified."
+                      : "This assessment has been locked and cannot be modified."
+                    }
+                  </p>
                 </div>
               </div>
             </div>

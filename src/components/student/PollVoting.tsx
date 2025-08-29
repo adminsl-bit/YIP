@@ -7,6 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Vote, CheckCircle, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { toast } from "@/hooks/use-toast";
 
 interface Poll {
@@ -21,6 +22,7 @@ interface Poll {
 
 export const PollVoting = () => {
   const { user } = useAuth();
+  const { settings } = useSystemSettings();
   const [polls, setPolls] = useState<Poll[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [userVotes, setUserVotes] = useState<Record<string, string>>({});
@@ -104,6 +106,21 @@ export const PollVoting = () => {
     );
   }
 
+  if (!settings.voting_enabled) {
+    return (
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Live Polls</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center p-8">
+            <p className="text-muted-foreground text-lg">Voting is currently disabled by the organizer.</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!polls.length) {
     return null;
   }
@@ -157,7 +174,7 @@ export const PollVoting = () => {
 
                   <Button
                     onClick={() => handleVote(poll)}
-                    disabled={!selectedOptions[poll.id] || submitting === poll.id}
+                    disabled={!selectedOptions[poll.id] || submitting === poll.id || !settings.voting_enabled}
                     className="w-full"
                   >
                     {submitting === poll.id ? 'Submitting...' : 'Cast Vote'}

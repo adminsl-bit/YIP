@@ -24,6 +24,7 @@ const LeaderboardDisplay = () => {
   const [scoringLeaders, setScoringLeaders] = useState<AssessmentResult[]>([]);
   const [pollResults, setPollResults] = useState<Record<string, PollResult[]>>({});
   const [loading, setLoading] = useState(true);
+  const [isLeaderboardVisible, setIsLeaderboardVisible] = useState(true);
 
   const fetchScoringLeaders = async () => {
     try {
@@ -102,7 +103,27 @@ const LeaderboardDisplay = () => {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchScoringLeaders(), fetchPollResults()]);
+      
+      // Check if leaderboard is visible
+      try {
+        const { data, error } = await supabase
+          .from('system_settings')
+          .select('setting_value')
+          .eq('setting_key', 'leaderboard_visible')
+          .limit(1);
+        
+        if (error) throw error;
+        const isVisible = data && data.length ? (data[0].setting_value === true || data[0].setting_value === 'true') : true;
+        setIsLeaderboardVisible(isVisible);
+        
+        if (isVisible) {
+          await Promise.all([fetchScoringLeaders(), fetchPollResults()]);
+        }
+      } catch (error) {
+        console.error('Error checking leaderboard visibility:', error);
+        setIsLeaderboardVisible(false);
+      }
+      
       setLoading(false);
     };
 
@@ -157,6 +178,17 @@ const LeaderboardDisplay = () => {
     ];
     return colors[partyNumber % colors.length];
   };
+
+  if (!isLeaderboardVisible) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="text-6xl font-bold text-muted-foreground">Leaderboard Hidden</div>
+          <p className="text-2xl text-muted-foreground">The leaderboard is currently disabled by the organizer.</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
