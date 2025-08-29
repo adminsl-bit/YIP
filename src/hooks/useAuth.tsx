@@ -217,36 +217,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signOut = async () => {
     try {
-      // Clear session in database if it's a student
-      if (profile?.user_type === 'student') {
-        await supabase
-          .from('profiles')
-          .update({ session_id: null })
-          .eq('user_id', user?.id);
+      // Always clear local state first to prevent UI issues
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      
+      // Clear session in database if it's a student and we have user data
+      if (profile?.user_type === 'student' && user?.id) {
+        try {
+          await supabase
+            .from('profiles')
+            .update({ session_id: null })
+            .eq('user_id', user.id);
+        } catch (dbError) {
+          console.log('Database cleanup failed, continuing with logout:', dbError);
+        }
       }
       
+      // Attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
-      // Handle session not found gracefully - just clear local state
-      if (error && error.message.includes('Session not found')) {
-        console.log('Session already expired, clearing local state');
-        setUser(null);
-        setSession(null);
-        setProfile(null);
-        toast.success('Signed out successfully');
-        navigate('/');
-        return;
+      // Handle any Supabase signOut errors gracefully
+      if (error) {
+        console.log('Supabase signOut error (handled gracefully):', error.message);
+        // Don't show error to user since we've already cleared local state
       }
       
-      if (error) {
-        toast.error(error.message);
-      } else {
-        toast.success('Signed out successfully');
-        navigate('/');
-      }
+      // Always show success and navigate
+      toast.success('Signed out successfully');
+      navigate('/');
+      
     } catch (error) {
-      // If any error occurs, force clear the auth state
-      console.log('Error during sign out, forcing clear:', error);
+      // If any error occurs, ensure we still clear state and navigate
+      console.log('Error during sign out, but state already cleared:', error);
       setUser(null);
       setSession(null);
       setProfile(null);
