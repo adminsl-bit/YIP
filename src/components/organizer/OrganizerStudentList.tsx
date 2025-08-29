@@ -346,8 +346,9 @@ export const OrganizerStudentList = () => {
         </CardContent>
       </Card>
 
-      {/* Student List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+      {/* Student List - Scrollable Container */}
+      <div className="max-h-[600px] overflow-y-auto pr-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
         {filteredStudents.map((student) => {
           const status = getStudentStatus(student.user_id);
           const assessmentCount = getAssessmentCount(student.user_id);
@@ -453,10 +454,11 @@ export const OrganizerStudentList = () => {
             </Card>
           );
         })}
+        </div>
       </div>
 
       {filteredStudents.length === 0 && (
-        <div className="text-center py-12 text-slate-600">
+        <div className="text-center py-12 text-muted-foreground">
           <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
           <p>No students found matching your criteria.</p>
         </div>

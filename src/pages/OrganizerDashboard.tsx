@@ -165,34 +165,34 @@ const OrganizerDashboard = () => {
             </TabsContent>
 
             <TabsContent value="students" className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
-                  <div className="text-center mb-8">
-                    <div className="relative inline-block mb-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-orange-500/30">
-                        <Activity className="w-8 h-8 text-white" />
-                      </div>
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-400/40 rounded-full animate-bounce"></div>
+              {/* Student Overview - Full Width at Top */}
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <div className="text-center mb-8">
+                  <div className="relative inline-block mb-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-orange-500/30">
+                      <Activity className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="text-2xl font-black text-slate-800 mb-2">Student Overview</h3>
-                    <p className="text-slate-600 font-medium">Performance and assessment statistics</p>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-400/40 rounded-full animate-bounce"></div>
                   </div>
-                  <OrganizerStats />
+                  <h3 className="text-2xl font-black text-slate-800 mb-2">Student Overview</h3>
+                  <p className="text-slate-600 font-medium">Performance and assessment statistics</p>
                 </div>
-                
-                <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
-                  <div className="text-center mb-8">
-                    <div className="relative inline-block mb-4">
-                      <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-blue-500/30">
-                        <Users className="w-8 h-8 text-white" />
-                      </div>
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-400/40 rounded-full animate-bounce"></div>
+                <OrganizerStats />
+              </div>
+              
+              {/* Student Management - Full Width with Scrollable Content */}
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <div className="text-center mb-8">
+                  <div className="relative inline-block mb-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-blue-500/30">
+                      <Users className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="text-2xl font-black text-slate-800 mb-2">Student Management</h3>
-                    <p className="text-slate-600 font-medium">View and manage student profiles</p>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-400/40 rounded-full animate-bounce"></div>
                   </div>
-                  <OrganizerStudentList />
+                  <h3 className="text-2xl font-black text-slate-800 mb-2">Student Management</h3>
+                  <p className="text-slate-600 font-medium">View and manage student profiles</p>
                 </div>
+                <OrganizerStudentList />
               </div>
 
               {/* Bulk Import as Accordion at Bottom */}
