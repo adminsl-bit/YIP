@@ -291,56 +291,127 @@ export const AssessmentForm = ({
   const percentage = Math.round((total / maxTotal) * 100);
 
   return (
-    <div className="space-y-6">
-      {/* Student Header */}
-      <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
-        <div className="flex items-center gap-6">
-          <div className="relative">
-            <Avatar className="w-20 h-20 ring-4 ring-white/20 shadow-lg">
-              <AvatarImage src={student.photo_url} alt={student.name} />
-              <AvatarFallback className="text-2xl font-black bg-gradient-to-br from-purple-500 to-indigo-500 text-white">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="absolute -top-1 -right-1 w-6 h-6 bg-purple-400/40 rounded-full animate-bounce"></div>
+    <div className="space-y-8">
+      {/* Enhanced Student Profile Header */}
+      <div className="bg-white/15 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
+        <div className="flex flex-col lg:flex-row items-center gap-8">
+          {/* Avatar Section */}
+          <div className="relative flex-shrink-0">
+            <div className="relative">
+              <Avatar className="w-32 h-32 ring-4 ring-white/25 shadow-xl border-4 border-white/20">
+                <AvatarImage 
+                  src={student.photo_url
+                    ? (() => {
+                        const raw = student.photo_url.includes('/file/d/')
+                          ? `https://drive.google.com/uc?export=view&id=${student.photo_url.split('/d/')[1]?.split('/')[0]}`
+                          : student.photo_url;
+                        const suffix = raw.includes('?') ? '&' : '?';
+                        return `${raw}${suffix}cb=${Date.now()}`;
+                      })()
+                    : undefined}
+                  alt={student.name} 
+                  className="object-cover"
+                  referrerPolicy="no-referrer"
+                />
+                <AvatarFallback className="text-3xl font-black bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-purple-400 to-indigo-400 rounded-full border-2 border-white animate-pulse shadow-lg"></div>
+            </div>
           </div>
           
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-3">
-              <h2 className="text-2xl font-black text-slate-800">{student.name}</h2>
-              <div className="px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-xl shadow-lg">
-                {student.position}
+          {/* Student Details */}
+          <div className="flex-1 text-center lg:text-left">
+            <div className="mb-6">
+              <h1 className="text-4xl font-black text-slate-800 mb-2">{student.name}</h1>
+              <div className="flex items-center justify-center lg:justify-start gap-3 mb-4">
+                <div className="w-6 h-6 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg flex items-center justify-center shadow-lg">
+                  {student.position.toLowerCase().includes('speaker') ? (
+                    <span className="text-white text-xs font-black">S</span>
+                  ) : (
+                    <span className="text-white text-xs font-black">M</span>
+                  )}
+                </div>
+                <Badge className="px-6 py-2 text-lg font-black bg-gradient-to-r from-indigo-500 to-purple-500 text-white border-0 shadow-lg">
+                  {student.position}
+                </Badge>
               </div>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
-                <p className="text-slate-500 font-medium text-sm">Serial</p>
-                <p className="font-black text-slate-800">{student.serial_number}</p>
+            {/* Profile Details Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white/25 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-white text-xs font-black">#</span>
+                  </div>
+                  <p className="text-slate-600 font-semibold text-sm">Serial Number</p>
+                </div>
+                <p className="font-black text-xl text-slate-800">{student.serial_number}</p>
               </div>
-              <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
-                <p className="text-slate-500 font-medium text-sm">Party</p>
-                <p className="font-black text-slate-800">{student.party_number}</p>
+              
+              <div className="bg-white/25 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <span className="text-white text-xs font-black">P</span>
+                  </div>
+                  <p className="text-slate-600 font-semibold text-sm">Party Number</p>
+                </div>
+                <p className="font-black text-xl text-slate-800">Party {student.party_number}</p>
               </div>
-              <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
-                <p className="text-slate-500 font-medium text-sm">Constituency</p>
-                <p className="font-bold text-slate-800 text-sm">{student.constituency}</p>
-              </div>
-              <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
-                <p className="text-slate-500 font-medium text-sm">State</p>
-                <p className="font-bold text-slate-800 text-sm">{student.state}</p>
-              </div>
+              
+              {student.constituency && (
+                <div className="bg-white/25 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl flex items-center justify-center shadow-lg">
+                      <span className="text-white text-xs font-black">C</span>
+                    </div>
+                    <p className="text-slate-600 font-semibold text-sm">Constituency</p>
+                  </div>
+                  <p className="font-bold text-slate-800 text-sm leading-tight">{student.constituency}</p>
+                </div>
+              )}
+              
+              {student.state && (
+                <div className="bg-white/25 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
+                      <span className="text-white text-xs font-black">S</span>
+                    </div>
+                    <p className="text-slate-600 font-semibold text-sm">State</p>
+                  </div>
+                  <p className="font-bold text-slate-800 text-sm leading-tight">{student.state}</p>
+                </div>
+              )}
+              
+              {student.city && (
+                <div className="bg-white/25 backdrop-blur-sm rounded-2xl p-4 border border-white/20 shadow-lg">
+                  <div className="flex items-center gap-3 mb-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
+                      <span className="text-white text-xs font-black">🏙</span>
+                    </div>
+                    <p className="text-slate-600 font-semibold text-sm">City</p>
+                  </div>
+                  <p className="font-bold text-slate-800 text-sm leading-tight">{student.city}</p>
+                </div>
+              )}
             </div>
           </div>
           
-          <div className="text-center bg-white/30 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
-            <div className="text-4xl font-black text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text mb-2">
-              {total}
-            </div>
-            <div className="text-sm font-bold text-slate-600 mb-3">out of {maxTotal}</div>
-            <div className="w-24">
-              <Progress value={percentage} className="h-3 bg-white/40" />
-              <p className="text-xs font-bold text-slate-600 mt-1">{percentage}%</p>
+          {/* Score Display */}
+          <div className="flex-shrink-0">
+            <div className="text-center bg-white/25 backdrop-blur-sm rounded-3xl p-8 border border-white/20 shadow-xl">
+              <div className="mb-4">
+                <div className="text-5xl font-black text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text mb-2">
+                  {total}
+                </div>
+                <div className="text-sm font-bold text-slate-600 mb-4">out of {maxTotal}</div>
+              </div>
+              <div className="w-32">
+                <Progress value={percentage} className="h-4 bg-white/30" />
+                <p className="text-sm font-black text-slate-700 mt-2">{percentage}% Complete</p>
+              </div>
             </div>
           </div>
         </div>
