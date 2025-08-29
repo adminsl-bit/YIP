@@ -1,7 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap } from "lucide-react";
+import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap, Image as ImageIcon } from "lucide-react";
 import { FeatureToggles } from "@/components/organizer/FeatureToggles";
 import { TimerControl } from "@/components/organizer/TimerControl";
 import { PollManagement } from "@/components/organizer/PollManagement";
@@ -9,6 +9,7 @@ import { SecurityLogsManager } from "@/components/organizer/SecurityLogsManager"
 import { OrganizerStats } from "@/components/organizer/OrganizerStats";
 import { OrganizerStudentList } from "@/components/organizer/OrganizerStudentList";
 import { StudentBulkImport } from "@/components/organizer/StudentBulkImport";
+import PhotoUploadManager from "@/components/organizer/PhotoUploadManager";
 
 const OrganizerDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -87,7 +88,7 @@ const OrganizerDashboard = () => {
           </div>
 
           <Tabs defaultValue="controls" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-5 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
+            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-6 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
               <TabsTrigger 
                 value="controls" 
                 className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
@@ -132,6 +133,15 @@ const OrganizerDashboard = () => {
                   <ShieldCheck className="w-4 h-4 text-white" />
                 </div>
                 <span className="text-center">Security</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="photos" 
+                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
+              >
+                <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-rose-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <ImageIcon className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-center">Photos</span>
               </TabsTrigger>
             </TabsList>
 
@@ -202,6 +212,22 @@ const OrganizerDashboard = () => {
             <TabsContent value="security" className="space-y-6">
               <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
                 <SecurityLogsManager />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="photos" className="space-y-6">
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <div className="text-center mb-8">
+                  <div className="relative inline-block mb-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-rose-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-pink-500/30">
+                      <ImageIcon className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-pink-400/40 rounded-full animate-bounce"></div>
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-800 mb-2">Photo Management</h3>
+                  <p className="text-slate-600 font-medium">Upload and manage student photos</p>
+                </div>
+                <PhotoUploadManager />
               </div>
             </TabsContent>
           </Tabs>
