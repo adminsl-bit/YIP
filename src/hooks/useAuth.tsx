@@ -41,6 +41,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
+      console.log('Fetching profile for user ID:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -52,6 +53,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return;
       }
       
+      if (!data) {
+        console.log('No profile found for user ID:', userId);
+        // If no profile exists, sign out the user as their account may be deleted
+        toast.error('Your account is not found. Please contact support.');
+        setTimeout(() => {
+          signOut();
+        }, 1000);
+        return;
+      }
+      
+      console.log('Profile fetched successfully:', data);
       setProfile(data);
     } catch (error) {
       console.error('Error in fetchProfile:', error);
