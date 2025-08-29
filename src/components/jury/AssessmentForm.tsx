@@ -424,7 +424,7 @@ export const AssessmentForm = ({
         </div>
       </div>
 
-      {/* Assessment Form */}
+      {/* Assessment Rubric Section - Clean separation */}
       <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-4">

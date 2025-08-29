@@ -191,19 +191,19 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     return 'mp';
   };
 
-  // Party gradient styling aligned with Student Profile card
-  const getPartyGradient = (partyNumber: number) => {
-    const gradients = [
-      'from-red-500 to-red-600',
-      'from-blue-500 to-blue-600',
-      'from-green-500 to-green-600',
-      'from-yellow-500 to-yellow-600',
-      'from-purple-500 to-purple-600',
-      'from-pink-500 to-pink-600',
-      'from-indigo-500 to-indigo-600',
-      'from-teal-500 to-teal-600',
+  // Party badge styling consistent with other components
+  const getPartyBadgeClass = (partyNumber: number) => {
+    const colors = [
+      'bg-red-500/90 text-white border-red-600',
+      'bg-blue-500/90 text-white border-blue-600', 
+      'bg-green-500/90 text-white border-green-600',
+      'bg-yellow-500/90 text-white border-yellow-600',
+      'bg-purple-500/90 text-white border-purple-600',
+      'bg-pink-500/90 text-white border-pink-600',
+      'bg-indigo-500/90 text-white border-indigo-600',
+      'bg-teal-500/90 text-white border-teal-600',
     ];
-    return gradients[partyNumber % gradients.length] || 'from-slate-500 to-slate-600';
+    return colors[(partyNumber - 1) % colors.length] || 'bg-slate-500/90 text-white border-slate-600';
   };
   const getAssessmentStatus = (studentUserId: string) => {
     const assessment = assessments.find(a => a.student_id === studentUserId);
@@ -415,7 +415,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                   <div className="flex items-center gap-2">
                     <p className="text-slate-600 font-semibold truncate">{student.position}</p>
                     <span className="hidden sm:inline text-slate-400">•</span>
-                    <Badge className={`hidden sm:inline bg-gradient-to-r ${getPartyGradient(student.party_number)} text-white font-bold px-3 py-1`}>
+                    <Badge className={`hidden sm:inline ${getPartyBadgeClass(student.party_number)} font-bold px-3 py-1 border`}>
                       Party {student.party_number}
                     </Badge>
                   </div>
