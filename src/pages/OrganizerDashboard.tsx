@@ -1,6 +1,7 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap, Image as ImageIcon } from "lucide-react";
 import { FeatureToggles } from "@/components/organizer/FeatureToggles";
 import { TimerControl } from "@/components/organizer/TimerControl";
@@ -164,20 +165,6 @@ const OrganizerDashboard = () => {
             </TabsContent>
 
             <TabsContent value="students" className="space-y-6">
-              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl mb-6">
-                <div className="text-center mb-8">
-                  <div className="relative inline-block mb-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/30">
-                      <GraduationCap className="w-8 h-8 text-white" />
-                    </div>
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400/40 rounded-full animate-bounce"></div>
-                  </div>
-                  <h3 className="text-2xl font-black text-slate-800 mb-2">Bulk Student Import</h3>
-                  <p className="text-slate-600 font-medium">Import students from Excel with photos</p>
-                </div>
-                <StudentBulkImport />
-              </div>
-
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
                   <div className="text-center mb-8">
@@ -206,6 +193,28 @@ const OrganizerDashboard = () => {
                   </div>
                   <OrganizerStudentList />
                 </div>
+              </div>
+
+              {/* Bulk Import as Accordion at Bottom */}
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="bulk-import" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                          <GraduationCap className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <h3 className="text-xl font-black text-slate-800">Bulk Student Import</h3>
+                          <p className="text-slate-600 font-medium text-sm">Import students from Excel with photos</p>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-6">
+                      <StudentBulkImport />
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </div>
             </TabsContent>
 
