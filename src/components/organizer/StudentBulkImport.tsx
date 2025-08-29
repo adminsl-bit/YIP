@@ -10,14 +10,15 @@ import * as XLSX from 'xlsx';
 
 interface StudentData {
   serialNumber: number;
+  loginId: string;
   name: string;
-  partyName: string;
+  seatRole: string;
   partyNumber: number;
-  role: string;
-  photoUrl?: string;
   constituency?: string;
   state?: string;
   city?: string;
+  photoUrl?: string;
+  password: string;
 }
 
 export const StudentBulkImport = () => {
@@ -63,30 +64,32 @@ export const StudentBulkImport = () => {
               return '';
             };
 
-            const serialNumber = getColumnValue(['S.No', 'Serial No', 'SNo', 's.no', 'serial_number', 'Serial Number']);
-            const name = getColumnValue(['Name', 'name', 'student_name', 'Student Name']);
-            const partyName = getColumnValue(['Party Name', 'party_name', 'Party', 'party']);
-            const partyNumber = getColumnValue(['Party Number', 'party_number', 'Party No', 'party_no']);
-            const role = getColumnValue(['Role', 'role', 'Position', 'position']);
-            const photoUrl = getColumnValue(['Photo URL', 'photo_url', 'Photo Link', 'photo_link', 'Photo', 'photo']);
-            const constituency = getColumnValue(['Constituency', 'constituency']);
-            const state = getColumnValue(['State', 'state']);
-            const city = getColumnValue(['City', 'city']);
+            const serialNumber = getColumnValue(['Serial no', 'S.No', 'Serial No', 'SNo', 's.no', 'serial_number']);
+            const loginId = getColumnValue(['login id', 'Login ID', 'LoginId', 'login_id']);
+            const name = getColumnValue(['name', 'Name', 'student_name', 'Student Name']);
+            const seatRole = getColumnValue(['seat role', 'Seat Role', 'Role', 'role', 'Position', 'position']);
+            const partyNumber = getColumnValue(['partynumber', 'Party Number', 'party_number', 'Party No', 'party_no']);
+            const constituency = getColumnValue(['constituency', 'Constituency']);
+            const state = getColumnValue(['state', 'State']);
+            const city = getColumnValue(['home city', 'Home City', 'City', 'city']);
+            const photoUrl = getColumnValue(['photo url', 'Photo URL', 'photo_url', 'Photo Link', 'photo_link']);
+            const password = getColumnValue(['password', 'Password']);
 
-            if (!name || !serialNumber) {
-              throw new Error(`Row ${index + 2}: Missing required fields (Name or Serial Number)`);
+            if (!name || !serialNumber || !loginId || !password) {
+              throw new Error(`Row ${index + 2}: Missing required fields (Serial no, Login ID, Name, or Password)`);
             }
 
             return {
               serialNumber: parseInt(serialNumber.toString()) || index + 1,
+              loginId: loginId.toString().trim(),
               name: name.toString().trim(),
-              partyName: partyName?.toString().trim() || '',
+              seatRole: seatRole?.toString().trim() || 'Member of Parliament',
               partyNumber: parseInt(partyNumber?.toString()) || 1,
-              role: role?.toString().trim() || 'Member of Parliament',
-              photoUrl: photoUrl ? convertGoogleDriveUrl(photoUrl.toString().trim()) : undefined,
               constituency: constituency?.toString().trim(),
               state: state?.toString().trim(),
               city: city?.toString().trim(),
+              photoUrl: photoUrl ? convertGoogleDriveUrl(photoUrl.toString().trim()) : undefined,
+              password: password.toString().trim(),
             };
           });
 
@@ -108,42 +111,91 @@ export const StudentBulkImport = () => {
       setProgress(((i + 1) / students.length) * 100);
 
       try {
-        // First, create a user account
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email: `${student.serialNumber}@parliament.local`,
-          password: `student${student.serialNumber}`,
-          email_confirm: true,
-        });
-
-        if (authError) {
-          results.errors.push(`${student.name}: Failed to create auth user - ${authError.message}`);
-          results.failed++;
-          continue;
-        }
-
-        // Then create the profile
-        const { error: profileError } = await supabase
+        // Check if user already exists and update if needed
+        const { data: existingProfile } = await supabase
           .from('profiles')
-          .insert({
-            user_id: authData.user.id,
-            serial_number: student.serialNumber,
-            name: student.name,
-            position: student.role,
-            party_number: student.partyNumber,
-            constituency: student.constituency,
-            state: student.state,
-            city: student.city,
-            photo_url: student.photoUrl,
-            user_type: 'student',
-            email: `${student.serialNumber}@parliament.local`,
+          .select('user_id')
+          .eq('serial_number', student.serialNumber)
+          .single();
+
+        let userId: string;
+
+        if (existingProfile) {
+          // Update existing user password
+          const { error: updateAuthError } = await supabase.auth.admin.updateUserById(
+            existingProfile.user_id,
+            { password: student.password }
+          );
+
+          if (updateAuthError) {
+            results.errors.push(`${student.name}: Failed to update password - ${updateAuthError.message}`);
+            results.failed++;
+            continue;
+          }
+
+          userId = existingProfile.user_id;
+
+          // Update existing profile
+          const { error: updateProfileError } = await supabase
+            .from('profiles')
+            .update({
+              name: student.name,
+              position: student.seatRole,
+              party_number: student.partyNumber,
+              constituency: student.constituency,
+              state: student.state,
+              city: student.city,
+              photo_url: student.photoUrl,
+              email: `${student.loginId}@parliament.local`,
+            })
+            .eq('user_id', existingProfile.user_id);
+
+          if (updateProfileError) {
+            results.errors.push(`${student.name}: Failed to update profile - ${updateProfileError.message}`);
+            results.failed++;
+            continue;
+          }
+        } else {
+          // Create new user account
+          const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+            email: `${student.loginId}@parliament.local`,
+            password: student.password,
+            email_confirm: true,
           });
 
-        if (profileError) {
-          results.errors.push(`${student.name}: Failed to create profile - ${profileError.message}`);
-          results.failed++;
-        } else {
-          results.success++;
+          if (authError) {
+            results.errors.push(`${student.name}: Failed to create auth user - ${authError.message}`);
+            results.failed++;
+            continue;
+          }
+
+          userId = authData.user.id;
+
+          // Create new profile
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              user_id: authData.user.id,
+              serial_number: student.serialNumber,
+              name: student.name,
+              position: student.seatRole,
+              party_number: student.partyNumber,
+              constituency: student.constituency,
+              state: student.state,
+              city: student.city,
+              photo_url: student.photoUrl,
+              user_type: 'student',
+              email: `${student.loginId}@parliament.local`,
+            });
+
+          if (profileError) {
+            results.errors.push(`${student.name}: Failed to create profile - ${profileError.message}`);
+            results.failed++;
+            continue;
+          }
         }
+
+        results.success++;
       } catch (error) {
         results.errors.push(`${student.name}: Unexpected error - ${error instanceof Error ? error.message : 'Unknown error'}`);
         results.failed++;
@@ -185,15 +237,16 @@ export const StudentBulkImport = () => {
   const downloadTemplate = () => {
     const template = [
       {
-        'S.No': 1,
-        'Name': 'John Doe',
-        'Party Name': 'Progressive Party',
-        'Party Number': 1,
-        'Role': 'Member of Parliament',
-        'Constituency': 'Mumbai Central',
-        'State': 'Maharashtra',
-        'City': 'Mumbai',
-        'Photo URL': 'https://drive.google.com/file/d/1ABC123/view?usp=sharing'
+        'Serial no': 1,
+        'login id': '11',
+        'name': 'John Doe',
+        'seat role': 'Speaker',
+        'partynumber': 1,
+        'constituency': 'Mumbai Central',
+        'state': 'Maharashtra',
+        'home city': 'Mumbai',
+        'photo url': 'https://drive.google.com/file/d/1ABC123/view?usp=sharing',
+        'password': 'student123'
       }
     ];
     
@@ -220,11 +273,13 @@ export const StudentBulkImport = () => {
           <Alert>
             <Info className="w-4 h-4" />
             <AlertDescription>
-              <strong>Required columns:</strong> S.No, Name, Party Name, Party Number, Role
+              <strong>Required columns:</strong> Serial no, login id, name, password
               <br />
-              <strong>Optional columns:</strong> Constituency, State, City, Photo URL
+              <strong>Optional columns:</strong> seat role, partynumber, constituency, state, home city, photo url
               <br />
               <strong>Google Drive photos:</strong> Use shareable links - they'll be converted automatically
+              <br />
+              <strong>Re-upload support:</strong> Existing students will be updated with new data
             </AlertDescription>
           </Alert>
 
