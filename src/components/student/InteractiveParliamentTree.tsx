@@ -280,7 +280,7 @@ const InteractiveParliamentTree = () => {
       )}
 
       {/* Student Profile Modal */}
-      <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
+      <Dialog open={!!selectedStudent} onOpenChange={(open) => { if (!open) setSelectedStudent(null); }}>
         <DialogContent
           className="max-w-md bg-transparent border-0 shadow-none p-0 relative"
         >
