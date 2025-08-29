@@ -10,7 +10,6 @@ interface VotingStats {
   totalEligibleVoters: number;
   yesVotes: number;
   noVotes: number;
-  abstainVotes: number;
   notVoted: number;
   participationRate: number;
 }
@@ -41,7 +40,6 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
     totalEligibleVoters: 0,
     yesVotes: 0,
     noVotes: 0,
-    abstainVotes: 0,
     notVoted: 0,
     participationRate: 0
   });
@@ -121,18 +119,16 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
       // Count votes by option
       const voteCounts = {
         yes: 0,
-        no: 0,
-        abstain: 0
+        no: 0
       };
 
       (votesData || []).forEach((vote: PollVoteData) => {
         const option = vote.option_id.toLowerCase();
         if (option.includes('yes')) voteCounts.yes++;
         else if (option.includes('no')) voteCounts.no++;
-        else if (option.includes('abstain')) voteCounts.abstain++;
       });
 
-      const totalVoted = voteCounts.yes + voteCounts.no + voteCounts.abstain;
+      const totalVoted = voteCounts.yes + voteCounts.no;
       const notVoted = (totalVoters || 0) - totalVoted;
       const participationRate = totalVoters ? (totalVoted / totalVoters) * 100 : 0;
 
@@ -140,7 +136,6 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
         totalEligibleVoters: totalVoters || 0,
         yesVotes: voteCounts.yes,
         noVotes: voteCounts.no,
-        abstainVotes: voteCounts.abstain,
         notVoted: Math.max(0, notVoted),
         participationRate
       });
@@ -195,7 +190,7 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
     );
   }
 
-  const totalVoted = stats.yesVotes + stats.noVotes + stats.abstainVotes;
+  const totalVoted = stats.yesVotes + stats.noVotes;
 
   return (
     <Card className={`bg-white/15 backdrop-blur-lg border border-white/25 shadow-xl transition-all duration-300 ${isLive ? 'ring-2 ring-green-400 shadow-green-400/20' : ''}`}>
@@ -322,38 +317,11 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
               />
             </motion.div>
 
-            {/* ABSTAIN Votes */}
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-gray-50/50 backdrop-blur-sm rounded-xl p-4 border border-gray-200/50"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-gray-500 rounded-lg flex items-center justify-center">
-                    <Minus className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="font-bold text-gray-800">ABSTAIN</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-black text-gray-700">{stats.abstainVotes}</div>
-                  <div className="text-sm text-gray-600">
-                    {stats.totalEligibleVoters > 0 ? ((stats.abstainVotes / stats.totalEligibleVoters) * 100).toFixed(1) : 0}% of total
-                  </div>
-                </div>
-              </div>
-              <Progress 
-                value={stats.totalEligibleVoters > 0 ? (stats.abstainVotes / stats.totalEligibleVoters) * 100 : 0} 
-                className="h-2 bg-gray-100"
-              />
-            </motion.div>
-
             {/* NOT VOTED */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
+              transition={{ delay: 0.2 }}
               className="bg-orange-50/50 backdrop-blur-sm rounded-xl p-4 border border-orange-200/50"
             >
               <div className="flex items-center justify-between mb-2">

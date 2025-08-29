@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Users, TrendingUp, Vote } from "lucide-react";
+import { LiveVotingStats } from "@/components/student/LiveVotingStats";
 
 interface Poll {
   id: string;
@@ -152,7 +153,13 @@ const PollDisplay = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center p-4">
-      <div className="max-w-5xl w-full mx-auto">
+      <div className="max-w-7xl w-full mx-auto space-y-6">
+        {/* Live Voting Statistics */}
+        <div className="mb-8">
+          <LiveVotingStats pollId={activePoll.id} />
+        </div>
+
+        {/* Main Poll Display */}
         <Card className="bg-black/20 backdrop-blur-md border-white/20">
           <CardContent className="p-8 md:p-12">
             {/* Header */}
