@@ -236,14 +236,18 @@ const InteractiveParliamentTree = () => {
         </p>
         
         {/* Search Bar */}
-        <div className="max-w-md mx-auto mb-6">
+        <div className="max-w-lg mx-auto mb-6">
+          <div className="flex items-center gap-3 mb-3 justify-center">
+            <Search className="w-6 h-6 text-green-600" />
+            <span className="text-lg font-bold text-slate-700">Search Parliament Members</span>
+          </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-slate-500" />
             <Input
               placeholder="Search by name, position, party, constituency..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-12 bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 placeholder:text-slate-500 focus:bg-white/30 focus:border-white/50 rounded-2xl h-12 text-lg font-medium"
+              className="pl-14 pr-6 bg-white/30 backdrop-blur-md border-2 border-white/40 text-slate-800 placeholder:text-slate-600 focus:bg-white/40 focus:border-white/60 focus:ring-4 focus:ring-white/20 rounded-2xl h-14 text-lg font-medium shadow-lg"
             />
           </div>
         </div>

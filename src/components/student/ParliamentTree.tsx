@@ -192,14 +192,20 @@ export const ParliamentTree = () => {
         </CardTitle>
         
         {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Search by name, position, party, constituency, state..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 mb-2">
+            <Search className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium text-foreground">Search Parliament Members</span>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
+            <Input
+              placeholder="Search by name, position, party, constituency, state..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-12 pr-4 h-12 text-base bg-background border-2 border-border/40 focus:border-primary/60 focus:ring-2 focus:ring-primary/20 rounded-xl shadow-sm"
+            />
+          </div>
         </div>
 
         {/* Filters Row */}
