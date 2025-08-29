@@ -20,6 +20,19 @@ interface StudentData {
   password: string;
 }
 
+function convertGoogleDriveUrl(url: string): string {
+  if (!url) return url;
+  
+  // Convert Google Drive sharing URL to direct download URL
+  const driveMatch = url.match(/(?:drive\.google\.com\/(?:file\/d\/|uc\?id=))([a-zA-Z0-9_-]+)/);
+  if (driveMatch) {
+    const fileId = driveMatch[1];
+    return `https://drive.google.com/uc?export=download&id=${fileId}`;
+  }
+  
+  return url;
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -78,7 +91,7 @@ serve(async (req) => {
               constituency: student.constituency,
               state: student.state,
               city: student.city,
-              photo_url: student.photoUrl,
+              photo_url: convertGoogleDriveUrl(student.photoUrl),
               email: `${student.loginId}@yip.parliament`,
             })
             .eq('user_id', existingProfile.user_id);
@@ -116,7 +129,7 @@ serve(async (req) => {
               constituency: student.constituency,
               state: student.state,
               city: student.city,
-              photo_url: student.photoUrl,
+              photo_url: convertGoogleDriveUrl(student.photoUrl),
               user_type: 'student',
               email: `${student.loginId}@yip.parliament`,
             });
