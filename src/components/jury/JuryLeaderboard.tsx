@@ -507,11 +507,33 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                           {Math.round(entry.average_score)}
                         </div>
                       </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="secondary" className="bg-slate-200 text-slate-800 font-medium">
-                          {entry.assessment_count}/3
-                        </Badge>
-                      </TableCell>
+                       <TableCell className="text-center">
+                         <div className="space-y-1">
+                           <Badge variant="secondary" className="bg-slate-200 text-slate-800 font-medium text-xs">
+                             Assessments: {entry.assessment_count}/3
+                           </Badge>
+                           <div className="space-y-1">
+                             {awards.map(award => {
+                               const voteCount = getVoteCount(award.id, entry.user_id);
+                               const hasUserVoted = hasVoted(award.id, entry.user_id);
+                               return voteCount > 0 ? (
+                                 <Badge 
+                                   key={award.id} 
+                                   variant="outline" 
+                                   className={`text-xs ${
+                                     voteCount >= 3 
+                                       ? 'bg-green-500/20 text-green-700 border-green-500/30' 
+                                       : 'bg-blue-500/20 text-blue-700 border-blue-500/30'
+                                   }`}
+                                 >
+                                   {award.name}: {voteCount}/3
+                                   {hasUserVoted && <CheckCircle2 className="w-3 h-3 ml-1" />}
+                                 </Badge>
+                               ) : null;
+                             })}
+                           </div>
+                         </div>
+                       </TableCell>
                       <TableCell className="text-center">
                         <div className="space-y-1 flex flex-col items-center">
                           {studentAwards[entry.user_id]?.map((award, idx) => (
