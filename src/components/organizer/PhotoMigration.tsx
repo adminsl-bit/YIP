@@ -22,6 +22,7 @@ const PhotoMigration = () => {
   } | null>(null);
   const [lastResult, setLastResult] = useState<MigrationResult | null>(null);
   const { toast } = useToast();
+  const pollRef = React.useRef<number | null>(null);
 
   const fetchMigrationStats = async () => {
     try {
@@ -48,56 +49,71 @@ const PhotoMigration = () => {
   const startMigration = async () => {
     setMigrating(true);
     setLastResult(null);
-    
     try {
-      const { data, error } = await supabase.functions.invoke('migrate-photos', {
-        body: {}
-      });
-
-      if (error) {
-        throw error;
-      }
+      const { data, error } = await supabase.functions.invoke('migrate-photos', { body: {} });
+      if (error) throw error;
 
       const result = data as MigrationResult;
       setLastResult(result);
-      
+
       if (result.success) {
         toast({
-          title: "Migration Started",
-          description: result.message || "Photo migration is running in the background",
+          title: 'Migration Started',
+          description: result.message || 'Full migration is running in the background',
         });
-        
-        // Refresh stats after a short delay
-        setTimeout(() => {
-          fetchMigrationStats();
-        }, 2000);
+
+        // Kick off immediate fetch and start polling for live stats
+        await fetchMigrationStats();
+        if (!pollRef.current) {
+          pollRef.current = window.setInterval(() => {
+            fetchMigrationStats();
+          }, 3000);
+        }
       } else {
         toast({
-          title: "Migration Failed",
-          description: result.error || "Failed to start photo migration",
-          variant: "destructive",
+          title: 'Migration Failed',
+          description: result.error || 'Failed to start photo migration',
+          variant: 'destructive',
         });
+        setMigrating(false);
       }
     } catch (error: any) {
       console.error('Migration error:', error);
       toast({
-        title: "Migration Error",
-        description: error.message || "Failed to start photo migration",
-        variant: "destructive",
+        title: 'Migration Error',
+        description: error.message || 'Failed to start photo migration',
+        variant: 'destructive',
       });
-      setLastResult({
-        success: false,
-        error: error.message || "Failed to start photo migration"
-      });
-    } finally {
+      setLastResult({ success: false, error: error.message || 'Failed to start photo migration' });
       setMigrating(false);
     }
   };
 
-  // Fetch stats on component mount
+  // Fetch stats on component mount and clean up poller on unmount
   React.useEffect(() => {
     fetchMigrationStats();
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
   }, []);
+
+  // Stop polling when migration completes
+  React.useEffect(() => {
+    if (migrating && (migrationStats?.googleDrivePhotos === 0)) {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+      setMigrating(false);
+      toast({
+        title: 'Migration Complete',
+        description: 'All photos have been migrated to Supabase Storage.'
+      });
+    }
+  }, [migrating, migrationStats?.googleDrivePhotos, toast]);
 
   return (
     <div className="space-y-6">
@@ -160,10 +176,10 @@ const PhotoMigration = () => {
               <div className="text-sm text-slate-700">
                 <p className="font-semibold mb-1">How it works:</p>
                 <ul className="list-disc list-inside space-y-1 text-slate-600">
-                  <li>Processes 5 photos per batch to avoid timeouts</li>
+                  <li>Runs automatically in the background until all photos are migrated</li>
+                  <li>Handles small batches internally to avoid timeouts</li>
                   <li>Downloads from Google Drive and uploads to Supabase Storage</li>
-                  <li>Run multiple times until all photos are migrated</li>
-                  <li>Each batch takes ~30 seconds to complete</li>
+                  <li>Live stats update every few seconds</li>
                 </ul>
               </div>
             </div>
@@ -183,7 +199,7 @@ const PhotoMigration = () => {
               ) : (
                 <>
                   <Zap className="w-4 h-4 mr-2" />
-                  Migrate Photos (Batch)
+                  Start Full Migration
                 </>
               )}
             </Button>
