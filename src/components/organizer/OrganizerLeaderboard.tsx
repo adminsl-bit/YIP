@@ -180,9 +180,9 @@ export const OrganizerLeaderboard = () => {
       entry.constituency?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.city?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCity = !cityFilter || entry.city === cityFilter;
-    const matchesParty = !partyFilter || entry.party_number.toString() === partyFilter;
-    const matchesPosition = !positionFilter || entry.position === positionFilter;
+    const matchesCity = !cityFilter || cityFilter === 'all' || entry.city === cityFilter;
+    const matchesParty = !partyFilter || partyFilter === 'all' || entry.party_number.toString() === partyFilter;
+    const matchesPosition = !positionFilter || positionFilter === 'all' || entry.position === positionFilter;
     
     return matchesSearch && matchesCity && matchesParty && matchesPosition;
   });
@@ -230,7 +230,7 @@ export const OrganizerLeaderboard = () => {
               </div>
             </SelectTrigger>
             <SelectContent className="bg-white border-white/25 shadow-xl">
-              <SelectItem value="">All Cities</SelectItem>
+              <SelectItem value="all">All Cities</SelectItem>
               {uniqueCities.map((city) => (
                 <SelectItem key={city} value={city}>{city}</SelectItem>
               ))}
@@ -246,7 +246,7 @@ export const OrganizerLeaderboard = () => {
               </div>
             </SelectTrigger>
             <SelectContent className="bg-white border-white/25 shadow-xl">
-              <SelectItem value="">All Parties</SelectItem>
+              <SelectItem value="all">All Parties</SelectItem>
               {uniqueParties.map((party) => (
                 <SelectItem key={party} value={party.toString()}>Party {party}</SelectItem>
               ))}
@@ -262,7 +262,7 @@ export const OrganizerLeaderboard = () => {
               </div>
             </SelectTrigger>
             <SelectContent className="bg-white border-white/25 shadow-xl">
-              <SelectItem value="">All Positions</SelectItem>
+              <SelectItem value="all">All Positions</SelectItem>
               {uniquePositions.map((position) => (
                 <SelectItem key={position} value={position}>{position}</SelectItem>
               ))}
