@@ -286,7 +286,7 @@ const InteractiveParliamentTree = () => {
           setSelectedStudent(null);
         }
       }}>
-        <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-lg border border-white/30 shadow-2xl p-0 rounded-3xl overflow-hidden">
+        <DialogContent className="max-w-2xl bg-transparent border-0 shadow-none p-0 rounded-3xl overflow-visible">
           <DialogTitle className="sr-only">
             {selectedStudent ? `${selectedStudent.name} Profile` : 'Student Profile'}
           </DialogTitle>
