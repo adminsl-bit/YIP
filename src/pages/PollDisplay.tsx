@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Users, TrendingUp, Vote } from "lucide-react";
 import { LiveVotingStats } from "@/components/student/LiveVotingStats";
+import { PostVotingAnalysis } from "@/components/student/PostVotingAnalysis";
 
 interface Poll {
   id: string;
@@ -24,6 +25,7 @@ interface PollResult {
 const PollDisplay = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [results, setResults] = useState<Record<string, PollResult[]>>({});
+  const [showPostAnalysis, setShowPostAnalysis] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,8 +42,19 @@ const PollDisplay = () => {
       })
       .subscribe();
 
+    // Listen for keypress to toggle post-analysis view (space bar)
+    const handleKeyPress = (event: KeyboardEvent) => {
+      if (event.code === 'Space') {
+        event.preventDefault();
+        setShowPostAnalysis(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+
     return () => {
       supabase.removeChannel(channel);
+      window.removeEventListener('keydown', handleKeyPress);
     };
   }, []);
 
@@ -183,6 +196,18 @@ const PollDisplay = () => {
 
         {/* Live Voting Statistics */}
         <LiveVotingStats pollId={activePoll.id} />
+
+        {/* Post-Voting Analysis */}
+        {showPostAnalysis && (
+          <PostVotingAnalysis pollId={activePoll.id} pollTitle={activePoll.title} />
+        )}
+
+        {/* Instructions */}
+        <div className="text-center">
+          <p className="text-slate-600 text-sm">
+            Press <kbd className="px-2 py-1 bg-slate-200 rounded">Space</kbd> to toggle post-voting analysis
+          </p>
+        </div>
       </div>
     </div>
   );

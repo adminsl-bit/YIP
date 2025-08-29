@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash, Play, Pause, BarChart3, ExternalLink } from "lucide-react";
+import { Plus, Edit, Trash, Play, Pause, BarChart3, ExternalLink, Square } from "lucide-react";
 import { LiveVotingStats } from "@/components/student/LiveVotingStats";
+import { PostVotingAnalysis } from "@/components/student/PostVotingAnalysis";
 import { toast } from "@/hooks/use-toast";
 
 interface Poll {
@@ -36,6 +37,7 @@ export const PollManagement = () => {
   const [pollResults, setPollResults] = useState<Record<string, PollVote[]>>({});
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [showPostVotingAnalysis, setShowPostVotingAnalysis] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
@@ -321,7 +323,14 @@ export const PollManagement = () => {
             <p className="text-slate-600">Real-time voting data for active polls</p>
           </div>
           {activePolls.map((poll) => (
-            <LiveVotingStats key={poll.id} pollId={poll.id} />
+            <div key={poll.id} className="space-y-6">
+              <LiveVotingStats key={poll.id} pollId={poll.id} />
+              
+              {/* Post-Voting Analysis */}
+              {showPostVotingAnalysis === poll.id && (
+                <PostVotingAnalysis pollId={poll.id} pollTitle={poll.title} />
+              )}
+            </div>
           ))}
         </div>
       )}
@@ -480,6 +489,16 @@ export const PollManagement = () => {
                         title="Open Stage View"
                       >
                         <ExternalLink className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPostVotingAnalysis(
+                          showPostVotingAnalysis === poll.id ? null : poll.id
+                        )}
+                        title="Stop Voting & Show Analysis"
+                      >
+                        <Square className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="outline"

@@ -266,6 +266,7 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
           <AnimatePresence>
             {/* YES Votes */}
             <motion.div 
+              key="yes-votes"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               className="bg-green-50/50 backdrop-blur-sm rounded-xl p-4 border border-green-200/50"
@@ -292,6 +293,7 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
 
             {/* NO Votes */}
             <motion.div 
+              key="no-votes"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
@@ -319,6 +321,7 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
 
             {/* NOT VOTED */}
             <motion.div 
+              key="not-voted"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
