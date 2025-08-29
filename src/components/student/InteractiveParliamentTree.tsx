@@ -92,7 +92,6 @@ const InteractiveParliamentTree = () => {
         .from('profiles')
         .select('*')
         .eq('user_type', 'student')
-        .neq('party_number', 0)  // Exclude party 0
         .order('party_number')
         .order('serial_number');
 
@@ -101,13 +100,8 @@ const InteractiveParliamentTree = () => {
         return;
       }
 
-      // Filter out profiles with "Nap" in the name
-      const filteredData = (data || []).filter(student => 
-        !student.name.toLowerCase().includes('nap')
-      );
-
-      setStudents(filteredData);
-      setFilteredStudents(filteredData);
+      setStudents(data || []);
+      setFilteredStudents(data || []);
     } catch (error) {
       console.error('Error:', error);
     } finally {
