@@ -14,8 +14,8 @@ interface StudentPhoto {
   photo_url: string;
 }
 
-// Background migration function
-async function performMigration() {
+// Background migration function with batching
+async function performMigration(batchSize = 5) {
   try {
     console.log('Starting background migration...');
     
@@ -31,12 +31,13 @@ async function performMigration() {
       }
     );
 
-    // Get students with Google Drive photos
+    // Get students with Google Drive photos (limit to batch size)
     const { data: students, error: fetchError } = await supabaseAdmin
       .from('profiles')
       .select('id, serial_number, name, photo_url')
       .eq('user_type', 'student')
-      .like('photo_url', '%drive.google.com%');
+      .like('photo_url', '%drive.google.com%')
+      .limit(batchSize);
 
     if (fetchError) {
       console.error('Failed to fetch students:', fetchError.message);
@@ -48,11 +49,12 @@ async function performMigration() {
       return;
     }
 
-    console.log(`Starting migration for ${students.length} students`);
+    console.log(`Starting migration batch for ${students.length} students`);
     let success = 0;
     let failed = 0;
 
-    for (const student of students as StudentPhoto[]) {
+    // Process students concurrently but with limit
+    const promises = students.map(async (student: StudentPhoto) => {
       try {
         console.log(`Processing ${student.name} (${student.serial_number})`);
         
@@ -67,13 +69,19 @@ async function performMigration() {
 
         console.log(`Downloading from: ${downloadUrl}`);
 
-        // Download the image with proper headers
+        // Download the image with timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
         const response = await fetch(downloadUrl, {
           method: 'GET',
+          signal: controller.signal,
           headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
           }
         });
+        
+        clearTimeout(timeoutId);
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -105,31 +113,55 @@ async function performMigration() {
 
         console.log(`Uploaded ${fileName} to storage`);
 
-        // Get the public URL
+        // Get the public URL with versioning to avoid cache issues
         const { data: { publicUrl } } = supabaseAdmin.storage
           .from('student-photos')
-          .getPublicUrl(fileName);
+          .getPublicUrl(fileName, {
+            transform: {
+              width: 400,
+              height: 400,
+              format: 'webp'
+            }
+          });
+
+        const finalUrl = `${publicUrl}?v=${Date.now()}`;
 
         // Update the photo_url in database
         const { error: updateError } = await supabaseAdmin
           .from('profiles')
-          .update({ photo_url: publicUrl })
+          .update({ photo_url: finalUrl })
           .eq('id', student.id);
 
         if (updateError) {
           throw new Error(`Database update failed: ${updateError.message}`);
         }
 
-        success++;
-        console.log(`✅ Successfully migrated ${student.name}`);
+        return { success: true, student: student.name };
 
       } catch (error) {
-        failed++;
         console.error(`❌ Failed to migrate ${student.name}:`, error);
+        return { success: false, student: student.name, error: error.message };
       }
-    }
+    });
 
-    console.log(`Migration completed: ${success} success, ${failed} failed`);
+    // Wait for all promises to complete
+    const results = await Promise.allSettled(promises);
+    
+    results.forEach(result => {
+      if (result.status === 'fulfilled' && result.value.success) {
+        success++;
+        console.log(`✅ Successfully migrated ${result.value.student}`);
+      } else {
+        failed++;
+        if (result.status === 'fulfilled') {
+          console.error(`❌ Failed to migrate ${result.value.student}: ${result.value.error}`);
+        } else {
+          console.error(`❌ Promise rejected:`, result.reason);
+        }
+      }
+    });
+
+    console.log(`Migration batch completed: ${success} success, ${failed} failed`);
   } catch (error) {
     console.error('Background migration error:', error);
   }
@@ -177,15 +209,19 @@ serve(async (req) => {
       });
     }
 
+    // Process in smaller batches to avoid timeouts
+    const batchSize = Math.min(5, count); // Process max 5 at a time
+    
     // Start the migration in the background
-    EdgeRuntime.waitUntil(performMigration());
+    EdgeRuntime.waitUntil(performMigration(batchSize));
 
     // Return immediately
     return new Response(JSON.stringify({
       success: true,
-      message: `Migration started for ${count} photos`,
-      total: count,
-      note: 'Migration is running in the background. Check the function logs for progress.'
+      message: `Migration started for batch of ${batchSize} photos (${count} total remaining)`,
+      batch_size: batchSize,
+      total_remaining: count,
+      note: 'Processing in small batches to avoid timeouts. Run again to continue migration.'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
