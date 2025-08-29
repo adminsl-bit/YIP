@@ -115,17 +115,26 @@ export const OrganizerStats = () => {
           count
         }));
 
-        // Assessment progress
+        // Assessment progress - show how many students have been assessed by jury
+        const studentAssessmentStatus = students.map(student => {
+          const studentAssessments = assessments?.filter(a => a.student_id === student.user_id) || [];
+          const completedCount = studentAssessments.filter(a => a.status === 'submitted').length;
+          const inProgressCount = studentAssessments.filter(a => a.status === 'draft').length;
+          
+          if (completedCount === jury.length) return 'Fully Assessed';
+          if (completedCount > 0 || inProgressCount > 0) return 'Partially Assessed';
+          return 'Not Assessed';
+        });
+
         const statusGroups = {
-          'Completed': completedAssessments.length,
-          'In Progress': (assessments?.filter(a => a.status === 'draft') || []).length,
-          'Not Started': expectedAssessments - (assessments?.length || 0)
+          'Fully Assessed': studentAssessmentStatus.filter(s => s === 'Fully Assessed').length,
+          'Partially Assessed': studentAssessmentStatus.filter(s => s === 'Partially Assessed').length,
+          'Not Assessed': studentAssessmentStatus.filter(s => s === 'Not Assessed').length
         };
 
-        const assessmentProgress = Object.entries(statusGroups).map(([status, count]) => ({
-          status,
-          count
-        }));
+        const assessmentProgress = Object.entries(statusGroups)
+          .map(([status, count]) => ({ status, count }))
+          .filter(item => item.count > 0); // Only show categories with data
 
         setChartData({
           partyData: partyData.sort((a, b) => a.party - b.party),
