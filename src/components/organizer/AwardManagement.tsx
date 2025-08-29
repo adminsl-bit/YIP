@@ -365,29 +365,35 @@ export const AwardManagement = () => {
                   rows={3}
                 />
               </div>
-              <div className="flex items-center space-x-3 p-4 bg-slate-50 rounded-lg border">
+              <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-slate-50/80 to-blue-50/80 backdrop-blur-sm rounded-xl border border-white/40 shadow-sm">
                 <Switch
                   id="visible-to-jury"
                   checked={newAward.visibleToJury}
                   onCheckedChange={(checked) => setNewAward(prev => ({ ...prev, visibleToJury: checked }))}
+                  className="data-[state=checked]:bg-green-500"
                 />
                 <div className="flex items-center gap-2">
                   {newAward.visibleToJury ? (
-                    <Eye className="w-4 h-4 text-green-600" />
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-green-100/80 to-emerald-100/80 backdrop-blur-sm border border-green-200/50 rounded-full shadow-sm">
+                      <Eye className="w-4 h-4 text-green-600" />
+                      <span className="text-sm font-semibold text-green-700">Jury Visible</span>
+                    </div>
                   ) : (
-                    <EyeOff className="w-4 h-4 text-slate-500" />
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-slate-100/80 to-gray-100/80 backdrop-blur-sm border border-slate-200/50 rounded-full shadow-sm">
+                      <EyeOff className="w-4 h-4 text-slate-500" />
+                      <span className="text-sm font-semibold text-slate-600">Organizer Only</span>
+                    </div>
                   )}
-                  <Label htmlFor="visible-to-jury" className="text-sm font-medium text-slate-700 cursor-pointer">
-                    Visible to Jury
-                  </Label>
                 </div>
               </div>
-              <p className="text-xs text-slate-500">
-                {newAward.visibleToJury 
-                  ? "Jury members can see and vote on this award" 
-                  : "Only organizers can assign this award (hidden from jury)"
-                }
-              </p>
+              <div className="bg-blue-50/50 border-l-4 border-blue-400 p-3 rounded-r-lg">
+                <p className="text-sm text-blue-700 font-medium">
+                  {newAward.visibleToJury 
+                    ? "🗳️ Jury members can see and vote on this award" 
+                    : "🔒 Only organizers can assign this award (hidden from jury)"
+                  }
+                </p>
+              </div>
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancel
@@ -482,19 +488,17 @@ export const AwardManagement = () => {
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
                           <h4 className="font-bold text-slate-800">{award.name}</h4>
-                          <div className="flex items-center gap-1">
-                            {award.visible_to_jury ? (
-                              <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-md">
-                                <Eye className="w-3 h-3" />
-                                <span className="text-xs font-medium">Jury Visible</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 rounded-md">
-                                <EyeOff className="w-3 h-3" />
-                                <span className="text-xs font-medium">Organizer Only</span>
-                              </div>
-                            )}
-                          </div>
+                          {award.visible_to_jury ? (
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-green-100/80 to-emerald-100/80 backdrop-blur-sm border border-green-200/50 rounded-full shadow-sm">
+                              <Eye className="w-3.5 h-3.5 text-green-600" />
+                              <span className="text-xs font-semibold text-green-700">Jury Visible</span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-slate-100/80 to-gray-100/80 backdrop-blur-sm border border-slate-200/50 rounded-full shadow-sm">
+                              <EyeOff className="w-3.5 h-3.5 text-slate-500" />
+                              <span className="text-xs font-semibold text-slate-600">Organizer Only</span>
+                            </div>
+                          )}
                         </div>
                         {award.description && (
                           <p className="text-sm text-slate-600 mt-1">{award.description}</p>
