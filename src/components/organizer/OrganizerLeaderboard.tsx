@@ -193,86 +193,76 @@ export const OrganizerLeaderboard = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Search Bar */}
-      <div className="relative">
+      <div className="relative max-w-xl mx-auto">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
         <Input
           placeholder="Search students by name, position, or constituency..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
+          className="pl-10 bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 placeholder:text-slate-600"
         />
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Total Students
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{leaderboard.length}</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Users className="w-6 h-6 text-white" />
+          </div>
+          <div className="text-3xl font-black text-slate-800 mb-2">{leaderboard.length}</div>
+          <p className="text-slate-600 font-semibold">Total Students</p>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Trophy className="w-4 h-4" />
-              Top Score
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {leaderboard.length > 0 ? Math.round(leaderboard[0].average_score) : 0}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Trophy className="w-6 h-6 text-white" />
+          </div>
+          <div className="text-3xl font-black text-slate-800 mb-2">
+            {leaderboard.length > 0 ? Math.round(leaderboard[0].average_score) : 0}
+          </div>
+          <p className="text-slate-600 font-semibold">Top Score</p>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Award className="w-4 h-4" />
-              Awards Given
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {Object.values(studentAwards).reduce((sum, awards) => sum + awards.length, 0)}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Award className="w-6 h-6 text-white" />
+          </div>
+          <div className="text-3xl font-black text-slate-800 mb-2">
+            {Object.values(studentAwards).reduce((sum, awards) => sum + awards.length, 0)}
+          </div>
+          <p className="text-slate-600 font-semibold">Awards Given</p>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Target className="w-4 h-4" />
-              Avg Assessments
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {leaderboard.length > 0 
-                ? (leaderboard.reduce((sum, entry) => sum + entry.assessment_count, 0) / leaderboard.length).toFixed(1)
-                : 0}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Target className="w-6 h-6 text-white" />
+          </div>
+          <div className="text-3xl font-black text-slate-800 mb-2">
+            {leaderboard.length > 0 
+              ? (leaderboard.reduce((sum, entry) => sum + entry.assessment_count, 0) / leaderboard.length).toFixed(1)
+              : 0}
+          </div>
+          <p className="text-slate-600 font-semibold">Avg Assessments</p>
+        </div>
       </div>
 
       {/* Award Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Star className="w-5 h-5" />
-            Award Voting Summary
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <div className="bg-white/20 backdrop-blur-lg rounded-2xl border border-white/25 shadow-lg overflow-hidden">
+        <div className="p-6 border-b border-white/25">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <Star className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-slate-800">Award Voting Summary</h3>
+              <p className="text-slate-600 font-medium">Track consensus progress across all awards</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {awards.map((award) => {
               const pendingVotes = awardVotes.filter(vote => vote.award_id === award.id);
@@ -280,15 +270,15 @@ export const OrganizerLeaderboard = () => {
               const assignedCount = Object.values(studentAwards).flat().filter(name => name === award.name).length;
               
               return (
-                <div key={award.id} className="bg-muted/50 rounded-lg p-4 space-y-2">
-                  <h4 className="font-semibold text-sm">{award.name}</h4>
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                <div key={award.id} className="bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-2">
+                  <h4 className="font-black text-slate-800 text-sm">{award.name}</h4>
+                  <div className="flex justify-between text-xs text-slate-600 font-medium">
                     <span>{uniqueStudents.length} students with votes</span>
                     <span>{assignedCount} awarded</span>
                   </div>
                   <div className="flex justify-between text-xs">
-                    <span>Total votes: {pendingVotes.length}</span>
-                    <Badge variant={assignedCount > 0 ? "default" : "secondary"} className="text-xs">
+                    <span className="font-medium text-slate-700">Total votes: {pendingVotes.length}</span>
+                    <Badge variant={assignedCount > 0 ? "default" : "secondary"} className="text-xs font-medium">
                       {assignedCount > 0 ? "Active" : "Pending"}
                     </Badge>
                   </div>
@@ -296,117 +286,127 @@ export const OrganizerLeaderboard = () => {
               );
             })}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Leaderboard Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-5 h-5" />
-            Overall Leaderboard (Averaged Scores)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-16">Rank</TableHead>
-                <TableHead>Student</TableHead>
-                <TableHead>Position</TableHead>
-                <TableHead>Party</TableHead>
-                <TableHead>Avg Score</TableHead>
-                <TableHead>Assessments</TableHead>
-                <TableHead>Awards</TableHead>
-                <TableHead>Vote Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLeaderboard.map((entry, index) => {
-                const studentVotes = awardVotes.filter(vote => vote.student_id === entry.user_id);
-                const uniqueAwards = [...new Set(studentVotes.map(vote => vote.award_id))];
-                
-                return (
-                  <TableRow key={entry.user_id}>
-                    <TableCell>
-                      <div className="flex items-center justify-center">
-                        {getRankIcon(index + 1)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-8 h-8">
-                          <AvatarImage src={entry.photo_url} alt={entry.name} />
-                          <AvatarFallback>
-                            {entry.name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium">{entry.name}</div>
-                          <div className="text-sm text-muted-foreground">
-                            {entry.constituency}, {entry.state}
+      <div className="bg-white/20 backdrop-blur-lg rounded-2xl border border-white/25 shadow-lg overflow-hidden">
+        <div className="p-6 border-b border-white/25">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-slate-800">Overall Leaderboard</h3>
+              <p className="text-slate-600 font-medium">Averaged scores from all jury assessments</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-white/25">
+                  <TableHead className="w-16 text-slate-700 font-semibold">Rank</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Student</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Position</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Party</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Avg Score</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Assessments</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Awards</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Vote Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLeaderboard.map((entry, index) => {
+                  const studentVotes = awardVotes.filter(vote => vote.student_id === entry.user_id);
+                  const uniqueAwards = [...new Set(studentVotes.map(vote => vote.award_id))];
+                  
+                  return (
+                    <TableRow key={entry.user_id} className="border-white/25 hover:bg-white/10 transition-colors">
+                      <TableCell>
+                        <div className="flex items-center justify-center">
+                          {getRankIcon(index + 1)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-10 h-10 border-2 border-white/25">
+                            <AvatarImage src={entry.photo_url} alt={entry.name} />
+                            <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-600 text-white font-semibold">
+                              {entry.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-semibold text-slate-800">{entry.name}</div>
+                            <div className="text-sm text-slate-600">
+                              {entry.constituency}, {entry.state}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{entry.position}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={getPartyColor(entry.party_number)}>
-                        Party {entry.party_number}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-bold text-lg">
-                        {Math.round(entry.average_score)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {entry.assessment_count}/3
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {studentAwards[entry.user_id]?.map((award, idx) => (
-                          <Badge key={idx} className="text-xs bg-yellow-100 text-yellow-800 block w-fit">
-                            <Trophy className="w-3 h-3 mr-1" />
-                            {award}
-                          </Badge>
-                        )) || <span className="text-muted-foreground text-sm">No awards</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        {uniqueAwards.length > 0 ? (
-                          uniqueAwards.map((awardId) => {
-                            const voteCount = getVoteCount(awardId, entry.user_id);
-                            const award = awards.find(a => a.id === awardId);
-                            return (
-                              <div key={awardId} className="text-xs">
-                                <span className="font-medium">{award?.name}</span>
-                                <Badge 
-                                  variant={voteCount >= 3 ? "default" : "secondary"} 
-                                  className="ml-1 text-xs"
-                                >
-                                  {voteCount}/3
-                                </Badge>
-                              </div>
-                            );
-                          })
-                        ) : (
-                          <span className="text-muted-foreground text-xs">No votes</span>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-white/20 border-white/30 text-slate-700 font-medium">
+                          {entry.position}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`${getPartyColor(entry.party_number)} font-medium`}>
+                          Party {entry.party_number}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-black text-2xl text-slate-800">
+                          {Math.round(entry.average_score)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className="bg-slate-200 text-slate-800 font-medium">
+                          {entry.assessment_count}/3
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1 min-w-[120px]">
+                          {studentAwards[entry.user_id]?.map((award, idx) => (
+                            <Badge key={idx} className="text-xs bg-yellow-100 text-yellow-800 font-medium block w-fit">
+                              <Trophy className="w-3 h-3 mr-1" />
+                              {award}
+                            </Badge>
+                          )) || <span className="text-slate-600 text-sm font-medium">No awards</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1 min-w-[100px]">
+                          {uniqueAwards.length > 0 ? (
+                            uniqueAwards.map((awardId) => {
+                              const voteCount = getVoteCount(awardId, entry.user_id);
+                              const award = awards.find(a => a.id === awardId);
+                              return (
+                                <div key={awardId} className="text-xs">
+                                  <span className="font-semibold text-slate-700">{award?.name}</span>
+                                  <Badge 
+                                    variant={voteCount >= 3 ? "default" : "secondary"} 
+                                    className="ml-1 text-xs font-medium"
+                                  >
+                                    {voteCount}/3
+                                  </Badge>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <span className="text-slate-600 text-xs font-medium">No votes</span>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

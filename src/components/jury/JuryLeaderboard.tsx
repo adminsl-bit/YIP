@@ -242,207 +242,206 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Search Bar */}
-      <div className="relative">
+      <div className="relative max-w-xl mx-auto">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
         <Input
           placeholder="Search students by name, position, or constituency..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
+          className="pl-10 bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 placeholder:text-slate-600"
         />
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Total Students
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{leaderboard.length}</div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Users className="w-6 h-6 text-white" />
+          </div>
+          <div className="text-3xl font-black text-slate-800 mb-2">{leaderboard.length}</div>
+          <p className="text-slate-600 font-semibold">Total Students</p>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Trophy className="w-4 h-4" />
-              Top Score
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {leaderboard.length > 0 ? Math.round(leaderboard[0].average_score) : 0}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Trophy className="w-6 h-6 text-white" />
+          </div>
+          <div className="text-3xl font-black text-slate-800 mb-2">
+            {leaderboard.length > 0 ? Math.round(leaderboard[0].average_score) : 0}
+          </div>
+          <p className="text-slate-600 font-semibold">Top Score</p>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Award className="w-4 h-4" />
-              Awards Given
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {Object.values(studentAwards).reduce((sum, awards) => sum + awards.length, 0)}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
+          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+            <Award className="w-6 h-6 text-white" />
+          </div>
+          <div className="text-3xl font-black text-slate-800 mb-2">
+            {Object.values(studentAwards).reduce((sum, awards) => sum + awards.length, 0)}
+          </div>
+          <p className="text-slate-600 font-semibold">Awards Given</p>
+        </div>
       </div>
 
       {/* Leaderboard Table */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-5 h-5" />
-            Jury Leaderboard (Averaged Scores)
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-16">Rank</TableHead>
-                <TableHead>Student</TableHead>
-                <TableHead>Position</TableHead>
-                <TableHead>Party</TableHead>
-                <TableHead>Avg Score</TableHead>
-                <TableHead>Assessments</TableHead>
-                <TableHead>Awards</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLeaderboard.map((entry, index) => (
-                <TableRow key={entry.user_id}>
-                  <TableCell>
-                    <div className="flex items-center justify-center">
-                      {getRankIcon(index + 1)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={entry.photo_url} alt={entry.name} />
-                        <AvatarFallback>
-                          {entry.name.split(' ').map(n => n[0]).join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{entry.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {entry.constituency}, {entry.state}
+      <div className="bg-white/20 backdrop-blur-lg rounded-2xl border border-white/25 shadow-lg overflow-hidden">
+        <div className="p-6 border-b border-white/25">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-black text-slate-800">Jury Leaderboard</h3>
+              <p className="text-slate-600 font-medium">Averaged scores from all juries</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-white/25">
+                  <TableHead className="w-16 text-slate-700 font-semibold">Rank</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Student</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Position</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Party</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Avg Score</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Assessments</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Awards</TableHead>
+                  <TableHead className="text-slate-700 font-semibold">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLeaderboard.map((entry, index) => (
+                  <TableRow key={entry.user_id} className="border-white/25 hover:bg-white/10 transition-colors">
+                    <TableCell>
+                      <div className="flex items-center justify-center">
+                        {getRankIcon(index + 1)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10 border-2 border-white/25">
+                          <AvatarImage src={entry.photo_url} alt={entry.name} />
+                          <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-600 text-white font-semibold">
+                            {entry.name.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <div className="font-semibold text-slate-800">{entry.name}</div>
+                          <div className="text-sm text-slate-600">
+                            {entry.constituency}, {entry.state}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{entry.position}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge className={getPartyColor(entry.party_number)}>
-                      Party {entry.party_number}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="font-bold text-lg">
-                      {Math.round(entry.average_score)}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">
-                      {entry.assessment_count}/3
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {studentAwards[entry.user_id]?.map((award, idx) => (
-                        <Badge key={idx} className="text-xs bg-yellow-100 text-yellow-800">
-                          <Trophy className="w-3 h-3 mr-1" />
-                          {award}
-                        </Badge>
-                      )) || <span className="text-muted-foreground text-sm">No awards</span>}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button 
-                          size="sm" 
-                          variant="outline"
-                          onClick={() => setSelectedStudent(entry)}
-                        >
-                          <Vote className="w-4 h-4 mr-1" />
-                          Vote Award
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-md">
-                        <DialogHeader>
-                          <DialogTitle>Vote for Award</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div className="text-sm">
-                            Voting for: <span className="font-semibold">{entry.name}</span>
-                          </div>
-                          
-                          <Select value={selectedAward} onValueChange={setSelectedAward}>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select an award" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {awards.map((award) => (
-                                <SelectItem key={award.id} value={award.id}>
-                                  <div className="flex items-center justify-between w-full">
-                                    <span>{award.name}</span>
-                                    <div className="flex items-center gap-2 ml-4">
-                                      <span className="text-xs text-muted-foreground">
-                                        {getVoteCount(award.id, entry.user_id)}/3 votes
-                                      </span>
-                                      {hasVoted(award.id, entry.user_id) && (
-                                        <CheckCircle2 className="w-3 h-3 text-green-500" />
-                                      )}
-                                    </div>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-
-                          {selectedAward && (
-                            <div className="text-xs text-muted-foreground">
-                              Current votes: {getVoteCount(selectedAward, entry.user_id)}/3
-                              {getVoteCount(selectedAward, entry.user_id) >= 3 && (
-                                <span className="text-green-600 font-medium"> - Award will be assigned!</span>
-                              )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-white/20 border-white/30 text-slate-700 font-medium">
+                        {entry.position}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`${getPartyColor(entry.party_number)} font-medium`}>
+                        Party {entry.party_number}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-black text-2xl text-slate-800">
+                        {Math.round(entry.average_score)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="secondary" className="bg-slate-200 text-slate-800 font-medium">
+                        {entry.assessment_count}/3
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1 min-w-[120px]">
+                        {studentAwards[entry.user_id]?.map((award, idx) => (
+                          <Badge key={idx} className="text-xs bg-yellow-100 text-yellow-800 font-medium block w-fit">
+                            <Trophy className="w-3 h-3 mr-1" />
+                            {award}
+                          </Badge>
+                        )) || <span className="text-slate-600 text-sm font-medium">No awards</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => setSelectedStudent(entry)}
+                            className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 font-semibold"
+                          >
+                            <Vote className="w-4 h-4 mr-2" />
+                            Vote Award
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md bg-white/95 backdrop-blur-lg border border-white/25">
+                          <DialogHeader>
+                            <DialogTitle className="text-slate-800 font-black">Vote for Award</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <div className="text-sm bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/25">
+                              Voting for: <span className="font-black text-slate-800">{entry.name}</span>
                             </div>
-                          )}
+                            
+                            <Select value={selectedAward} onValueChange={setSelectedAward}>
+                              <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800">
+                                <SelectValue placeholder="Select an award" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {awards.map((award) => (
+                                  <SelectItem key={award.id} value={award.id}>
+                                    <div className="flex items-center justify-between w-full">
+                                      <span className="font-medium">{award.name}</span>
+                                      <div className="flex items-center gap-2 ml-4">
+                                        <span className="text-xs text-muted-foreground font-medium">
+                                          {getVoteCount(award.id, entry.user_id)}/3 votes
+                                        </span>
+                                        {hasVoted(award.id, entry.user_id) && (
+                                          <CheckCircle2 className="w-3 h-3 text-green-500" />
+                                        )}
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
 
-                          <div className="flex gap-2 pt-4">
-                            <Button 
-                              onClick={handleAwardVote}
-                              disabled={!selectedAward}
-                              className="flex-1"
-                            >
-                              Cast Vote
-                            </Button>
+                            {selectedAward && (
+                              <div className="text-xs bg-slate-100 rounded-lg p-3 text-slate-700 font-medium">
+                                Current votes: {getVoteCount(selectedAward, entry.user_id)}/3
+                                {getVoteCount(selectedAward, entry.user_id) >= 3 && (
+                                  <span className="text-green-600 font-black"> - Award will be assigned!</span>
+                                )}
+                              </div>
+                            )}
+
+                            <div className="flex gap-2 pt-4">
+                              <Button 
+                                onClick={handleAwardVote}
+                                disabled={!selectedAward}
+                                className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold"
+                              >
+                                Cast Vote
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                        </DialogContent>
+                      </Dialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
