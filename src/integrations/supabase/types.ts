@@ -116,6 +116,59 @@ export type Database = {
         }
         Relationships: []
       }
+      award_votes: {
+        Row: {
+          award_id: string
+          created_at: string
+          id: string
+          jury_id: string
+          student_id: string
+        }
+        Insert: {
+          award_id: string
+          created_at?: string
+          id?: string
+          jury_id: string
+          student_id: string
+        }
+        Update: {
+          award_id?: string
+          created_at?: string
+          id?: string
+          jury_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "award_votes_award_id_fkey"
+            columns: ["award_id"]
+            isOneToOne: false
+            referencedRelation: "awards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      awards: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       login_audit: {
         Row: {
           created_at: string
@@ -286,6 +339,38 @@ export type Database = {
         }
         Relationships: []
       }
+      student_awards: {
+        Row: {
+          assigned_at: string
+          assigned_by_jury_consensus: boolean
+          award_id: string
+          id: string
+          student_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by_jury_consensus?: boolean
+          award_id: string
+          id?: string
+          student_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by_jury_consensus?: boolean
+          award_id?: string
+          id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_awards_award_id_fkey"
+            columns: ["award_id"]
+            isOneToOne: false
+            referencedRelation: "awards"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           description: string | null
@@ -425,12 +510,31 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      jury_leaderboard: {
+        Row: {
+          assessment_count: number | null
+          average_score: number | null
+          award_ids: string[] | null
+          city: string | null
+          constituency: string | null
+          name: string | null
+          party_number: number | null
+          photo_url: string | null
+          position: string | null
+          state: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       calculate_total_score: {
         Args: { scores_json: Json }
         Returns: number
+      }
+      check_award_consensus: {
+        Args: { p_award_id: string; p_student_id: string }
+        Returns: boolean
       }
       create_user_profile: {
         Args: {
