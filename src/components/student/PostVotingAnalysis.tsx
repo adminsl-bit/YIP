@@ -103,46 +103,46 @@ export const PostVotingAnalysis = ({ pollId, pollTitle }: PostVotingAnalysisProp
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-green-50/80 border-green-200">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                <CheckCircle className="w-5 h-5 text-white" />
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center shadow-lg">
+                <CheckCircle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-green-700">{votedStudents.length}</div>
-                <div className="text-sm text-green-600">Students Voted</div>
+                <div className="text-3xl font-black text-green-700">{votedStudents.length}</div>
+                <div className="text-base text-green-600 font-medium">Students Voted</div>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-red-50/80 border-red-200">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
-                <XCircle className="w-5 h-5 text-white" />
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center shadow-lg">
+                <XCircle className="w-6 h-6 text-white" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-red-700">{notVotedStudents.length}</div>
-                <div className="text-sm text-red-600">Students Not Voted</div>
+                <div className="text-3xl font-black text-red-700">{notVotedStudents.length}</div>
+                <div className="text-base text-red-600 font-medium">Students Not Voted</div>
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-blue-50/80 border-blue-200">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
-                <Users className="w-5 h-5 text-white" />
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Users className="w-6 h-6 text-white" />
               </div>
               <div>
-                <div className="text-2xl font-bold text-blue-700">{votedStudents.length + notVotedStudents.length}</div>
-                <div className="text-sm text-blue-600">Total Students</div>
+                <div className="text-3xl font-black text-blue-700">{votedStudents.length + notVotedStudents.length}</div>
+                <div className="text-base text-blue-600 font-medium">Total Students</div>
               </div>
             </div>
           </CardContent>
@@ -151,13 +151,13 @@ export const PostVotingAnalysis = ({ pollId, pollTitle }: PostVotingAnalysisProp
 
       {/* Students Who Voted */}
       <Card className="bg-white/95 backdrop-blur-lg border border-gray/25 shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-green-700">
-            <CheckCircle className="w-5 h-5" />
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-green-700 text-xl">
+            <CheckCircle className="w-6 h-6" />
             Students Who Voted ({votedStudents.length})
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           {votedStudents.length > 0 ? (
             <Table>
               <TableHeader>
@@ -201,13 +201,13 @@ export const PostVotingAnalysis = ({ pollId, pollTitle }: PostVotingAnalysisProp
 
       {/* Students Who Haven't Voted */}
       <Card className="bg-white/95 backdrop-blur-lg border border-gray/25 shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-red-700">
-            <XCircle className="w-5 h-5" />
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-red-700 text-xl">
+            <XCircle className="w-6 h-6" />
             Students Who Haven't Voted ({notVotedStudents.length})
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-0">
           {notVotedStudents.length > 0 ? (
             <Table>
               <TableHeader>
