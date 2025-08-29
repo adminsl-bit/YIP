@@ -317,6 +317,37 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
       </CardHeader>
 
       <CardContent className="p-6 space-y-6">
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-3xl font-black text-slate-800 mb-2">{filteredLeaderboard.length}</div>
+            <p className="text-slate-600 font-semibold">Filtered Students</p>
+          </div>
+
+          <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-3xl font-black text-slate-800 mb-2">
+              {filteredLeaderboard.length > 0 ? Math.round(filteredLeaderboard[0].average_score) : 0}
+            </div>
+            <p className="text-slate-600 font-semibold">Top Score</p>
+          </div>
+
+          <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Award className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-3xl font-black text-slate-800 mb-2">
+              {Object.values(studentAwards).reduce((sum, awards) => sum + awards.length, 0)}
+            </div>
+            <p className="text-slate-600 font-semibold">Awards Given</p>
+          </div>
+        </div>
+
         {/* Search and Filters */}
         <div className="space-y-4">
           {/* Search Bar */}
@@ -407,37 +438,6 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                 Clear
               </Button>
             )}
-          </div>
-        </div>
-
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Users className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-3xl font-black text-slate-800 mb-2">{filteredLeaderboard.length}</div>
-            <p className="text-slate-600 font-semibold">Filtered Students</p>
-          </div>
-
-          <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Trophy className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-3xl font-black text-slate-800 mb-2">
-              {filteredLeaderboard.length > 0 ? Math.round(filteredLeaderboard[0].average_score) : 0}
-            </div>
-            <p className="text-slate-600 font-semibold">Top Score</p>
-          </div>
-
-          <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Award className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-3xl font-black text-slate-800 mb-2">
-              {Object.values(studentAwards).reduce((sum, awards) => sum + awards.length, 0)}
-            </div>
-            <p className="text-slate-600 font-semibold">Awards Given</p>
           </div>
         </div>
 
