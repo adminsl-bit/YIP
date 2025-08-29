@@ -26,7 +26,7 @@ export function ParliamentSignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [credentials, setCredentials] = useState({
     loginId: '',
-    password: 'Yi2025!' // Default password for all students
+    password: '' // Users must enter their own password
   });
   const [isLoading, setIsLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
