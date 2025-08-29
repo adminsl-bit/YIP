@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { PartyBadge } from "@/components/ui/party-badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, Users, CheckCircle, Clock, Lock } from "lucide-react";
@@ -415,9 +416,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                   <div className="flex items-center gap-2">
                     <p className="text-slate-600 font-semibold truncate">{student.position}</p>
                     <span className="hidden sm:inline text-slate-400">•</span>
-                    <Badge className={`hidden sm:inline ${getPartyBadgeClass(student.party_number)} font-bold px-3 py-1 border`}>
-                      Party {student.party_number}
-                    </Badge>
+                    <PartyBadge partyNumber={student.party_number} className="hidden sm:inline" />
                   </div>
                 </div>
                 <div className="flex-shrink-0">{getStatusIcon(status)}</div>

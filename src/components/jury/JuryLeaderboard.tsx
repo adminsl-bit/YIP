@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
+import { PartyBadge } from "@/components/ui/party-badge";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -344,9 +345,7 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="outline" className={`${getPartyColor(entry.party_number)} font-medium border`}>
-                        Party {entry.party_number}
-                      </Badge>
+                      <PartyBadge partyNumber={entry.party_number} />
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="font-black text-2xl text-slate-800">
