@@ -8,6 +8,7 @@ import { PollManagement } from "@/components/organizer/PollManagement";
 import { SecurityLogsManager } from "@/components/organizer/SecurityLogsManager";
 import { OrganizerStats } from "@/components/organizer/OrganizerStats";
 import { OrganizerStudentList } from "@/components/organizer/OrganizerStudentList";
+import { StudentBulkImport } from "@/components/organizer/StudentBulkImport";
 
 const OrganizerDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -153,6 +154,20 @@ const OrganizerDashboard = () => {
             </TabsContent>
 
             <TabsContent value="students" className="space-y-6">
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl mb-6">
+                <div className="text-center mb-8">
+                  <div className="relative inline-block mb-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/30">
+                      <GraduationCap className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-400/40 rounded-full animate-bounce"></div>
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-800 mb-2">Bulk Student Import</h3>
+                  <p className="text-slate-600 font-medium">Import students from Excel with photos</p>
+                </div>
+                <StudentBulkImport />
+              </div>
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
                   <div className="text-center mb-8">
