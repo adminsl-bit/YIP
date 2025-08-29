@@ -123,12 +123,10 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
       
       if (studentIds.length > 0) {
         console.log('Student IDs to fetch:', studentIds);
-        const uniqueIds = Array.from(new Set(studentIds));
-        const inList = uniqueIds.join(',');
         const { data: studentProfiles, error: profilesError } = await supabase
           .from('profiles')
-          .select('id, user_id, name, position, party_number, serial_number')
-          .or(`user_id.in.(${inList}),id.in.(${inList})`);
+          .select('user_id, name, position, party_number, serial_number')
+          .in('user_id', Array.from(new Set(studentIds)));
         
         if (profilesError) {
           console.error('Profiles query error:', profilesError);
@@ -137,8 +135,7 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
         
         console.log('Student profiles fetched:', studentProfiles);
         profilesMap = (studentProfiles || []).reduce((acc, p) => {
-          if (p.user_id) acc[p.user_id] = p;
-          if (p.id) acc[p.id] = p;
+          acc[p.user_id] = p;
           return acc;
         }, {} as Record<string, any>);
         console.log('Profiles map:', profilesMap);
