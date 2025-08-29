@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PartyBadge } from "@/components/ui/party-badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Trophy, Medal, Award, Star, Users, Users2, Target } from "lucide-react";
+import { Search, Trophy, Medal, Award, Star, Users, Users2, Target, Filter, MapPin } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,6 +43,9 @@ export const OrganizerLeaderboard = () => {
   const [awardVotes, setAwardVotes] = useState<AwardVote[]>([]);
   const [studentAwards, setStudentAwards] = useState<Record<string, string[]>>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [cityFilter, setCityFilter] = useState('');
+  const [partyFilter, setPartyFilter] = useState('');
+  const [positionFilter, setPositionFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -164,12 +168,24 @@ export const OrganizerLeaderboard = () => {
     return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold">{rank}</span>;
   };
 
+  // Get unique values for filters
+  const uniqueCities = [...new Set(leaderboard.map(entry => entry.city).filter(Boolean))].sort();
+  const uniqueParties = [...new Set(leaderboard.map(entry => entry.party_number))].sort((a, b) => a - b);
+  const uniquePositions = [...new Set(leaderboard.map(entry => entry.position))].sort();
 
-  const filteredLeaderboard = leaderboard.filter(entry =>
-    entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.constituency?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+
+  const filteredLeaderboard = leaderboard.filter(entry => {
+    const matchesSearch = entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.constituency?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.city?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCity = !cityFilter || entry.city === cityFilter;
+    const matchesParty = !partyFilter || entry.party_number.toString() === partyFilter;
+    const matchesPosition = !positionFilter || entry.position === positionFilter;
+    
+    return matchesSearch && matchesCity && matchesParty && matchesPosition;
+  });
 
   if (loading) {
     return (
@@ -184,15 +200,75 @@ export const OrganizerLeaderboard = () => {
 
   return (
     <div className="space-y-8">
-      {/* Search Bar */}
-      <div className="relative max-w-xl mx-auto">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-        <Input
-          placeholder="Search students by name, position, or constituency..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 placeholder:text-slate-600"
-        />
+      {/* Search and Filter Section */}
+      <div className="bg-white/15 backdrop-blur-lg rounded-2xl border border-white/25 shadow-lg p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
+            <Filter className="w-4 h-4 text-white" />
+          </div>
+          <h3 className="text-lg font-bold text-slate-800">Search & Filters</h3>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search by name, position, constituency, city..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 placeholder:text-slate-600"
+            />
+          </div>
+
+          {/* City Filter */}
+          <Select value={cityFilter} onValueChange={setCityFilter}>
+            <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                <SelectValue placeholder="Filter by city" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="bg-white border-white/25 shadow-xl">
+              <SelectItem value="">All Cities</SelectItem>
+              {uniqueCities.map((city) => (
+                <SelectItem key={city} value={city}>{city}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Party Filter */}
+          <Select value={partyFilter} onValueChange={setPartyFilter}>
+            <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                <SelectValue placeholder="Filter by party" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="bg-white border-white/25 shadow-xl">
+              <SelectItem value="">All Parties</SelectItem>
+              {uniqueParties.map((party) => (
+                <SelectItem key={party} value={party.toString()}>Party {party}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Position Filter */}
+          <Select value={positionFilter} onValueChange={setPositionFilter}>
+            <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                <SelectValue placeholder="Filter by position" />
+              </div>
+            </SelectTrigger>
+            <SelectContent className="bg-white border-white/25 shadow-xl">
+              <SelectItem value="">All Positions</SelectItem>
+              {uniquePositions.map((position) => (
+                <SelectItem key={position} value={position}>{position}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* Statistics Cards */}
@@ -302,6 +378,7 @@ export const OrganizerLeaderboard = () => {
                   <TableHead className="min-w-[200px] text-slate-700 font-semibold">Student</TableHead>
                   <TableHead className="w-32 text-center text-slate-700 font-semibold">Position</TableHead>
                   <TableHead className="w-24 text-center text-slate-700 font-semibold">Party</TableHead>
+                  <TableHead className="w-32 text-center text-slate-700 font-semibold">Home City</TableHead>
                   <TableHead className="w-24 text-center text-slate-700 font-semibold">Score</TableHead>
                   <TableHead className="w-28 text-center text-slate-700 font-semibold">Progress</TableHead>
                   <TableHead className="w-32 text-center text-slate-700 font-semibold">Awards</TableHead>
@@ -343,6 +420,12 @@ export const OrganizerLeaderboard = () => {
                       </TableCell>
                       <TableCell className="text-center">
                         <PartyBadge partyNumber={entry.party_number} size="md" />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <MapPin className="w-3 h-3 text-slate-500" />
+                          <span className="text-sm font-medium text-slate-700">{entry.city || 'N/A'}</span>
+                        </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <div className="font-black text-2xl text-slate-800">
