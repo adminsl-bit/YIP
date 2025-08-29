@@ -415,8 +415,8 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                   </h3>
                   <div className="flex items-center gap-2">
                     <p className="text-slate-600 font-semibold truncate">{student.position}</p>
-                    <span className="hidden sm:inline text-slate-400">•</span>
-                    <PartyBadge partyNumber={student.party_number} className="hidden sm:inline" />
+                    <span className="text-slate-400">•</span>
+                    <PartyBadge partyNumber={student.party_number} />
                   </div>
                 </div>
                 <div className="flex-shrink-0">{getStatusIcon(status)}</div>
@@ -430,7 +430,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                 </div>
                 <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
                   <p className="text-muted-foreground font-medium">Party</p>
-                  <p className="font-bold text-slate-800">{student.party_number}</p>
+                  <PartyBadge partyNumber={student.party_number} />
                 </div>
                 {student.constituency && (
                   <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3 col-span-2 sm:col-span-1">
