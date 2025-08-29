@@ -186,6 +186,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     const pos = position.toLowerCase();
     if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
     if (pos.includes('speaker')) return 'speaker';
+    if (pos.includes('administrator') || pos.includes('admin')) return 'administrator';
     return 'mp';
   };
 
@@ -328,6 +329,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="speaker">Speaker</SelectItem>
                 <SelectItem value="deputy_speaker">Deputy Speaker</SelectItem>
+                <SelectItem value="administrator">Administrator</SelectItem>
                 <SelectItem value="mp">MP</SelectItem>
               </SelectContent>
             </Select>
