@@ -509,120 +509,183 @@ export const SecurityLogsManager = () => {
               </CardContent>
             </Card>
 
-            {/* Active Users and Security Incidents */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Active Users */}
-              <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
-                <CardHeader className="border-b border-border/10">
-                  <CardTitle className="flex items-center gap-2 text-xl font-bold">
-                    <Eye className="w-5 h-5 text-primary" />
-                    Active Users
-                    <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">{activeUsers.length} online</Badge>
-                  </CardTitle>
-                  <p className="text-muted-foreground text-sm">
-                    Users currently logged into the system
-                  </p>
-                </CardHeader>
-                <CardContent className="p-6">
-                  {activeUsers.length > 0 ? (
-                    <div className="space-y-3">
-                      {activeUsers.map((user) => (
-                        <Card key={user.user_id} className="overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="font-bold text-foreground">{user.name}</div>
-                                <div className="text-sm text-muted-foreground">{user.position}</div>
-                                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
-                                  <Clock className="w-3 h-3" />
-                                  Last login: {new Date(user.last_login_at).toLocaleString()}
+            {/* Active Users - Scalable Design */}
+            <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
+              <CardHeader className="border-b border-border/10">
+                <CardTitle className="flex items-center gap-2 text-xl font-bold">
+                  <Eye className="w-5 h-5 text-primary" />
+                  Active Users
+                  <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">{activeUsers.length} online</Badge>
+                </CardTitle>
+                <p className="text-muted-foreground text-sm">
+                  Users currently logged into the system (showing up to 170+ concurrent users)
+                </p>
+                
+                {/* Quick Stats */}
+                <div className="flex items-center gap-4 mt-4 p-3 bg-muted/30 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                    <span className="text-sm font-medium">
+                      {activeUsers.filter(u => u.session_id).length} Active Sessions
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                    <span className="text-sm font-medium">
+                      {activeUsers.filter(u => !u.session_id).length} Recent Activity
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                    <span className="text-sm font-medium">
+                      {activeUsers.filter(u => u.user_type === 'student').length} Students
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                    <span className="text-sm font-medium">
+                      {activeUsers.filter(u => u.user_type === 'jury').length} Jury
+                    </span>
+                  </div>
+                </div>
+
+                {/* Search and Filter */}
+                <div className="flex items-center gap-3 mt-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input
+                      placeholder="Search active users..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Users</SelectItem>
+                      <SelectItem value="active_session">Active Sessions Only</SelectItem>
+                      <SelectItem value="recent">Recent Activity Only</SelectItem>
+                      <SelectItem value="student">Students Only</SelectItem>
+                      <SelectItem value="jury">Jury Only</SelectItem>
+                      <SelectItem value="organizer">Organizers Only</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {activeUsers.length > 0 ? (
+                  <div className="max-h-96 overflow-y-auto">
+                    {/* Compact Table View for Large Scale */}
+                    <div className="divide-y divide-border/10">
+                      {activeUsers
+                        .filter(user => {
+                          const matchesSearch = searchTerm === '' || 
+                            user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                            user.position.toLowerCase().includes(searchTerm.toLowerCase());
+                          
+                          const matchesFilter = statusFilter === 'all' ||
+                            (statusFilter === 'active_session' && user.session_id) ||
+                            (statusFilter === 'recent' && !user.session_id) ||
+                            (statusFilter === 'student' && user.user_type === 'student') ||
+                            (statusFilter === 'jury' && user.user_type === 'jury') ||
+                            (statusFilter === 'organizer' && user.user_type === 'organizer');
+                          
+                          return matchesSearch && matchesFilter;
+                        })
+                        .map((user) => (
+                          <div key={user.user_id} className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
+                                user.session_id ? 'bg-green-500' : 'bg-blue-400'
+                              }`}></div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-foreground truncate">{user.name}</span>
+                                  <Badge variant="outline" className="text-xs flex-shrink-0">
+                                    {user.user_type}
+                                  </Badge>
                                 </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Badge 
-                                  variant={user.session_id ? "default" : "secondary"}
-                                  className={user.session_id ? "bg-green-100 text-green-700 border-green-200" : "bg-blue-100 text-blue-700 border-blue-200"}
-                                >
-                                  {user.session_id ? "Active Session" : "Recent Activity"}
-                                </Badge>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => forceLogoutUser(user.user_id, user.name)}
-                                  className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 h-8 px-3"
-                                >
-                                  <LogOut className="w-3 h-3" />
-                                </Button>
+                                <div className="text-sm text-muted-foreground truncate">{user.position}</div>
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <Eye className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                      <h3 className="text-xl font-semibold text-muted-foreground mb-2">No active users</h3>
-                      <p className="text-muted-foreground">Active users will appear here when available</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
-              {/* Security Incidents */}
-              <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
-                <CardHeader className="border-b border-border/10">
-                  <CardTitle className="flex items-center gap-2 text-xl font-bold">
-                    <AlertTriangle className="w-5 h-5 text-destructive" />
-                    Active Security Threats
-                    <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">{duplicateLogins.length} live threats</Badge>
-                  </CardTitle>
-                  <p className="text-muted-foreground text-sm">
-                    Users currently logged in on multiple devices simultaneously
-                  </p>
-                </CardHeader>
-                <CardContent className="p-6">
-                  {duplicateLogins.length > 0 ? (
-                    <div className="space-y-3">
-                      {duplicateLogins.map((login, index) => (
-                        <Card key={`${login.user_id}-${index}`} className="overflow-hidden border border-destructive/20 hover:border-destructive/40 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-destructive/5 to-destructive/10">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="font-bold text-foreground">{login.name}</div>
-                                <div className="text-sm text-muted-foreground">{login.position}</div>
-                              <div className="text-xs text-destructive flex items-center gap-1 mt-2 font-medium">
-                                <AlertTriangle className="w-3 h-3" />
-                                Active concurrent session detected
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(user.last_login_at).toLocaleTimeString()}
                               </div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Last attempt: {new Date(login.last_login_at).toLocaleString()}
-                              </div>
-                              </div>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => forceLogoutUser(login.user_id, login.name)}
-                                className="bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20 h-8 px-3 font-semibold"
+                              <Badge 
+                                variant={user.session_id ? "default" : "secondary"}
+                                className={`text-xs ${user.session_id ? "bg-green-100 text-green-700 border-green-200" : "bg-blue-100 text-blue-700 border-blue-200"}`}
                               >
-                                <LogOut className="w-3 h-3 mr-1" />
-                                Force Logout
+                                {user.session_id ? "Live" : "Recent"}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => forceLogoutUser(user.user_id, user.name)}
+                                className="hover:bg-destructive/10 hover:text-destructive h-8 w-8 p-0"
+                              >
+                                <LogOut className="w-3 h-3" />
                               </Button>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                          </div>
+                        ))}
                     </div>
-                  ) : (
-                    <div className="text-center py-12">
-                    <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-xl font-semibold text-muted-foreground mb-2">No active security threats</h3>
-                    <p className="text-muted-foreground">Concurrent login attempts will appear here when detected</p>
-                    </div>
-                  )}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Eye className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                    <h3 className="text-xl font-semibold text-muted-foreground mb-2">No active users</h3>
+                    <p className="text-muted-foreground">Active users will appear here when available</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Security Incidents - Compact Critical View */}
+            {duplicateLogins.length > 0 && (
+              <Card className="bg-gradient-to-r from-destructive/5 to-destructive/10 border-destructive/20 rounded-3xl shadow-lg">
+                <CardHeader className="border-b border-destructive/20">
+                  <CardTitle className="flex items-center gap-2 text-xl font-bold">
+                    <AlertTriangle className="w-5 h-5 text-destructive" />
+                    🚨 Active Security Threats
+                    <Badge variant="destructive" className="bg-destructive text-white animate-pulse">{duplicateLogins.length}</Badge>
+                  </CardTitle>
+                  <p className="text-muted-foreground text-sm">
+                    Critical: Users with concurrent sessions on multiple devices
+                  </p>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                    {duplicateLogins.map((login, index) => (
+                      <div key={`${login.user_id}-${index}`} className="flex items-center justify-between p-3 bg-white/50 rounded-lg border border-destructive/30">
+                        <div className="flex items-center gap-3">
+                          <div className="w-2 h-2 bg-destructive rounded-full animate-pulse"></div>
+                          <div>
+                            <div className="font-bold text-foreground">{login.name}</div>
+                            <div className="text-sm text-muted-foreground">{login.position}</div>
+                            <div className="text-xs text-destructive font-medium">
+                              Multiple active sessions • {new Date(login.last_login_at).toLocaleTimeString()}
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => forceLogoutUser(login.user_id, login.name)}
+                          className="font-semibold"
+                        >
+                          <LogOut className="w-3 h-3 mr-1" />
+                          Force Logout
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
-            </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
