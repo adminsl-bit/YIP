@@ -89,12 +89,19 @@ export const ParliamentTree = () => {
         .from('profiles')
         .select('*')
         .eq('user_type', 'student')
+        .neq('party_number', 0)  // Exclude party 0
         .order('party_number', { ascending: true })
         .order('serial_number', { ascending: true });
 
       if (error) throw error;
-      setStudents(data || []);
-      setFilteredStudents(data || []);
+      
+      // Filter out profiles with "Nap" in the name
+      const filteredData = (data || []).filter(student => 
+        !student.name.toLowerCase().includes('nap')
+      );
+      
+      setStudents(filteredData);
+      setFilteredStudents(filteredData);
     } catch (error) {
       console.error('Error fetching students:', error);
     } finally {
