@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { PartyBadge } from "@/components/ui/party-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -163,17 +164,6 @@ export const OrganizerLeaderboard = () => {
     return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold">{rank}</span>;
   };
 
-  const getPartyColor = (partyNumber: number) => {
-    const colors = [
-      'bg-red-100 text-red-800',
-      'bg-blue-100 text-blue-800',
-      'bg-green-100 text-green-800',
-      'bg-yellow-100 text-yellow-800',
-      'bg-purple-100 text-purple-800',
-      'bg-pink-100 text-pink-800'
-    ];
-    return colors[(partyNumber - 1) % colors.length];
-  };
 
   const filteredLeaderboard = leaderboard.filter(entry =>
     entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -308,14 +298,14 @@ export const OrganizerLeaderboard = () => {
             <Table>
               <TableHeader>
                 <TableRow className="border-white/25">
-                  <TableHead className="w-16 text-slate-700 font-semibold">Rank</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Student</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Position</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Party</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Avg Score</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Assessments</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Awards</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Vote Status</TableHead>
+                  <TableHead className="w-16 text-center text-slate-700 font-semibold">Rank</TableHead>
+                  <TableHead className="min-w-[200px] text-slate-700 font-semibold">Student</TableHead>
+                  <TableHead className="w-32 text-center text-slate-700 font-semibold">Position</TableHead>
+                  <TableHead className="w-24 text-center text-slate-700 font-semibold">Party</TableHead>
+                  <TableHead className="w-24 text-center text-slate-700 font-semibold">Score</TableHead>
+                  <TableHead className="w-28 text-center text-slate-700 font-semibold">Progress</TableHead>
+                  <TableHead className="w-32 text-center text-slate-700 font-semibold">Awards</TableHead>
+                  <TableHead className="w-32 text-center text-slate-700 font-semibold">Vote Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -346,48 +336,46 @@ export const OrganizerLeaderboard = () => {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <Badge variant="outline" className="bg-white/20 border-white/30 text-slate-700 font-medium">
                           {entry.position}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <Badge className={`${getPartyColor(entry.party_number)} font-medium`}>
-                          Party {entry.party_number}
-                        </Badge>
+                      <TableCell className="text-center">
+                        <PartyBadge partyNumber={entry.party_number} size="md" />
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <div className="font-black text-2xl text-slate-800">
                           {Math.round(entry.average_score)}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         <Badge variant="secondary" className="bg-slate-200 text-slate-800 font-medium">
                           {entry.assessment_count}/3
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        <div className="space-y-1 min-w-[120px]">
+                      <TableCell className="text-center">
+                        <div className="space-y-1 flex flex-col items-center">
                           {studentAwards[entry.user_id]?.map((award, idx) => (
-                            <Badge key={idx} className="text-xs bg-yellow-100 text-yellow-800 font-medium block w-fit">
+                            <Badge key={idx} className="text-xs bg-yellow-500/20 text-yellow-700 border border-yellow-500/30 font-medium">
                               <Trophy className="w-3 h-3 mr-1" />
                               {award}
                             </Badge>
                           )) || <span className="text-slate-600 text-sm font-medium">No awards</span>}
                         </div>
                       </TableCell>
-                      <TableCell>
-                        <div className="space-y-1 min-w-[100px]">
+                      <TableCell className="text-center">
+                        <div className="space-y-1 flex flex-col items-center">
                           {uniqueAwards.length > 0 ? (
                             uniqueAwards.map((awardId) => {
                               const voteCount = getVoteCount(awardId, entry.user_id);
                               const award = awards.find(a => a.id === awardId);
                               return (
-                                <div key={awardId} className="text-xs">
-                                  <span className="font-semibold text-slate-700">{award?.name}</span>
+                                <div key={awardId} className="text-xs flex items-center gap-1">
+                                  <span className="font-semibold text-slate-700 text-center">{award?.name}</span>
                                   <Badge 
                                     variant={voteCount >= 3 ? "default" : "secondary"} 
-                                    className="ml-1 text-xs font-medium"
+                                    className="text-xs font-medium"
                                   >
                                     {voteCount}/3
                                   </Badge>
