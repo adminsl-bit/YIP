@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Crown, Gavel, Users, MapPin, Search } from 'lucide-react';
+import { Crown, Gavel, Users, MapPin, Search, X } from 'lucide-react';
 import GlassmorphismProfileCard from './GlassmorphismProfileCard';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -279,10 +279,19 @@ const InteractiveParliamentTree = () => {
       {/* Student Profile Modal */}
       <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
         <DialogContent
-          className="max-w-md bg-transparent border-0 shadow-none p-0"
+          className="max-w-md bg-transparent border-0 shadow-none p-0 relative"
           aria-label="Student Profile"
           aria-describedby="student-profile-desc"
         >
+          {/* Close Button */}
+          <button
+            onClick={() => setSelectedStudent(null)}
+            className="absolute -top-2 -right-2 z-50 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200"
+            aria-label="Close profile"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          
           <h2 id="student-profile-title" className="sr-only">Student Profile</h2>
           <p id="student-profile-desc" className="sr-only">
             Detailed profile information for the selected student
