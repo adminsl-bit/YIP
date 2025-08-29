@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 
 interface Student {
   id: string;
+  user_id: string;
   name: string;
   position: string;
   party_number: number;
@@ -190,17 +191,17 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     return 'mp';
   };
 
-  const getAssessmentStatus = (studentId: string) => {
-    const assessment = assessments.find(a => a.student_id === studentId);
+  const getAssessmentStatus = (studentUserId: string) => {
+    const assessment = assessments.find(a => a.student_id === studentUserId);
     return assessment?.status || 'not_started';
   };
 
-  const getAssessment = (studentId: string) => {
-    return assessments.find(a => a.student_id === studentId);
+  const getAssessment = (studentUserId: string) => {
+    return assessments.find(a => a.student_id === studentUserId);
   };
 
   const handleAssessmentSubmit = async (
-    studentId: string,
+    studentUserId: string,
     scores: Record<string, any>,
     notes: string,
     status: 'draft' | 'submitted'
@@ -211,7 +212,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       
       const assessmentData = {
         jury_id: juryId,
-        student_id: studentId,
+        student_id: studentUserId, // Use user_id instead of profile id
         seat_role: getSeatRole(selectedStudent!.position),
         scores,
         total_score: totalScore,
@@ -220,22 +221,14 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
         submitted_at: status === 'submitted' ? new Date().toISOString() : null
       };
 
-      const existingAssessment = getAssessment(studentId);
+      // Always use upsert to prevent duplicates
+      const { error } = await supabase
+        .from('assessments')
+        .upsert(assessmentData, {
+          onConflict: 'jury_id,student_id'
+        });
       
-      if (existingAssessment) {
-        const { error } = await supabase
-          .from('assessments')
-          .update(assessmentData)
-          .eq('id', existingAssessment.id);
-        
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('assessments')
-          .insert(assessmentData);
-        
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       // Refresh assessments
       await fetchAssessments();
@@ -383,8 +376,8 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       {/* Student List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStudents.map((student) => {
-          const status = getAssessmentStatus(student.id);
-          const assessment = getAssessment(student.id);
+          const status = getAssessmentStatus(student.user_id);
+          const assessment = getAssessment(student.user_id);
           const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
 
           return (
@@ -462,11 +455,11 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
             <AssessmentForm
               student={selectedStudent}
               onSubmit={(scores, notes, status) => 
-                handleAssessmentSubmit(selectedStudent.id, scores, notes, status)
+                handleAssessmentSubmit(selectedStudent.user_id, scores, notes, status)
               }
-              initialScores={getAssessment(selectedStudent.id)?.scores || {}}
-              initialNotes={getAssessment(selectedStudent.id)?.notes || ""}
-              initialStatus={getAssessment(selectedStudent.id)?.status}
+              initialScores={getAssessment(selectedStudent.user_id)?.scores || {}}
+              initialNotes={getAssessment(selectedStudent.user_id)?.notes || ""}
+              initialStatus={getAssessment(selectedStudent.user_id)?.status}
             />
           )}
         </DialogContent>
