@@ -12,6 +12,7 @@ import { OrganizerStats } from "@/components/organizer/OrganizerStats";
 import { OrganizerStudentList } from "@/components/organizer/OrganizerStudentList";
 import { StudentBulkImport } from "@/components/organizer/StudentBulkImport";
 import PhotoUploadManager from "@/components/organizer/PhotoUploadManager";
+import PhotoMigration from "@/components/organizer/PhotoMigration";
 
 const OrganizerDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -276,6 +277,7 @@ const OrganizerDashboard = () => {
             </TabsContent>
 
             <TabsContent value="photos" className="space-y-6">
+              {/* Photo Upload Manager */}
               <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
                 <div className="text-center mb-8">
                   <div className="relative inline-block mb-4">
@@ -288,6 +290,28 @@ const OrganizerDashboard = () => {
                   <p className="text-slate-600 font-medium">Upload and manage student photos</p>
                 </div>
                 <PhotoUploadManager />
+              </div>
+
+              {/* Photo Migration as Accordion */}
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="photo-migration" className="border-none">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                          <Zap className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <h3 className="text-xl font-black text-slate-800">Photo Migration</h3>
+                          <p className="text-slate-600 font-medium text-sm">Migrate photos from Google Drive to Supabase Storage</p>
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-6">
+                      <PhotoMigration />
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </div>
             </TabsContent>
           </Tabs>
