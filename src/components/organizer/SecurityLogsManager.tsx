@@ -45,10 +45,23 @@ interface ActiveUser {
   is_active: boolean;
 }
 
+interface LoginAuditEntry {
+  id: string;
+  user_id: string;
+  user_name?: string;
+  ip_address?: string;
+  user_agent?: string;
+  session_id?: string;
+  is_duplicate_session: boolean;
+  previous_session_id?: string;
+  login_attempt_at: string;
+}
+
 export const SecurityLogsManager = () => {
   const [duplicateLogins, setDuplicateLogins] = useState<DuplicateLogin[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
+  const [loginAuditEntries, setLoginAuditEntries] = useState<LoginAuditEntry[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
@@ -65,6 +78,7 @@ export const SecurityLogsManager = () => {
         () => {
           fetchDuplicateLogins();
           fetchActiveUsers();
+          fetchLoginAuditEntries();
         }
       )
       .subscribe();
@@ -90,7 +104,8 @@ export const SecurityLogsManager = () => {
     await Promise.all([
       fetchDuplicateLogins(),
       fetchAuditLogs(),
-      fetchActiveUsers()
+      fetchActiveUsers(),
+      fetchLoginAuditEntries()
     ]);
     setLoading(false);
   };
@@ -219,6 +234,52 @@ export const SecurityLogsManager = () => {
       setActiveUsers(recentlyActive);
     } catch (error) {
       console.error('Error fetching active users:', error);
+    }
+  };
+
+  const fetchLoginAuditEntries = async () => {
+    try {
+      const { data: loginData, error: loginError } = await supabase
+        .from('login_audit')
+        .select(`
+          id,
+          user_id,
+          ip_address,
+          user_agent,
+          session_id,
+          is_duplicate_session,
+          previous_session_id,
+          login_attempt_at
+        `)
+        .order('login_attempt_at', { ascending: false })
+        .limit(50);
+
+      if (loginError) throw loginError;
+
+      if (loginData && loginData.length > 0) {
+        const userIds = [...new Set(loginData.map(item => item.user_id))];
+        
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('user_id, name')
+          .in('user_id', userIds);
+
+        if (profileError) throw profileError;
+
+        const combinedData: LoginAuditEntry[] = loginData.map(login => {
+          const profile = profileData?.find(p => p.user_id === login.user_id);
+          return {
+            ...login,
+            user_name: profile?.name || 'Unknown User'
+          };
+        });
+
+        setLoginAuditEntries(combinedData);
+      } else {
+        setLoginAuditEntries([]);
+      }
+    } catch (error) {
+      console.error('Error fetching login audit entries:', error);
     }
   };
 
@@ -353,52 +414,71 @@ export const SecurityLogsManager = () => {
         </TabsContent>
 
         <TabsContent value="access" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Active Users */}
+          <div className="grid grid-cols-1 gap-6">
+            {/* Login Activity Log */}
             <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
               <CardHeader className="border-b border-border/10">
                 <CardTitle className="flex items-center gap-2 text-xl font-bold">
-                  <Eye className="w-5 h-5 text-primary" />
-                  Active Users
-                  <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">{activeUsers.length} online</Badge>
+                  <Activity className="w-5 h-5 text-primary" />
+                  Login Activity Log
+                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">{loginAuditEntries.length} entries</Badge>
                 </CardTitle>
                 <p className="text-muted-foreground text-sm">
-                  Users currently logged into the system
+                  Complete log of all user login attempts and session activities
                 </p>
               </CardHeader>
               <CardContent className="p-6">
-                {activeUsers.length > 0 ? (
-                  <div className="space-y-3">
-                    {activeUsers.map((user) => (
-                      <Card key={user.user_id} className="overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5">
+                {loginAuditEntries.length > 0 ? (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {loginAuditEntries.map((entry) => (
+                      <Card key={entry.id} className={`overflow-hidden border transition-all duration-200 hover:shadow-md ${
+                        entry.is_duplicate_session 
+                          ? 'border-destructive/20 hover:border-destructive/40 bg-gradient-to-r from-destructive/5 to-destructive/10' 
+                          : 'border-border/20 hover:border-primary/30 bg-gradient-to-r from-background to-accent/5'
+                      }`}>
                         <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <div className="font-bold text-foreground">{user.name}</div>
-                              <div className="text-sm text-muted-foreground">{user.position}</div>
-                              <div className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
-                                <Clock className="w-3 h-3" />
-                                Last login: {new Date(user.last_login_at).toLocaleString()}
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="font-bold text-foreground">{entry.user_name}</span>
+                                {entry.is_duplicate_session && (
+                                  <Badge variant="destructive" className="text-xs">
+                                    <AlertTriangle className="w-3 h-3 mr-1" />
+                                    Duplicate Session
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="space-y-1 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-3 h-3 text-muted-foreground" />
+                                  <span className="text-muted-foreground">{new Date(entry.login_attempt_at).toLocaleString()}</span>
+                                </div>
+                                {entry.ip_address && (
+                                  <div className="flex items-center gap-2">
+                                    <Shield className="w-3 h-3 text-muted-foreground" />
+                                    <span className="text-muted-foreground font-mono text-xs">{entry.ip_address}</span>
+                                  </div>
+                                )}
+                                {entry.session_id && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-muted-foreground">Session:</span>
+                                    <span className="text-xs font-mono text-muted-foreground">{entry.session_id.slice(0, 8)}...</span>
+                                  </div>
+                                )}
+                                {entry.previous_session_id && (
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-destructive">Previous session:</span>
+                                    <span className="text-xs font-mono text-destructive">{entry.previous_session_id.slice(0, 8)}...</span>
+                                  </div>
+                                )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Badge 
-                                variant={user.session_id ? "default" : "secondary"}
-                                className={user.session_id ? "bg-green-100 text-green-700 border-green-200" : ""}
-                              >
-                                {user.session_id ? "Active" : "Offline"}
-                              </Badge>
-                              {user.session_id && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => forceLogoutUser(user.user_id, user.name)}
-                                  className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 h-8 px-3"
-                                >
-                                  <LogOut className="w-3 h-3" />
-                                </Button>
-                              )}
-                            </div>
+                            <Badge 
+                              variant={entry.is_duplicate_session ? "destructive" : "default"}
+                              className={entry.is_duplicate_session ? "" : "bg-green-100 text-green-700 border-green-200"}
+                            >
+                              {entry.is_duplicate_session ? "Security Alert" : "Normal Login"}
+                            </Badge>
                           </div>
                         </CardContent>
                       </Card>
@@ -406,67 +486,130 @@ export const SecurityLogsManager = () => {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <Eye className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-xl font-semibold text-muted-foreground mb-2">No active users</h3>
-                    <p className="text-muted-foreground">Active users will appear here when available</p>
+                    <Activity className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                    <h3 className="text-xl font-semibold text-muted-foreground mb-2">No login activity</h3>
+                    <p className="text-muted-foreground">Login attempts will appear here when they occur</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
-            {/* Security Incidents */}
-            <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
-              <CardHeader className="border-b border-border/10">
-                <CardTitle className="flex items-center gap-2 text-xl font-bold">
-                  <AlertTriangle className="w-5 h-5 text-destructive" />
-                  Security Incidents
-                  <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">{duplicateLogins.length} alerts</Badge>
-                </CardTitle>
-                <p className="text-muted-foreground text-sm">
-                  Duplicate sessions and security violations
-                </p>
-              </CardHeader>
-              <CardContent className="p-6">
-                {duplicateLogins.length > 0 ? (
-                  <div className="space-y-3">
-                    {duplicateLogins.map((login, index) => (
-                      <Card key={`${login.user_id}-${index}`} className="overflow-hidden border border-destructive/20 hover:border-destructive/40 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-destructive/5 to-destructive/10">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="font-bold text-foreground">{login.name}</div>
-                              <div className="text-sm text-muted-foreground">{login.position}</div>
-                              <div className="text-xs text-destructive flex items-center gap-1 mt-2 font-medium">
-                                <AlertTriangle className="w-3 h-3" />
-                                Duplicate session detected
+            {/* Active Users and Security Incidents */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Active Users */}
+              <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
+                <CardHeader className="border-b border-border/10">
+                  <CardTitle className="flex items-center gap-2 text-xl font-bold">
+                    <Eye className="w-5 h-5 text-primary" />
+                    Active Users
+                    <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">{activeUsers.length} online</Badge>
+                  </CardTitle>
+                  <p className="text-muted-foreground text-sm">
+                    Users currently logged into the system
+                  </p>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {activeUsers.length > 0 ? (
+                    <div className="space-y-3">
+                      {activeUsers.map((user) => (
+                        <Card key={user.user_id} className="overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5">
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="font-bold text-foreground">{user.name}</div>
+                                <div className="text-sm text-muted-foreground">{user.position}</div>
+                                <div className="text-xs text-muted-foreground flex items-center gap-1 mt-2">
+                                  <Clock className="w-3 h-3" />
+                                  Last login: {new Date(user.last_login_at).toLocaleString()}
+                                </div>
                               </div>
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {new Date(login.last_login_at).toLocaleString()}
+                              <div className="flex items-center gap-2">
+                                <Badge 
+                                  variant={user.session_id ? "default" : "secondary"}
+                                  className={user.session_id ? "bg-green-100 text-green-700 border-green-200" : ""}
+                                >
+                                  {user.session_id ? "Active" : "Offline"}
+                                </Badge>
+                                {user.session_id && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => forceLogoutUser(user.user_id, user.name)}
+                                    className="hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 h-8 px-3"
+                                  >
+                                    <LogOut className="w-3 h-3" />
+                                  </Button>
+                                )}
                               </div>
                             </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => forceLogoutUser(login.user_id, login.name)}
-                              className="bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20 h-8 px-3 font-semibold"
-                            >
-                              <LogOut className="w-3 h-3 mr-1" />
-                              Force Logout
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-xl font-semibold text-muted-foreground mb-2">No security incidents</h3>
-                    <p className="text-muted-foreground">Security alerts will appear here when detected</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Eye className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                      <h3 className="text-xl font-semibold text-muted-foreground mb-2">No active users</h3>
+                      <p className="text-muted-foreground">Active users will appear here when available</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Security Incidents */}
+              <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
+                <CardHeader className="border-b border-border/10">
+                  <CardTitle className="flex items-center gap-2 text-xl font-bold">
+                    <AlertTriangle className="w-5 h-5 text-destructive" />
+                    Security Incidents
+                    <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">{duplicateLogins.length} alerts</Badge>
+                  </CardTitle>
+                  <p className="text-muted-foreground text-sm">
+                    Duplicate sessions and security violations
+                  </p>
+                </CardHeader>
+                <CardContent className="p-6">
+                  {duplicateLogins.length > 0 ? (
+                    <div className="space-y-3">
+                      {duplicateLogins.map((login, index) => (
+                        <Card key={`${login.user_id}-${index}`} className="overflow-hidden border border-destructive/20 hover:border-destructive/40 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-destructive/5 to-destructive/10">
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="font-bold text-foreground">{login.name}</div>
+                                <div className="text-sm text-muted-foreground">{login.position}</div>
+                                <div className="text-xs text-destructive flex items-center gap-1 mt-2 font-medium">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  Duplicate session detected
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {new Date(login.last_login_at).toLocaleString()}
+                                </div>
+                              </div>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => forceLogoutUser(login.user_id, login.name)}
+                                className="bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20 h-8 px-3 font-semibold"
+                              >
+                                <LogOut className="w-3 h-3 mr-1" />
+                                Force Logout
+                              </Button>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                      <h3 className="text-xl font-semibold text-muted-foreground mb-2">No security incidents</h3>
+                      <p className="text-muted-foreground">Security alerts will appear here when detected</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </TabsContent>
       </Tabs>
