@@ -14,6 +14,7 @@ interface Student {
   name: string;
   position: string;
   party_number: number;
+  party_name?: string;
   serial_number: number;
   constituency?: string;
   state?: string;
@@ -192,7 +193,7 @@ const InteractiveParliamentTree = () => {
                 <div className="mb-6 text-center">
                   <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r ${getPartyColor(parseInt(partyNumber))} text-white font-black text-xl shadow-lg`}>
                     <Users className="w-6 h-6" />
-                    Party {partyNumber}
+                    {partyStudents[0]?.party_name || `Party ${partyNumber}`}
                     <Badge className="bg-white/20 text-white font-bold">
                       {partyStudents.length} members
                     </Badge>
@@ -263,7 +264,7 @@ const InteractiveParliamentTree = () => {
                                   <div className="flex items-center gap-2">
                                     <div className={`w-4 h-2 bg-gradient-to-r ${getPartyColor(student.party_number)} rounded-full`} />
                                     <span className="text-xs font-medium text-slate-600">
-                                      Party {student.party_number}
+                                      {student.party_name || `Party ${student.party_number}`}
                                     </span>
                                   </div>
                                 </div>

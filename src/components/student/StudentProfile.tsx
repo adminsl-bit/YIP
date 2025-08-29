@@ -9,6 +9,7 @@ interface Profile {
   name: string;
   position: string;
   party_number: number;
+  party_name?: string;
   serial_number: number;
   constituency?: string;
   state?: string;
@@ -67,7 +68,7 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
               <div className="flex items-center gap-3">
                 <span className="text-lg font-semibold text-muted-foreground">{profile.position}</span>
                 <span className="text-muted-foreground">•</span>
-                <PartyBadge partyNumber={profile.party_number} size="md" />
+                <PartyBadge partyNumber={profile.party_number} partyName={profile.party_name} size="md" />
               </div>
             </header>
 

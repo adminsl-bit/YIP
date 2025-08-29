@@ -9,6 +9,7 @@ interface Student {
   name: string;
   position: string;
   party_number: number;
+  party_name?: string;
   serial_number: number;
   constituency?: string;
   state?: string;
@@ -121,7 +122,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
 
         {/* Party Badge */}
         <div className="mb-4">
-          <PartyBadge partyNumber={student.party_number} size="md" />
+          <PartyBadge partyNumber={student.party_number} partyName={student.party_name} size="md" />
         </div>
 
         {/* Divider */}
