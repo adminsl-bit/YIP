@@ -46,11 +46,14 @@ const PhotoUploadManager = () => {
 
   const handleFileUpload = async (file: File, studentId: string, serialNumber: number) => {
     try {
+      console.log('Starting file upload for student:', serialNumber, 'File:', file.name, 'Type:', file.type);
+      
       let processedFile = file;
       let fileName = `${serialNumber}.jpg`; // Always save as JPG
 
       // Convert HEIC to JPEG if needed
       if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
+        console.log('Converting HEIC to JPEG...');
         toast({
           title: 'Converting HEIC',
           description: 'Converting HEIC image to JPEG format...',
@@ -63,41 +66,57 @@ const PhotoUploadManager = () => {
         }) as Blob;
 
         processedFile = new File([convertedBlob], fileName, { type: 'image/jpeg' });
+        console.log('HEIC conversion completed');
       }
 
-      const { error: uploadError } = await supabase.storage
+      console.log('Uploading to storage bucket...');
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('student-photos')
         .upload(fileName, processedFile, {
           cacheControl: '3600',
           upsert: true
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('Upload successful:', uploadData);
 
       const { data: { publicUrl } } = supabase.storage
         .from('student-photos')
         .getPublicUrl(fileName);
 
       const updatedUrl = `${publicUrl}?v=${Date.now()}`;
+      console.log('Generated photo URL:', updatedUrl);
 
-      const { error: updateError } = await supabase
+      console.log('Updating database...');
+      const { error: updateError, data: updateData } = await supabase
         .from('profiles')
         .update({ photo_url: updatedUrl })
-        .eq('id', studentId);
+        .eq('id', studentId)
+        .select();
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Database update error:', updateError);
+        throw updateError;
+      }
+
+      console.log('Database update successful:', updateData);
 
       toast({
         title: 'Success',
-        description: 'Photo uploaded successfully',
+        description: `Photo uploaded successfully for student ${serialNumber}`,
       });
 
       await fetchStudents();
+      console.log('Students list refreshed');
     } catch (error) {
       console.error('Error uploading photo:', error);
       toast({
         title: 'Error',
-        description: 'Failed to upload photo. HEIC files require conversion.',
+        description: `Failed to upload photo: ${error.message}`,
         variant: 'destructive',
       });
     }
