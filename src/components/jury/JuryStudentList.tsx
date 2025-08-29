@@ -428,10 +428,6 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                   <p className="text-muted-foreground font-medium">Serial</p>
                   <p className="font-bold text-slate-800">{student.serial_number}</p>
                 </div>
-                <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
-                  <p className="text-muted-foreground font-medium">Party</p>
-                  <PartyBadge partyNumber={student.party_number} />
-                </div>
                 {student.constituency && (
                   <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3 col-span-2 sm:col-span-1">
                     <p className="text-muted-foreground font-medium">Constituency</p>
