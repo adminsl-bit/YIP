@@ -50,9 +50,9 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
   const [awardVotes, setAwardVotes] = useState<AwardVote[]>([]);
   const [studentAwards, setStudentAwards] = useState<Record<string, string[]>>({});
   const [searchTerm, setSearchTerm] = useState('');
-  const [positionFilter, setPositionFilter] = useState('');
-  const [partyFilter, setPartyFilter] = useState('');
-  const [stateFilter, setStateFilter] = useState('');
+  const [positionFilter, setPositionFilter] = useState('all-positions');
+  const [partyFilter, setPartyFilter] = useState('all-parties');
+  const [stateFilter, setStateFilter] = useState('all-states');
   const [sortBy, setSortBy] = useState<'score' | 'name' | 'assessments'>('score');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [loading, setLoading] = useState(true);
@@ -241,9 +241,9 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
       entry.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.constituency?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesPosition = !positionFilter || entry.position === positionFilter;
-    const matchesParty = !partyFilter || entry.party_number.toString() === partyFilter;
-    const matchesState = !stateFilter || entry.state === stateFilter;
+    const matchesPosition = positionFilter === 'all-positions' || !positionFilter || entry.position === positionFilter;
+    const matchesParty = partyFilter === 'all-parties' || !partyFilter || entry.party_number.toString() === partyFilter;
+    const matchesState = stateFilter === 'all-states' || !stateFilter || entry.state === stateFilter;
     
     return matchesSearch && matchesPosition && matchesParty && matchesState;
   });
@@ -277,14 +277,14 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setPositionFilter('');
-    setPartyFilter('');
-    setStateFilter('');
+    setPositionFilter('all-positions');
+    setPartyFilter('all-parties');
+    setStateFilter('all-states');
     setSortBy('score');
     setSortOrder('desc');
   };
 
-  const hasActiveFilters = searchTerm || positionFilter || partyFilter || stateFilter || sortBy !== 'score' || sortOrder !== 'desc';
+  const hasActiveFilters = searchTerm || (positionFilter && positionFilter !== 'all-positions') || (partyFilter && partyFilter !== 'all-parties') || (stateFilter && stateFilter !== 'all-states') || sortBy !== 'score' || sortOrder !== 'desc';
 
   if (loading) {
     return (
@@ -342,7 +342,7 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                 <SelectValue placeholder="Position" />
               </SelectTrigger>
               <SelectContent className="bg-white/95 backdrop-blur-lg border border-white/25">
-                <SelectItem value="">All Positions</SelectItem>
+                <SelectItem value="all-positions">All Positions</SelectItem>
                 {uniquePositions.map(position => (
                   <SelectItem key={position} value={position}>{position}</SelectItem>
                 ))}
@@ -354,7 +354,7 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                 <SelectValue placeholder="Party" />
               </SelectTrigger>
               <SelectContent className="bg-white/95 backdrop-blur-lg border border-white/25">
-                <SelectItem value="">All Parties</SelectItem>
+                <SelectItem value="all-parties">All Parties</SelectItem>
                 {uniqueParties.map(party => (
                   <SelectItem key={party} value={party.toString()}>Party {party}</SelectItem>
                 ))}
@@ -366,7 +366,7 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                 <SelectValue placeholder="State" />
               </SelectTrigger>
               <SelectContent className="bg-white/95 backdrop-blur-lg border border-white/25">
-                <SelectItem value="">All States</SelectItem>
+                <SelectItem value="all-states">All States</SelectItem>
                 {uniqueStates.map(state => (
                   <SelectItem key={state} value={state}>{state}</SelectItem>
                 ))}
