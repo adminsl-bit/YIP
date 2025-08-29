@@ -324,18 +324,32 @@ const PhotoUploadManager = () => {
                     )}
                   </div>
                 </div>
-                <div>
-                  <Input
-                    type="file"
-                    accept="image/*,.heic,.HEIC"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        handleFileUpload(file, student.id, student.serial_number);
-                      }
-                    }}
-                    className="w-48"
-                  />
+                <div className="flex flex-col gap-2">
+                  <div className="relative">
+                    <Input
+                      type="file"
+                      accept="image/*,.heic,.HEIC"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleFileUpload(file, student.id, student.serial_number);
+                        }
+                      }}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      id={`file-${student.id}`}
+                    />
+                    <label 
+                      htmlFor={`file-${student.id}`}
+                      className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2 cursor-pointer"
+                    >
+                      Choose Photo
+                    </label>
+                  </div>
+                  {student.photo_url && (
+                    <div className="text-xs text-muted-foreground">
+                      Current: {student.photo_url.includes('drive.google.com') ? 'Google Drive' : 'Supabase Storage'}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
