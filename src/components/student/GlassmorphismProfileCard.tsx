@@ -53,6 +53,11 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
     return colors[partyNumber % colors.length] || 'from-slate-500 to-slate-600';
   };
 
+  const isSpecialPosition = (position: string) => {
+    const pos = position.toLowerCase();
+    return pos.includes('minister') || pos.includes('leader') || pos.includes('president') || pos.includes('speaker');
+  };
+
   const infoItems = [
     {
       id: 'serial',
@@ -83,41 +88,58 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
   return (
     <div className="relative w-full max-w-sm">
       <div 
-        className="relative flex flex-col items-center p-8 rounded-3xl border transition-all duration-500 ease-out backdrop-blur-xl bg-white border-border/20 shadow-2xl"
+        className={`relative flex flex-col items-center p-8 rounded-3xl border transition-all duration-500 ease-out backdrop-blur-xl bg-white shadow-2xl ${
+          isSpecialPosition(student.position)
+            ? 'border-2 border-amber-400/60 bg-gradient-to-br from-amber-50/80 to-yellow-50/80'
+            : 'border-border/20'
+        }`}
       >
         {/* Avatar */}
-        <div className="w-24 h-24 mb-4 rounded-full p-1 border-2 border-border/30">
-          <Avatar className="w-full h-full">
-            <AvatarImage 
-              src={student.photo_url
-                ? (() => {
-                    const raw = student.photo_url.includes('/file/d/')
-                      ? `https://drive.google.com/uc?export=view&id=${student.photo_url.split('/d/')[1]?.split('/')[0]}`
-                      : student.photo_url;
-                    const suffix = raw.includes('?') ? '&' : '?';
-                    return `${raw}${suffix}cb=${student.updated_at ? new Date(student.updated_at).getTime() : ''}`;
-                  })()
-                : undefined}
-              alt={`${student.name}'s Avatar`}
-              className="object-cover"
-              referrerPolicy="no-referrer"
-              loading="lazy"
-              decoding="async"
-              onError={() => console.log('Image failed to load for:', student.name, 'URL:', student.photo_url)}
-              onLoad={() => console.log('Image loaded for:', student.name, 'URL:', student.photo_url)}
-            />
-            <AvatarFallback className={`bg-gradient-to-br ${getPartyColor(student.party_number)} text-white text-xl font-bold`}>
-              {initials}
-            </AvatarFallback>
-          </Avatar>
+        <div className={`w-24 h-24 mb-4 rounded-full p-1 border-2 ${
+          isSpecialPosition(student.position) ? 'border-amber-400' : 'border-border/30'
+        }`}>
+          <div className="relative w-full h-full">
+            <Avatar className="w-full h-full">
+              <AvatarImage 
+                src={student.photo_url
+                  ? (() => {
+                      const raw = student.photo_url.includes('/file/d/')
+                        ? `https://drive.google.com/uc?export=view&id=${student.photo_url.split('/d/')[1]?.split('/')[0]}`
+                        : student.photo_url;
+                      const suffix = raw.includes('?') ? '&' : '?';
+                      return `${raw}${suffix}cb=${student.updated_at ? new Date(student.updated_at).getTime() : ''}`;
+                    })()
+                  : undefined}
+                alt={`${student.name}'s Avatar`}
+                className="object-cover"
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                decoding="async"
+                onError={() => console.log('Image failed to load for:', student.name, 'URL:', student.photo_url)}
+                onLoad={() => console.log('Image loaded for:', student.name, 'URL:', student.photo_url)}
+              />
+              <AvatarFallback className={`bg-gradient-to-br ${getPartyColor(student.party_number)} text-white text-xl font-bold`}>
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            {isSpecialPosition(student.position) && (
+              <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
+                <Crown className="w-4 h-4 text-white" />
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Name and Title */}
-        <h2 className="text-2xl font-bold text-card-foreground text-center">{student.name}</h2>
+        <h2 className={`text-2xl font-bold text-center ${
+          isSpecialPosition(student.position) ? 'text-amber-800' : 'text-card-foreground'
+        }`}>{student.name}</h2>
         
         <div className="flex items-center gap-2 mt-1 mb-2">
           {getPositionIcon(student.position)}
-          <p className="text-sm font-medium text-primary">{student.position}</p>
+          <p className={`text-sm font-medium ${
+            isSpecialPosition(student.position) ? 'text-amber-700' : 'text-primary'
+          }`}>{student.position}</p>
         </div>
 
         {/* Party Badge */}

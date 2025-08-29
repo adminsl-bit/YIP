@@ -2,7 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PartyBadge } from "@/components/ui/party-badge";
-import { Hash, MapPin, Building, Users } from "lucide-react";
+import { Hash, MapPin, Building, Users, Crown } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -24,11 +24,21 @@ interface StudentProfileProps {
   isOwnProfile?: boolean;
 }
 
+const isSpecialPosition = (position: string) => {
+  const pos = position.toLowerCase();
+  return pos.includes('minister') || pos.includes('leader') || pos.includes('president') || pos.includes('speaker');
+};
+
 export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfileProps) => {
   const initials = profile.name.split(' ').map(n => n[0]).join('').toUpperCase();
+  const isSpecial = isSpecialPosition(profile.position);
 
   return (
-    <Card className="w-full bg-white rounded-3xl shadow-lg border border-border/20 overflow-hidden">
+    <Card className={`w-full rounded-3xl shadow-lg border overflow-hidden ${
+      isSpecial 
+        ? 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-300' 
+        : 'bg-white border-border/20'
+    }`}>
       <CardContent className="p-0">
         <section className="flex min-h-[400px]">
           {/* Left side - Image (Half width) */}
@@ -53,8 +63,17 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
                 }}
               />
             ) : (
-              <div className="w-full h-full bg-gradient-to-br from-primary to-primary-glow flex items-center justify-center">
+              <div className={`w-full h-full flex items-center justify-center ${
+                isSpecial 
+                  ? 'bg-gradient-to-br from-amber-400 to-yellow-500' 
+                  : 'bg-gradient-to-br from-primary to-primary-glow'
+              }`}>
                 <span className="text-6xl font-bold text-primary-foreground">{initials}</span>
+              </div>
+            )}
+            {isSpecial && (
+              <div className="absolute top-4 left-4 bg-amber-500 rounded-full p-2 shadow-lg">
+                <Crown className="w-6 h-6 text-white" />
               </div>
             )}
           </div>
@@ -62,11 +81,15 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
           {/* Right side - Profile Details (Half width) */}
           <div className="w-1/2 p-8 flex flex-col justify-center space-y-6">
             <header className="space-y-4">
-              <CardTitle className="text-4xl font-serif font-bold text-foreground leading-tight">
+              <CardTitle className={`text-4xl font-serif font-bold leading-tight ${
+                isSpecial ? 'text-amber-800' : 'text-foreground'
+              }`}>
                 {profile.name}
               </CardTitle>
               <div className="flex items-center gap-3">
-                <span className="text-lg font-semibold text-muted-foreground">{profile.position}</span>
+                <span className={`text-lg font-semibold ${
+                  isSpecial ? 'text-amber-700' : 'text-muted-foreground'
+                }`}>{profile.position}</span>
                 <span className="text-muted-foreground">•</span>
                 <PartyBadge partyNumber={profile.party_number} partyName={profile.party_name} size="md" />
               </div>

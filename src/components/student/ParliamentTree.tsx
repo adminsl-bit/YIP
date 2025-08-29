@@ -77,6 +77,11 @@ export const ParliamentTree = () => {
     return <Users className="w-4 h-4 text-gray-600" />;
   };
 
+  const isSpecialPosition = (position: string) => {
+    const pos = position.toLowerCase();
+    return pos.includes('minister') || pos.includes('leader') || pos.includes('president') || pos.includes('speaker');
+  };
+
   const groupByParty = (students: Student[]) => {
     return students.reduce((acc, student) => {
       const party = student.party_number;
@@ -142,21 +147,36 @@ export const ParliamentTree = () => {
                   <Dialog key={student.id}>
                     <DialogTrigger asChild>
                       <div className="cursor-pointer group">
-                        <Card className="hover:shadow-md transition-shadow duration-200 group-hover:border-primary/50">
+                        <Card className={`hover:shadow-md transition-shadow duration-200 group-hover:border-primary/50 ${
+                          isSpecialPosition(student.position) 
+                            ? 'border-2 border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50 shadow-md' 
+                            : ''
+                        }`}>
                           <CardContent className="p-3">
                             <div className="flex items-center space-x-3">
-                              <Avatar className="w-12 h-12">
-                                <AvatarImage src={student.photo_url ? `${student.photo_url}${student.photo_url.includes('?') ? '&' : '?'}cb=${student.updated_at ? new Date(student.updated_at).getTime() : ''}` : undefined} alt={student.name} />
-                                <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                                  {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                                </AvatarFallback>
-                              </Avatar>
+                              <div className="relative">
+                                <Avatar className="w-12 h-12">
+                                  <AvatarImage src={student.photo_url ? `${student.photo_url}${student.photo_url.includes('?') ? '&' : '?'}cb=${student.updated_at ? new Date(student.updated_at).getTime() : ''}` : undefined} alt={student.name} />
+                                  <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                                    {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
+                                {isSpecialPosition(student.position) && (
+                                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
+                                    <Crown className="w-3 h-3 text-white" />
+                                  </div>
+                                )}
+                              </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center space-x-1 mb-1">
                                   {getPositionIcon(student.position)}
-                                  <h4 className="font-medium text-sm truncate">{student.name}</h4>
+                                  <h4 className={`font-medium text-sm truncate ${
+                                    isSpecialPosition(student.position) ? 'text-amber-800 font-bold' : ''
+                                  }`}>{student.name}</h4>
                                 </div>
-                                <p className="text-xs text-muted-foreground truncate">{student.position}</p>
+                                <p className={`text-xs truncate ${
+                                  isSpecialPosition(student.position) ? 'text-amber-700 font-semibold' : 'text-muted-foreground'
+                                }`}>{student.position}</p>
                                 <p className="text-xs text-muted-foreground">#{student.serial_number}</p>
                               </div>
                             </div>
