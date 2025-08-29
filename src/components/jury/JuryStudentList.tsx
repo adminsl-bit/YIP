@@ -191,6 +191,20 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     return 'mp';
   };
 
+  // Party gradient styling aligned with Student Profile card
+  const getPartyGradient = (partyNumber: number) => {
+    const gradients = [
+      'from-red-500 to-red-600',
+      'from-blue-500 to-blue-600',
+      'from-green-500 to-green-600',
+      'from-yellow-500 to-yellow-600',
+      'from-purple-500 to-purple-600',
+      'from-pink-500 to-pink-600',
+      'from-indigo-500 to-indigo-600',
+      'from-teal-500 to-teal-600',
+    ];
+    return gradients[partyNumber % gradients.length] || 'from-slate-500 to-slate-600';
+  };
   const getAssessmentStatus = (studentUserId: string) => {
     const assessment = assessments.find(a => a.student_id === studentUserId);
     return assessment?.status || 'not_started';
@@ -383,52 +397,68 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
           return (
             <div
               key={student.id}
-              className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl cursor-pointer hover:shadow-2xl hover:scale-105 transition-all duration-300"
+              className="bg-white/20 backdrop-blur-xl rounded-3xl p-6 border border-white/25 shadow-xl hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 cursor-pointer"
               onClick={() => setSelectedStudent(student)}
             >
+              {/* Header */}
               <div className="flex items-center gap-4 mb-4">
-                <Avatar className="w-16 h-16 ring-4 ring-white/20">
+                <Avatar className="w-14 h-14 ring-4 ring-white/20">
                   <AvatarImage src={student.photo_url} alt={student.name} />
-                  <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-purple-500 to-indigo-500 text-white">
+                  <AvatarFallback className="text-base font-bold bg-gradient-to-br from-purple-500 to-indigo-500 text-white">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-black text-slate-800 text-lg truncate">{student.name}</h3>
-                  <p className="text-slate-600 font-semibold truncate">{student.position}</p>
+                  <h3 className="font-black text-slate-800 text-lg truncate font-serif">
+                    {student.name}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <p className="text-slate-600 font-semibold truncate">{student.position}</p>
+                    <span className="hidden sm:inline text-slate-400">•</span>
+                    <Badge className={`hidden sm:inline bg-gradient-to-r ${getPartyGradient(student.party_number)} text-white font-bold px-3 py-1`}>
+                      Party {student.party_number}
+                    </Badge>
+                  </div>
                 </div>
-                <div className="flex-shrink-0">
-                  {getStatusIcon(status)}
-                </div>
+                <div className="flex-shrink-0">{getStatusIcon(status)}</div>
               </div>
 
+              {/* Info Grid aligned with Student Profile */}
               <div className="grid grid-cols-2 gap-3 text-sm mb-4">
                 <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
-                  <p className="text-slate-500 font-medium">Serial</p>
+                  <p className="text-muted-foreground font-medium">Serial</p>
                   <p className="font-bold text-slate-800">{student.serial_number}</p>
                 </div>
                 <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
-                  <p className="text-slate-500 font-medium">Party</p>
+                  <p className="text-muted-foreground font-medium">Party</p>
                   <p className="font-bold text-slate-800">{student.party_number}</p>
                 </div>
+                {student.constituency && (
+                  <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3 col-span-2 sm:col-span-1">
+                    <p className="text-muted-foreground font-medium">Constituency</p>
+                    <p className="font-semibold text-slate-800 text-sm leading-tight truncate">{student.constituency}</p>
+                  </div>
+                )}
+                {student.state && (
+                  <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3 col-span-2 sm:col-span-1">
+                    <p className="text-muted-foreground font-medium">State</p>
+                    <p className="font-semibold text-slate-800 text-sm leading-tight truncate">{student.state}</p>
+                  </div>
+                )}
+                {student.city && (
+                  <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3 col-span-2">
+                    <p className="text-muted-foreground font-medium">City</p>
+                    <p className="font-semibold text-slate-800 text-sm leading-tight truncate">{student.city}</p>
+                  </div>
+                )}
               </div>
 
-              <div className="mb-4">
-                <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3">
-                  <p className="text-slate-500 font-medium text-sm">Location</p>
-                  <p className="font-semibold text-slate-800 text-sm truncate">
-                    {student.constituency}, {student.state}
-                  </p>
-                </div>
-              </div>
-
+              {/* Footer */}
               <div className="flex items-center justify-between">
                 {getStatusBadge(status)}
                 {assessment && (
                   <div className="bg-white/30 backdrop-blur-sm rounded-xl px-3 py-1">
-                    <span className="text-sm font-bold text-slate-800">
-                      Score: {assessment.total_score}
-                    </span>
+                    <span className="text-sm font-bold text-slate-800">Score: {assessment.total_score}</span>
                   </div>
                 )}
               </div>
