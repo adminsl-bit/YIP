@@ -181,6 +181,8 @@ export const OrganizerLeaderboard = () => {
   const uniquePositions = [...new Set(leaderboard.map(entry => entry.position))].sort();
 
 
+  const hasRealScores = leaderboard.some(e => (e.average_score ?? 0) > 0);
+
   const filteredLeaderboard = leaderboard.filter(entry => {
     const matchesSearch = entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -363,9 +365,11 @@ export const OrganizerLeaderboard = () => {
                               {initials}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                            <span className="text-white text-xs font-bold">#{index + 1}</span>
-                          </div>
+                          {hasRealScores && (
+                            <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                              <span className="text-white text-xs font-bold">#{index + 1}</span>
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-bold text-lg text-foreground truncate mb-1">{entry.name}</h3>

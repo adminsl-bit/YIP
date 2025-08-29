@@ -233,6 +233,8 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
     return colors[(partyNumber - 1) % colors.length];
   };
 
+  const hasRealScores = leaderboard.some(e => (e.average_score ?? 0) > 0);
+
   const filteredLeaderboard = leaderboard.filter(entry =>
     entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     entry.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -328,7 +330,9 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                   <TableRow key={entry.user_id} className="border-white/25 hover:bg-white/10 transition-colors">
                     <TableCell>
                       <div className="flex items-center justify-center">
-                        {getRankIcon(index + 1)}
+                        {hasRealScores ? getRankIcon(index + 1) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
                       </div>
                     </TableCell>
                     <TableCell>
