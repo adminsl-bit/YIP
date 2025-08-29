@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Award, Plus, Trophy, Users, Edit, Trash2, UserCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -244,6 +244,47 @@ export const AwardManagement = () => {
     }
   };
 
+  const deleteAward = async (awardId: string) => {
+    // Check if award is assigned to any students
+    const assignedStudents = studentAwards.filter(sa => sa.award_id === awardId);
+    
+    if (assignedStudents.length > 0) {
+      toast({
+        title: "Cannot Delete Award",
+        description: `This award is assigned to ${assignedStudents.length} student(s). Remove all assignments first.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!confirm('Are you sure you want to delete this award? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('awards')
+        .delete()
+        .eq('id', awardId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Award deleted successfully",
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting award:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete award",
+        variant: "destructive",
+      });
+    }
+  };
+
   const removeAward = async (studentAwardId: string) => {
     try {
       const { error } = await supabase
@@ -255,15 +296,15 @@ export const AwardManagement = () => {
 
       toast({
         title: "Success",
-        description: "Award removed successfully",
+        description: "Award assignment removed successfully",
       });
 
       fetchData();
     } catch (error) {
-      console.error('Error removing award:', error);
+      console.error('Error removing award assignment:', error);
       toast({
         title: "Error",
-        description: "Failed to remove award",
+        description: "Failed to remove award assignment",
         variant: "destructive",
       });
     }
@@ -294,6 +335,9 @@ export const AwardManagement = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create New Award</DialogTitle>
+              <DialogDescription>
+                Create a new award that can be assigned to outstanding students.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -337,6 +381,9 @@ export const AwardManagement = () => {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Assign Award to Student</DialogTitle>
+              <DialogDescription>
+                Select an award and a student to create a manual award assignment.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -397,22 +444,41 @@ export const AwardManagement = () => {
             <p className="text-slate-600 text-center py-8">No awards created yet. Create your first award!</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {awards.map((award) => (
-                <div key={award.id} className="bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h4 className="font-bold text-slate-800">{award.name}</h4>
-                      {award.description && (
-                        <p className="text-sm text-slate-600 mt-1">{award.description}</p>
-                      )}
-                      <p className="text-xs text-slate-500 mt-2">
-                        Created {new Date(award.created_at).toLocaleDateString()}
-                      </p>
+              {awards.map((award) => {
+                const assignedCount = studentAwards.filter(sa => sa.award_id === award.id).length;
+                
+                return (
+                  <div key={award.id} className="bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/20">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-bold text-slate-800">{award.name}</h4>
+                        {award.description && (
+                          <p className="text-sm text-slate-600 mt-1">{award.description}</p>
+                        )}
+                        <div className="flex items-center justify-between mt-2">
+                          <p className="text-xs text-slate-500">
+                            Created {new Date(award.created_at).toLocaleDateString()}
+                          </p>
+                          <p className="text-xs text-slate-600 font-medium">
+                            {assignedCount} assignment{assignedCount !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-2">
+                        <Trophy className="w-5 h-5 text-yellow-600" />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => deleteAward(award.id)}
+                          className="text-red-600 border-red-200 hover:bg-red-50 ml-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <Trophy className="w-5 h-5 text-yellow-600 ml-2" />
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
