@@ -3,9 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Crown, Gavel, Users, MapPin, Search } from 'lucide-react';
+import { Crown, Gavel, Users, MapPin, Search, X } from 'lucide-react';
 import GlassmorphismProfileCard from './GlassmorphismProfileCard';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -216,7 +216,10 @@ const InteractiveParliamentTree = () => {
                         >
                           <Card
                             className="cursor-pointer bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30 hover:border-white/50 hover:shadow-xl hover:scale-105 transition-all duration-300 rounded-2xl overflow-hidden"
-                            onClick={() => setSelectedStudent(student)}
+                            onClick={() => {
+                              console.log('Card clicked for student:', student.name);
+                              setSelectedStudent(student);
+                            }}
                           >
                             <CardContent className="p-0">
                               <div className="flex items-center gap-4 p-4">
@@ -277,16 +280,26 @@ const InteractiveParliamentTree = () => {
       )}
 
       {/* Student Profile Modal */}
-      <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
+      <Dialog open={!!selectedStudent} onOpenChange={(open) => { if (!open) setSelectedStudent(null); }}>
         <DialogContent
-          className="max-w-md bg-transparent border-0 shadow-none p-0"
-          aria-label="Student Profile"
-          aria-describedby="student-profile-desc"
+          className="max-w-md bg-white border border-gray-200 shadow-2xl p-6 relative z-[60]"
         >
-          <h2 id="student-profile-title" className="sr-only">Student Profile</h2>
-          <p id="student-profile-desc" className="sr-only">
-            Detailed profile information for the selected student
-          </p>
+          <DialogTitle className="sr-only">
+            {selectedStudent ? `${selectedStudent.name} Profile` : 'Student Profile'}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Detailed profile information for the selected parliament member
+          </DialogDescription>
+          
+          {/* Close Button */}
+          <button
+            onClick={() => setSelectedStudent(null)}
+            className="absolute -top-2 -right-2 z-50 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200"
+            aria-label="Close profile"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          
           {selectedStudent && (
             <div className="flex items-center justify-center p-4">
               <GlassmorphismProfileCard student={selectedStudent} />
