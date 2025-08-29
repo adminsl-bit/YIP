@@ -6,6 +6,7 @@ import { LogOut, Users, BarChart3, Gavel, User, Activity, ClipboardCheck, Target
 import { JuryStudentList } from "@/components/jury/JuryStudentList";
 import { JuryDashboardStats } from "@/components/jury/JuryDashboardStats";
 import { JuryLeaderboard } from "@/components/jury/JuryLeaderboard";
+import { ProfilePhotoUploader } from "@/components/jury/ProfilePhotoUploader";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -339,6 +340,9 @@ const JuryDashboard = () => {
                             </span>
                           </div>
                         )}
+                        <div className="absolute bottom-4 right-4">
+                          <ProfilePhotoUploader />
+                        </div>
                       </div>
 
                       {/* Right side - Profile Details */}
