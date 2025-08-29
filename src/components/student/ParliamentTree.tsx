@@ -129,7 +129,9 @@ export const ParliamentTree = () => {
             <div key={party} className="border rounded-lg p-4 bg-gradient-to-r from-blue-50 to-purple-50">
               <h3 className="font-semibold text-lg mb-4 flex items-center">
                 <Badge variant="outline" className="mr-2">
-                  {partyGroups[parseInt(party)][0]?.party_name || `Party ${party}`}
+                  {partyGroups[parseInt(party)][0]?.party_name 
+                    ? `${partyGroups[parseInt(party)][0].party_name} (${party})`
+                    : `Party ${party}`}
                 </Badge>
                 <span className="text-sm text-muted-foreground">
                   ({partyGroups[parseInt(party)].length} members)

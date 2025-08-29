@@ -26,7 +26,7 @@ export const PartyBadge: React.FC<PartyBadgeProps> = ({ partyNumber, partyName, 
   const padd = size === "sm" ? "px-4 py-1 text-xs" : "px-5 py-1.5 text-sm";
   return (
     <Badge className={`rounded-full border shadow-sm font-semibold tracking-tight whitespace-nowrap ${base} ${padd} ${className}`}>
-      {partyName || `Party ${partyNumber}`}
+      {partyName ? `${partyName} (${partyNumber})` : `Party ${partyNumber}`}
     </Badge>
   );
 };
