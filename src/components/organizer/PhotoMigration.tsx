@@ -190,7 +190,7 @@ const PhotoMigration = () => {
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-center">
             <Button
               onClick={startMigration}
-              disabled={migrating || (migrationStats?.googleDrivePhotos === 0)}
+              disabled={migrating}
               className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-semibold px-6 py-3 shadow-lg"
             >
               {migrating ? (

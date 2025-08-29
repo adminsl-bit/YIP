@@ -282,25 +282,15 @@ serve(async (req) => {
 
     const count = students?.length || 0;
 
-    if (count === 0) {
-      return new Response(JSON.stringify({
-        success: true,
-        message: 'No Google Drive photos found to migrate',
-        total: 0
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Start full migration in the background (will auto-batch to avoid timeouts)
+    // Always start the full migration/repair job in the background
     EdgeRuntime.waitUntil(performFullMigration());
 
-    // Return immediately
     return new Response(JSON.stringify({
       success: true,
-      message: 'Full migration started in background',
-      total_remaining: count,
-      note: 'Processing automatically in small batches until complete.'
+      message: count === 0
+        ? 'Repair job started: fixing any broken/old photo URLs in background'
+        : 'Full migration started in background',
+      total_remaining: count
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
