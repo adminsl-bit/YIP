@@ -257,19 +257,34 @@ const PhotoUploadManager = () => {
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                     {student.photo_url ? (
-                      <img 
-                        src={student.photo_url} 
-                        alt={student.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                          e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                        }}
-                      />
+                      <>
+                        <img 
+                          src={student.photo_url} 
+                          alt={student.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            target.style.display = 'none';
+                            const parent = target.parentElement;
+                            if (parent) {
+                              const fallback = parent.querySelector('.fallback-icon') as HTMLElement;
+                              const noImageText = parent.querySelector('.no-image-text') as HTMLElement;
+                              if (fallback) fallback.style.display = 'flex';
+                              if (noImageText) noImageText.style.display = 'block';
+                            }
+                          }}
+                        />
+                        <div className="fallback-icon hidden w-full h-full items-center justify-center flex-col">
+                          <ImageIcon className="w-6 h-6 text-gray-400" />
+                          <div className="no-image-text text-xs text-gray-500 mt-1">Failed</div>
+                        </div>
+                      </>
                     ) : (
-                      <ImageIcon className="w-6 h-6 text-gray-400" />
+                      <div className="w-full h-full flex items-center justify-center flex-col">
+                        <ImageIcon className="w-6 h-6 text-gray-400" />
+                        <div className="text-xs text-gray-500 mt-1">No Image</div>
+                      </div>
                     )}
-                    <div className="hidden text-xs text-gray-500">No Image</div>
                   </div>
                   <div>
                     <div className="font-medium">{student.name}</div>
