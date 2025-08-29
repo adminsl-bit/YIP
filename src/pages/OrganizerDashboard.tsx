@@ -27,6 +27,19 @@ const OrganizerDashboard = () => {
     }
     
     try {
+      // First get all assessment IDs to ensure we have a proper WHERE clause
+      const { data: allAssessments, error: fetchError } = await supabase
+        .from('assessments')
+        .select('id');
+
+      if (fetchError) throw fetchError;
+
+      if (!allAssessments || allAssessments.length === 0) {
+        alert('No assessments found to reset.');
+        return;
+      }
+
+      // Now update with a proper WHERE clause
       const { error } = await supabase
         .from('assessments')
         .update({
@@ -35,11 +48,12 @@ const OrganizerDashboard = () => {
           scores: {},
           submitted_at: null,
           notes: null,
-        });
+        })
+        .in('id', allAssessments.map(a => a.id));
 
       if (error) throw error;
 
-      alert('All assessments have been reset successfully.');
+      alert(`${allAssessments.length} assessments have been reset successfully.`);
     } catch (error) {
       console.error('Error resetting assessments:', error);
       alert('Failed to reset assessments. Please try again.');
