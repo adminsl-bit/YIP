@@ -68,10 +68,11 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
 
       if (leaderboardError) throw leaderboardError;
 
-      // Fetch awards
+      // Fetch awards visible to jury
       const { data: awardsData, error: awardsError } = await supabase
         .from('awards')
         .select('*')
+        .eq('visible_to_jury', true)
         .order('name');
 
       if (awardsError) throw awardsError;

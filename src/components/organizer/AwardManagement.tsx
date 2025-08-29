@@ -3,12 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Award, Plus, Trophy, Users, Edit, Trash2, UserCheck } from "lucide-react";
+import { Award, Plus, Trophy, Users, Edit, Trash2, UserCheck, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,6 +18,7 @@ interface Award {
   id: string;
   name: string;
   description?: string;
+  visible_to_jury: boolean;
   created_at: string;
 }
 
@@ -43,7 +46,7 @@ export const AwardManagement = () => {
   const [awards, setAwards] = useState<Award[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [studentAwards, setStudentAwards] = useState<StudentAward[]>([]);
-  const [newAward, setNewAward] = useState({ name: '', description: '' });
+  const [newAward, setNewAward] = useState({ name: '', description: '', visibleToJury: true });
   const [selectedAward, setSelectedAward] = useState('');
   const [selectedStudent, setSelectedStudent] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -163,7 +166,8 @@ export const AwardManagement = () => {
         .from('awards')
         .insert([{
           name: newAward.name.trim(),
-          description: newAward.description.trim() || null
+          description: newAward.description.trim() || null,
+          visible_to_jury: newAward.visibleToJury
         }]);
 
       if (error) throw error;
@@ -173,7 +177,7 @@ export const AwardManagement = () => {
         description: "Award created successfully",
       });
 
-      setNewAward({ name: '', description: '' });
+      setNewAward({ name: '', description: '', visibleToJury: true });
       setIsCreateDialogOpen(false);
       fetchData();
     } catch (error) {
@@ -341,8 +345,9 @@ export const AwardManagement = () => {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-slate-700">Award Name</label>
+                <Label htmlFor="award-name" className="text-sm font-medium text-slate-700">Award Name</Label>
                 <Input
+                  id="award-name"
                   value={newAward.name}
                   onChange={(e) => setNewAward(prev => ({ ...prev, name: e.target.value }))}
                   placeholder="Enter award name"
@@ -350,8 +355,9 @@ export const AwardManagement = () => {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-slate-700">Description (Optional)</label>
+                <Label htmlFor="award-description" className="text-sm font-medium text-slate-700">Description (Optional)</Label>
                 <Textarea
+                  id="award-description"
                   value={newAward.description}
                   onChange={(e) => setNewAward(prev => ({ ...prev, description: e.target.value }))}
                   placeholder="Enter award description"
@@ -359,6 +365,29 @@ export const AwardManagement = () => {
                   rows={3}
                 />
               </div>
+              <div className="flex items-center space-x-3 p-4 bg-slate-50 rounded-lg border">
+                <Switch
+                  id="visible-to-jury"
+                  checked={newAward.visibleToJury}
+                  onCheckedChange={(checked) => setNewAward(prev => ({ ...prev, visibleToJury: checked }))}
+                />
+                <div className="flex items-center gap-2">
+                  {newAward.visibleToJury ? (
+                    <Eye className="w-4 h-4 text-green-600" />
+                  ) : (
+                    <EyeOff className="w-4 h-4 text-slate-500" />
+                  )}
+                  <Label htmlFor="visible-to-jury" className="text-sm font-medium text-slate-700 cursor-pointer">
+                    Visible to Jury
+                  </Label>
+                </div>
+              </div>
+              <p className="text-xs text-slate-500">
+                {newAward.visibleToJury 
+                  ? "Jury members can see and vote on this award" 
+                  : "Only organizers can assign this award (hidden from jury)"
+                }
+              </p>
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancel
@@ -386,10 +415,10 @@ export const AwardManagement = () => {
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-slate-700">Select Award</label>
+                <div>
+                  <Label htmlFor="select-award" className="text-sm font-medium text-slate-700">Select Award</Label>
                 <Select value={selectedAward} onValueChange={setSelectedAward}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger id="select-student" className="mt-1">
                     <SelectValue placeholder="Choose an award" />
                   </SelectTrigger>
                   <SelectContent>
@@ -401,10 +430,10 @@ export const AwardManagement = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <label className="text-sm font-medium text-slate-700">Select Student</label>
+                <div>
+                  <Label htmlFor="select-student" className="text-sm font-medium text-slate-700">Select Student</Label>
                 <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-                  <SelectTrigger className="mt-1">
+                  <SelectTrigger id="select-award" className="mt-1">
                     <SelectValue placeholder="Choose a student" />
                   </SelectTrigger>
                   <SelectContent>
@@ -451,7 +480,22 @@ export const AwardManagement = () => {
                   <div key={award.id} className="bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/20">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h4 className="font-bold text-slate-800">{award.name}</h4>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-bold text-slate-800">{award.name}</h4>
+                          <div className="flex items-center gap-1">
+                            {award.visible_to_jury ? (
+                              <div className="flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 rounded-md">
+                                <Eye className="w-3 h-3" />
+                                <span className="text-xs font-medium">Jury Visible</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 px-2 py-1 bg-slate-100 text-slate-600 rounded-md">
+                                <EyeOff className="w-3 h-3" />
+                                <span className="text-xs font-medium">Organizer Only</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                         {award.description && (
                           <p className="text-sm text-slate-600 mt-1">{award.description}</p>
                         )}

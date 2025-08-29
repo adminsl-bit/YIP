@@ -154,18 +154,21 @@ export type Database = {
           description: string | null
           id: string
           name: string
+          visible_to_jury: boolean | null
         }
         Insert: {
           created_at?: string
           description?: string | null
           id?: string
           name: string
+          visible_to_jury?: boolean | null
         }
         Update: {
           created_at?: string
           description?: string | null
           id?: string
           name?: string
+          visible_to_jury?: boolean | null
         }
         Relationships: []
       }
