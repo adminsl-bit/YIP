@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Plus, Edit, Trash, Play, Pause, BarChart3, ExternalLink } from "lucide-react";
+import { LiveVotingStats } from "@/components/student/LiveVotingStats";
 import { toast } from "@/hooks/use-toast";
 
 interface Poll {
@@ -308,181 +309,199 @@ export const PollManagement = () => {
     );
   }
 
+  const activePolls = polls.filter(poll => poll.is_active);
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle>Poll Management</CardTitle>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={() => resetForm()}>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Poll
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader>
-                <DialogTitle>Create New Poll</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Title *</label>
-                  <Input
-                    value={formData.title}
-                    onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="Enter poll title"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Description</label>
-                  <Textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="Optional description"
-                    rows={3}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Options *</label>
-                  {formData.options.map((option, index) => (
-                    <div key={index} className="flex items-center space-x-2 mt-2">
-                      <Input
-                        value={option}
-                        onChange={(e) => updateOption(index, e.target.value)}
-                        placeholder={`Option ${index + 1}`}
-                      />
-                      {formData.options.length > 2 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeOption(index)}
-                        >
-                          <Trash className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={addOption}
-                    className="mt-2"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Option
-                  </Button>
-                </div>
-                <div className="flex space-x-2 pt-4">
-                  <Button onClick={createPoll} className="flex-1">
-                    Create Poll
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsCreateDialogOpen(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
+    <div className="space-y-6">
+      {/* Live Statistics for Active Polls */}
+      {activePolls.length > 0 && (
+        <div className="space-y-6">
+          <div className="text-center">
+            <h3 className="text-2xl font-bold text-slate-800 mb-2">Live Voting Statistics</h3>
+            <p className="text-slate-600">Real-time voting data for active polls</p>
+          </div>
+          {activePolls.map((poll) => (
+            <LiveVotingStats key={poll.id} pollId={poll.id} />
+          ))}
         </div>
-      </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Title</TableHead>
-              <TableHead>Options</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Votes</TableHead>
-              <TableHead>Results</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {polls.map((poll) => (
-              <TableRow key={poll.id}>
-                <TableCell>
+      )}
+
+      {/* Poll Management Interface */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Poll Management</CardTitle>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button onClick={() => resetForm()}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Poll
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle>Create New Poll</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
                   <div>
-                    <div className="font-medium">{poll.title}</div>
-                    {poll.description && (
-                      <div className="text-sm text-muted-foreground">{poll.description}</div>
-                    )}
+                    <label className="text-sm font-medium">Title *</label>
+                    <Input
+                      value={formData.title}
+                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="Enter poll title"
+                    />
                   </div>
-                </TableCell>
-                <TableCell>
-                  <div className="space-y-1">
-                    {poll.options.map((option, index) => (
-                      <div key={index} className="text-sm">
-                        {option}
+                  <div>
+                    <label className="text-sm font-medium">Description</label>
+                    <Textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      placeholder="Optional description"
+                      rows={3}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Options *</label>
+                    {formData.options.map((option, index) => (
+                      <div key={index} className="flex items-center space-x-2 mt-2">
+                        <Input
+                          value={option}
+                          onChange={(e) => updateOption(index, e.target.value)}
+                          placeholder={`Option ${index + 1}`}
+                        />
+                        {formData.options.length > 2 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeOption(index)}
+                          >
+                            <Trash className="w-4 h-4" />
+                          </Button>
+                        )}
                       </div>
                     ))}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={poll.is_active ? "default" : "secondary"}>
-                    {poll.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="text-sm">
-                    <div className="font-medium">{getTotalVotes(poll.id)} votes</div>
-                    <div className="text-muted-foreground">
-                      {poll.options.length} options
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={poll.show_results_publicly ? "default" : "outline"}>
-                    {poll.show_results_publicly ? "Public" : "Hidden"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => togglePollStatus(poll)}
+                      onClick={addOption}
+                      className="mt-2"
                     >
-                      {poll.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleResultsVisibility(poll)}
-                    >
-                      <BarChart3 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={openStageView}
-                      title="Open Stage View"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => deletePoll(poll.id)}
-                    >
-                      <Trash className="w-4 h-4" />
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add Option
                     </Button>
                   </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-
-        {polls.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>No polls created yet. Create your first poll to get started.</p>
+                  <div className="flex space-x-2 pt-4">
+                    <Button onClick={createPoll} className="flex-1">
+                      Create Poll
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsCreateDialogOpen(false)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Options</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Votes</TableHead>
+                <TableHead>Results</TableHead>
+                <TableHead>Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {polls.map((poll) => (
+                <TableRow key={poll.id}>
+                  <TableCell>
+                    <div>
+                      <div className="font-medium">{poll.title}</div>
+                      {poll.description && (
+                        <div className="text-sm text-muted-foreground">{poll.description}</div>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      {(Array.isArray(poll.options) ? poll.options : []).map((option: string, index: number) => (
+                        <div key={index} className="text-sm">
+                          {option}
+                        </div>
+                      ))}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={poll.is_active ? "default" : "secondary"}>
+                      {poll.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="text-sm">
+                      <div className="font-medium">{getTotalVotes(poll.id)} votes</div>
+                      <div className="text-muted-foreground">
+                        {Array.isArray(poll.options) ? poll.options.length : 0} options
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={poll.show_results_publicly ? "default" : "outline"}>
+                      {poll.show_results_publicly ? "Public" : "Hidden"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => togglePollStatus(poll)}
+                      >
+                        {poll.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleResultsVisibility(poll)}
+                      >
+                        <BarChart3 className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={openStageView}
+                        title="Open Stage View"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => deletePoll(poll.id)}
+                      >
+                        <Trash className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {polls.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              <p>No polls created yet. Create your first poll to get started.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };

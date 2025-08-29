@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Vote, CheckCircle, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { LiveVotingStats } from "./LiveVotingStats";
 import { toast } from "@/hooks/use-toast";
 
 interface Poll {
@@ -26,11 +27,33 @@ export const PollVoting = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [userVotes, setUserVotes] = useState<Record<string, string>>({});
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState<string | null>(null);
 
   useEffect(() => {
     fetchActivePolls();
+    
+    // Set up real-time subscription for poll changes
+    const channel = supabase
+      .channel('poll_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'polls'
+        },
+        () => {
+          console.log('Poll changed, refreshing...');
+          fetchActivePolls();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchActivePolls = async () => {
@@ -83,6 +106,7 @@ export const PollVoting = () => {
 
       setUserVotes(prev => ({ ...prev, [poll.id]: choice }));
       setSelectedOptions(prev => ({ ...prev, [poll.id]: '' }));
+      setRefreshTrigger(prev => prev + 1); // Trigger stats refresh
       toast({ title: 'Vote recorded', description: `You voted: ${choice}` });
     } catch (err: any) {
       toast({ title: 'Error', description: err.message || 'Failed to cast vote', variant: 'destructive' });
@@ -131,65 +155,84 @@ export const PollVoting = () => {
         const votedChoice = userVotes[poll.id];
         const hasVoted = !!votedChoice;
         return (
-          <Card key={poll.id} className="bg-white/15 backdrop-blur-lg border border-white/25 shadow-xl">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
-                  <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-                    <Vote className="w-4 h-4 text-white" />
+          <div key={poll.id} className="space-y-6">
+            {/* Live Voting Statistics */}
+            <LiveVotingStats 
+              pollId={poll.id} 
+              refreshTrigger={refreshTrigger}
+            />
+            
+            {/* Voting Interface */}
+            <Card className="bg-white/15 backdrop-blur-lg border border-white/25 shadow-xl">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
+                      <Vote className="w-4 h-4 text-white" />
+                    </div>
+                    {poll.title}
+                  </CardTitle>
+                  <Badge variant={poll.is_active ? 'default' : 'secondary'}>
+                    {poll.is_active ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {poll.description && (
+                  <p className="text-slate-600 mb-4 font-medium">{poll.description}</p>
+                )}
+
+                {hasVoted ? (
+                  <div className="flex items-center gap-2 p-4 rounded-xl bg-green-50/50 border border-green-200 backdrop-blur-sm">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <p className="text-green-800 font-medium">You voted: <span className="font-bold">{votedChoice}</span></p>
                   </div>
-                  {poll.title}
-                </CardTitle>
-                <Badge variant={poll.is_active ? 'default' : 'secondary'}>
-                  {poll.is_active ? 'Active' : 'Inactive'}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {poll.description && (
-                <p className="text-slate-600 mb-4">{poll.description}</p>
-              )}
+                ) : (
+                  <div className="space-y-4">
+                    <RadioGroup
+                      value={selectedOptions[poll.id] || ''}
+                      onValueChange={(val) => setSelectedOptions(prev => ({ ...prev, [poll.id]: val }))}
+                      className="space-y-3"
+                    >
+                      {(Array.isArray(poll.options) ? poll.options : []).map((opt: string, idx: number) => (
+                        <div key={idx} className="flex items-center gap-3 p-4 rounded-xl bg-white/30 hover:bg-white/40 transition-all duration-200 border border-white/20">
+                          <RadioGroupItem id={`${poll.id}-${idx}`} value={opt} className="border-2" />
+                          <Label htmlFor={`${poll.id}-${idx}`} className="cursor-pointer font-semibold text-slate-800 flex-1">
+                            {opt}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
 
-              {hasVoted ? (
-                <div className="flex items-center gap-2 p-4 rounded-xl bg-green-50 border border-green-200">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <p className="text-green-800 font-medium">You voted: <span className="font-bold">{votedChoice}</span></p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <RadioGroup
-                    value={selectedOptions[poll.id] || ''}
-                    onValueChange={(val) => setSelectedOptions(prev => ({ ...prev, [poll.id]: val }))}
-                    className="space-y-3"
-                  >
-                    {poll.options.map((opt, idx) => (
-                      <div key={idx} className="flex items-center gap-3 p-3 rounded-xl bg-white/30 hover:bg-white/40 transition-colors">
-                        <RadioGroupItem id={`${poll.id}-${idx}`} value={opt} />
-                        <Label htmlFor={`${poll.id}-${idx}`} className="cursor-pointer font-medium text-slate-800">
-                          {opt}
-                        </Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
+                    <Button
+                      onClick={() => handleVote(poll)}
+                      disabled={!selectedOptions[poll.id] || submitting === poll.id || !settings.voting_enabled}
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-lg py-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+                    >
+                      {submitting === poll.id ? (
+                        <div className="flex items-center justify-center gap-3">
+                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Casting Vote...</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-3">
+                          <Vote className="w-5 h-5" />
+                          <span>Cast Your Vote</span>
+                        </div>
+                      )}
+                    </Button>
+                  </div>
+                )}
 
-                  <Button
-                    onClick={() => handleVote(poll)}
-                    disabled={!selectedOptions[poll.id] || submitting === poll.id || !settings.voting_enabled}
-                    className="w-full"
-                  >
-                    {submitting === poll.id ? 'Submitting...' : 'Cast Vote'}
-                  </Button>
-                </div>
-              )}
-
-              {!poll.is_active && (
-                <div className="mt-4 flex items-center gap-2 text-orange-700 bg-orange-50 border border-orange-200 p-3 rounded-lg">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>Voting is currently disabled for this poll.</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                {!poll.is_active && (
+                  <div className="mt-4 flex items-center gap-2 text-orange-700 bg-orange-50/50 border border-orange-200 p-3 rounded-lg backdrop-blur-sm">
+                    <AlertCircle className="w-4 h-4" />
+                    <span className="font-medium">Voting is currently disabled for this poll.</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         );
       })}
     </div>
