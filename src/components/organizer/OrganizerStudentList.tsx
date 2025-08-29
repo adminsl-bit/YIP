@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, UserX, UserCheck, Shield, AlertTriangle } from "lucide-react";
+import { Search, Users, UserX, UserCheck, Shield, AlertTriangle, Edit, BarChart3, TrendingUp } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { StudentEditDialog } from "./StudentEditDialog";
+import { AssessmentChart } from "./AssessmentChart";
 
 interface Student {
   id: string;
@@ -29,16 +31,33 @@ interface Student {
 interface Assessment {
   id: string;
   student_id: string;
+  jury_id: string;
   total_score: number;
   status: 'draft' | 'submitted' | 'locked';
   updated_at: string;
 }
 
+interface JuryAssessment {
+  jury_id: string;
+  jury_name: string;
+  total_assessed: number;
+  avg_score: number;
+  assessments: Array<{
+    student_id: string;
+    student_name: string;
+    total_score: number;
+    status: string;
+  }>;
+}
+
 export const OrganizerStudentList = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
+  const [juryAssessments, setJuryAssessments] = useState<JuryAssessment[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
+  const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showCharts, setShowCharts] = useState(false);
   const [filters, setFilters] = useState({
     seatRole: "all",
     partyNumber: "all",
@@ -50,6 +69,7 @@ export const OrganizerStudentList = () => {
 
   useEffect(() => {
     fetchStudents();
+    fetchJuryAssessments();
     fetchAssessments();
   }, []);
 
@@ -59,17 +79,104 @@ export const OrganizerStudentList = () => {
 
   const fetchStudents = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: studentsData, error: studentsError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_type', 'student')
-        .order('party_number', { ascending: true })
-        .order('serial_number', { ascending: true });
+        .order('serial_number');
 
-      if (error) throw error;
-      setStudents(data || []);
+      const { data: assessmentsData, error: assessmentsError } = await supabase
+        .from('assessments')
+        .select(`
+          id, 
+          student_id, 
+          jury_id,
+          total_score, 
+          status, 
+          updated_at
+        `);
+
+      if (studentsError) throw studentsError;
+      if (assessmentsError) throw assessmentsError;
+
+      setStudents(studentsData || []);
+      setAssessments((assessmentsData || []).map(a => ({
+        ...a,
+        status: a.status as 'draft' | 'submitted' | 'locked'
+      })));
     } catch (error) {
-      console.error('Error fetching students:', error);
+      console.error('Error fetching data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load student data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchJuryAssessments = async () => {
+    try {
+      // Get all jury members
+      const { data: juryData, error: juryError } = await supabase
+        .from('profiles')
+        .select('user_id, name')
+        .eq('user_type', 'jury');
+
+      if (juryError) throw juryError;
+
+      // Get all assessments with student names
+      const { data: assessmentsData, error: assessmentsError } = await supabase
+        .from('assessments')
+        .select(`
+          jury_id,
+          student_id,
+          total_score,
+          status,
+          profiles!assessments_student_id_fkey (name)
+        `)
+        .eq('status', 'submitted');
+
+      if (assessmentsError) throw assessmentsError;
+
+      // Group assessments by jury
+      const juryAssessmentsMap = new Map<string, JuryAssessment>();
+      
+      juryData?.forEach(jury => {
+        juryAssessmentsMap.set(jury.user_id, {
+          jury_id: jury.user_id,
+          jury_name: jury.name,
+          total_assessed: 0,
+          avg_score: 0,
+          assessments: []
+        });
+      });
+
+      assessmentsData?.forEach(assessment => {
+        const juryAssessment = juryAssessmentsMap.get(assessment.jury_id);
+        if (juryAssessment) {
+          juryAssessment.assessments.push({
+            student_id: assessment.student_id,
+            student_name: (assessment.profiles as any)?.name || 'Unknown',
+            total_score: assessment.total_score,
+            status: assessment.status
+          });
+          juryAssessment.total_assessed++;
+        }
+      });
+
+      // Calculate average scores
+      juryAssessmentsMap.forEach(juryAssessment => {
+        if (juryAssessment.assessments.length > 0) {
+          const totalScore = juryAssessment.assessments.reduce((sum, a) => sum + a.total_score, 0);
+          juryAssessment.avg_score = totalScore / juryAssessment.assessments.length;
+        }
+      });
+
+      setJuryAssessments(Array.from(juryAssessmentsMap.values()));
+    } catch (error) {
+      console.error('Error fetching jury assessments:', error);
     }
   };
 
@@ -83,8 +190,6 @@ export const OrganizerStudentList = () => {
       setAssessments((data || []) as Assessment[]);
     } catch (error) {
       console.error('Error fetching assessments:', error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -213,6 +318,7 @@ export const OrganizerStudentList = () => {
       });
 
       fetchStudents();
+      fetchJuryAssessments();
     } catch (error) {
       console.error('Error forcing logout:', error);
       toast({
@@ -255,8 +361,54 @@ export const OrganizerStudentList = () => {
 
   return (
     <div className="space-y-6">
-      {/* Search and Filters */}
-      <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
+      {/* Charts Toggle */}
+      <div className="flex justify-end">
+        <Button 
+          onClick={() => setShowCharts(!showCharts)}
+          variant="outline"
+          className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35"
+        >
+          {showCharts ? (
+            <>
+              <Users className="w-4 h-4 mr-2" />
+              Show Students
+            </>
+          ) : (
+            <>
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Show Analytics
+            </>
+          )}
+        </Button>
+      </div>
+
+      {/* Assessment Charts */}
+      {showCharts && (
+        <Card className="bg-white/15 backdrop-blur-lg rounded-3xl border border-white/25 shadow-xl">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-xl font-black text-slate-800">Assessment Analytics</CardTitle>
+                <p className="text-slate-600 font-medium">Track jury progress and performance</p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <AssessmentChart 
+              juryAssessments={juryAssessments} 
+              totalStudents={students.length} 
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {!showCharts && (
+        <>
+          {/* Search and Filters */}
+          <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
         <CardHeader className="border-b border-border/10">
           <CardTitle className="flex items-center gap-2">
             <Search className="w-5 h-5 text-primary" />
@@ -344,125 +496,147 @@ export const OrganizerStudentList = () => {
             </Button>
           </div>
         </CardContent>
-      </Card>
+          </Card>
 
-      {/* Student List - Scrollable Container */}
-      <div className="max-h-[600px] overflow-y-auto pr-2">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-        {filteredStudents.map((student) => {
-          const status = getStudentStatus(student.user_id);
-          const assessmentCount = getAssessmentCount(student.user_id);
-          const averageScore = getAverageScore(student.user_id);
-          const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
+          {/* Student List - Scrollable Container */}
+          <div className="max-h-[600px] overflow-y-auto pr-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+            {filteredStudents.map((student) => {
+              const status = getStudentStatus(student.user_id);
+              const assessmentCount = getAssessmentCount(student.user_id);
+              const averageScore = getAverageScore(student.user_id);
+              const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
 
-          return (
-            <Card
-              key={student.id}
-              className="h-full flex flex-col overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5"
-            >
-              <CardContent className="p-6 flex flex-col h-full">
-                {/* Header with Avatar and Name */}
-                <div className="flex items-center gap-4 mb-4">
-                  <Avatar className="w-16 h-16 border-2 border-border/20">
-                    <AvatarImage src={student.photo_url} alt={student.name} />
-                    <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold">
-                      {initials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-lg text-foreground truncate mb-1">{student.name}</h3>
-                    <p className="text-sm text-muted-foreground truncate mb-2">{student.position}</p>
-                    <div className="flex items-center gap-2 min-h-[24px]">
-                      {getStatusIcon(status)}
-                      {getStatusBadge(status)}
+              return (
+                <Card
+                  key={student.id}
+                  className="h-full flex flex-col overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5"
+                >
+                  <CardContent className="p-6 flex flex-col h-full">
+                    {/* Header with Avatar and Name */}
+                    <div className="flex items-center gap-4 mb-4">
+                      <Avatar className="w-16 h-16 border-2 border-border/20">
+                        <AvatarImage src={student.photo_url} alt={student.name} />
+                        <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-lg text-foreground truncate mb-1">{student.name}</h3>
+                        <p className="text-sm text-muted-foreground truncate mb-2">{student.position}</p>
+                        <div className="flex items-center gap-2 min-h-[24px]">
+                          {getStatusIcon(status)}
+                          {getStatusBadge(status)}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Student Details Grid */}
-                <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-accent/20 rounded-xl min-h-[88px]">
-                  <div className="space-y-1">
-                    <div className="text-xs font-medium text-muted-foreground">Serial Number</div>
-                    <div className="text-sm font-bold text-foreground">{student.serial_number}</div>
-                  </div>
-                  <div className="space-y-1">
-                    <div className="text-xs font-medium text-muted-foreground">Party</div>
-                    <div className="text-sm font-bold text-foreground">{student.party_number}</div>
-                  </div>
-                  <div className="space-y-1 col-span-2">
-                    <div className="text-xs font-medium text-muted-foreground">Location</div>
-                    <div className="text-sm text-foreground truncate">
-                      {student.constituency}{student.state ? `, ${student.state}` : ''}
+                    {/* Student Details Grid */}
+                    <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-accent/20 rounded-xl min-h-[88px]">
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium text-muted-foreground">Serial Number</div>
+                        <div className="text-sm font-bold text-foreground">{student.serial_number}</div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium text-muted-foreground">Party</div>
+                        <div className="text-sm font-bold text-foreground">{student.party_number}</div>
+                      </div>
+                      <div className="space-y-1 col-span-2">
+                        <div className="text-xs font-medium text-muted-foreground">Location</div>
+                        <div className="text-sm text-foreground truncate">
+                          {student.constituency}{student.state ? `, ${student.state}` : ''}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                {/* Assessment Information */}
-                <div className="flex items-center justify-between mb-4 p-3 bg-primary/5 rounded-xl min-h-[64px]">
-                  <div className="space-y-1">
-                    <div className="text-xs font-medium text-muted-foreground">Assessments</div>
-                    <div className="text-sm font-bold text-foreground">{assessmentCount} completed</div>
-                  </div>
-                  {assessmentCount > 0 && (
-                    <div className="space-y-1 text-right">
-                      <div className="text-xs font-medium text-muted-foreground">Average Score</div>
-                      <div className="text-lg font-bold text-primary">{averageScore}</div>
+                    {/* Assessment Information */}
+                    <div className="flex items-center justify-between mb-4 p-3 bg-primary/5 rounded-xl min-h-[64px]">
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium text-muted-foreground">Assessments</div>
+                        <div className="text-sm font-bold text-foreground">{assessmentCount} completed</div>
+                      </div>
+                      {assessmentCount > 0 && (
+                        <div className="space-y-1 text-right">
+                          <div className="text-xs font-medium text-muted-foreground">Average Score</div>
+                          <div className="text-lg font-bold text-primary">{averageScore}</div>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Last Login Info (always reserve space) */}
-                <div className="mb-4 p-2 bg-muted/30 rounded-lg min-h-[32px]">
-                  <div className="text-xs text-muted-foreground">
-                    Last login: {student.last_login_at ? new Date(student.last_login_at).toLocaleDateString() : '—'}
-                  </div>
-                </div>
+                    {/* Last Login Info (always reserve space) */}
+                    <div className="mb-4 p-2 bg-muted/30 rounded-lg min-h-[32px]">
+                      <div className="text-xs text-muted-foreground">
+                        Last login: {student.last_login_at ? new Date(student.last_login_at).toLocaleDateString() : '—'}
+                      </div>
+                    </div>
 
-                {/* Action Buttons */}
-                <div className="mt-auto flex gap-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleStudentStatus(student.user_id, student.is_active || false)}
-                    className={`flex-1 h-10 ${student.is_active ? 'hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30' : 'hover:bg-green-50 hover:text-green-700 hover:border-green-300'}`}
-                  >
-                    {student.is_active ? (
-                      <>
-                        <UserX className="w-4 h-4 mr-2" />
-                        Deactivate
-                      </>
-                    ) : (
-                      <>
-                        <UserCheck className="w-4 h-4 mr-2" />
-                        Activate
-                      </>
-                    )}
-                  </Button>
-                  {student.session_id && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => forceLogout(student.user_id, student.name)}
-                      className="flex-1 h-10 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
-                    >
-                      <Shield className="w-4 h-4 mr-2" />
-                      Force Logout
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-        </div>
-      </div>
+                    {/* Action Buttons */}
+                    <div className="mt-auto flex gap-3">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setEditingStudent(student)}
+                        className="flex-1 h-10 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleStudentStatus(student.user_id, student.is_active || false)}
+                        className={`flex-1 h-10 ${student.is_active ? 'hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30' : 'hover:bg-green-50 hover:text-green-700 hover:border-green-300'}`}
+                      >
+                        {student.is_active ? (
+                          <>
+                            <UserX className="w-4 h-4 mr-2" />
+                            Deactivate
+                          </>
+                        ) : (
+                          <>
+                            <UserCheck className="w-4 h-4 mr-2" />
+                            Activate
+                          </>
+                        )}
+                      </Button>
+                      {student.session_id && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => forceLogout(student.user_id, student.name)}
+                          className="flex-1 h-10 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
+                        >
+                          <Shield className="w-4 h-4 mr-2" />
+                          Force Logout
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+            </div>
+          </div>
 
-      {filteredStudents.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p>No students found matching your criteria.</p>
-        </div>
+          {filteredStudents.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No students found matching your criteria.</p>
+            </div>
+          )}
+        </>
       )}
+
+      {/* Student Edit Dialog */}
+      <StudentEditDialog 
+        student={editingStudent}
+        isOpen={!!editingStudent}
+        onClose={() => setEditingStudent(null)}
+        onSave={() => {
+          fetchStudents();
+          fetchJuryAssessments();
+        }}
+      />
     </div>
   );
 };
