@@ -280,10 +280,13 @@ const InteractiveParliamentTree = () => {
       )}
 
       {/* Student Profile Modal */}
-      <Dialog open={!!selectedStudent} onOpenChange={(open) => { if (!open) setSelectedStudent(null); }}>
-        <DialogContent
-          className="max-w-md bg-white border border-gray-200 shadow-2xl p-6 relative z-[60]"
-        >
+      <Dialog open={!!selectedStudent} onOpenChange={(open) => {
+        console.log('Dialog onOpenChange:', open, 'selectedStudent:', selectedStudent?.name);
+        if (!open) {
+          setSelectedStudent(null);
+        }
+      }}>
+        <DialogContent className="max-w-2xl bg-white/95 backdrop-blur-lg border border-white/30 shadow-2xl p-0 rounded-3xl overflow-hidden">
           <DialogTitle className="sr-only">
             {selectedStudent ? `${selectedStudent.name} Profile` : 'Student Profile'}
           </DialogTitle>
@@ -291,18 +294,24 @@ const InteractiveParliamentTree = () => {
             Detailed profile information for the selected parliament member
           </DialogDescription>
           
-          {/* Close Button */}
-          <button
-            onClick={() => setSelectedStudent(null)}
-            className="absolute -top-2 -right-2 z-50 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-colors duration-200"
-            aria-label="Close profile"
-          >
-            <X className="w-4 h-4" />
-          </button>
-          
           {selectedStudent && (
-            <div className="flex items-center justify-center p-4">
-              <GlassmorphismProfileCard student={selectedStudent} />
+            <div className="relative">
+              {/* Close Button */}
+              <button
+                onClick={() => {
+                  console.log('Close button clicked');
+                  setSelectedStudent(null);
+                }}
+                className="absolute top-4 right-4 z-50 w-10 h-10 bg-red-500/90 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 backdrop-blur-sm"
+                aria-label="Close profile"
+              >
+                <X className="w-5 h-5" />
+              </button>
+              
+              {/* Profile Content */}
+              <div className="p-8 flex items-center justify-center min-h-[400px]">
+                <GlassmorphismProfileCard student={selectedStudent} />
+              </div>
             </div>
           )}
         </DialogContent>
