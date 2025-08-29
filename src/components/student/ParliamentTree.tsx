@@ -64,9 +64,9 @@ export const ParliamentTree = () => {
     // Apply position filter
     if (positionFilter !== "all") {
       if (positionFilter === "special") {
-        filtered = filtered.filter(student => isSpecialPosition(student.position));
+        filtered = filtered.filter(student => isSpecialPosition(student.position, student.name));
       } else if (positionFilter === "mp") {
-        filtered = filtered.filter(student => !isSpecialPosition(student.position));
+        filtered = filtered.filter(student => !isSpecialPosition(student.position, student.name));
       }
     }
 
@@ -112,9 +112,22 @@ export const ParliamentTree = () => {
     return <Users className="w-4 h-4 text-gray-600" />;
   };
 
-  const isSpecialPosition = (position: string) => {
+  const isSpecialPosition = (position: string, name?: string) => {
     const pos = position.toLowerCase();
-    return pos.includes('minister') || pos.includes('leader') || pos.includes('president') || pos.includes('speaker');
+    const specialNames = [
+      'roobe saghana c',
+      'a ray archer', 
+      'adeena saleem',
+      'laxana b',
+      'arnav a',
+      'pranaav a'
+    ];
+    
+    return pos.includes('minister') || 
+           pos.includes('leader') || 
+           pos.includes('president') || 
+           pos.includes('speaker') ||
+           (name && specialNames.includes(name.toLowerCase()));
   };
 
   const getUniqueParties = () => {
@@ -268,7 +281,7 @@ export const ParliamentTree = () => {
                     <DialogTrigger asChild>
                       <div className="cursor-pointer group">
                         <Card className={`hover:shadow-md transition-shadow duration-200 group-hover:border-primary/50 ${
-                          isSpecialPosition(student.position) 
+                          isSpecialPosition(student.position, student.name) 
                             ? 'border-2 border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50 shadow-md' 
                             : ''
                         }`}>
@@ -281,7 +294,7 @@ export const ParliamentTree = () => {
                                     {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                                   </AvatarFallback>
                                 </Avatar>
-                                {isSpecialPosition(student.position) && (
+                                {isSpecialPosition(student.position, student.name) && (
                                   <div className="absolute -top-1 -right-1 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
                                     <Crown className="w-3 h-3 text-white" />
                                   </div>
@@ -291,11 +304,11 @@ export const ParliamentTree = () => {
                                 <div className="flex items-center space-x-1 mb-1">
                                   {getPositionIcon(student.position)}
                                   <h4 className={`font-medium text-sm truncate ${
-                                    isSpecialPosition(student.position) ? 'text-amber-800 font-bold' : ''
+                                    isSpecialPosition(student.position, student.name) ? 'text-amber-800 font-bold' : ''
                                   }`}>{student.name}</h4>
                                 </div>
                                 <p className={`text-xs truncate ${
-                                  isSpecialPosition(student.position) ? 'text-amber-700 font-semibold' : 'text-muted-foreground'
+                                  isSpecialPosition(student.position, student.name) ? 'text-amber-700 font-semibold' : 'text-muted-foreground'
                                 }`}>{student.position}</p>
                                 <p className="text-xs text-muted-foreground">#{student.serial_number}</p>
                               </div>

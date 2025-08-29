@@ -24,14 +24,27 @@ interface StudentProfileProps {
   isOwnProfile?: boolean;
 }
 
-const isSpecialPosition = (position: string) => {
+const isSpecialPosition = (position: string, name?: string) => {
   const pos = position.toLowerCase();
-  return pos.includes('minister') || pos.includes('leader') || pos.includes('president') || pos.includes('speaker');
+  const specialNames = [
+    'roobe saghana c',
+    'a ray archer', 
+    'adeena saleem',
+    'laxana b',
+    'arnav a',
+    'pranaav a'
+  ];
+  
+  return pos.includes('minister') || 
+         pos.includes('leader') || 
+         pos.includes('president') || 
+         pos.includes('speaker') ||
+         (name && specialNames.includes(name.toLowerCase()));
 };
 
 export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfileProps) => {
   const initials = profile.name.split(' ').map(n => n[0]).join('').toUpperCase();
-  const isSpecial = isSpecialPosition(profile.position);
+  const isSpecial = isSpecialPosition(profile.position, profile.name);
 
   return (
     <Card className={`w-full rounded-3xl shadow-lg border overflow-hidden ${

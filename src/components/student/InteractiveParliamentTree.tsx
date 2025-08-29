@@ -66,9 +66,9 @@ const InteractiveParliamentTree = () => {
     // Apply position filter
     if (positionFilter !== "all") {
       if (positionFilter === "special") {
-        filtered = filtered.filter(student => isSpecialPosition(student.position));
+        filtered = filtered.filter(student => isSpecialPosition(student.position, student.name));
       } else if (positionFilter === "mp") {
-        filtered = filtered.filter(student => !isSpecialPosition(student.position));
+        filtered = filtered.filter(student => !isSpecialPosition(student.position, student.name));
       }
     }
 
@@ -119,9 +119,22 @@ const InteractiveParliamentTree = () => {
     return <Users className="w-4 h-4 text-gray-500" />;
   };
 
-  const isSpecialPosition = (position: string) => {
+  const isSpecialPosition = (position: string, name?: string) => {
     const pos = position.toLowerCase();
-    return pos.includes('minister') || pos.includes('leader') || pos.includes('president') || pos.includes('speaker');
+    const specialNames = [
+      'roobe saghana c',
+      'a ray archer', 
+      'adeena saleem',
+      'laxana b',
+      'arnav a',
+      'pranaav a'
+    ];
+    
+    return pos.includes('minister') || 
+           pos.includes('leader') || 
+           pos.includes('president') || 
+           pos.includes('speaker') ||
+           (name && specialNames.includes(name.toLowerCase()));
   };
 
   const getPartyColor = (partyNumber: number) => {
@@ -362,7 +375,7 @@ const InteractiveParliamentTree = () => {
                         >
                           <Card
                             className={`cursor-pointer bg-white/20 backdrop-blur-sm border hover:bg-white/30 hover:border-white/50 hover:shadow-xl hover:scale-105 transition-all duration-300 rounded-2xl overflow-hidden ${
-                              isSpecialPosition(student.position)
+                              isSpecialPosition(student.position, student.name)
                                 ? 'border-2 border-amber-400/80 bg-gradient-to-br from-amber-100/30 to-yellow-100/30 shadow-lg shadow-amber-500/20'
                                 : 'border-white/30'
                             }`}
@@ -376,7 +389,7 @@ const InteractiveParliamentTree = () => {
                                 {/* Profile Image - Left Side */}
                                 <div className="relative flex-shrink-0">
                                   <Avatar className={`w-16 h-16 border-2 shadow-lg ${
-                                    isSpecialPosition(student.position) 
+                                    isSpecialPosition(student.position, student.name) 
                                       ? 'border-amber-400' 
                                       : 'border-white/50'
                                   }`}>
@@ -394,7 +407,7 @@ const InteractiveParliamentTree = () => {
                                   </Badge>
 
                                   {/* Special position indicator */}
-                                  {isSpecialPosition(student.position) && (
+                                  {isSpecialPosition(student.position, student.name) && (
                                     <div className="absolute -bottom-1 -left-1 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white shadow-md">
                                       <Crown className="w-3 h-3 text-white" />
                                     </div>
@@ -404,13 +417,13 @@ const InteractiveParliamentTree = () => {
                                 {/* Details - Right Side */}
                                 <div className="flex-1 min-w-0">
                                   <h4 className={`font-black text-lg mb-1 truncate ${
-                                    isSpecialPosition(student.position) ? 'text-amber-800' : 'text-slate-800'
+                                    isSpecialPosition(student.position, student.name) ? 'text-amber-800' : 'text-slate-800'
                                   }`}>{student.name}</h4>
                                   
                                   <div className="flex items-center gap-2 mb-2">
                                     {getPositionIcon(student.position)}
                                     <span className={`text-sm font-semibold truncate ${
-                                      isSpecialPosition(student.position) ? 'text-amber-700' : 'text-slate-600'
+                                      isSpecialPosition(student.position, student.name) ? 'text-amber-700' : 'text-slate-600'
                                     }`}>
                                       {student.position}
                                     </span>

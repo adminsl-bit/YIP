@@ -53,9 +53,22 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
     return colors[partyNumber % colors.length] || 'from-slate-500 to-slate-600';
   };
 
-  const isSpecialPosition = (position: string) => {
+  const isSpecialPosition = (position: string, name?: string) => {
     const pos = position.toLowerCase();
-    return pos.includes('minister') || pos.includes('leader') || pos.includes('president') || pos.includes('speaker');
+    const specialNames = [
+      'roobe saghana c',
+      'a ray archer', 
+      'adeena saleem',
+      'laxana b',
+      'arnav a',
+      'pranaav a'
+    ];
+    
+    return pos.includes('minister') || 
+           pos.includes('leader') || 
+           pos.includes('president') || 
+           pos.includes('speaker') ||
+           (name && specialNames.includes(name.toLowerCase()));
   };
 
   const infoItems = [
@@ -89,14 +102,14 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
     <div className="relative w-full max-w-sm">
       <div 
         className={`relative flex flex-col items-center p-8 rounded-3xl border transition-all duration-500 ease-out backdrop-blur-xl bg-white shadow-2xl ${
-          isSpecialPosition(student.position)
+          isSpecialPosition(student.position, student.name)
             ? 'border-2 border-amber-400/60 bg-gradient-to-br from-amber-50/80 to-yellow-50/80'
             : 'border-border/20'
         }`}
       >
         {/* Avatar */}
         <div className={`w-24 h-24 mb-4 rounded-full p-1 border-2 ${
-          isSpecialPosition(student.position) ? 'border-amber-400' : 'border-border/30'
+          isSpecialPosition(student.position, student.name) ? 'border-amber-400' : 'border-border/30'
         }`}>
           <div className="relative w-full h-full">
             <Avatar className="w-full h-full">
@@ -122,7 +135,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
                 {initials}
               </AvatarFallback>
             </Avatar>
-            {isSpecialPosition(student.position) && (
+            {isSpecialPosition(student.position, student.name) && (
               <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
                 <Crown className="w-4 h-4 text-white" />
               </div>
@@ -132,13 +145,13 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
 
         {/* Name and Title */}
         <h2 className={`text-2xl font-bold text-center ${
-          isSpecialPosition(student.position) ? 'text-amber-800' : 'text-card-foreground'
+          isSpecialPosition(student.position, student.name) ? 'text-amber-800' : 'text-card-foreground'
         }`}>{student.name}</h2>
         
         <div className="flex items-center gap-2 mt-1 mb-2">
           {getPositionIcon(student.position)}
           <p className={`text-sm font-medium ${
-            isSpecialPosition(student.position) ? 'text-amber-700' : 'text-primary'
+            isSpecialPosition(student.position, student.name) ? 'text-amber-700' : 'text-primary'
           }`}>{student.position}</p>
         </div>
 
