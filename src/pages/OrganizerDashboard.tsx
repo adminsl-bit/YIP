@@ -2,7 +2,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap, Image as ImageIcon, AlertTriangle, Trophy } from "lucide-react";
+import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap, Image as ImageIcon, AlertTriangle, Trophy, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { FeatureToggles } from "@/components/organizer/FeatureToggles";
 import { TimerControl } from "@/components/organizer/TimerControl";
@@ -14,6 +14,7 @@ import { StudentBulkImport } from "@/components/organizer/StudentBulkImport";
 import PhotoUploadManager from "@/components/organizer/PhotoUploadManager";
 import PhotoMigration from "@/components/organizer/PhotoMigration";
 import { OrganizerLeaderboard } from "@/components/organizer/OrganizerLeaderboard";
+import { AwardManagement } from "@/components/organizer/AwardManagement";
 
 const OrganizerDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -117,7 +118,7 @@ const OrganizerDashboard = () => {
           </div>
 
           <Tabs defaultValue="controls" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
               <TabsTrigger 
                 value="controls" 
                 className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
@@ -171,6 +172,15 @@ const OrganizerDashboard = () => {
                   <Trophy className="w-4 h-4 text-white" />
                 </div>
                 <span className="text-center">Leaderboard</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="awards" 
+                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
+              >
+                <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Award className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-center">Awards</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="photos" 
@@ -299,6 +309,22 @@ const OrganizerDashboard = () => {
                   <p className="text-slate-600 font-medium">Monitor rankings, scores, and award consensus</p>
                 </div>
                 <OrganizerLeaderboard />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="awards" className="space-y-6">
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <div className="text-center mb-8">
+                  <div className="relative inline-block mb-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-amber-500 to-yellow-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-amber-500/30">
+                      <Award className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-amber-400/40 rounded-full animate-bounce"></div>
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-800 mb-2">Award Management</h3>
+                  <p className="text-slate-600 font-medium">Create and assign awards to outstanding candidates</p>
+                </div>
+                <AwardManagement />
               </div>
             </TabsContent>
 

@@ -343,6 +343,8 @@ export type Database = {
         Row: {
           assigned_at: string
           assigned_by_jury_consensus: boolean
+          assigned_by_organizer: boolean | null
+          assigned_by_user_id: string | null
           award_id: string
           id: string
           student_id: string
@@ -350,6 +352,8 @@ export type Database = {
         Insert: {
           assigned_at?: string
           assigned_by_jury_consensus?: boolean
+          assigned_by_organizer?: boolean | null
+          assigned_by_user_id?: string | null
           award_id: string
           id?: string
           student_id: string
@@ -357,6 +361,8 @@ export type Database = {
         Update: {
           assigned_at?: string
           assigned_by_jury_consensus?: boolean
+          assigned_by_organizer?: boolean | null
+          assigned_by_user_id?: string | null
           award_id?: string
           id?: string
           student_id?: string
