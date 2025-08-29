@@ -13,6 +13,7 @@ import TimerDisplay from "./pages/TimerDisplay";
 import PollDisplay from "./pages/PollDisplay";
 import LeaderboardDisplay from "./pages/LeaderboardDisplay";
 import NotFound from "./pages/NotFound";
+import { AwardShowcase } from "./pages/AwardShowcase";
 import { AuthenticatedRoute } from "./components/AuthenticatedRoute";
 
 const queryClient = new QueryClient();
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/display/timer" element={<TimerDisplay />} />
             <Route path="/display/polls" element={<PollDisplay />} />
             <Route path="/display/leaderboard" element={<LeaderboardDisplay />} />
+            <Route path="/display/awards" element={<AwardShowcase />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

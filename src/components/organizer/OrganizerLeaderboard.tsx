@@ -150,6 +150,13 @@ export const OrganizerLeaderboard = () => {
       }, () => {
         fetchData();
       })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'awards'
+      }, () => {
+        fetchData();
+      })
       .subscribe();
 
     return () => supabase.removeChannel(channel);

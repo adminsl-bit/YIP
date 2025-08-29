@@ -1,8 +1,9 @@
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap, Image as ImageIcon, AlertTriangle, Trophy, Award } from "lucide-react";
+import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap, Image as ImageIcon, AlertTriangle, Trophy, Award, Presentation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { FeatureToggles } from "@/components/organizer/FeatureToggles";
 import { TimerControl } from "@/components/organizer/TimerControl";
@@ -18,6 +19,7 @@ import { AwardManagement } from "@/components/organizer/AwardManagement";
 
 const OrganizerDashboard = () => {
   const { profile, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const resetAllAssessments = async () => {
     if (!confirm('Are you sure you want to reset ALL assessments for ALL juries? This will clear all scores and notes.')) {
@@ -323,6 +325,15 @@ const OrganizerDashboard = () => {
                   </div>
                   <h3 className="text-2xl font-black text-slate-800 mb-2">Award Management</h3>
                   <p className="text-slate-600 font-medium">Create and assign awards to outstanding candidates</p>
+                </div>
+                <div className="flex justify-center mb-6">
+                  <Button 
+                    onClick={() => navigate('/display/awards')}
+                    className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white hover:from-yellow-600 hover:to-orange-700 font-semibold px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <Presentation className="w-5 h-5 mr-2" />
+                    Launch Award Showcase
+                  </Button>
                 </div>
                 <AwardManagement />
               </div>
