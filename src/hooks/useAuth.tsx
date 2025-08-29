@@ -204,6 +204,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       const { error } = await supabase.auth.signOut();
+      
+      // Handle session not found gracefully - just clear local state
+      if (error && error.message.includes('Session not found')) {
+        console.log('Session already expired, clearing local state');
+        setUser(null);
+        setSession(null);
+        setProfile(null);
+        toast.success('Signed out successfully');
+        navigate('/');
+        return;
+      }
+      
       if (error) {
         toast.error(error.message);
       } else {
@@ -211,7 +223,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         navigate('/');
       }
     } catch (error) {
-      toast.error('Error signing out');
+      // If any error occurs, force clear the auth state
+      console.log('Error during sign out, forcing clear:', error);
+      setUser(null);
+      setSession(null);
+      setProfile(null);
+      toast.success('Signed out successfully');
+      navigate('/');
     }
   };
 
