@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Crown, Gavel, Users, MapPin, Search } from 'lucide-react';
 import GlassmorphismProfileCard from './GlassmorphismProfileCard';
@@ -223,7 +223,7 @@ const InteractiveParliamentTree = () => {
                                 {/* Profile Image - Left Side */}
                                 <div className="relative flex-shrink-0">
                                   <Avatar className="w-16 h-16 border-2 border-white/50 shadow-lg">
-                                    <AvatarImage src={student.photo_url} alt={student.name} referrerPolicy="no-referrer" loading="lazy" decoding="async" />
+                                    <AvatarImage src={student.photo_url ? (student.photo_url.includes('/file/d/') ? `https://drive.google.com/uc?export=view&id=${student.photo_url.split('/d/')[1]?.split('/')[0]}` : student.photo_url) : undefined} alt={student.name} referrerPolicy="no-referrer" loading="lazy" decoding="async" />
                                     <AvatarFallback className={`bg-gradient-to-br ${getPartyColor(student.party_number)} text-white font-bold text-lg`}>
                                       {student.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
                                     </AvatarFallback>
@@ -278,11 +278,15 @@ const InteractiveParliamentTree = () => {
 
       {/* Student Profile Modal */}
       <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
-        <DialogContent className="max-w-md bg-transparent border-0 shadow-none p-0">
-          <DialogTitle className="sr-only">Student Profile</DialogTitle>
-          <DialogDescription className="sr-only">
+        <DialogContent
+          className="max-w-md bg-transparent border-0 shadow-none p-0"
+          aria-label="Student Profile"
+          aria-describedby="student-profile-desc"
+        >
+          <h2 id="student-profile-title" className="sr-only">Student Profile</h2>
+          <p id="student-profile-desc" className="sr-only">
             Detailed profile information for the selected student
-          </DialogDescription>
+          </p>
           {selectedStudent && (
             <div className="flex items-center justify-center p-4">
               <GlassmorphismProfileCard student={selectedStudent} />

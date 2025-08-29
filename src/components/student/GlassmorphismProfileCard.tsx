@@ -94,7 +94,11 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
         <div className="w-24 h-24 mb-4 rounded-full p-1 border-2 border-border/30">
           <Avatar className="w-full h-full">
             <AvatarImage 
-              src={student.photo_url}
+              src={student.photo_url
+                ? (student.photo_url.includes('/file/d/')
+                  ? `https://drive.google.com/uc?export=view&id=${student.photo_url.split('/d/')[1]?.split('/')[0]}`
+                  : student.photo_url)
+                : undefined}
               alt={`${student.name}'s Avatar`}
               className="object-cover"
               referrerPolicy="no-referrer"
