@@ -237,11 +237,11 @@ export const OrganizerStudentList = () => {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'assessed':
-        return <Badge className="bg-green-500">Assessed</Badge>;
+        return <Badge className="h-6 px-3 rounded-full text-xs font-semibold bg-green-600 text-white">Assessed</Badge>;
       case 'in_progress':
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-700">In Progress</Badge>;
+        return <Badge variant="outline" className="h-6 px-3 rounded-full text-xs font-semibold border-yellow-500 text-yellow-700 bg-yellow-50">In Progress</Badge>;
       default:
-        return <Badge variant="secondary">Not Assessed</Badge>;
+        return <Badge variant="secondary" className="h-6 px-3 rounded-full text-xs font-semibold">Not Assessed</Badge>;
     }
   };
 
@@ -371,7 +371,7 @@ export const OrganizerStudentList = () => {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-bold text-lg text-foreground truncate mb-1">{student.name}</h3>
                     <p className="text-sm text-muted-foreground truncate mb-2">{student.position}</p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-h-[24px]">
                       {getStatusIcon(status)}
                       {getStatusBadge(status)}
                     </div>
@@ -410,14 +410,12 @@ export const OrganizerStudentList = () => {
                   )}
                 </div>
 
-                {/* Last Login Info */}
-                {student.last_login_at && (
-                  <div className="mb-4 p-2 bg-muted/30 rounded-lg">
-                    <div className="text-xs text-muted-foreground">
-                      Last login: {new Date(student.last_login_at).toLocaleDateString()}
-                    </div>
+                {/* Last Login Info (always reserve space) */}
+                <div className="mb-4 p-2 bg-muted/30 rounded-lg min-h-[32px]">
+                  <div className="text-xs text-muted-foreground">
+                    Last login: {student.last_login_at ? new Date(student.last_login_at).toLocaleDateString() : '—'}
                   </div>
-                )}
+                </div>
 
                 {/* Action Buttons */}
                 <div className="mt-auto flex gap-3">
