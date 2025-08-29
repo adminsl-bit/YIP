@@ -214,12 +214,12 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
 
   const getPartyColor = (partyNumber: number) => {
     const colors = [
-      'bg-red-100 text-red-800',
-      'bg-blue-100 text-blue-800',
-      'bg-green-100 text-green-800',
-      'bg-yellow-100 text-yellow-800',
-      'bg-purple-100 text-purple-800',
-      'bg-pink-100 text-pink-800'
+      'bg-red-500/20 text-red-700 border-red-500/30',
+      'bg-blue-500/20 text-blue-700 border-blue-500/30',
+      'bg-green-500/20 text-green-700 border-green-500/30',
+      'bg-yellow-500/20 text-yellow-700 border-yellow-500/30',
+      'bg-purple-500/20 text-purple-700 border-purple-500/30',
+      'bg-pink-500/20 text-pink-700 border-pink-500/30'
     ];
     return colors[(partyNumber - 1) % colors.length];
   };
@@ -304,14 +304,14 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
             <Table>
               <TableHeader>
                 <TableRow className="border-white/25">
-                  <TableHead className="w-16 text-slate-700 font-semibold">Rank</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Student</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Position</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Party</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Avg Score</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Assessments</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Awards</TableHead>
-                  <TableHead className="text-slate-700 font-semibold">Actions</TableHead>
+                  <TableHead className="w-16 text-center text-slate-700 font-semibold">Rank</TableHead>
+                  <TableHead className="min-w-[200px] text-slate-700 font-semibold">Student</TableHead>
+                  <TableHead className="w-32 text-center text-slate-700 font-semibold">Position</TableHead>
+                  <TableHead className="w-24 text-center text-slate-700 font-semibold">Party</TableHead>
+                  <TableHead className="w-24 text-center text-slate-700 font-semibold">Score</TableHead>
+                  <TableHead className="w-28 text-center text-slate-700 font-semibold">Progress</TableHead>
+                  <TableHead className="w-32 text-center text-slate-700 font-semibold">Awards</TableHead>
+                  <TableHead className="w-32 text-center text-slate-700 font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -338,37 +338,37 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       <Badge variant="outline" className="bg-white/20 border-white/30 text-slate-700 font-medium">
                         {entry.position}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <Badge className={`${getPartyColor(entry.party_number)} font-medium`}>
+                    <TableCell className="text-center">
+                      <Badge variant="outline" className={`${getPartyColor(entry.party_number)} font-medium border`}>
                         Party {entry.party_number}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       <div className="font-black text-2xl text-slate-800">
                         {Math.round(entry.average_score)}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       <Badge variant="secondary" className="bg-slate-200 text-slate-800 font-medium">
                         {entry.assessment_count}/3
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      <div className="space-y-1 min-w-[120px]">
+                    <TableCell className="text-center">
+                      <div className="space-y-1 flex flex-col items-center">
                         {studentAwards[entry.user_id]?.map((award, idx) => (
-                          <Badge key={idx} className="text-xs bg-yellow-100 text-yellow-800 font-medium block w-fit">
+                          <Badge key={idx} className="text-xs bg-yellow-500/20 text-yellow-700 border border-yellow-500/30 font-medium">
                             <Trophy className="w-3 h-3 mr-1" />
                             {award}
                           </Badge>
                         )) || <span className="text-slate-600 text-sm font-medium">No awards</span>}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button 
