@@ -118,4 +118,24 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* Mobile-first responsive utilities */
+  .responsive-text-xs { @apply text-xs sm:text-sm md:text-base; }
+  .responsive-text-sm { @apply text-sm sm:text-base md:text-lg; }
+  .responsive-text-base { @apply text-base sm:text-lg md:text-xl; }
+  .responsive-text-lg { @apply text-lg sm:text-xl md:text-2xl; }
+  .responsive-text-xl { @apply text-xl sm:text-2xl md:text-3xl; }
+  .responsive-text-2xl { @apply text-2xl sm:text-3xl md:text-4xl; }
+  .responsive-text-3xl { @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl; }
+  
+  /* Mobile-friendly spacing */
+  .responsive-padding { @apply p-4 sm:p-6 lg:p-8; }
+  .responsive-margin { @apply m-4 sm:m-6 lg:m-8; }
+  .responsive-gap { @apply gap-4 sm:gap-6 lg:gap-8; }
+  
+  /* Touch-friendly buttons */
+  .touch-target { @apply min-h-[44px] min-w-[44px]; }
+  
+  /* Responsive containers */
+  .container-responsive { @apply px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto; }
 }

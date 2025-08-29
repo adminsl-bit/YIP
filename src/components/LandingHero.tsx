@@ -71,16 +71,16 @@ export const LandingHero = () => {
         </div>
 
         {/* Main Hero Section */}
-        <div className="px-8 py-4">
+        <div className="px-4 sm:px-8 py-4">
           <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <Badge className="mb-8 px-6 py-3 text-lg bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/30 shadow-lg">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-3 shadow-lg shadow-green-500/50 animate-pulse"></div>
+            <div className="text-center mb-8 sm:mb-16">
+              <Badge className="mb-6 sm:mb-8 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-lg bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/30 shadow-lg">
+                <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full mr-2 sm:mr-3 shadow-lg shadow-green-500/50 animate-pulse"></div>
                 Regional Round 2025 - Now Live
               </Badge>
               
-              <div className="flex items-center justify-center gap-8 mb-8">
-                <h1 className="text-7xl lg:text-9xl font-black tracking-tight drop-shadow-2xl">
+              <div className="flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 mb-8">
+                <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-9xl font-black tracking-tight drop-shadow-2xl">
                   <span className="block text-transparent bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text">
                     YOUNG
                   </span>
@@ -92,105 +92,105 @@ export const LandingHero = () => {
                   </span>
                 </h1>
                 
-                <div className="relative hidden lg:block">
+                <div className="relative lg:block">
                   <img 
                     src="/lovable-uploads/acb05533-0bc0-4094-9302-9f7621f49697.png"
                     alt="Young Indians Parliament Tiger Mascot" 
-                    className="w-80 h-80 object-contain hover:scale-110 transition-transform duration-300 drop-shadow-2xl"
+                    className="w-48 h-48 sm:w-64 sm:h-64 lg:w-80 lg:h-80 object-contain hover:scale-110 transition-transform duration-300 drop-shadow-2xl mx-auto"
                   />
                 </div>
               </div>
               
-              <div className="mb-12">
-                <p className="text-5xl lg:text-6xl font-bold mb-4 text-slate-700 drop-shadow-lg">
+              <div className="mb-8 sm:mb-12">
+                <p className="text-2xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold mb-3 sm:mb-4 text-slate-700 drop-shadow-lg">
                   SRTN Round - Madurai
                 </p>
                 
-                <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
+                <p className="text-base sm:text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed px-4">
                   Where young minds debate and democracy thrives
                 </p>
               </div>
             </div>
 
             {/* Enhanced Features Section with Glass Morphism */}
-            <div className="mb-16">
-              <div className="grid md:grid-cols-3 gap-8 text-center max-w-6xl mx-auto">
-                <div className="group bg-white/15 backdrop-blur-lg rounded-3xl border border-white/25 p-8 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
+            <div className="mb-12 sm:mb-16">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8 text-center max-w-6xl mx-auto px-4">
+                <div className="group bg-white/15 backdrop-blur-lg rounded-2xl sm:rounded-3xl border border-white/25 p-6 sm:p-8 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
                   <div className="relative">
-                    <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform duration-300">
-                      <Users className="w-10 h-10 text-white" />
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-orange-500 to-red-500 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg shadow-orange-500/30 group-hover:scale-110 transition-transform duration-300">
+                      <Users className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                     </div>
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-400/40 rounded-full animate-bounce"></div>
+                    <div className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 w-4 h-4 sm:w-6 sm:h-6 bg-orange-400/40 rounded-full animate-bounce"></div>
                   </div>
-                  <h3 className="text-2xl font-bold mb-4 text-slate-800">Future Leaders</h3>
-                  <p className="text-slate-600 leading-relaxed">Shaping tomorrow's democratic leaders through debate and discourse</p>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-slate-800">Future Leaders</h3>
+                  <p className="text-sm sm:text-base text-slate-600 leading-relaxed">Shaping tomorrow's democratic leaders through debate and discourse</p>
                 </div>
                 
-                <div className="group bg-white/15 backdrop-blur-lg rounded-3xl border border-white/25 p-8 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
+                <div className="group bg-white/15 backdrop-blur-lg rounded-2xl sm:rounded-3xl border border-white/25 p-6 sm:p-8 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
                   <div className="relative">
-                    <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
-                      <Crown className="w-10 h-10 text-white" />
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
+                      <Crown className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                     </div>
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-blue-400/40 rounded-full animate-bounce" style={{animationDelay: '1s'}}></div>
+                    <div className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 w-4 h-4 sm:w-6 sm:h-6 bg-blue-400/40 rounded-full animate-bounce" style={{animationDelay: '1s'}}></div>
                   </div>
-                  <h3 className="text-2xl font-bold mb-4 text-slate-800">Democratic Values</h3>
-                  <p className="text-slate-600 leading-relaxed">Building strong democratic foundations for India's future</p>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-slate-800">Democratic Values</h3>
+                  <p className="text-sm sm:text-base text-slate-600 leading-relaxed">Building strong democratic foundations for India's future</p>
                 </div>
                 
-                <div className="group bg-white/15 backdrop-blur-lg rounded-3xl border border-white/25 p-8 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
+                <div className="group bg-white/15 backdrop-blur-lg rounded-2xl sm:rounded-3xl border border-white/25 p-6 sm:p-8 shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300">
                   <div className="relative">
-                    <div className="w-20 h-20 bg-gradient-to-br from-green-500 to-teal-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform duration-300">
-                      <Award className="w-10 h-10 text-white" />
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg shadow-green-500/30 group-hover:scale-110 transition-transform duration-300">
+                      <Award className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                     </div>
-                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400/40 rounded-full animate-bounce" style={{animationDelay: '2s'}}></div>
+                    <div className="absolute -top-1 sm:-top-2 -right-1 sm:-right-2 w-4 h-4 sm:w-6 sm:h-6 bg-green-400/40 rounded-full animate-bounce" style={{animationDelay: '2s'}}></div>
                   </div>
-                  <h3 className="text-2xl font-bold mb-4 text-slate-800">Excellence</h3>
-                  <p className="text-slate-600 leading-relaxed">Recognizing outstanding parliamentary performance and leadership</p>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-slate-800">Excellence</h3>
+                  <p className="text-sm sm:text-base text-slate-600 leading-relaxed">Recognizing outstanding parliamentary performance and leadership</p>
                 </div>
               </div>
             </div>
 
             {/* Enhanced CTA Section */}
-            <div className="text-center mb-12">
+            <div className="text-center mb-8 sm:mb-12 px-4">
               <div className="relative inline-block">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-indigo-500/30 rounded-3xl blur-xl"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/30 to-indigo-500/30 rounded-2xl sm:rounded-3xl blur-xl"></div>
                 <Button 
-                  size="xl"
-                  className="relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-3xl px-16 py-8 rounded-3xl shadow-2xl hover:shadow-blue-500/40 hover:scale-105 transition-all duration-300 border border-white/20"
+                  size="lg"
+                  className="relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xl sm:text-2xl lg:text-3xl px-8 sm:px-12 lg:px-16 py-4 sm:py-6 lg:py-8 rounded-2xl sm:rounded-3xl shadow-2xl hover:shadow-blue-500/40 hover:scale-105 transition-all duration-300 border border-white/20 touch-target"
                   onClick={() => window.location.href = '/login'}
                 >
-                  <Crown className="w-10 h-10 mr-6" />
+                  <Crown className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 mr-3 sm:mr-4 lg:mr-6" />
                   ENTER PARLIAMENT
                 </Button>
               </div>
               
               {/* Enhanced Glass Buttons Section */}
-              <div className="flex flex-wrap items-center justify-center gap-6 mt-20">
-                <div className="group bg-white/20 backdrop-blur-lg border border-white/30 rounded-2xl px-8 py-5 text-slate-800 hover:bg-white/35 transition-all duration-500 hover:scale-110 hover:shadow-2xl hover:shadow-green-500/20 shadow-lg cursor-pointer animate-fade-in">
-                  <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4 sm:gap-6 mt-12 sm:mt-20">
+                <div className="group bg-white/20 backdrop-blur-lg border border-white/30 rounded-xl sm:rounded-2xl px-6 sm:px-8 py-4 sm:py-5 text-slate-800 hover:bg-white/35 transition-all duration-500 hover:scale-110 hover:shadow-2xl hover:shadow-green-500/20 shadow-lg cursor-pointer animate-fade-in w-full sm:w-auto max-w-xs">
+                  <div className="flex items-center justify-center sm:justify-start gap-3 sm:gap-4">
                     <div className="relative">
-                      <div className="w-4 h-4 bg-green-500 rounded-full shadow-lg shadow-green-500/60 animate-pulse group-hover:animate-bounce"></div>
-                      <div className="absolute inset-0 w-4 h-4 bg-green-400/30 rounded-full animate-ping group-hover:animate-none"></div>
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-green-500 rounded-full shadow-lg shadow-green-500/60 animate-pulse group-hover:animate-bounce"></div>
+                      <div className="absolute inset-0 w-3 h-3 sm:w-4 sm:h-4 bg-green-400/30 rounded-full animate-ping group-hover:animate-none"></div>
                     </div>
-                    <span className="font-semibold text-lg group-hover:text-green-700 transition-colors duration-300">Democracy in Action</span>
+                    <span className="font-semibold text-base sm:text-lg group-hover:text-green-700 transition-colors duration-300">Democracy in Action</span>
                   </div>
                 </div>
-                <div className="group bg-white/20 backdrop-blur-lg border border-white/30 rounded-2xl px-8 py-5 text-slate-800 hover:bg-white/35 transition-all duration-500 hover:scale-110 hover:shadow-2xl hover:shadow-slate-800/20 shadow-lg cursor-pointer animate-fade-in" style={{animationDelay: '0.2s'}}>
-                  <div className="flex items-center gap-4">
+                <div className="group bg-white/20 backdrop-blur-lg border border-white/30 rounded-xl sm:rounded-2xl px-6 sm:px-8 py-4 sm:py-5 text-slate-800 hover:bg-white/35 transition-all duration-500 hover:scale-110 hover:shadow-2xl hover:shadow-slate-800/20 shadow-lg cursor-pointer animate-fade-in w-full sm:w-auto max-w-xs" style={{animationDelay: '0.2s'}}>
+                  <div className="flex items-center justify-center sm:justify-start gap-3 sm:gap-4">
                     <div className="relative">
-                      <div className="w-4 h-4 bg-slate-800 rounded-full shadow-lg shadow-slate-800/60 animate-pulse group-hover:animate-bounce" style={{animationDelay: '1s'}}></div>
-                      <div className="absolute inset-0 w-4 h-4 bg-slate-600/30 rounded-full animate-ping group-hover:animate-none" style={{animationDelay: '1s'}}></div>
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-slate-800 rounded-full shadow-lg shadow-slate-800/60 animate-pulse group-hover:animate-bounce" style={{animationDelay: '1s'}}></div>
+                      <div className="absolute inset-0 w-3 h-3 sm:w-4 sm:h-4 bg-slate-600/30 rounded-full animate-ping group-hover:animate-none" style={{animationDelay: '1s'}}></div>
                     </div>
-                    <span className="font-semibold text-lg group-hover:text-slate-900 transition-colors duration-300">Leadership Through Service</span>
+                    <span className="font-semibold text-base sm:text-lg group-hover:text-slate-900 transition-colors duration-300">Leadership Through Service</span>
                   </div>
                 </div>
-                <div className="group bg-white/20 backdrop-blur-lg border border-white/30 rounded-2xl px-8 py-5 text-slate-800 hover:bg-white/35 transition-all duration-500 hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/20 shadow-lg cursor-pointer animate-fade-in" style={{animationDelay: '0.4s'}}>
-                  <div className="flex items-center gap-4">
+                <div className="group bg-white/20 backdrop-blur-lg border border-white/30 rounded-xl sm:rounded-2xl px-6 sm:px-8 py-4 sm:py-5 text-slate-800 hover:bg-white/35 transition-all duration-500 hover:scale-110 hover:shadow-2xl hover:shadow-orange-500/20 shadow-lg cursor-pointer animate-fade-in w-full sm:w-auto max-w-xs" style={{animationDelay: '0.4s'}}>
+                  <div className="flex items-center justify-center sm:justify-start gap-3 sm:gap-4">
                     <div className="relative">
-                      <div className="w-4 h-4 bg-orange-500 rounded-full shadow-lg shadow-orange-500/60 animate-pulse group-hover:animate-bounce" style={{animationDelay: '2s'}}></div>
-                      <div className="absolute inset-0 w-4 h-4 bg-orange-400/30 rounded-full animate-ping group-hover:animate-none" style={{animationDelay: '2s'}}></div>
+                      <div className="w-3 h-3 sm:w-4 sm:h-4 bg-orange-500 rounded-full shadow-lg shadow-orange-500/60 animate-pulse group-hover:animate-bounce" style={{animationDelay: '2s'}}></div>
+                      <div className="absolute inset-0 w-3 h-3 sm:w-4 sm:h-4 bg-orange-400/30 rounded-full animate-ping group-hover:animate-none" style={{animationDelay: '2s'}}></div>
                     </div>
-                    <span className="font-semibold text-lg group-hover:text-orange-700 transition-colors duration-300">Building India's Future</span>
+                    <span className="font-semibold text-base sm:text-lg group-hover:text-orange-700 transition-colors duration-300">Building India's Future</span>
                   </div>
                 </div>
               </div>

@@ -276,7 +276,7 @@ export const OrganizerStudentList = () => {
           </div>
 
           {/* Filters */}
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <Select value={filters.seatRole} onValueChange={(value) => setFilters(prev => ({ ...prev, seatRole: value }))}>
               <SelectTrigger className="h-12 border-2 border-border/20 rounded-xl bg-background">
                 <SelectValue placeholder="Filter by Role" />
