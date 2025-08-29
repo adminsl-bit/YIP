@@ -22,9 +22,9 @@ const partyPillClasses = [
 export const PartyBadge: React.FC<PartyBadgeProps> = ({ partyNumber, className = "", size = "sm" }) => {
   const idx = Math.abs(partyNumber || 0) % partyPillClasses.length;
   const base = partyPillClasses[idx] ?? "bg-slate-500 text-white border-slate-600";
-  const padd = size === "sm" ? "px-6 py-1 text-xs" : "px-8 py-1.5 text-sm";
+  const padd = size === "sm" ? "px-4 py-1 text-xs" : "px-5 py-1.5 text-sm";
   return (
-    <Badge className={`rounded-full border shadow-sm font-semibold tracking-tight ${base} ${padd} ${className}`}>
+    <Badge className={`rounded-full border shadow-sm font-semibold tracking-tight whitespace-nowrap ${base} ${padd} ${className}`}>
       Party {partyNumber}
     </Badge>
   );
