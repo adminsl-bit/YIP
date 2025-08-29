@@ -117,7 +117,7 @@ const OrganizerDashboard = () => {
           </div>
 
           <Tabs defaultValue="controls" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 lg:grid-cols-7 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
               <TabsTrigger 
                 value="controls" 
                 className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
