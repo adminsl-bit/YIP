@@ -2,7 +2,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap, Image as ImageIcon } from "lucide-react";
+import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap, Image as ImageIcon, AlertTriangle } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { FeatureToggles } from "@/components/organizer/FeatureToggles";
 import { TimerControl } from "@/components/organizer/TimerControl";
 import { PollManagement } from "@/components/organizer/PollManagement";
@@ -14,6 +15,31 @@ import PhotoUploadManager from "@/components/organizer/PhotoUploadManager";
 
 const OrganizerDashboard = () => {
   const { profile, signOut } = useAuth();
+
+  const resetAllAssessments = async () => {
+    if (!confirm('Are you sure you want to reset ALL assessments for ALL juries? This will clear all scores and notes.')) {
+      return;
+    }
+    
+    try {
+      const { error } = await supabase
+        .from('assessments')
+        .update({
+          status: 'draft',
+          total_score: 0,
+          scores: {},
+          submitted_at: null,
+          notes: null,
+        });
+
+      if (error) throw error;
+
+      alert('All assessments have been reset successfully.');
+    } catch (error) {
+      console.error('Error resetting assessments:', error);
+      alert('Failed to reset assessments. Please try again.');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 relative overflow-hidden">
@@ -149,6 +175,31 @@ const OrganizerDashboard = () => {
             <TabsContent value="controls" className="space-y-6">
               <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
                 <FeatureToggles />
+              </div>
+              
+              {/* Assessment Reset Controls */}
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <div className="text-center mb-6">
+                  <div className="relative inline-block mb-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-pink-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-red-500/30">
+                      <AlertTriangle className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-400/40 rounded-full animate-bounce"></div>
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-800 mb-2">Assessment Controls</h3>
+                  <p className="text-slate-600 font-medium">Manage assessment data and progress</p>
+                </div>
+                
+                <div className="flex justify-center">
+                  <Button 
+                    onClick={resetAllAssessments}
+                    className="bg-red-500/20 hover:bg-red-500/30 border-red-500/30 text-red-700 font-semibold px-6 py-3"
+                    variant="outline"
+                  >
+                    <AlertTriangle className="w-4 h-4 mr-2" />
+                    Reset All Assessments
+                  </Button>
+                </div>
               </div>
             </TabsContent>
 

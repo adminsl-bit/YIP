@@ -318,33 +318,6 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
     }
   };
 
-  const resetAssessments = async () => {
-    if (!confirm('Are you sure you want to reset all your assessments? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      const { error } = await supabase
-        .from('assessments')
-        .update({
-          status: 'draft',
-          total_score: 0,
-          scores: {},
-          submitted_at: null,
-          notes: null,
-        })
-        .eq('jury_id', juryId);
-
-      if (error) throw error;
-
-      // Refresh dashboard data
-      await fetchDashboardData();
-      alert('All assessments have been reset successfully.');
-    } catch (error) {
-      console.error('Error resetting assessments:', error);
-      alert('Failed to reset assessments');
-    }
-  };
 
   const exportToCSV = async () => {
     try {
@@ -664,14 +637,6 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
           >
             <Download className="w-5 h-5 mr-2" />
             Export PDF
-          </Button>
-          <Button 
-            variant="destructive" 
-            onClick={resetAssessments}
-            className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white hover:scale-105 transition-all duration-300 rounded-2xl px-6 py-3 font-semibold"
-          >
-            <Trophy className="w-5 h-5 mr-2" />
-            Reset All Assessments
           </Button>
         </div>
       </div>
