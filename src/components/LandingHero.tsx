@@ -103,7 +103,7 @@ export const LandingHero = () => {
               
               <div className="mb-12">
                 <p className="text-5xl lg:text-6xl font-bold mb-4 text-slate-700 drop-shadow-lg">
-                  Madurai Regional Round - SRTN Round - Madurai
+                  SRTN Round - Madurai
                 </p>
                 
                 <p className="text-xl text-slate-600 max-w-3xl mx-auto leading-relaxed">
