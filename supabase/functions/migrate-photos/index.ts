@@ -85,6 +85,7 @@ async function performMigrationBatch(batchSize = 5) {
         if (imageBlob.size === 0) throw new Error('Downloaded file is empty');
 
         const mimeType = imageBlob.type || 'image/jpeg';
+        if (!mimeType.startsWith('image/')) throw new Error(`Non-image content-type: ${mimeType}`);
         const ext = mimeType.includes('png') ? 'png' : mimeType.includes('webp') ? 'webp' : 'jpg';
         const fileName = `${student.serial_number}.${ext}`;
         const imageFile = new File([imageBlob], fileName, { type: mimeType });
@@ -101,7 +102,7 @@ async function performMigrationBatch(batchSize = 5) {
 
         const { data: { publicUrl } } = supabaseAdmin.storage
           .from('student-photos')
-          .getPublicUrl(fileName, { transform: { width: 400, height: 400, format: 'webp' } });
+          .getPublicUrl(fileName);
         const finalUrl = `${publicUrl}${publicUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
 
 
@@ -171,7 +172,7 @@ async function performFullMigration() {
   }
 
   const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
-
+  
   // Keep processing until no Google Drive photos remain or safety cap hit
   let safetyBatches = 0;
   while (true) {
@@ -203,7 +204,51 @@ async function performFullMigration() {
 
     await delay(1000); // small pause between batches
   }
+
+  // Normalize any existing render URLs to plain object URLs
+  try {
+    console.log('Normalizing existing photo URLs to object URLs...');
+    const { data: objects, error: listErr } = await supabaseAdmin.storage
+      .from('student-photos')
+      .list('', { limit: 10000 });
+    if (listErr) {
+      console.warn('Failed to list storage objects:', listErr.message);
+    }
+    const nameSet = new Set((objects || []).map((o: any) => o.name));
+
+    const { data: rows, error: rowsErr } = await supabaseAdmin
+      .from('profiles')
+      .select('id, serial_number, photo_url')
+      .eq('user_type', 'student')
+      .ilike('photo_url', '%/render/image/%');
+
+    if (!rowsErr && rows && rows.length > 0) {
+      const updates = rows.map(async (row: { id: string; serial_number: number }) => {
+        const candidates = [
+          `${row.serial_number}.jpg`,
+          `${row.serial_number}.png`,
+          `${row.serial_number}.webp`,
+        ];
+        const found = candidates.find((n) => nameSet.has(n));
+        if (found) {
+          const { data: { publicUrl } } = supabaseAdmin.storage
+            .from('student-photos')
+            .getPublicUrl(found);
+          const newUrl = `${publicUrl}${publicUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+          await supabaseAdmin
+            .from('profiles')
+            .update({ photo_url: newUrl })
+            .eq('id', row.id);
+        }
+      });
+      await Promise.allSettled(updates);
+      console.log(`Normalized ${rows.length} URL(s) where possible`);
+    }
+  } catch (e) {
+    console.warn('Normalization pass failed:', e);
+  }
 }
+
 
 serve(async (req) => {
   // Handle CORS preflight requests
