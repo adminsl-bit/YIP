@@ -29,12 +29,14 @@ const PhotoMigration = () => {
       const [googleDriveResult, supabaseResult] = await Promise.all([
         supabase
           .from('profiles')
-          .select('id', { count: 'exact' })
-          .like('photo_url', '%drive.google.com%'),
+          .select('id', { count: 'exact', head: true })
+          .eq('user_type', 'student')
+          .or('photo_url.ilike.*drive.google.com*,photo_url.ilike.*docs.google.com*,photo_url.ilike.*googleusercontent.com*,photo_url.ilike.*drive.usercontent.google.com*'),
         supabase
           .from('profiles')
-          .select('id', { count: 'exact' })
-          .like('photo_url', '%supabase.co/storage%')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_type', 'student')
+          .ilike('photo_url', '%supabase.co/storage%')
       ]);
 
       setMigrationStats({

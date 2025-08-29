@@ -28,7 +28,7 @@ async function performMigrationBatch(batchSize = 5) {
       .from('profiles')
       .select('id, serial_number, name, photo_url')
       .eq('user_type', 'student')
-      .like('photo_url', '%drive.google.com%')
+      .or('photo_url.ilike.*drive.google.com*,photo_url.ilike.*docs.google.com*,photo_url.ilike.*googleusercontent.com*,photo_url.ilike.*drive.usercontent.google.com*')
       .limit(batchSize);
 
     if (fetchError) {
@@ -54,6 +54,16 @@ async function performMigrationBatch(batchSize = 5) {
           downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
         } else if (downloadUrl.includes('uc?export=view&id=')) {
           downloadUrl = downloadUrl.replace('uc?export=view&id=', 'uc?export=download&id=');
+        } else if (downloadUrl.includes('open?id=')) {
+          try {
+            const url = new URL(downloadUrl);
+            const fileId = url.searchParams.get('id');
+            if (fileId) {
+              downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+            }
+          } catch (_) {
+            // ignore URL parse errors
+          }
         }
 
         console.log(`Downloading from: ${downloadUrl}`);
@@ -74,24 +84,26 @@ async function performMigrationBatch(batchSize = 5) {
         console.log(`Downloaded ${imageBlob.size} bytes for ${student.name}`);
         if (imageBlob.size === 0) throw new Error('Downloaded file is empty');
 
-        const fileName = `${student.serial_number}.jpg`;
-        const imageFile = new File([imageBlob], fileName, { type: 'image/jpeg' });
+        const mimeType = imageBlob.type || 'image/jpeg';
+        const ext = mimeType.includes('png') ? 'png' : mimeType.includes('webp') ? 'webp' : 'jpg';
+        const fileName = `${student.serial_number}.${ext}`;
+        const imageFile = new File([imageBlob], fileName, { type: mimeType });
 
         const { error: uploadError } = await supabaseAdmin.storage
           .from('student-photos')
           .upload(fileName, imageFile, {
             cacheControl: '3600',
             upsert: true,
-            contentType: 'image/jpeg'
+            contentType: mimeType
           });
         if (uploadError) throw new Error(`Upload failed: ${uploadError.message}`);
         console.log(`Uploaded ${fileName} to storage`);
 
-        // Use plain public URL to maximize compatibility
         const { data: { publicUrl } } = supabaseAdmin.storage
           .from('student-photos')
-          .getPublicUrl(fileName);
-        const finalUrl = `${publicUrl}?v=${Date.now()}`;
+          .getPublicUrl(fileName, { transform: { width: 400, height: 400, format: 'webp' } });
+        const finalUrl = `${publicUrl}${publicUrl.includes('?') ? '&' : '?'}v=${Date.now()}`;
+
 
         const { error: updateError } = await supabaseAdmin
           .from('profiles')
@@ -137,6 +149,27 @@ async function performFullMigration() {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
+  // Fix previously saved broken URLs like `format=webp?v=...` -> `format=webp&v=...`
+  try {
+    const { data: broken, error: brokenErr } = await supabaseAdmin
+      .from('profiles')
+      .select('id, photo_url')
+      .eq('user_type', 'student')
+      .ilike('photo_url', '%format=webp?v=%');
+    if (!brokenErr && broken && broken.length > 0) {
+      const fixes = broken.map(async (row: { id: string; photo_url: string }) => {
+        const fixed = row.photo_url.replace('format=webp?v=', 'format=webp&v=');
+        if (fixed !== row.photo_url) {
+          await supabaseAdmin.from('profiles').update({ photo_url: fixed }).eq('id', row.id);
+        }
+      });
+      await Promise.allSettled(fixes);
+      console.log(`Fixed ${broken.length} photo URLs with bad cache-busting param`);
+    }
+  } catch (e) {
+    console.warn('Photo URL fix pass failed:', e);
+  }
+
   const delay = (ms: number) => new Promise(res => setTimeout(res, ms));
 
   // Keep processing until no Google Drive photos remain or safety cap hit
@@ -146,7 +179,7 @@ async function performFullMigration() {
       .from('profiles')
       .select('id')
       .eq('user_type', 'student')
-      .like('photo_url', '%drive.google.com%');
+      .or('photo_url.ilike.*drive.google.com*,photo_url.ilike.*docs.google.com*,photo_url.ilike.*googleusercontent.com*,photo_url.ilike.*drive.usercontent.google.com*');
 
     if (countError) {
       console.error('Count check failed:', countError.message);
@@ -196,7 +229,7 @@ serve(async (req) => {
       .from('profiles')
       .select('id')
       .eq('user_type', 'student')
-      .like('photo_url', '%drive.google.com%');
+      .or('photo_url.ilike.*drive.google.com*,photo_url.ilike.*docs.google.com*,photo_url.ilike.*googleusercontent.com*,photo_url.ilike.*drive.usercontent.google.com*');
 
     if (fetchError) {
       throw new Error(`Failed to fetch students: ${fetchError.message}`);
