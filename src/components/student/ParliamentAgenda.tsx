@@ -53,35 +53,20 @@ const getSessionColor = (type: string) => {
 const scheduleData: DaySchedule[] = [
   {
     day: 1,
-    date: "Day 1 Structure",
-    duration: "9:00 AM to 4:00 PM",
+    date: "YIP 2.0 SRTN Regional Day 1 Agenda",
+    duration: "9:00 AM to 5:00 PM",
     items: [
-      { time: "09:00 – 09:03", session: "National Anthem", type: "ceremony" },
-      { time: "09:03 – 09:06", session: "Yi Anthem", type: "ceremony" },
-      { time: "09:06 – 09:45", session: "Inaugural Ceremony", type: "ceremony" },
-      { time: "09:45 – 09:47", session: "Oath of Affirmation", type: "ceremony" },
-      { time: "09:47 – 10:00", session: "Break for re-organizing the House", type: "break" },
-      { time: "10:00 – 11:55", session: "Question Hour", type: "session" },
-      { time: "11:55 – 12:05", session: "Tea Break", type: "break" },
-      { time: "12:05 – 01:05", session: "Zero Hour", type: "session" },
-      { time: "01:05 – 02:00", session: "Lunch Break", type: "break" },
-      { time: "02:00 – 03:45", session: "Committee Presentation, Debates & Discussions (Committees led by Cabinet Ministers)", type: "discussion" },
-      { time: "03:45 – 04:00", session: "Day Adjournment", type: "ceremony" }
-    ]
-  },
-  {
-    day: 2,
-    date: "Day 2 Structure",
-    duration: "9:30 AM to 5:00 PM",
-    items: [
-      { time: "09:30 – 11:30", session: "Question Hour (Day 2)", type: "session" },
-      { time: "11:30 – 11:45", session: "Tea Break", type: "break" },
-      { time: "11:45 – 01:15", session: "Private Members Bill (Debated & Voted)", type: "voting" },
-      { time: "01:15 – 02:15", session: "Lunch Break", type: "break" },
-      { time: "02:15 – 03:45", session: "Bills Presentation, Debates & Discussions (Ruling Bills)", type: "discussion" },
-      { time: "03:45 – 04:15", session: "Observations by Administrators (Review on the key contents discussed)", type: "session" },
-      { time: "04:15 – 04:45", session: "Closing Remarks by Prime Minister & Leader of Opposition", type: "ceremony" },
-      { time: "04:45 – 05:00", session: "Valedictory Session & National Anthem", type: "ceremony" }
+      { time: "9:00 AM - 9:30 AM", session: "0. Technical Demo", type: "session" },
+      { time: "9:30 - 10:15 AM", session: "1. Inaugural Event", type: "ceremony" },
+      { time: "10:16 AM onwards", session: "2. Floor officially handed over to the event chairman", type: "ceremony" },
+      { time: "10:16 - 10:30 AM", session: "3. Introduction of the 7 Political Parties", type: "ceremony" },
+      { time: "10:30 - 10:45 AM", session: "4. Oath of Affirmation", type: "ceremony" },
+      { time: "10:45 - 11:00 AM", session: "5. Tea Break & break for reorganizing the house", type: "break" },
+      { time: "11:00 AM - 12:55 PM", session: "6. Question Hour", type: "session" },
+      { time: "1:00 - 2:00 PM", session: "7. Lunch Break", type: "break" },
+      { time: "2:00 - 3:00 PM", session: "8. Zero Hour", type: "session" },
+      { time: "3:00 - 4:45 PM", session: "9. Committee Presentation, Debates & Discussion (committees led by cabinet ministers)", type: "discussion" },
+      { time: "4:45 - 5:00 PM", session: "10. Day 1 Adjournment with High Tea", type: "ceremony" }
     ]
   }
 ];
