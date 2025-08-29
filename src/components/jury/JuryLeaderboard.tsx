@@ -345,7 +345,7 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-center">
-                      <PartyBadge partyNumber={entry.party_number} size="sm" />
+                      <PartyBadge partyNumber={entry.party_number} size="md" />
                     </TableCell>
                     <TableCell className="text-center">
                       <div className="font-black text-2xl text-slate-800">
