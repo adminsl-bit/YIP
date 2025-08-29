@@ -101,15 +101,15 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
                 </div>
               )}
 
-              {(profile.city || profile.state) && (
+              {profile.state && (
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
                     <MapPin className="w-6 h-6 text-gray-600" />
                   </div>
                   <div className="space-y-1">
-                    <p className="text-base font-semibold text-muted-foreground">Location</p>
+                    <p className="text-base font-semibold text-muted-foreground">State</p>
                     <p className="text-xl font-semibold text-foreground">
-                      {[profile.city, profile.state].filter(Boolean).join(', ')}
+                      {profile.state}
                     </p>
                   </div>
                 </div>
