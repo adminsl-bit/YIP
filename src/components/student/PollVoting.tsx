@@ -160,6 +160,7 @@ export const PollVoting = () => {
             <LiveVotingStats 
               pollId={poll.id} 
               refreshTrigger={refreshTrigger}
+              showResultsPublicly={poll.show_results_publicly}
             />
             
             {/* Voting Interface */}

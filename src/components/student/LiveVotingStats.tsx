@@ -33,9 +33,10 @@ interface PollVoteData {
 interface LiveVotingStatsProps {
   pollId?: string;
   refreshTrigger?: number;
+  showResultsPublicly?: boolean;
 }
 
-export const LiveVotingStats = ({ pollId, refreshTrigger }: LiveVotingStatsProps) => {
+export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }: LiveVotingStatsProps) => {
   const [stats, setStats] = useState<VotingStats>({
     totalEligibleVoters: 0,
     yesVotes: 0,
@@ -173,6 +174,25 @@ export const LiveVotingStats = ({ pollId, refreshTrigger }: LiveVotingStatsProps
 
   if (!poll) {
     return null;
+  }
+
+  // Don't show results to students unless explicitly made public by organizers
+  if (showResultsPublicly !== undefined && !showResultsPublicly) {
+    return (
+      <Card className="bg-white/15 backdrop-blur-lg border border-white/25 shadow-xl">
+        <CardContent className="p-6">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-slate-400 to-slate-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <TrendingUp className="w-8 h-8 text-white" />
+            </div>
+            <h4 className="text-lg font-semibold text-slate-700 mb-2">Results Hidden</h4>
+            <p className="text-slate-600">
+              Poll results will be revealed when the organizer makes them public.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   const totalVoted = stats.yesVotes + stats.noVotes + stats.abstainVotes;
