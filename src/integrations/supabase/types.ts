@@ -292,6 +292,7 @@ export type Database = {
           is_active: boolean | null
           last_login_at: string | null
           name: string
+          party_name: string | null
           party_number: number
           photo_url: string | null
           position: string
@@ -311,6 +312,7 @@ export type Database = {
           is_active?: boolean | null
           last_login_at?: string | null
           name: string
+          party_name?: string | null
           party_number: number
           photo_url?: string | null
           position: string
@@ -330,6 +332,7 @@ export type Database = {
           is_active?: boolean | null
           last_login_at?: string | null
           name?: string
+          party_name?: string | null
           party_number?: number
           photo_url?: string | null
           position?: string

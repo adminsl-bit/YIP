@@ -19,6 +19,7 @@ interface Student {
   name: string;
   position: string;
   party_number: number;
+  party_name?: string;
   serial_number: number;
   constituency?: string;
   state?: string;
@@ -200,6 +201,11 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentE
                       #{formData.serial_number}
                     </Badge>
                     <PartyBadge partyNumber={formData.party_number || 1} size="sm" />
+                    {formData.party_name && (
+                      <Badge variant="secondary" className="bg-white/80 text-slate-700 text-xs">
+                        {formData.party_name}
+                      </Badge>
+                    )}
                   </div>
                   <h3 className="text-xl font-bold text-slate-800">{formData.name}</h3>
                   <p className="text-slate-600 font-medium">{formData.position}</p>
