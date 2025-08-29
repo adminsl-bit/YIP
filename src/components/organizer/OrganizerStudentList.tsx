@@ -541,10 +541,16 @@ export const OrganizerStudentList = () => {
                         <div className="text-xs font-medium text-muted-foreground">Party</div>
                         <div className="text-sm font-bold text-foreground">{student.party_number}</div>
                       </div>
-                      <div className="space-y-1 col-span-2">
-                        <div className="text-xs font-medium text-muted-foreground">Location</div>
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium text-muted-foreground">Constituency</div>
                         <div className="text-sm text-foreground truncate">
-                          {student.constituency}{student.state ? `, ${student.state}` : ''}
+                          {student.constituency || '—'}
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs font-medium text-muted-foreground">Home City</div>
+                        <div className="text-sm text-foreground truncate">
+                          {student.city || '—'}
                         </div>
                       </div>
                     </div>
