@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { PartyBadge } from '@/components/ui/party-badge';
 import { Hash, MapPin, Building, Mail, Crown, Gavel, Users } from 'lucide-react';
 
 interface Student {
@@ -119,9 +120,9 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
         </div>
 
         {/* Party Badge */}
-        <Badge className={`bg-gradient-to-r ${getPartyColor(student.party_number)} text-white font-bold px-4 py-1 mb-4`}>
-          Party {student.party_number}
-        </Badge>
+        <div className="mb-4">
+          <PartyBadge partyNumber={student.party_number} size="md" />
+        </div>
 
         {/* Divider */}
         <div className="w-1/2 h-px my-4 rounded-full bg-border" />

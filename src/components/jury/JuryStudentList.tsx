@@ -444,12 +444,6 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                     <p className="font-semibold text-slate-800 text-sm leading-tight truncate">{student.state}</p>
                   </div>
                 )}
-                {student.city && (
-                  <div className="bg-white/30 backdrop-blur-sm rounded-xl p-3 col-span-2">
-                    <p className="text-muted-foreground font-medium">City</p>
-                    <p className="font-semibold text-slate-800 text-sm leading-tight truncate">{student.city}</p>
-                  </div>
-                )}
               </div>
 
               {/* Footer */}

@@ -1,6 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PartyBadge } from "@/components/ui/party-badge";
 import { Hash, MapPin, Building, Users } from "lucide-react";
 
 interface Profile {
@@ -63,9 +64,11 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
               <CardTitle className="text-4xl font-serif font-bold text-foreground leading-tight">
                 {profile.name}
               </CardTitle>
-              <Badge className="px-6 py-3 text-lg font-semibold bg-blue-100 text-blue-800 border-none rounded-xl w-fit">
-                {profile.position}
-              </Badge>
+              <div className="flex items-center gap-3">
+                <span className="text-lg font-semibold text-muted-foreground">{profile.position}</span>
+                <span className="text-muted-foreground">•</span>
+                <PartyBadge partyNumber={profile.party_number} size="md" />
+              </div>
             </header>
 
             <div className="space-y-6">
@@ -79,15 +82,6 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
                 </div>
               </div>
               
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Users className="w-6 h-6 text-gray-600" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-base font-semibold text-muted-foreground">Party</p>
-                  <p className="text-2xl font-bold text-foreground">Party {profile.party_number}</p>
-                </div>
-              </div>
 
               {profile.constituency && (
                 <div className="flex items-center gap-4">
