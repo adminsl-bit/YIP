@@ -57,7 +57,7 @@ serve(async (req) => {
           // Update existing user password
           const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(
             existingProfile.user_id,
-            { password: student.password }
+            { password: student.password, email: `${student.loginId}@yip.parliament`, email_confirm: true }
           );
 
           if (updateAuthError) {
@@ -79,7 +79,7 @@ serve(async (req) => {
               state: student.state,
               city: student.city,
               photo_url: student.photoUrl,
-              email: `${student.loginId}@parliament.local`,
+              email: `${student.loginId}@yip.parliament`,
             })
             .eq('user_id', existingProfile.user_id);
 
@@ -91,7 +91,7 @@ serve(async (req) => {
         } else {
           // Create new user account
           const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-            email: `${student.loginId}@parliament.local`,
+             email: `${student.loginId}@yip.parliament`,
             password: student.password,
             email_confirm: true,
           });
@@ -118,7 +118,7 @@ serve(async (req) => {
               city: student.city,
               photo_url: student.photoUrl,
               user_type: 'student',
-              email: `${student.loginId}@parliament.local`,
+              email: `${student.loginId}@yip.parliament`,
             });
 
           if (profileError) {
