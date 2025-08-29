@@ -112,8 +112,24 @@ export const SecurityLogsManager = () => {
 
   const fetchDuplicateLogins = async () => {
     try {
-      // Get all duplicate session entries
-      const { data: auditData, error: auditError } = await supabase
+      // First, get all users with active sessions
+      const { data: activeSessionUsers, error: activeError } = await supabase
+        .from('profiles')
+        .select('user_id, name, email, position, session_id, last_login_at')
+        .not('session_id', 'is', null)
+        .eq('is_active', true);
+
+      if (activeError) throw activeError;
+
+      if (!activeSessionUsers || activeSessionUsers.length === 0) {
+        setDuplicateLogins([]);
+        return;
+      }
+
+      // Now check for recent duplicate login attempts for users with active sessions
+      const activeUserIds = activeSessionUsers.map(u => u.user_id);
+      
+      const { data: recentDuplicates, error: duplicateError } = await supabase
         .from('login_audit')
         .select(`
           user_id,
@@ -124,40 +140,35 @@ export const SecurityLogsManager = () => {
           ip_address,
           user_agent
         `)
+        .in('user_id', activeUserIds)
         .eq('is_duplicate_session', true)
-        .order('login_attempt_at', { ascending: false })
-        .limit(50);
+        .gte('login_attempt_at', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()) // Last 2 hours only
+        .order('login_attempt_at', { ascending: false });
 
-      if (auditError) throw auditError;
+      if (duplicateError) throw duplicateError;
 
-      if (auditData && auditData.length > 0) {
-        const userIds = [...new Set(auditData.map(item => item.user_id))];
-        
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('user_id, name, email, position')
-          .in('user_id', userIds);
-
-        if (profileError) throw profileError;
-
-        const combinedData: DuplicateLogin[] = auditData.map(audit => {
-          const profile = profileData?.find(p => p.user_id === audit.user_id);
-          return {
-            user_id: audit.user_id,
-            name: profile?.name || 'Unknown',
-            email: profile?.email || 'Unknown',
-            position: profile?.position || 'Unknown',
-            is_duplicate_session: audit.is_duplicate_session,
-            session_id: audit.session_id,
-            previous_session_id: audit.previous_session_id,
-            last_login_at: audit.login_attempt_at
-          };
+      // Only show incidents for users who STILL have active sessions AND had recent duplicates
+      const realIncidents: DuplicateLogin[] = [];
+      
+      if (recentDuplicates && recentDuplicates.length > 0) {
+        recentDuplicates.forEach(incident => {
+          const activeUser = activeSessionUsers.find(u => u.user_id === incident.user_id);
+          if (activeUser) {
+            realIncidents.push({
+              user_id: incident.user_id,
+              name: activeUser.name || 'Unknown',
+              email: activeUser.email || 'Unknown',
+              position: activeUser.position || 'Unknown',
+              is_duplicate_session: incident.is_duplicate_session,
+              session_id: incident.session_id,
+              previous_session_id: incident.previous_session_id,
+              last_login_at: incident.login_attempt_at
+            });
+          }
         });
-
-        setDuplicateLogins(combinedData);
-      } else {
-        setDuplicateLogins([]);
       }
+
+      setDuplicateLogins(realIncidents);
     } catch (error) {
       console.error('Error fetching duplicate logins:', error);
       setDuplicateLogins([]);
@@ -563,11 +574,11 @@ export const SecurityLogsManager = () => {
                 <CardHeader className="border-b border-border/10">
                   <CardTitle className="flex items-center gap-2 text-xl font-bold">
                     <AlertTriangle className="w-5 h-5 text-destructive" />
-                    Security Incidents
-                    <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">{duplicateLogins.length} alerts</Badge>
+                    Active Security Threats
+                    <Badge variant="destructive" className="bg-destructive/10 text-destructive border-destructive/20">{duplicateLogins.length} live threats</Badge>
                   </CardTitle>
                   <p className="text-muted-foreground text-sm">
-                    Duplicate sessions and security violations
+                    Users currently logged in on multiple devices simultaneously
                   </p>
                 </CardHeader>
                 <CardContent className="p-6">
@@ -580,13 +591,13 @@ export const SecurityLogsManager = () => {
                               <div className="flex-1">
                                 <div className="font-bold text-foreground">{login.name}</div>
                                 <div className="text-sm text-muted-foreground">{login.position}</div>
-                                <div className="text-xs text-destructive flex items-center gap-1 mt-2 font-medium">
-                                  <AlertTriangle className="w-3 h-3" />
-                                  Duplicate session detected
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  {new Date(login.last_login_at).toLocaleString()}
-                                </div>
+                              <div className="text-xs text-destructive flex items-center gap-1 mt-2 font-medium">
+                                <AlertTriangle className="w-3 h-3" />
+                                Active concurrent session detected
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                Last attempt: {new Date(login.last_login_at).toLocaleString()}
+                              </div>
                               </div>
                               <Button
                                 variant="outline"
@@ -604,9 +615,9 @@ export const SecurityLogsManager = () => {
                     </div>
                   ) : (
                     <div className="text-center py-12">
-                      <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                      <h3 className="text-xl font-semibold text-muted-foreground mb-2">No security incidents</h3>
-                      <p className="text-muted-foreground">Security alerts will appear here when detected</p>
+                    <AlertTriangle className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                    <h3 className="text-xl font-semibold text-muted-foreground mb-2">No active security threats</h3>
+                    <p className="text-muted-foreground">Concurrent login attempts will appear here when detected</p>
                     </div>
                   )}
                 </CardContent>
