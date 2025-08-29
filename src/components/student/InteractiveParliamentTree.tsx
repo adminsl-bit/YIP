@@ -3,9 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Crown, Gavel, Users, MapPin, Search, X } from 'lucide-react';
+import { Crown, Gavel, Users, MapPin, Search, X, Filter } from 'lucide-react';
 import GlassmorphismProfileCard from './GlassmorphismProfileCard';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -31,20 +33,57 @@ const InteractiveParliamentTree = () => {
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [loading, setLoading] = useState(true);
   const [hoveredStudent, setHoveredStudent] = useState<string | null>(null);
+  const [positionFilter, setPositionFilter] = useState<string>("all");
+  const [partyFilter, setPartyFilter] = useState<string>("all");
+  const [stateFilter, setStateFilter] = useState<string>("all");
 
   useEffect(() => {
     fetchStudents();
   }, []);
 
   useEffect(() => {
-    const filtered = students.filter(student =>
-      student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.constituency?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      student.state?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    applyFilters();
+  }, [students, searchTerm, positionFilter, partyFilter, stateFilter]);
+
+  const applyFilters = () => {
+    let filtered = students;
+
+    // Apply search term filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(student =>
+        student.name.toLowerCase().includes(searchLower) ||
+        student.position.toLowerCase().includes(searchLower) ||
+        student.constituency?.toLowerCase().includes(searchLower) ||
+        student.state?.toLowerCase().includes(searchLower) ||
+        student.city?.toLowerCase().includes(searchLower) ||
+        student.party_name?.toLowerCase().includes(searchLower) ||
+        student.party_number.toString().includes(searchTerm) ||
+        student.serial_number.toString().includes(searchTerm)
+      );
+    }
+
+    // Apply position filter
+    if (positionFilter !== "all") {
+      if (positionFilter === "special") {
+        filtered = filtered.filter(student => isSpecialPosition(student.position));
+      } else if (positionFilter === "mp") {
+        filtered = filtered.filter(student => !isSpecialPosition(student.position));
+      }
+    }
+
+    // Apply party filter
+    if (partyFilter !== "all") {
+      filtered = filtered.filter(student => student.party_number.toString() === partyFilter);
+    }
+
+    // Apply state filter
+    if (stateFilter !== "all") {
+      filtered = filtered.filter(student => student.state === stateFilter);
+    }
+
     setFilteredStudents(filtered);
-  }, [students, searchTerm]);
+  };
 
   const fetchStudents = async () => {
     try {
@@ -124,6 +163,25 @@ const InteractiveParliamentTree = () => {
     }, {} as Record<number, Student[]>);
   };
 
+  const getUniqueParties = () => {
+    const parties = [...new Set(students.map(s => s.party_number))].sort((a, b) => a - b);
+    return parties;
+  };
+
+  const getUniqueStates = () => {
+    const states = [...new Set(students.map(s => s.state).filter(Boolean))].sort();
+    return states;
+  };
+
+  const clearAllFilters = () => {
+    setSearchTerm("");
+    setPositionFilter("all");
+    setPartyFilter("all");
+    setStateFilter("all");
+  };
+
+  const hasActiveFilters = searchTerm || positionFilter !== "all" || partyFilter !== "all" || stateFilter !== "all";
+
   if (loading) {
     return (
       <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
@@ -149,24 +207,91 @@ const InteractiveParliamentTree = () => {
           <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-3xl flex items-center justify-center shadow-lg shadow-green-500/30">
             <Users className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-4xl font-black text-transparent bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text">
-            Parliament Tree
-          </h2>
+          <div className="text-center">
+            <h2 className="text-4xl font-black text-transparent bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text">
+              Parliament Tree
+            </h2>
+            {hasActiveFilters && (
+              <Badge variant="secondary" className="mt-2">
+                {filteredStudents.length} of {students.length} members
+              </Badge>
+            )}
+          </div>
         </div>
-        <p className="text-lg text-slate-600 font-semibold mb-6">
+        <p className="text-lg text-slate-600 font-semibold mb-6 text-center">
           Meet all parliament members organized by their respective parties
         </p>
         
-        <div className="max-w-md mx-auto">
+        {/* Search Bar */}
+        <div className="max-w-md mx-auto mb-6">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
             <Input
-              placeholder="Search by name, position, constituency..."
+              placeholder="Search by name, position, party, constituency..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-12 bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 placeholder:text-slate-500 focus:bg-white/30 focus:border-white/50 rounded-2xl h-12 text-lg font-medium"
             />
           </div>
+        </div>
+
+        {/* Filters Row */}
+        <div className="flex flex-wrap gap-4 items-center justify-center mb-6">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-slate-600" />
+            <span className="text-sm font-medium text-slate-600">Filters:</span>
+          </div>
+          
+          <Select value={positionFilter} onValueChange={setPositionFilter}>
+            <SelectTrigger className="w-40 bg-white/20 backdrop-blur-sm border-white/30">
+              <SelectValue placeholder="Position" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Positions</SelectItem>
+              <SelectItem value="special">Ministers & Leaders</SelectItem>
+              <SelectItem value="mp">Members of Parliament</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={partyFilter} onValueChange={setPartyFilter}>
+            <SelectTrigger className="w-40 bg-white/20 backdrop-blur-sm border-white/30">
+              <SelectValue placeholder="Party" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Parties</SelectItem>
+              {getUniqueParties().map(party => (
+                <SelectItem key={party} value={party.toString()}>
+                  {students.find(s => s.party_number === party)?.party_name || `Party ${party}`}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={stateFilter} onValueChange={setStateFilter}>
+            <SelectTrigger className="w-40 bg-white/20 backdrop-blur-sm border-white/30">
+              <SelectValue placeholder="State" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All States</SelectItem>
+              {getUniqueStates().map(state => (
+                <SelectItem key={state} value={state!}>
+                  {state}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {hasActiveFilters && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={clearAllFilters}
+              className="flex items-center gap-2 bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30"
+            >
+              <X className="w-3 h-3" />
+              Clear Filters
+            </Button>
+          )}
         </div>
       </div>
 
@@ -178,10 +303,23 @@ const InteractiveParliamentTree = () => {
             </div>
             <div className="absolute -top-2 -right-2 w-6 h-6 bg-gray-400/40 rounded-full animate-bounce"></div>
           </div>
-          <h3 className="text-2xl font-black text-slate-800 mb-4">No Members Found</h3>
+          <h3 className="text-2xl font-black text-slate-800 mb-4">
+            {hasActiveFilters ? 'No Matching Members' : 'No Members Found'}
+          </h3>
           <p className="text-lg text-slate-600 font-medium">
-            No parliament members found matching your search criteria.
+            {hasActiveFilters 
+              ? 'No parliament members found matching your search and filter criteria.' 
+              : 'No parliament members found.'}
           </p>
+          {hasActiveFilters && (
+            <Button 
+              variant="outline" 
+              onClick={clearAllFilters}
+              className="mt-4 bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30"
+            >
+              Clear All Filters
+            </Button>
+          )}
         </div>
       ) : (
         <div className="space-y-8">
