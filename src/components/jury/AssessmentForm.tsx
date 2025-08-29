@@ -289,6 +289,13 @@ export const AssessmentForm = ({
   const total = calculateTotal();
   const maxTotal = getMaxTotal();
   const percentage = Math.round((total / maxTotal) * 100);
+  
+  
+  // Force cache clear for changes
+  useEffect(() => {
+    console.log('AssessmentForm component loaded with enhanced profile design');
+    console.log('Student data:', student);
+  }, [student]);
 
   return (
     <div className="space-y-8">
