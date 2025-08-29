@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -255,96 +256,98 @@ export const OrganizerStudentList = () => {
   return (
     <div className="space-y-6">
       {/* Search and Filters */}
-      <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30 shadow-lg space-y-4">
-        <div className="flex items-center space-x-2 mb-4">
-          <Search className="w-5 h-5 text-slate-700" />
-          <h3 className="text-lg font-bold text-slate-800">Search & Filter Students</h3>
-        </div>
-        
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-          <Input
-            placeholder="Search by name, serial no, party number, position, or constituency..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 bg-white/50"
-          />
-        </div>
+      <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
+        <CardHeader className="border-b border-border/10">
+          <CardTitle className="flex items-center gap-2">
+            <Search className="w-5 h-5 text-primary" />
+            Search & Filter Students
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search by name, serial no, party number, position, or constituency..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 h-12 text-base border-2 border-border/20 rounded-xl focus:border-primary transition-colors"
+            />
+          </div>
 
-        {/* Filters */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <Select value={filters.seatRole} onValueChange={(value) => setFilters(prev => ({ ...prev, seatRole: value }))}>
-            <SelectTrigger className="bg-white/50">
-              <SelectValue placeholder="Filter by Role" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="speaker">Speaker</SelectItem>
-              <SelectItem value="deputy_speaker">Deputy Speaker</SelectItem>
-              <SelectItem value="mp">MP</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Filters */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <Select value={filters.seatRole} onValueChange={(value) => setFilters(prev => ({ ...prev, seatRole: value }))}>
+              <SelectTrigger className="h-12 border-2 border-border/20 rounded-xl bg-background">
+                <SelectValue placeholder="Filter by Role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Roles</SelectItem>
+                <SelectItem value="speaker">Speaker</SelectItem>
+                <SelectItem value="deputy_speaker">Deputy Speaker</SelectItem>
+                <SelectItem value="mp">MP</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Select value={filters.partyNumber} onValueChange={(value) => setFilters(prev => ({ ...prev, partyNumber: value }))}>
-            <SelectTrigger className="bg-white/50">
-              <SelectValue placeholder="Filter by Party" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Parties</SelectItem>
-              {[...new Set(students.map(s => s.party_number))].sort().map(party => (
-                <SelectItem key={party} value={party.toString()}>Party {party}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={filters.partyNumber} onValueChange={(value) => setFilters(prev => ({ ...prev, partyNumber: value }))}>
+              <SelectTrigger className="h-12 border-2 border-border/20 rounded-xl bg-background">
+                <SelectValue placeholder="Filter by Party" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Parties</SelectItem>
+                {[...new Set(students.map(s => s.party_number))].sort().map(party => (
+                  <SelectItem key={party} value={party.toString()}>Party {party}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
-            <SelectTrigger className="bg-white/50">
-              <SelectValue placeholder="Filter by Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="assessed">Assessed</SelectItem>
-              <SelectItem value="in_progress">In Progress</SelectItem>
-              <SelectItem value="not_assessed">Not Assessed</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
+              <SelectTrigger className="h-12 border-2 border-border/20 rounded-xl bg-background">
+                <SelectValue placeholder="Filter by Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="assessed">Assessed</SelectItem>
+                <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="not_assessed">Not Assessed</SelectItem>
+              </SelectContent>
+            </Select>
 
-          <Input
-            placeholder="Filter by Constituency"
-            value={filters.constituency}
-            onChange={(e) => setFilters(prev => ({ ...prev, constituency: e.target.value }))}
-            className="bg-white/50"
-          />
+            <Input
+              placeholder="Filter by Constituency"
+              value={filters.constituency}
+              onChange={(e) => setFilters(prev => ({ ...prev, constituency: e.target.value }))}
+              className="h-12 border-2 border-border/20 rounded-xl"
+            />
 
-          <Input
-            placeholder="Filter by State"
-            value={filters.state}
-            onChange={(e) => setFilters(prev => ({ ...prev, state: e.target.value }))}
-            className="bg-white/50"
-          />
-        </div>
+            <Input
+              placeholder="Filter by State"
+              value={filters.state}
+              onChange={(e) => setFilters(prev => ({ ...prev, state: e.target.value }))}
+              className="h-12 border-2 border-border/20 rounded-xl"
+            />
+          </div>
 
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-slate-600">
-            Showing {filteredStudents.length} of {students.length} students
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              setSearchTerm("");
-              setFilters({ seatRole: "all", partyNumber: "all", constituency: "", state: "", status: "all" });
-            }}
-            className="text-slate-600 hover:text-slate-800"
-          >
-            Clear Filters
-          </Button>
-        </div>
-      </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Showing {filteredStudents.length} of {students.length} students
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSearchTerm("");
+                setFilters({ seatRole: "all", partyNumber: "all", constituency: "", state: "", status: "all" });
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Student List */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStudents.map((student) => {
           const status = getStudentStatus(student.user_id);
           const assessmentCount = getAssessmentCount(student.user_id);
@@ -352,71 +355,73 @@ export const OrganizerStudentList = () => {
           const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
 
           return (
-            <div
+            <Card
               key={student.id}
-              className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30 shadow-lg hover:scale-105 transition-all duration-300"
+              className="overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5"
             >
-              <div className="flex items-center space-x-3 mb-4">
-                <Avatar className="w-12 h-12">
-                  <AvatarImage src={student.photo_url} alt={student.name} />
-                  <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                    {initials}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-slate-800 truncate">{student.name}</h3>
-                  <p className="text-sm text-slate-600 truncate">{student.position}</p>
-                </div>
-                {getStatusIcon(status)}
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 mb-4">
-                <div>Serial: {student.serial_number}</div>
-                <div>Party: {student.party_number}</div>
-                <div className="col-span-2 truncate">
-                  {student.constituency}, {student.state}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  {getStatusBadge(status)}
-                  {assessmentCount > 0 && (
-                    <span className="text-sm font-medium text-slate-700">
-                      Avg: {averageScore}
-                    </span>
-                  )}
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Avatar className="w-12 h-12">
+                    <AvatarImage src={student.photo_url} alt={student.name} />
+                    <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-foreground truncate">{student.name}</h3>
+                    <p className="text-sm text-muted-foreground truncate">{student.position}</p>
+                  </div>
+                  {getStatusIcon(status)}
                 </div>
 
-                <div className="text-xs text-slate-600">
-                  Assessments: {assessmentCount}
-                  {student.last_login_at && (
-                    <div>Last login: {new Date(student.last_login_at).toLocaleDateString()}</div>
-                  )}
+                <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground mb-4">
+                  <div>Serial: {student.serial_number}</div>
+                  <div>Party: {student.party_number}</div>
+                  <div className="col-span-2 truncate">
+                    {student.constituency}, {student.state}
+                  </div>
                 </div>
 
-                <div className="flex space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => toggleStudentStatus(student.user_id, student.is_active || false)}
-                    className="flex-1 text-xs"
-                  >
-                    {student.is_active ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
-                  </Button>
-                  {student.session_id && (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    {getStatusBadge(status)}
+                    {assessmentCount > 0 && (
+                      <span className="text-sm font-medium text-foreground">
+                        Avg: {averageScore}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="text-xs text-muted-foreground">
+                    Assessments: {assessmentCount}
+                    {student.last_login_at && (
+                      <div>Last login: {new Date(student.last_login_at).toLocaleDateString()}</div>
+                    )}
+                  </div>
+
+                  <div className="flex space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => forceLogout(student.user_id, student.name)}
+                      onClick={() => toggleStudentStatus(student.user_id, student.is_active || false)}
                       className="flex-1 text-xs"
                     >
-                      <Shield className="w-3 h-3" />
+                      {student.is_active ? <UserX className="w-3 h-3" /> : <UserCheck className="w-3 h-3" />}
                     </Button>
-                  )}
+                    {student.session_id && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => forceLogout(student.user_id, student.name)}
+                        className="flex-1 text-xs"
+                      >
+                        <Shield className="w-3 h-3" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           );
         })}
       </div>

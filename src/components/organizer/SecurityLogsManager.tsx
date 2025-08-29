@@ -278,7 +278,7 @@ export const SecurityLogsManager = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 gap-2 mb-6 bg-white/20 backdrop-blur-sm border border-white/30 p-2 rounded-2xl">
+        <TabsList className="grid w-full grid-cols-2 gap-2 mb-6 bg-white rounded-2xl border border-border/20 p-2 shadow-md">
           <TabsTrigger 
             value="audit" 
             className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg"
@@ -296,7 +296,7 @@ export const SecurityLogsManager = () => {
         </TabsList>
 
         <TabsContent value="audit" className="space-y-6">
-          <Card className="bg-white/20 backdrop-blur-sm border-white/30">
+          <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <FileText className="w-5 h-5" />
@@ -344,7 +344,7 @@ export const SecurityLogsManager = () => {
         <TabsContent value="access" className="space-y-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Active Users */}
-            <Card className="bg-white/20 backdrop-blur-sm border-white/30">
+            <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Eye className="w-5 h-5" />
@@ -398,7 +398,7 @@ export const SecurityLogsManager = () => {
             </Card>
 
             {/* Duplicate Login Monitor */}
-            <Card className="bg-white/20 backdrop-blur-sm border-white/30">
+            <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <AlertTriangle className="w-5 h-5" />
