@@ -258,12 +258,21 @@ const PhotoUploadManager = () => {
                   <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
                     {student.photo_url ? (
                       <>
-                        <img 
-                          src={student.photo_url} 
+                        <img
+                          src={student.photo_url}
+                          data-src={student.photo_url}
                           alt={student.name}
+                          loading="lazy"
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             const target = e.currentTarget as HTMLImageElement;
+                            const original = target.getAttribute('data-src') || target.src;
+                            const retried = target.getAttribute('data-retried') === 'true';
+                            if (!retried) {
+                              target.setAttribute('data-retried', 'true');
+                              target.src = `${original}${original.includes('?') ? '&' : '?'}cb=${Date.now()}`;
+                              return;
+                            }
                             target.style.display = 'none';
                             const parent = target.parentElement;
                             if (parent) {
