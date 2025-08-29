@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Trophy, Medal, Award, Star, Users, Vote, CheckCircle2 } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Search, Trophy, Medal, Award, Star, Users, Vote, CheckCircle2, Filter, X, SortAsc, SortDesc } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -49,6 +50,11 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
   const [awardVotes, setAwardVotes] = useState<AwardVote[]>([]);
   const [studentAwards, setStudentAwards] = useState<Record<string, string[]>>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [positionFilter, setPositionFilter] = useState('');
+  const [partyFilter, setPartyFilter] = useState('');
+  const [stateFilter, setStateFilter] = useState('');
+  const [sortBy, setSortBy] = useState<'score' | 'name' | 'assessments'>('score');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [loading, setLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState<LeaderboardEntry | null>(null);
   const [selectedAward, setSelectedAward] = useState<string>('');
@@ -221,25 +227,64 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
     return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold">{rank}</span>;
   };
 
-  const getPartyColor = (partyNumber: number) => {
-    const colors = [
-      'bg-red-500/20 text-red-700 border-red-500/30',
-      'bg-blue-500/20 text-blue-700 border-blue-500/30',
-      'bg-green-500/20 text-green-700 border-green-500/30',
-      'bg-yellow-500/20 text-yellow-700 border-yellow-500/30',
-      'bg-purple-500/20 text-purple-700 border-purple-500/30',
-      'bg-pink-500/20 text-pink-700 border-pink-500/30'
-    ];
-    return colors[(partyNumber - 1) % colors.length];
-  };
-
   const hasRealScores = leaderboard.some(e => (e.average_score ?? 0) > 0);
 
-  const filteredLeaderboard = leaderboard.filter(entry =>
-    entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    entry.constituency?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Get unique values for filters
+  const uniquePositions = [...new Set(leaderboard.map(e => e.position))].sort();
+  const uniqueParties = [...new Set(leaderboard.map(e => e.party_number))].sort((a, b) => a - b);
+  const uniqueStates = [...new Set(leaderboard.map(e => e.state))].sort();
+
+  // Apply filters and search
+  let filteredLeaderboard = leaderboard.filter(entry => {
+    const matchesSearch = 
+      entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.constituency?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesPosition = !positionFilter || entry.position === positionFilter;
+    const matchesParty = !partyFilter || entry.party_number.toString() === partyFilter;
+    const matchesState = !stateFilter || entry.state === stateFilter;
+    
+    return matchesSearch && matchesPosition && matchesParty && matchesState;
+  });
+
+  // Apply sorting
+  filteredLeaderboard.sort((a, b) => {
+    let aValue, bValue;
+    
+    switch (sortBy) {
+      case 'score':
+        aValue = a.average_score;
+        bValue = b.average_score;
+        break;
+      case 'name':
+        aValue = a.name.toLowerCase();
+        bValue = b.name.toLowerCase();
+        break;
+      case 'assessments':
+        aValue = a.assessment_count;
+        bValue = b.assessment_count;
+        break;
+      default:
+        aValue = a.average_score;
+        bValue = b.average_score;
+    }
+    
+    if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setPositionFilter('');
+    setPartyFilter('');
+    setStateFilter('');
+    setSortBy('score');
+    setSortOrder('desc');
+  };
+
+  const hasActiveFilters = searchTerm || positionFilter || partyFilter || stateFilter || sortBy !== 'score' || sortOrder !== 'desc';
 
   if (loading) {
     return (
@@ -253,67 +298,154 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
   }
 
   return (
-    <div className="space-y-8">
-      {/* Search Bar */}
-      <div className="relative max-w-xl mx-auto">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-        <Input
-          placeholder="Search students by name, position, or constituency..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10 bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 placeholder:text-slate-600"
-        />
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Users className="w-6 h-6 text-white" />
-          </div>
-          <div className="text-3xl font-black text-slate-800 mb-2">{leaderboard.length}</div>
-          <p className="text-slate-600 font-semibold">Total Students</p>
-        </div>
-
-        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
-          <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Trophy className="w-6 h-6 text-white" />
-          </div>
-          <div className="text-3xl font-black text-slate-800 mb-2">
-            {leaderboard.length > 0 ? Math.round(leaderboard[0].average_score) : 0}
-          </div>
-          <p className="text-slate-600 font-semibold">Top Score</p>
-        </div>
-
-        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
-          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Award className="w-6 h-6 text-white" />
-          </div>
-          <div className="text-3xl font-black text-slate-800 mb-2">
-            {Object.values(studentAwards).reduce((sum, awards) => sum + awards.length, 0)}
-          </div>
-          <p className="text-slate-600 font-semibold">Awards Given</p>
-        </div>
-      </div>
-
-      {/* Leaderboard Table */}
-      <div className="bg-white/20 backdrop-blur-lg rounded-2xl border border-white/25 shadow-lg overflow-hidden">
-        <div className="p-6 border-b border-white/25">
+    <Card className="bg-white/20 backdrop-blur-lg border border-white/25 shadow-lg">
+      <CardHeader className="border-b border-white/25">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
               <Trophy className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-black text-slate-800">Jury Leaderboard</h3>
+              <CardTitle className="text-xl font-black text-slate-800">Jury Leaderboard</CardTitle>
               <p className="text-slate-600 font-medium">Averaged scores from all juries</p>
             </div>
           </div>
+          <Badge variant="outline" className="bg-white/20 border-white/30 text-slate-700 font-medium">
+            {filteredLeaderboard.length} of {leaderboard.length} students
+          </Badge>
         </div>
-        
-        <div className="p-6">
-          <div className="overflow-x-auto">
+      </CardHeader>
+
+      <CardContent className="p-6 space-y-6">
+        {/* Search and Filters */}
+        <div className="space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+            <Input
+              placeholder="Search students by name, position, or constituency..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 placeholder:text-slate-600"
+            />
+          </div>
+
+          {/* Filters Row */}
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex items-center gap-2 text-slate-700 font-medium">
+              <Filter className="w-4 h-4" />
+              <span>Filters:</span>
+            </div>
+            
+            <Select value={positionFilter} onValueChange={setPositionFilter}>
+              <SelectTrigger className="w-[180px] bg-white/20 backdrop-blur-sm border-white/30 text-slate-800">
+                <SelectValue placeholder="Position" />
+              </SelectTrigger>
+              <SelectContent className="bg-white/95 backdrop-blur-lg border border-white/25">
+                <SelectItem value="">All Positions</SelectItem>
+                {uniquePositions.map(position => (
+                  <SelectItem key={position} value={position}>{position}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={partyFilter} onValueChange={setPartyFilter}>
+              <SelectTrigger className="w-[120px] bg-white/20 backdrop-blur-sm border-white/30 text-slate-800">
+                <SelectValue placeholder="Party" />
+              </SelectTrigger>
+              <SelectContent className="bg-white/95 backdrop-blur-lg border border-white/25">
+                <SelectItem value="">All Parties</SelectItem>
+                {uniqueParties.map(party => (
+                  <SelectItem key={party} value={party.toString()}>Party {party}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={stateFilter} onValueChange={setStateFilter}>
+              <SelectTrigger className="w-[150px] bg-white/20 backdrop-blur-sm border-white/30 text-slate-800">
+                <SelectValue placeholder="State" />
+              </SelectTrigger>
+              <SelectContent className="bg-white/95 backdrop-blur-lg border border-white/25">
+                <SelectItem value="">All States</SelectItem>
+                {uniqueStates.map(state => (
+                  <SelectItem key={state} value={state}>{state}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="flex items-center gap-2">
+              <span className="text-slate-700 font-medium text-sm">Sort by:</span>
+              <Select value={sortBy} onValueChange={(value: 'score' | 'name' | 'assessments') => setSortBy(value)}>
+                <SelectTrigger className="w-[130px] bg-white/20 backdrop-blur-sm border-white/30 text-slate-800">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-white/95 backdrop-blur-lg border border-white/25">
+                  <SelectItem value="score">Score</SelectItem>
+                  <SelectItem value="name">Name</SelectItem>
+                  <SelectItem value="assessments">Assessments</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35"
+              >
+                {sortOrder === 'asc' ? <SortAsc className="w-4 h-4" /> : <SortDesc className="w-4 h-4" />}
+              </Button>
+            </div>
+
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearFilters}
+                className="bg-red-500/20 backdrop-blur-sm border-red-500/30 text-red-700 hover:bg-red-500/35"
+              >
+                <X className="w-4 h-4 mr-1" />
+                Clear
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Users className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-3xl font-black text-slate-800 mb-2">{filteredLeaderboard.length}</div>
+            <p className="text-slate-600 font-semibold">Filtered Students</p>
+          </div>
+
+          <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Trophy className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-3xl font-black text-slate-800 mb-2">
+              {filteredLeaderboard.length > 0 ? Math.round(filteredLeaderboard[0].average_score) : 0}
+            </div>
+            <p className="text-slate-600 font-semibold">Top Score</p>
+          </div>
+
+          <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Award className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-3xl font-black text-slate-800 mb-2">
+              {Object.values(studentAwards).reduce((sum, awards) => sum + awards.length, 0)}
+            </div>
+            <p className="text-slate-600 font-semibold">Awards Given</p>
+          </div>
+        </div>
+
+        {/* Scrollable Leaderboard Table */}
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 overflow-hidden">
+          <ScrollArea className="h-[600px]">
             <Table>
-              <TableHeader>
+              <TableHeader className="sticky top-0 bg-white/20 backdrop-blur-lg z-10">
                 <TableRow className="border-white/25">
                   <TableHead className="w-16 text-center text-slate-700 font-semibold">Rank</TableHead>
                   <TableHead className="min-w-[200px] text-slate-700 font-semibold">Student</TableHead>
@@ -326,133 +458,137 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredLeaderboard.map((entry, index) => (
-                  <TableRow key={entry.user_id} className="border-white/25 hover:bg-white/10 transition-colors">
-                    <TableCell>
-                      <div className="flex items-center justify-center">
-                        {hasRealScores ? getRankIcon(index + 1) : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
+                {filteredLeaderboard.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-12">
+                      <div className="text-slate-600">
+                        <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">No students found</p>
+                        <p className="text-sm">Try adjusting your search or filters</p>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10 border-2 border-white/25">
-                          <AvatarImage src={entry.photo_url} alt={entry.name} />
-                          <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-600 text-white font-semibold">
-                            {entry.name.split(' ').map(n => n[0]).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-semibold text-slate-800">{entry.name}</div>
-                          <div className="text-sm text-slate-600">
-                            {entry.constituency}, {entry.state}
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="outline" className="bg-white/20 border-white/30 text-slate-700 font-medium">
-                        {entry.position}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <PartyBadge partyNumber={entry.party_number} size="md" />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="font-black text-2xl text-slate-800">
-                        {Math.round(entry.average_score)}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant="secondary" className="bg-slate-200 text-slate-800 font-medium">
-                        {entry.assessment_count}/3
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="space-y-1 flex flex-col items-center">
-                        {studentAwards[entry.user_id]?.map((award, idx) => (
-                          <Badge key={idx} className="text-xs bg-yellow-500/20 text-yellow-700 border border-yellow-500/30 font-medium">
-                            <Trophy className="w-3 h-3 mr-1" />
-                            {award}
-                          </Badge>
-                        )) || <span className="text-slate-600 text-sm font-medium">No awards</span>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => setSelectedStudent(entry)}
-                            className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 font-semibold"
-                          >
-                            <Vote className="w-4 h-4 mr-2" />
-                            Vote Award
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-md bg-white/95 backdrop-blur-lg border border-white/25">
-                          <DialogHeader>
-                            <DialogTitle className="text-slate-800 font-black">Vote for Award</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4">
-                            <div className="text-sm bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/25">
-                              Voting for: <span className="font-black text-slate-800">{entry.name}</span>
-                            </div>
-                            
-                            <Select value={selectedAward} onValueChange={setSelectedAward}>
-                              <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800">
-                                <SelectValue placeholder="Select an award" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {awards.map((award) => (
-                                  <SelectItem key={award.id} value={award.id}>
-                                    <div className="flex items-center justify-between w-full">
-                                      <span className="font-medium">{award.name}</span>
-                                      <div className="flex items-center gap-2 ml-4">
-                                        <span className="text-xs text-muted-foreground font-medium">
-                                          {getVoteCount(award.id, entry.user_id)}/3 votes
-                                        </span>
-                                        {hasVoted(award.id, entry.user_id) && (
-                                          <CheckCircle2 className="w-3 h-3 text-green-500" />
-                                        )}
-                                      </div>
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-
-                            {selectedAward && (
-                              <div className="text-xs bg-slate-100 rounded-lg p-3 text-slate-700 font-medium">
-                                Current votes: {getVoteCount(selectedAward, entry.user_id)}/3
-                                {getVoteCount(selectedAward, entry.user_id) >= 3 && (
-                                  <span className="text-green-600 font-black"> - Award will be assigned!</span>
-                                )}
-                              </div>
-                            )}
-
-                            <div className="flex gap-2 pt-4">
-                              <Button 
-                                onClick={handleAwardVote}
-                                disabled={!selectedAward}
-                                className="flex-1 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-semibold"
-                              >
-                                Cast Vote
-                              </Button>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredLeaderboard.map((entry, index) => (
+                    <TableRow key={entry.user_id} className="border-white/25 hover:bg-white/10 transition-colors">
+                      <TableCell>
+                        <div className="flex items-center justify-center">
+                          {hasRealScores ? getRankIcon(index + 1) : (
+                            <span className="text-muted-foreground text-sm">—</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar className="w-10 h-10 border-2 border-white/25">
+                            <AvatarImage src={entry.photo_url} alt={entry.name} />
+                            <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-600 text-white font-semibold">
+                              {entry.name.split(' ').map(n => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <div className="font-semibold text-slate-800">{entry.name}</div>
+                            <div className="text-sm text-slate-600">
+                              {entry.constituency}, {entry.state}
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className="bg-white/20 border-white/30 text-slate-700 font-medium">
+                          {entry.position}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <PartyBadge partyNumber={entry.party_number} size="md" />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="font-black text-2xl text-slate-800">
+                          {Math.round(entry.average_score)}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="secondary" className="bg-slate-200 text-slate-800 font-medium">
+                          {entry.assessment_count}/3
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="space-y-1 flex flex-col items-center">
+                          {studentAwards[entry.user_id]?.map((award, idx) => (
+                            <Badge key={idx} className="text-xs bg-yellow-500/20 text-yellow-700 border border-yellow-500/30 font-medium">
+                              <Trophy className="w-3 h-3 mr-1" />
+                              {award}
+                            </Badge>
+                          )) || <span className="text-slate-600 text-sm font-medium">No awards</span>}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => setSelectedStudent(entry)}
+                              className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 font-semibold"
+                            >
+                              <Vote className="w-4 h-4 mr-2" />
+                              Vote Award
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md bg-white/95 backdrop-blur-lg border border-white/25">
+                            <DialogHeader>
+                              <DialogTitle className="text-slate-800 font-black">Vote for Award</DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div className="text-sm bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/25">
+                                Voting for: <span className="font-black text-slate-800">{entry.name}</span>
+                              </div>
+                              
+                              <Select value={selectedAward} onValueChange={setSelectedAward}>
+                                <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800">
+                                  <SelectValue placeholder="Select an award" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white/95 backdrop-blur-lg border border-white/25">
+                                  {awards.map((award) => (
+                                    <SelectItem key={award.id} value={award.id}>
+                                      <div className="flex items-center justify-between w-full">
+                                        <span className="font-medium">{award.name}</span>
+                                        <div className="flex items-center gap-2 ml-4">
+                                          <span className="text-xs text-muted-foreground font-medium">
+                                            {getVoteCount(award.id, entry.user_id)}/3 votes
+                                          </span>
+                                          {hasVoted(award.id, entry.user_id) && (
+                                            <CheckCircle2 className="w-3 h-3 text-green-500" />
+                                          )}
+                                        </div>
+                                      </div>
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              
+                              <div className="flex gap-3">
+                                <Button
+                                  onClick={handleAwardVote}
+                                  disabled={!selectedAward}
+                                  className="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-bold"
+                                >
+                                  <Vote className="w-4 h-4 mr-2" />
+                                  Cast Vote
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
-          </div>
+          </ScrollArea>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
