@@ -5,6 +5,7 @@ import { LogOut, User, Users, Vote, Calendar, Award, GraduationCap } from "lucid
 import { StudentProfile } from "@/components/student/StudentProfile";
 import InteractiveParliamentTree from "@/components/student/InteractiveParliamentTree";
 import { StudentVotingTab } from "@/components/student/StudentVotingTab";
+import { ParliamentAgenda } from "@/components/student/ParliamentAgenda";
 
 const StudentDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -139,17 +140,7 @@ const StudentDashboard = () => {
             </TabsContent>
 
             <TabsContent value="schedule">
-              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-12 border border-white/25 shadow-xl text-center">
-                <div className="relative inline-block mb-8">
-                  <div className="w-24 h-24 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-orange-500/30">
-                    <Calendar className="w-12 h-12 text-white" />
-                  </div>
-                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-orange-400/40 rounded-full animate-bounce"></div>
-                </div>
-                <h3 className="text-3xl font-black text-slate-800 mb-4">Session Schedule</h3>
-                <p className="text-xl text-slate-600 font-semibold mb-4">Parliament session schedules will be available here.</p>
-                <p className="text-lg text-slate-500">Check back later for updates from the organizers.</p>
-              </div>
+              <ParliamentAgenda />
             </TabsContent>
           </Tabs>
         </div>
