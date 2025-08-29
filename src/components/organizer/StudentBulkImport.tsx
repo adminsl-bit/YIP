@@ -64,15 +64,15 @@ export const StudentBulkImport = () => {
               return '';
             };
 
-            const serialNumber = getColumnValue(['Serial no', 'S.No', 'Serial No', 'SNo', 's.no', 'serial_number']);
-            const loginId = getColumnValue(['login id', 'Login ID', 'LoginId', 'login_id']);
+            const serialNumber = getColumnValue(['serial_no', 'Serial no', 'S.No', 'Serial No', 'SNo', 's.no', 'serial_number']);
+            const loginId = getColumnValue(['login_id', 'login id', 'Login ID', 'LoginId']);
             const name = getColumnValue(['name', 'Name', 'student_name', 'Student Name']);
-            const seatRole = getColumnValue(['seat role', 'Seat Role', 'Role', 'role', 'Position', 'position']);
-            const partyNumber = getColumnValue(['partynumber', 'Party Number', 'party_number', 'Party No', 'party_no']);
+            const seatRole = getColumnValue(['seat_role', 'seat role', 'Seat Role', 'Role', 'role', 'Position', 'position']);
+            const partyNumber = getColumnValue(['party_number', 'partynumber', 'Party Number', 'Party No', 'party_no']);
             const constituency = getColumnValue(['constituency', 'Constituency']);
             const state = getColumnValue(['state', 'State']);
-            const city = getColumnValue(['home city', 'Home City', 'City', 'city']);
-            const photoUrl = getColumnValue(['photo url', 'Photo URL', 'photo_url', 'Photo Link', 'photo_link']);
+            const city = getColumnValue(['city', 'home city', 'Home City', 'City']);
+            const photoUrl = getColumnValue(['photo_url', 'photo url', 'Photo URL', 'Photo Link', 'photo_link']);
             const password = getColumnValue(['password', 'Password']);
 
             if (!name || !serialNumber || !loginId || !password) {
