@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Crown, Gavel, Users, MapPin, Search, X } from 'lucide-react';
 import GlassmorphismProfileCard from './GlassmorphismProfileCard';
@@ -216,7 +216,10 @@ const InteractiveParliamentTree = () => {
                         >
                           <Card
                             className="cursor-pointer bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30 hover:border-white/50 hover:shadow-xl hover:scale-105 transition-all duration-300 rounded-2xl overflow-hidden"
-                            onClick={() => setSelectedStudent(student)}
+                            onClick={() => {
+                              console.log('Card clicked for student:', student.name);
+                              setSelectedStudent(student);
+                            }}
                           >
                             <CardContent className="p-0">
                               <div className="flex items-center gap-4 p-4">
@@ -280,9 +283,14 @@ const InteractiveParliamentTree = () => {
       <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
         <DialogContent
           className="max-w-md bg-transparent border-0 shadow-none p-0 relative"
-          aria-label="Student Profile"
-          aria-describedby="student-profile-desc"
         >
+          <DialogTitle className="sr-only">
+            {selectedStudent ? `${selectedStudent.name} Profile` : 'Student Profile'}
+          </DialogTitle>
+          <DialogDescription className="sr-only">
+            Detailed profile information for the selected parliament member
+          </DialogDescription>
+          
           {/* Close Button */}
           <button
             onClick={() => setSelectedStudent(null)}
@@ -292,10 +300,6 @@ const InteractiveParliamentTree = () => {
             <X className="w-4 h-4" />
           </button>
           
-          <h2 id="student-profile-title" className="sr-only">Student Profile</h2>
-          <p id="student-profile-desc" className="sr-only">
-            Detailed profile information for the selected student
-          </p>
           {selectedStudent && (
             <div className="flex items-center justify-center p-4">
               <GlassmorphismProfileCard student={selectedStudent} />
