@@ -445,6 +445,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      get_current_user_type: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["user_type"]
+      }
       log_audit_event: {
         Args: {
           p_action: string
