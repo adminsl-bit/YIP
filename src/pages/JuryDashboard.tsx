@@ -2,9 +2,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { LogOut, Users, BarChart3, Gavel, User, Activity, ClipboardCheck, Target, CheckCircle } from "lucide-react";
+import { LogOut, Users, BarChart3, Gavel, User, Activity, ClipboardCheck, Target, CheckCircle, Trophy } from "lucide-react";
 import { JuryStudentList } from "@/components/jury/JuryStudentList";
 import { JuryDashboardStats } from "@/components/jury/JuryDashboardStats";
+import { JuryLeaderboard } from "@/components/jury/JuryLeaderboard";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -215,7 +216,7 @@ const JuryDashboard = () => {
           </div>
 
           <Tabs defaultValue="assess" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
+            <TabsList className="grid w-full grid-cols-4 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
               <TabsTrigger 
                 value="assess" 
                 className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
@@ -233,6 +234,15 @@ const JuryDashboard = () => {
                   <BarChart3 className="w-4 h-4 text-white" />
                 </div>
                 <span className="text-center">Dashboard</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="leaderboard" 
+                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
+              >
+                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Trophy className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-center">Leaderboard</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="profile" 
@@ -274,6 +284,22 @@ const JuryDashboard = () => {
                   <p className="text-slate-600 font-medium">View comprehensive statistics and progress reports</p>
                 </div>
                 {user && <JuryDashboardStats juryId={user.id} />}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="leaderboard" className="space-y-6">
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <div className="text-center mb-8">
+                  <div className="relative inline-block mb-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-yellow-500/30">
+                      <Trophy className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400/40 rounded-full animate-bounce"></div>
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-800 mb-2">Jury Leaderboard</h3>
+                  <p className="text-slate-600 font-medium">View averaged scores and vote for awards</p>
+                </div>
+                {user && <JuryLeaderboard juryId={user.id} />}
               </div>
             </TabsContent>
 
