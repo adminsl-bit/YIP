@@ -84,15 +84,6 @@ const PhotoUploadManager = () => {
     }
   };
 
-  const downloadImageFromUrl = async (url: string): Promise<File> => {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error('Failed to fetch image');
-    
-    const blob = await response.blob();
-    const filename = `photo_${Date.now()}.jpg`;
-    return new File([blob], filename, { type: blob.type || 'image/jpeg' });
-  };
-
   const migrateGoogleDrivePhotos = async () => {
     setMigrationStatus('running');
     setMigrationProgress(0);
@@ -110,63 +101,55 @@ const PhotoUploadManager = () => {
       return;
     }
 
-    let completed = 0;
-    const total = studentsWithGooglePhotos.length;
+    try {
+      toast({
+        title: 'Migration Started',
+        description: `Starting migration of ${studentsWithGooglePhotos.length} photos...`,
+      });
 
-    for (const student of studentsWithGooglePhotos) {
-      try {
-        // Convert Google Drive URL to direct download format
-        let downloadUrl = student.photo_url!;
-        if (downloadUrl.includes('/file/d/')) {
-          const fileId = downloadUrl.split('/d/')[1]?.split('/')[0];
-          downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-        } else if (downloadUrl.includes('uc?export=view&id=')) {
-          downloadUrl = downloadUrl.replace('uc?export=view&id=', 'uc?export=download&id=');
-        }
+      // Call the edge function to handle migration
+      const { data, error } = await supabase.functions.invoke('migrate-photos', {
+        body: {}
+      });
 
-        // Download the image
-        const imageFile = await downloadImageFromUrl(downloadUrl);
-        
-        // Upload to Supabase Storage
-        const fileExt = 'jpg';
-        const fileName = `${student.serial_number}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('student-photos')
-          .upload(fileName, imageFile, {
-            cacheControl: '3600',
-            upsert: true
-          });
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabase.storage
-          .from('student-photos')
-          .getPublicUrl(fileName);
-
-        // Update the photo_url in database
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ photo_url: publicUrl })
-          .eq('id', student.id);
-
-        if (updateError) throw updateError;
-
-        completed++;
-        setMigrationProgress((completed / total) * 100);
-
-      } catch (error) {
-        console.error(`Failed to migrate photo for ${student.name}:`, error);
+      if (error) {
+        throw error;
       }
+
+      const result = data;
+      setMigrationProgress(100);
+
+      if (result.failed === 0) {
+        setMigrationStatus('completed');
+        toast({
+          title: 'Migration Complete',
+          description: `Successfully migrated ${result.success} out of ${result.total} photos`,
+        });
+      } else {
+        setMigrationStatus('error');
+        toast({
+          title: 'Migration Issues',
+          description: `Completed: ${result.success}, Failed: ${result.failed}. Some photos couldn't be migrated.`,
+          variant: result.failed > result.success ? 'destructive' : 'default',
+        });
+        
+        // Log errors to console for debugging
+        if (result.errors && result.errors.length > 0) {
+          console.error('Migration errors:', result.errors);
+        }
+      }
+
+      await fetchStudents();
+
+    } catch (error) {
+      setMigrationStatus('error');
+      console.error('Migration failed:', error);
+      toast({
+        title: 'Migration Failed',
+        description: error.message || 'An unexpected error occurred',
+        variant: 'destructive',
+      });
     }
-
-    setMigrationStatus('completed');
-    toast({
-      title: 'Migration Complete',
-      description: `Successfully migrated ${completed} out of ${total} photos`,
-    });
-
-    await fetchStudents();
   };
 
   React.useEffect(() => {
