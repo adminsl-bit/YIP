@@ -208,15 +208,14 @@ export const OrganizerLeaderboard = () => {
   return (
     <div className="space-y-8">
       {/* Search and Filter Section */}
-      <div className="bg-white/15 backdrop-blur-lg rounded-2xl border border-white/25 shadow-lg p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-            <Filter className="w-4 h-4 text-white" />
-          </div>
-          <h3 className="text-lg font-bold text-slate-800">Search & Filters</h3>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
+        <CardHeader className="border-b border-border/10">
+          <CardTitle className="flex items-center gap-2">
+            <Search className="w-5 h-5 text-primary" />
+            Search & Filter Students
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
           {/* Search Bar */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -224,267 +223,217 @@ export const OrganizerLeaderboard = () => {
               placeholder="Search by name, position, constituency, city..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 placeholder:text-slate-600"
+              className="pl-10"
             />
           </div>
 
-          {/* City Filter */}
-          <Select value={cityFilter} onValueChange={setCityFilter}>
-            <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                <SelectValue placeholder="Filter by city" />
-              </div>
-            </SelectTrigger>
-            <SelectContent className="bg-white border-white/25 shadow-xl">
-              <SelectItem value="all">All Cities</SelectItem>
-              {uniqueCities.map((city) => (
-                <SelectItem key={city} value={city}>{city}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Filters */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* City Filter */}
+            <Select value={cityFilter} onValueChange={setCityFilter}>
+              <SelectTrigger>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4" />
+                  <SelectValue placeholder="Filter by city" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Cities</SelectItem>
+                {uniqueCities.map((city) => (
+                  <SelectItem key={city} value={city}>{city}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          {/* Party Filter */}
-          <Select value={partyFilter} onValueChange={setPartyFilter}>
-            <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                <SelectValue placeholder="Filter by party" />
-              </div>
-            </SelectTrigger>
-            <SelectContent className="bg-white border-white/25 shadow-xl">
-              <SelectItem value="all">All Parties</SelectItem>
-              {uniqueParties.map((party) => (
-                <SelectItem key={party} value={party.toString()}>Party {party}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {/* Party Filter */}
+            <Select value={partyFilter} onValueChange={setPartyFilter}>
+              <SelectTrigger>
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  <SelectValue placeholder="Filter by party" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Parties</SelectItem>
+                {uniqueParties.map((party) => (
+                  <SelectItem key={party} value={party.toString()}>Party {party}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          {/* Position Filter */}
-          <Select value={positionFilter} onValueChange={setPositionFilter}>
-            <SelectTrigger className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800">
-              <div className="flex items-center gap-2">
-                <Trophy className="w-4 h-4" />
-                <SelectValue placeholder="Filter by position" />
-              </div>
-            </SelectTrigger>
-            <SelectContent className="bg-white border-white/25 shadow-xl">
-              <SelectItem value="all">All Positions</SelectItem>
-              {uniquePositions.map((position) => (
-                <SelectItem key={position} value={position}>{position}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+            {/* Position Filter */}
+            <Select value={positionFilter} onValueChange={setPositionFilter}>
+              <SelectTrigger>
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-4 h-4" />
+                  <SelectValue placeholder="Filter by position" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Positions</SelectItem>
+                {uniquePositions.map((position) => (
+                  <SelectItem key={position} value={position}>{position}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
-          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Users className="w-6 h-6 text-white" />
-          </div>
-          <div className="text-3xl font-black text-slate-800 mb-2">{leaderboard.length}</div>
-          <p className="text-slate-600 font-semibold">Total Students</p>
-        </div>
-
-        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
-          <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Trophy className="w-6 h-6 text-white" />
-          </div>
-          <div className="text-3xl font-black text-slate-800 mb-2">
-            {leaderboard.length > 0 ? Math.round(leaderboard[0].average_score) : 0}
-          </div>
-          <p className="text-slate-600 font-semibold">Top Score</p>
-        </div>
-
-        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
-          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Award className="w-6 h-6 text-white" />
-          </div>
-          <div className="text-3xl font-black text-slate-800 mb-2">
-            {Object.values(studentAwards).reduce((sum, awards) => sum + awards.length, 0)}
-          </div>
-          <p className="text-slate-600 font-semibold">Awards Given</p>
-        </div>
-
-        <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 border border-white/25 shadow-lg text-center">
-          <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Target className="w-6 h-6 text-white" />
-          </div>
-          <div className="text-3xl font-black text-slate-800 mb-2">
-            {leaderboard.length > 0 
-              ? (leaderboard.reduce((sum, entry) => sum + entry.assessment_count, 0) / leaderboard.length).toFixed(1)
-              : 0}
-          </div>
-          <p className="text-slate-600 font-semibold">Avg Assessments</p>
-        </div>
-      </div>
-
-      {/* Award Summary */}
-      <div className="bg-white/20 backdrop-blur-lg rounded-2xl border border-white/25 shadow-lg overflow-hidden">
-        <div className="p-6 border-b border-white/25">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg">
-              <Star className="w-6 h-6 text-white" />
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
+          <CardContent className="p-6 text-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Users className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <h3 className="text-xl font-black text-slate-800">Award Voting Summary</h3>
-              <p className="text-slate-600 font-medium">Track consensus progress across all awards</p>
-            </div>
-          </div>
-        </div>
-        
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {awards.map((award) => {
-              const pendingVotes = awardVotes.filter(vote => vote.award_id === award.id);
-              const uniqueStudents = [...new Set(pendingVotes.map(vote => vote.student_id))];
-              const assignedCount = Object.values(studentAwards).flat().filter(name => name === award.name).length;
-              
-              return (
-                <div key={award.id} className="bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-2">
-                  <h4 className="font-black text-slate-800 text-sm">{award.name}</h4>
-                  <div className="flex justify-between text-xs text-slate-600 font-medium">
-                    <span>{uniqueStudents.length} students with votes</span>
-                    <span>{assignedCount} awarded</span>
-                  </div>
-                  <div className="flex justify-between text-xs">
-                    <span className="font-medium text-slate-700">Total votes: {pendingVotes.length}</span>
-                    <Badge variant={assignedCount > 0 ? "default" : "secondary"} className="text-xs font-medium">
-                      {assignedCount > 0 ? "Active" : "Pending"}
-                    </Badge>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+            <div className="text-3xl font-black text-slate-800 mb-2">{leaderboard.length}</div>
+            <p className="text-slate-600 font-semibold">Total Students</p>
+          </CardContent>
+        </Card>
 
-      {/* Leaderboard Table */}
-      <div className="bg-white/20 backdrop-blur-lg rounded-2xl border border-white/25 shadow-lg overflow-hidden">
-        <div className="p-6 border-b border-white/25">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
+        <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
+          <CardContent className="p-6 text-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
               <Trophy className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <h3 className="text-xl font-black text-slate-800">Overall Leaderboard</h3>
-              <p className="text-slate-600 font-medium">Averaged scores from all jury assessments</p>
+            <div className="text-3xl font-black text-slate-800 mb-2">
+              {leaderboard.length > 0 ? Math.round(leaderboard[0].average_score) : 0}
             </div>
-          </div>
-        </div>
-        
-        <div className="p-6">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-white/25">
-                  <TableHead className="w-16 text-center text-slate-700 font-semibold">Rank</TableHead>
-                  <TableHead className="min-w-[200px] text-slate-700 font-semibold">Student</TableHead>
-                  <TableHead className="w-32 text-center text-slate-700 font-semibold">Position</TableHead>
-                  <TableHead className="w-24 text-center text-slate-700 font-semibold">Party</TableHead>
-                  <TableHead className="w-32 text-center text-slate-700 font-semibold">Home City</TableHead>
-                  <TableHead className="w-24 text-center text-slate-700 font-semibold">Score</TableHead>
-                  <TableHead className="w-28 text-center text-slate-700 font-semibold">Progress</TableHead>
-                  <TableHead className="w-32 text-center text-slate-700 font-semibold">Awards</TableHead>
-                  <TableHead className="w-32 text-center text-slate-700 font-semibold">Vote Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredLeaderboard.map((entry, index) => {
-                  const studentVotes = awardVotes.filter(vote => vote.student_id === entry.user_id);
-                  const uniqueAwards = [...new Set(studentVotes.map(vote => vote.award_id))];
-                  
-                  return (
-                    <TableRow key={entry.user_id} className="border-white/25 hover:bg-white/10 transition-colors">
-                      <TableCell>
-                        <div className="flex items-center justify-center">
-                          {getRankIcon(index + 1)}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-10 h-10 border-2 border-white/25">
+            <p className="text-slate-600 font-semibold">Top Score</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-green-50 to-teal-50 border-green-200">
+          <CardContent className="p-6 text-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Award className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-3xl font-black text-slate-800 mb-2">
+              {Object.values(studentAwards).reduce((sum, awards) => sum + awards.length, 0)}
+            </div>
+            <p className="text-slate-600 font-semibold">Awards Given</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
+          <CardContent className="p-6 text-center">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+              <Target className="w-6 h-6 text-white" />
+            </div>
+            <div className="text-3xl font-black text-slate-800 mb-2">
+              {leaderboard.length > 0 
+                ? (leaderboard.reduce((sum, entry) => sum + entry.assessment_count, 0) / leaderboard.length).toFixed(1)
+                : 0}
+            </div>
+            <p className="text-slate-600 font-semibold">Avg Assessments</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Student Cards - Scrollable Container */}
+      <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
+        <CardHeader className="border-b border-border/10">
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="w-5 h-5 text-primary" />
+            Overall Leaderboard ({filteredLeaderboard.length} students)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="max-h-[600px] overflow-y-auto pr-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
+              {filteredLeaderboard.map((entry, index) => {
+                const studentVotes = awardVotes.filter(vote => vote.student_id === entry.user_id);
+                const uniqueAwards = [...new Set(studentVotes.map(vote => vote.award_id))];
+                const initials = entry.name.split(' ').map(n => n[0]).join('').toUpperCase();
+                const assignedAwards = studentAwards[entry.user_id] || [];
+
+                return (
+                  <Card
+                    key={entry.user_id}
+                    className="h-full flex flex-col overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5"
+                  >
+                    <CardContent className="p-6 flex flex-col h-full">
+                      {/* Header with Avatar, Rank and Name */}
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="relative">
+                          <Avatar className="w-16 h-16 border-2 border-border/20">
                             <AvatarImage src={entry.photo_url} alt={entry.name} />
-                            <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-600 text-white font-semibold">
-                              {entry.name.split(' ').map(n => n[0]).join('')}
+                            <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold">
+                              {initials}
                             </AvatarFallback>
                           </Avatar>
-                          <div>
-                            <div className="font-semibold text-slate-800">{entry.name}</div>
-                            <div className="text-sm text-slate-600">
-                              {entry.constituency}, {entry.state}
-                            </div>
+                          <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                            <span className="text-white text-xs font-bold">#{index + 1}</span>
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline" className="bg-white/20 border-white/30 text-slate-700 font-medium">
-                          {entry.position}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <PartyBadge partyNumber={entry.party_number} size="md" />
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <MapPin className="w-3 h-3 text-slate-500" />
-                          <span className="text-sm font-medium text-slate-700">{entry.city || 'N/A'}</span>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-bold text-lg text-foreground truncate mb-1">{entry.name}</h3>
+                          <p className="text-sm text-muted-foreground truncate mb-2">{entry.position}</p>
+                          <div className="flex items-center gap-2">
+                            <PartyBadge partyNumber={entry.party_number} size="sm" />
+                          </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="font-black text-2xl text-slate-800">
-                          {Math.round(entry.average_score)}
+                      </div>
+
+                      {/* Student Details Grid */}
+                      <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-accent/20 rounded-xl">
+                        <div className="space-y-1">
+                          <div className="text-xs font-medium text-muted-foreground">Average Score</div>
+                          <div className="text-2xl font-black text-primary">{Math.round(entry.average_score)}</div>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="secondary" className="bg-slate-200 text-slate-800 font-medium">
-                          {entry.assessment_count}/3
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="space-y-1 flex flex-col items-center">
-                          {studentAwards[entry.user_id]?.map((award, idx) => (
-                            <Badge key={idx} className="text-xs bg-yellow-500/20 text-yellow-700 border border-yellow-500/30 font-medium">
-                              <Trophy className="w-3 h-3 mr-1" />
-                              {award}
-                            </Badge>
-                          )) || <span className="text-slate-600 text-sm font-medium">No awards</span>}
+                        <div className="space-y-1">
+                          <div className="text-xs font-medium text-muted-foreground">Assessments</div>
+                          <div className="text-lg font-bold text-foreground">{entry.assessment_count}</div>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="space-y-1 flex flex-col items-center">
-                          {uniqueAwards.length > 0 ? (
-                            uniqueAwards.map((awardId) => {
-                              const voteCount = getVoteCount(awardId, entry.user_id);
-                              const award = awards.find(a => a.id === awardId);
-                              return (
-                                <div key={awardId} className="text-xs flex items-center gap-1">
-                                  <span className="font-semibold text-slate-700 text-center">{award?.name}</span>
-                                  <Badge 
-                                    variant={voteCount >= 3 ? "default" : "secondary"} 
-                                    className="text-xs font-medium"
-                                  >
-                                    {voteCount}/3
-                                  </Badge>
-                                </div>
-                              );
-                            })
-                          ) : (
-                            <span className="text-slate-600 text-xs font-medium">No votes</span>
-                          )}
+                        <div className="space-y-1">
+                          <div className="text-xs font-medium text-muted-foreground">Constituency</div>
+                          <div className="text-sm text-foreground truncate">{entry.constituency || '—'}</div>
                         </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                        <div className="space-y-1">
+                          <div className="text-xs font-medium text-muted-foreground">Home City</div>
+                          <div className="text-sm text-foreground truncate">{entry.city || '—'}</div>
+                        </div>
+                      </div>
+
+                      {/* Awards Section */}
+                      <div className="mb-4 p-3 bg-primary/5 rounded-xl">
+                        <div className="text-xs font-medium text-muted-foreground mb-2">Awards & Recognition</div>
+                        {assignedAwards.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {assignedAwards.map((award, idx) => (
+                              <Badge key={idx} variant="default" className="text-xs">
+                                {award}
+                              </Badge>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-sm text-muted-foreground">No awards yet</div>
+                        )}
+                        
+                        {uniqueAwards.length > 0 && (
+                          <div className="mt-2">
+                            <div className="text-xs text-muted-foreground">
+                              Pending votes: {uniqueAwards.length} award{uniqueAwards.length !== 1 ? 's' : ''}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* State Info */}
+                      <div className="mt-auto p-2 bg-muted/30 rounded-lg">
+                        <div className="text-xs text-muted-foreground">
+                          State: {entry.state || '—'}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
