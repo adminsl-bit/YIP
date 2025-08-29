@@ -326,13 +326,19 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
     try {
       const { error } = await supabase
         .from('assessments')
-        .delete()
+        .update({
+          status: 'draft',
+          total_score: 0,
+          scores: {},
+          submitted_at: null,
+          notes: null,
+        })
         .eq('jury_id', juryId);
 
       if (error) throw error;
 
       // Refresh dashboard data
-      fetchDashboardData();
+      await fetchDashboardData();
       alert('All assessments have been reset successfully.');
     } catch (error) {
       console.error('Error resetting assessments:', error);
