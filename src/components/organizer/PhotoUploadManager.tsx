@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { Upload, Download, RefreshCw, CheckCircle, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import heic2any from 'heic2any';
 
 interface Student {
   id: string;
@@ -44,13 +45,28 @@ const PhotoUploadManager = () => {
 
   const handleFileUpload = async (file: File, studentId: string, serialNumber: number) => {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${serialNumber}.${fileExt}`;
-      const filePath = `${fileName}`;
+      let processedFile = file;
+      let fileName = `${serialNumber}.jpg`; // Always save as JPG
+
+      // Convert HEIC to JPEG if needed
+      if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
+        toast({
+          title: 'Converting HEIC',
+          description: 'Converting HEIC image to JPEG format...',
+        });
+
+        const convertedBlob = await heic2any({
+          blob: file,
+          toType: 'image/jpeg',
+          quality: 0.8
+        }) as Blob;
+
+        processedFile = new File([convertedBlob], fileName, { type: 'image/jpeg' });
+      }
 
       const { error: uploadError } = await supabase.storage
         .from('student-photos')
-        .upload(filePath, file, {
+        .upload(fileName, processedFile, {
           cacheControl: '3600',
           upsert: true
         });
@@ -59,7 +75,7 @@ const PhotoUploadManager = () => {
 
       const { data: { publicUrl } } = supabase.storage
         .from('student-photos')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
 
       const { error: updateError } = await supabase
         .from('profiles')
@@ -78,7 +94,7 @@ const PhotoUploadManager = () => {
       console.error('Error uploading photo:', error);
       toast({
         title: 'Error',
-        description: 'Failed to upload photo',
+        description: 'Failed to upload photo. HEIC files require conversion.',
         variant: 'destructive',
       });
     }
@@ -308,7 +324,7 @@ const PhotoUploadManager = () => {
                 <div>
                   <Input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.heic,.HEIC"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) {
