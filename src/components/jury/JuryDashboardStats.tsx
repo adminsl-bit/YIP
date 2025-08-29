@@ -108,29 +108,38 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
         .eq('jury_id', juryId)
         .eq('status', 'submitted');
 
-      if (assessmentsError) throw assessmentsError;
+      if (assessmentsError) {
+        console.error('Assessments query error:', assessmentsError);
+        throw assessmentsError;
+      }
+
+      console.log('Fetched assessments:', assessments);
+      console.log('Total students:', students?.length);
+      console.log('Assessed count:', assessments?.length);
 
       // Build profiles map for assessed students
       const studentIds = (assessments || []).map((a) => a.student_id).filter(Boolean);
       let profilesMap: Record<string, any> = {};
+      
       if (studentIds.length > 0) {
         console.log('Student IDs to fetch:', studentIds);
         const { data: studentProfiles, error: profilesError } = await supabase
           .from('profiles')
           .select('user_id, name, position, party_number, serial_number')
           .in('user_id', Array.from(new Set(studentIds)));
-        if (profilesError) throw profilesError;
+        
+        if (profilesError) {
+          console.error('Profiles query error:', profilesError);
+          throw profilesError;
+        }
+        
         console.log('Student profiles fetched:', studentProfiles);
         profilesMap = (studentProfiles || []).reduce((acc, p) => {
           acc[p.user_id] = p;
           return acc;
         }, {} as Record<string, any>);
+        console.log('Profiles map:', profilesMap);
       }
-
-      console.log('Fetched assessments:', assessments);
-      console.log('Profiles map:', profilesMap);
-      console.log('Total students:', students?.length);
-      console.log('Assessed count:', assessments?.length);
 
       // Calculate stats
       const totalStudents = students?.length || 0;
@@ -139,16 +148,17 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
         ? Math.round(assessments.reduce((sum, a) => sum + a.total_score, 0) / assessments.length)
         : 0;
 
-      // Get top 5 performers
+      // Get top 5 performers with better error handling
       const topPerformers = assessments
         ?.sort((a, b) => b.total_score - a.total_score)
         .slice(0, 5)
         .map(a => {
-          const profile = (profilesMap as any)[a.student_id];
+          const profile = profilesMap[a.student_id];
+          console.log(`Processing student ${a.student_id}:`, profile);
           return {
-            name: profile?.name || 'Unknown',
+            name: profile?.name || 'Student Name Not Found',
             score: a.total_score,
-            position: profile?.position || 'Unknown'
+            position: profile?.position || 'Position Not Found'
           };
         }) || [];
 
@@ -161,9 +171,10 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
 
       // Calculate chart data
       if (assessments && assessments.length > 0) {
-        // Party performance data
+        // Party performance data using profiles map
         const partyGroups = assessments.reduce((acc, assessment) => {
-          const party = ((profilesMap as any)[assessment.student_id]?.party_number) ?? 0;
+          const profile = profilesMap[assessment.student_id];
+          const party = profile?.party_number ?? 0;
           if (!acc[party]) acc[party] = { scores: [], count: 0 };
           acc[party].scores.push(assessment.total_score);
           acc[party].count++;
@@ -176,9 +187,10 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
           count: data.count
         }));
 
-        // Role performance data
+        // Role performance data using profiles map
         const roleGroups = assessments.reduce((acc, assessment) => {
-          const role = getSeatRole(((profilesMap as any)[assessment.student_id]?.position) || 'mp');
+          const profile = profilesMap[assessment.student_id];
+          const role = getSeatRole(profile?.position || 'mp');
           if (!acc[role]) acc[role] = { scores: [], count: 0 };
           acc[role].scores.push(assessment.total_score);
           acc[role].count++;
@@ -233,6 +245,7 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
     const pos = position.toLowerCase();
     if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
     if (pos.includes('speaker')) return 'speaker';
+    if (pos.includes('administrator') || pos.includes('admin')) return 'administrator';
     return 'mp';
   };
 
