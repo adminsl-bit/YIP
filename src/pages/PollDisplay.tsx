@@ -152,89 +152,37 @@ const PollDisplay = () => {
   const maxVotes = getMaxVotes(activePoll.id);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 flex items-center justify-center p-4">
-      <div className="max-w-7xl w-full mx-auto space-y-6">
-        {/* Live Voting Statistics */}
-        <div className="mb-8">
-          <LiveVotingStats pollId={activePoll.id} />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
+      <div className="max-w-6xl w-full mx-auto">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-lg">
+              <BarChart3 className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-4xl md:text-6xl font-bold text-slate-800">
+              {activePoll.title}
+            </h1>
+          </div>
+          
+          {activePoll.description && (
+            <p className="text-xl text-slate-600 mb-6">{activePoll.description}</p>
+          )}
+          
+          <div className="flex justify-center items-center gap-4">
+            <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-lg px-4 py-2">
+              <Users className="w-5 h-5 mr-2" />
+              {totalVotes} votes
+            </Badge>
+            <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-lg px-4 py-2">
+              <TrendingUp className="w-5 h-5 mr-2" />
+              Live Results
+            </Badge>
+          </div>
         </div>
 
-        {/* Main Poll Display */}
-        <Card className="bg-black/20 backdrop-blur-md border-white/20">
-          <CardContent className="p-8 md:p-12">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="flex items-center justify-center gap-4 mb-6">
-                <div className="w-16 h-16 bg-white/20 rounded-3xl flex items-center justify-center">
-                  <BarChart3 className="w-8 h-8 text-white" />
-                </div>
-                <h1 className="text-4xl md:text-6xl font-bold text-white">
-                  {activePoll.title}
-                </h1>
-              </div>
-              
-              {activePoll.description && (
-                <p className="text-xl text-white/80 mb-6">{activePoll.description}</p>
-              )}
-              
-              <div className="flex justify-center items-center gap-4">
-                <Badge className="bg-white/20 text-white border-white/40 text-lg px-4 py-2">
-                  <Users className="w-5 h-5 mr-2" />
-                  {totalVotes} votes
-                </Badge>
-                <Badge className="bg-green-500/80 text-white text-lg px-4 py-2">
-                  <TrendingUp className="w-5 h-5 mr-2" />
-                  Live Results
-                </Badge>
-              </div>
-            </div>
-
-            {/* Results */}
-            <div className="space-y-6">
-              {pollResults.map((result, index) => (
-                <div key={index} className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-2xl md:text-3xl font-bold text-white">{result.option}</span>
-                    <div className="flex items-center gap-4">
-                      <span className="text-3xl md:text-4xl font-bold text-white">{result.count}</span>
-                      <span className="text-xl text-white/80">({result.percentage.toFixed(1)}%)</span>
-                    </div>
-                  </div>
-                  <div className="relative">
-                    <div className="w-full bg-white/20 rounded-full h-8 md:h-12 overflow-hidden">
-                      <div 
-                        className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                          result.count === maxVotes && maxVotes > 0 
-                            ? 'bg-gradient-to-r from-green-400 to-emerald-400' 
-                            : 'bg-gradient-to-r from-blue-400 to-purple-400'
-                        }`}
-                        style={{ width: `${result.percentage}%` }}
-                      />
-                    </div>
-                    {result.count > 0 && (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-lg md:text-xl font-bold text-white drop-shadow-lg">
-                          {result.count} votes
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {totalVotes === 0 && (
-              <div className="text-center py-12">
-                <p className="text-2xl text-white/80 font-medium">Waiting for votes...</p>
-              </div>
-            )}
-
-            {/* Footer */}
-            <div className="text-center mt-8 text-white/60">
-              <p className="text-lg">Results update in real-time</p>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Live Voting Statistics */}
+        <LiveVotingStats pollId={activePoll.id} />
       </div>
     </div>
   );
