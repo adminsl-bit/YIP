@@ -106,15 +106,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state change:', event, 'Session:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
           // Defer profile fetch to avoid auth state change conflicts
-          setTimeout(async () => {
-            await fetchProfile(session.user.id);
+          setTimeout(() => {
+            fetchProfile(session.user!.id);
           }, 0);
         } else {
           setProfile(null);
@@ -124,6 +124,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     );
 
+    // Failsafe: ensure we never stay in loading state too long
+    const loadingTimeout = window.setTimeout(() => {
+      setLoading(false);
+    }, 5000);
+
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       console.log('Initial session check:', !!session);
@@ -132,14 +137,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (session?.user) {
         setTimeout(() => {
-          fetchProfile(session.user.id);
+          fetchProfile(session.user!.id);
         }, 0);
       }
       
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      window.clearTimeout(loadingTimeout);
+    };
   }, []);
 
   const signIn = async (loginId: string, password: string) => {
