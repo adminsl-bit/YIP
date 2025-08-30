@@ -240,7 +240,7 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentE
                 <SelectTrigger id="position" className="mt-1">
                   <SelectValue placeholder="Select position/role" />
                 </SelectTrigger>
-                <SelectContent className="bg-background z-50">
+                <SelectContent className="bg-background z-50 max-h-60 overflow-y-auto">
                   <SelectItem value="Speaker">Speaker</SelectItem>
                   <SelectItem value="Deputy Speaker">Deputy Speaker</SelectItem>
                   <SelectItem value="Member of Parliament">Member of Parliament</SelectItem>
@@ -256,6 +256,20 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentE
                   <SelectItem value="Cabinet Minister">Cabinet Minister</SelectItem>
                   <SelectItem value="State Minister">State Minister</SelectItem>
                   <SelectItem value="Parliamentary Secretary">Parliamentary Secretary</SelectItem>
+                  <SelectItem value="Shadow Minister of Finance">Shadow Minister of Finance</SelectItem>
+                  <SelectItem value="Shadow Minister of Home Affairs">Shadow Minister of Home Affairs</SelectItem>
+                  <SelectItem value="Shadow Minister of Defence">Shadow Minister of Defence</SelectItem>
+                  <SelectItem value="Shadow Minister of Information Technology">Shadow Minister of Information Technology</SelectItem>
+                  <SelectItem value="Shadow Minister of Information, Broadcasting & Technology">Shadow Minister of Information, Broadcasting & Technology</SelectItem>
+                  <SelectItem value="Shadow Minister of Education">Shadow Minister of Education</SelectItem>
+                  <SelectItem value="Shadow Minister of Women & Child Development">Shadow Minister of Women & Child Development</SelectItem>
+                  <SelectItem value="Shadow Minister of Youth Affairs & Sports">Shadow Minister of Youth Affairs & Sports</SelectItem>
+                  <SelectItem value="Shadow Minister of Health & Family Welfare">Shadow Minister of Health & Family Welfare</SelectItem>
+                  <SelectItem value="Shadow Minister of Social Justice & Empowerment">Shadow Minister of Social Justice & Empowerment</SelectItem>
+                  <SelectItem value="Shadow Minister of Environment">Shadow Minister of Environment</SelectItem>
+                  <SelectItem value="Shadow Minister of Labour & Employment">Shadow Minister of Labour & Employment</SelectItem>
+                  <SelectItem value="Shadow Minister of Road Transport and Highways">Shadow Minister of Road Transport and Highways</SelectItem>
+                  <SelectItem value="Shadow Minister of Tourism and Culture">Shadow Minister of Tourism and Culture</SelectItem>
                 </SelectContent>
               </Select>
             </div>
