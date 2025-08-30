@@ -31,15 +31,37 @@ const PollDisplay = () => {
   useEffect(() => {
     fetchActivePolls();
     
-    // Real-time updates
-    const channel = supabase
-      .channel('poll_display')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () => {
-        fetchActivePolls();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes' }, () => {
-        fetchActivePolls();
-      })
+    // Real-time updates with more specific channels
+    const pollsChannel = supabase
+      .channel('polls_channel_display')
+      .on(
+        'postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'polls' 
+        }, 
+        (payload) => {
+          console.log('Real-time poll change on display:', payload);
+          fetchActivePolls();
+        }
+      )
+      .subscribe();
+
+    const votesChannel = supabase
+      .channel('votes_channel_display')
+      .on(
+        'postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'poll_votes' 
+        }, 
+        (payload) => {
+          console.log('Real-time vote change on display:', payload);
+          fetchActivePolls();
+        }
+      )
       .subscribe();
 
     // Listen for keypress to toggle post-analysis view (space bar)
@@ -53,7 +75,8 @@ const PollDisplay = () => {
     window.addEventListener('keydown', handleKeyPress);
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(pollsChannel);
+      supabase.removeChannel(votesChannel);
       window.removeEventListener('keydown', handleKeyPress);
     };
   }, []);
