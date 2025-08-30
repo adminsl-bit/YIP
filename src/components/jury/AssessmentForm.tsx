@@ -231,18 +231,30 @@ export const AssessmentForm = ({
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [assessmentsLocked, setAssessmentsLocked] = useState(false);
 
-  // Determine seat role from position
-  const getSeatRole = (position: string): keyof typeof RUBRICS => {
+  // Determine seat role from position (for UI rubric)
+  const getUIRubricRole = (position: string): keyof typeof RUBRICS => {
     if (!position) return 'mp';
     const pos = position.toLowerCase();
     if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
     if (pos.includes('speaker')) return 'speaker';
     if (pos.includes('administrator') || pos.includes('admin')) return 'administrator';
-    if (pos.includes('minister') || pos.includes('shadow minister')) return 'minister';
+    if (pos.includes('minister') || pos.includes('shadow minister')) return 'mp';
     return 'mp';
   };
 
-  const seatRole = getSeatRole(student?.position || '');
+  // Determine seat role from position (for database storage - constrained values)
+  const getDBSeatRole = (position: string): string => {
+    if (!position) return 'mp';
+    const pos = position.toLowerCase();
+    if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
+    if (pos.includes('speaker')) return 'speaker';
+    // Map admin/administrator and ministers to MP for DB constraint
+    if (pos.includes('administrator') || pos.includes('admin')) return 'mp';
+    if (pos.includes('minister') || pos.includes('shadow minister')) return 'mp';
+    return 'mp';
+  };
+
+  const seatRole = getUIRubricRole(student?.position || '');
   const rubric = RUBRICS[seatRole] || RUBRICS.mp;
 
   // Initialize scores with zero values

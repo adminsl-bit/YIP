@@ -190,7 +190,8 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     const pos = position.toLowerCase();
     if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
     if (pos.includes('speaker')) return 'speaker';
-    if (pos.includes('administrator') || pos.includes('admin')) return 'administrator';
+    // Normalize all admin/administrator roles to MP as per DB constraint
+    if (pos.includes('administrator') || pos.includes('admin')) return 'mp';
     // Normalize all minister roles to MP as per rubric/DB constraint
     if (pos.includes('minister') || pos.includes('shadow minister')) return 'mp';
     return 'mp';
@@ -227,11 +228,14 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     try {
       // Calculate total score
       const totalScore = calculateTotalFromScores(scores);
+      const dbSeatRole = getSeatRole(selectedStudent!.position);
+      
+      console.log('Saving assessment with seat_role:', dbSeatRole, 'for position:', selectedStudent!.position);
       
       const assessmentData = {
         jury_id: juryId,
         student_id: studentUserId, // Use user_id instead of profile id
-        seat_role: getSeatRole(selectedStudent!.position),
+        seat_role: dbSeatRole,
         scores,
         total_score: totalScore,
         status,
