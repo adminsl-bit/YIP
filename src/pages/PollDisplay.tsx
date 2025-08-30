@@ -76,8 +76,9 @@ const PollDisplay = () => {
 
   const fetchActivePolls = async () => {
     try {
+      // Use public view for unauthenticated access
       const { data: pollsData, error: pollsError } = await supabase
-        .from('polls')
+        .from('public_polls')
         .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
@@ -90,7 +91,7 @@ const PollDisplay = () => {
       // If no active polls, show the most recent poll marked for post-analysis
       if (effectivePollsList.length === 0) {
         const { data: postData, error: postError } = await supabase
-          .from('polls')
+          .from('public_polls')
           .select('*')
           .eq('show_post_analysis', true)
           .order('updated_at', { ascending: false })
@@ -101,12 +102,12 @@ const PollDisplay = () => {
 
       setPolls(effectivePollsList);
 
-      // Fetch results for each poll
+      // Fetch results for each poll using public view
       const resultsMap: Record<string, PollResult[]> = {};
       
       for (const poll of effectivePollsList) {
         const { data: votesData, error: votesError } = await supabase
-          .from('poll_votes')
+          .from('public_poll_votes')
           .select('option_id')
           .eq('poll_id', poll.id);
 

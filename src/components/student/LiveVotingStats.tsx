@@ -103,9 +103,9 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
     try {
       setLoading(true);
       
-      // Fetch poll details
+      // Fetch poll details using public view
       const { data: pollData, error: pollError } = await supabase
-        .from('polls')
+        .from('public_polls')
         .select('*')
         .eq('id', pollId)
         .single();
@@ -113,19 +113,14 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
       if (pollError) throw pollError;
       setPoll(pollData as Poll);
 
-      // Fetch total eligible voters (students)
-      const { count: totalVoters, error: votersError } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_type', 'student')
-        .eq('is_active', true);
+      // For public display, we don't need total eligible voters count
+      // We'll just show vote counts without participation rate
+      let totalVoters = 0;
 
-      if (votersError) throw votersError;
-
-      // Fetch all votes for this poll
+      // Fetch all votes for this poll using public view
       const { data: votesData, error: votesError } = await supabase
-        .from('poll_votes')
-        .select('option_id, voter_id')
+        .from('public_poll_votes')
+        .select('option_id')
         .eq('poll_id', pollId);
 
       if (votesError) throw votesError;
@@ -148,15 +143,13 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
       });
 
       const totalVoted = Object.values(voteCounts).reduce((sum, count) => sum + count, 0);
-      const notVoted = (totalVoters || 0) - totalVoted;
-      const participationRate = totalVoters ? (totalVoted / totalVoters) * 100 : 0;
-
+      
       setStats({
-        totalEligibleVoters: totalVoters || 0,
+        totalEligibleVoters: 0, // Not available in public view
         yesVotes: voteCounts.yes || 0,
         noVotes: voteCounts.no || 0,
-        notVoted: Math.max(0, notVoted),
-        participationRate,
+        notVoted: 0, // Not available in public view
+        participationRate: 0, // Not available in public view
         customOptions: voteCounts
       });
 
@@ -239,41 +232,28 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* Overall Participation */}
+        {/* Overall Participation - Simplified for public display */}
         <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-bold text-slate-800 flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Participation Overview
+              Vote Summary
             </h4>
             <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold">
-              {stats.participationRate.toFixed(1)}%
+              {totalVoted} votes
             </Badge>
           </div>
           
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <div className="text-center">
-              <div className="text-2xl font-black text-slate-800">{stats.totalEligibleVoters}</div>
-              <div className="text-sm text-slate-600">Total Students</div>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
             <div className="text-center">
               <div className="text-2xl font-black text-emerald-600">{totalVoted}</div>
-              <div className="text-sm text-slate-600">Have Voted</div>
+              <div className="text-sm text-slate-600">Total Votes Cast</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-black text-orange-600">{stats.notVoted}</div>
-              <div className="text-sm text-slate-600">Not Voted</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-black text-blue-600">{stats.participationRate.toFixed(1)}%</div>
-              <div className="text-sm text-slate-600">Participation</div>
+              <div className="text-2xl font-black text-blue-600">{poll?.options?.length || 0}</div>
+              <div className="text-sm text-slate-600">Options Available</div>
             </div>
           </div>
-          
-          <Progress 
-            value={stats.participationRate} 
-            className="h-3 bg-white/30"
-          />
         </div>
 
         {/* Vote Breakdown by Option */}
@@ -288,7 +268,6 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
             {poll && Array.isArray(poll.options) && poll.options.map((option: string, index: number) => {
               const voteCount = stats.customOptions?.[option] || 0;
               const percentage = totalVoted > 0 ? (voteCount / totalVoted) * 100 : 0;
-              const percentageOfTotal = stats.totalEligibleVoters > 0 ? (voteCount / stats.totalEligibleVoters) * 100 : 0;
               
               // Choose colors based on index
               const colorClasses = [
@@ -320,9 +299,6 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
                       <div className={`text-xs ${colors.percent}`}>
                         {totalVoted > 0 ? percentage.toFixed(1) : '0'}% of votes
                       </div>
-                      <div className={`text-xs ${colors.percent} opacity-75`}>
-                        {percentageOfTotal.toFixed(1)}% of students
-                      </div>
                     </div>
                   </div>
                   <Progress 
@@ -332,34 +308,6 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
                 </motion.div>
               );
             })}
-
-            {/* NOT VOTED */}
-            <motion.div 
-              key="not-voted"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: (poll?.options?.length || 0) * 0.1 }}
-              className="bg-slate-50/50 backdrop-blur-sm rounded-xl p-4 border border-slate-200/50"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-slate-500 rounded-lg flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="font-bold text-slate-800">NOT VOTED</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-black text-slate-700">{stats.notVoted}</div>
-                  <div className="text-sm text-slate-600">
-                    {stats.totalEligibleVoters > 0 ? ((stats.notVoted / stats.totalEligibleVoters) * 100).toFixed(1) : 0}% of total
-                  </div>
-                </div>
-              </div>
-              <Progress 
-                value={stats.totalEligibleVoters > 0 ? (stats.notVoted / stats.totalEligibleVoters) * 100 : 0} 
-                className="h-2 bg-slate-100"
-              />
-            </motion.div>
           </AnimatePresence>
         </div>
 

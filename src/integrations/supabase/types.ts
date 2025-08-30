@@ -238,6 +238,13 @@ export type Database = {
             referencedRelation: "polls"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "public_polls"
+            referencedColumns: ["id"]
+          },
         ]
       }
       polls: {
@@ -538,6 +545,72 @@ export type Database = {
           position: string | null
           state: string | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      public_poll_votes: {
+        Row: {
+          option_id: string | null
+          poll_id: string | null
+        }
+        Insert: {
+          option_id?: string | null
+          poll_id?: string | null
+        }
+        Update: {
+          option_id?: string | null
+          poll_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "public_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_polls: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string | null
+          is_active: boolean | null
+          options: Json | null
+          show_post_analysis: boolean | null
+          show_results_publicly: boolean | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          options?: Json | null
+          show_post_analysis?: boolean | null
+          show_results_publicly?: boolean | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          options?: Json | null
+          show_post_analysis?: boolean | null
+          show_results_publicly?: boolean | null
+          title?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
