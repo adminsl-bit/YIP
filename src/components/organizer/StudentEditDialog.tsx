@@ -259,6 +259,7 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentE
                   <SelectItem value="Shadow Minister of Finance">Shadow Minister of Finance</SelectItem>
                   <SelectItem value="Shadow Minister of Home Affairs">Shadow Minister of Home Affairs</SelectItem>
                   <SelectItem value="Shadow Minister of Defence">Shadow Minister of Defence</SelectItem>
+                  <SelectItem value="Shadow Minister of External Affairs">Shadow Minister of External Affairs</SelectItem>
                   <SelectItem value="Shadow Minister of Information Technology">Shadow Minister of Information Technology</SelectItem>
                   <SelectItem value="Shadow Minister of Information, Broadcasting & Technology">Shadow Minister of Information, Broadcasting & Technology</SelectItem>
                   <SelectItem value="Shadow Minister of Education">Shadow Minister of Education</SelectItem>
@@ -266,10 +267,25 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentE
                   <SelectItem value="Shadow Minister of Youth Affairs & Sports">Shadow Minister of Youth Affairs & Sports</SelectItem>
                   <SelectItem value="Shadow Minister of Health & Family Welfare">Shadow Minister of Health & Family Welfare</SelectItem>
                   <SelectItem value="Shadow Minister of Social Justice & Empowerment">Shadow Minister of Social Justice & Empowerment</SelectItem>
-                  <SelectItem value="Shadow Minister of Environment">Shadow Minister of Environment</SelectItem>
+                  <SelectItem value="Shadow Minister of Environment, Forest & Climate Change">Shadow Minister of Environment, Forest & Climate Change</SelectItem>
                   <SelectItem value="Shadow Minister of Labour & Employment">Shadow Minister of Labour & Employment</SelectItem>
                   <SelectItem value="Shadow Minister of Road Transport and Highways">Shadow Minister of Road Transport and Highways</SelectItem>
                   <SelectItem value="Shadow Minister of Tourism and Culture">Shadow Minister of Tourism and Culture</SelectItem>
+                  {/* Cabinet Ministers */}
+                  <SelectItem value="Minister of Finance">Minister of Finance</SelectItem>
+                  <SelectItem value="Minister of Home Affairs">Minister of Home Affairs</SelectItem>
+                  <SelectItem value="Minister of Defence">Minister of Defence</SelectItem>
+                  <SelectItem value="Minister of External Affairs">Minister of External Affairs</SelectItem>
+                  <SelectItem value="Minister of Information, Broadcasting & Technology">Minister of Information, Broadcasting & Technology</SelectItem>
+                  <SelectItem value="Minister of Education">Minister of Education</SelectItem>
+                  <SelectItem value="Minister of Women & Child Development">Minister of Women & Child Development</SelectItem>
+                  <SelectItem value="Minister of Youth Affairs & Sports">Minister of Youth Affairs & Sports</SelectItem>
+                  <SelectItem value="Minister of Health & Family Welfare">Minister of Health & Family Welfare</SelectItem>
+                  <SelectItem value="Minister of Social Justice & Empowerment">Minister of Social Justice & Empowerment</SelectItem>
+                  <SelectItem value="Minister of Environment, Forest & Climate Change">Minister of Environment, Forest & Climate Change</SelectItem>
+                  <SelectItem value="Minister of Labour & Employment">Minister of Labour & Employment</SelectItem>
+                  <SelectItem value="Minister of Road Transport and Highways">Minister of Road Transport and Highways</SelectItem>
+                  <SelectItem value="Minister of Tourism and Culture">Minister of Tourism and Culture</SelectItem>
                 </SelectContent>
               </Select>
             </div>
