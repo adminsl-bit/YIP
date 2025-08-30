@@ -310,18 +310,55 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
           />
         </div>
 
+        {/* Vote Summary Cards */}
+        <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
+          <h4 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
+            <CheckCircle className="w-4 h-4" />
+            Vote Distribution Summary
+          </h4>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            {poll && Array.isArray(poll.options) && poll.options.map((option: string, index: number) => {
+              const voteCount = stats.customOptions?.[option] || 0;
+              const percentageOfTotal = stats.totalEligibleVoters > 0 ? (voteCount / stats.totalEligibleVoters) * 100 : 0;
+              
+              const colors = [
+                { bg: "bg-green-500", light: "bg-green-100", text: "text-green-800" },
+                { bg: "bg-blue-500", light: "bg-blue-100", text: "text-blue-800" },
+                { bg: "bg-purple-500", light: "bg-purple-100", text: "text-purple-800" },
+                { bg: "bg-orange-500", light: "bg-orange-100", text: "text-orange-800" },
+                { bg: "bg-pink-500", light: "bg-pink-100", text: "text-pink-800" }
+              ];
+              const color = colors[index % colors.length];
+              
+              return (
+                <div key={option} className={`${color.light} rounded-lg p-3 text-center`}>
+                  <div className={`w-12 h-12 ${color.bg} rounded-full flex items-center justify-center mx-auto mb-2`}>
+                    <span className="text-white font-bold text-lg">{voteCount}</span>
+                  </div>
+                  <div className={`font-bold ${color.text} capitalize mb-1`}>{option}</div>
+                  <div className="text-sm text-gray-600">
+                    {percentageOfTotal.toFixed(1)}% of all students
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Vote Breakdown by Option */}
         <div className="space-y-4">
           <h4 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
-            <CheckCircle className="w-4 h-4" />
-            Vote Results by Option
+            <TrendingUp className="w-4 h-4" />
+            Detailed Vote Results
           </h4>
           
           <AnimatePresence>
             {/* Dynamic Options - Show vote count and percentage of total votes */}
             {poll && Array.isArray(poll.options) && poll.options.map((option: string, index: number) => {
               const voteCount = stats.customOptions?.[option] || 0;
-              const percentage = totalVoted > 0 ? (voteCount / totalVoted) * 100 : 0;
+              const percentageOfVotes = totalVoted > 0 ? (voteCount / totalVoted) * 100 : 0;
+              const percentageOfTotal = stats.totalEligibleVoters > 0 ? (voteCount / stats.totalEligibleVoters) * 100 : 0;
               
               // Choose colors based on index
               const colorClasses = [
@@ -351,12 +388,15 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
                     <div className="text-right">
                       <div className={`text-2xl font-black ${colors.count}`}>{voteCount}</div>
                       <div className={`text-xs ${colors.percent}`}>
-                        {totalVoted > 0 ? percentage.toFixed(1) : '0'}% of votes
+                        {percentageOfVotes.toFixed(1)}% of votes
+                      </div>
+                      <div className={`text-xs ${colors.percent} opacity-75`}>
+                        {percentageOfTotal.toFixed(1)}% of students
                       </div>
                     </div>
                   </div>
                   <Progress 
-                    value={totalVoted > 0 ? percentage : 0} 
+                    value={percentageOfVotes} 
                     className={`h-2 ${colors.progress}`}
                   />
                 </motion.div>
