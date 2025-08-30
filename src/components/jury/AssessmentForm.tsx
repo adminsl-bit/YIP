@@ -53,6 +53,62 @@ const RUBRICS: Record<string, Record<string, RubricCriteria>> = {
     communication_skills: { name: "Communication Skills", maxScore: 15 },
     adaptability: { name: "Adaptability", maxScore: 10 }
   },
+  administrator: {
+    recording_proceedings: {
+      name: "Recording Proceedings",
+      maxScore: 20,
+      subcriteria: {
+        accuracy: 7,     // Accuracy of notes
+        impartiality: 7, // Impartiality & objectivity
+        clarity: 6       // Clarity & use of templates
+      }
+    },
+    managing_agenda: {
+      name: "Managing the Agenda",
+      maxScore: 20,
+      subcriteria: {
+        adherence: 7,     // Adherence to schedule
+        time_reminders: 7, // Effective time reminders
+        coordination: 6   // Coordination with Speaker
+      }
+    },
+    documenting_bills: {
+      name: "Documenting Bills & Resolutions",
+      maxScore: 20,
+      subcriteria: {
+        registration: 7,   // Registering bills/resolutions
+        amendments: 7,     // Recording amendments
+        documentation: 6   // Timely & neat documentation
+      }
+    },
+    support_leadership: {
+      name: "Support to Speaker & Deputy Speaker",
+      maxScore: 15,
+      subcriteria: {
+        responsiveness: 5, // Responsiveness
+        updates: 5,        // Quick updates/data
+        conduct: 5         // Neutral & professional conduct
+      }
+    },
+    teamwork_support: {
+      name: "Teamwork & Mutual Support",
+      maxScore: 15,
+      subcriteria: {
+        coordination: 5,    // Role division & coordination
+        flexibility: 5,     // Stepping in when needed
+        communication: 5    // Communication & collaboration
+      }
+    },
+    attitude_commitment: {
+      name: "Attitude, Commitment & Presence",
+      maxScore: 10,
+      subcriteria: {
+        punctuality: 4,     // Punctuality & preparedness
+        composure: 3,       // Calm under pressure
+        enthusiasm: 3       // Enthusiasm & ownership
+      }
+    }
+  },
   mp: {
     content_substance: { 
       name: "Content & Substance", 
@@ -103,6 +159,36 @@ const RUBRICS: Record<string, Record<string, RubricCriteria>> = {
 // Function to get proper labels for subcriteria
 const getSubcriteriaLabel = (criteriaKey: string, subKey: string): string => {
   const labels: Record<string, Record<string, string>> = {
+    recording_proceedings: {
+      accuracy: "Accuracy of notes",
+      impartiality: "Impartiality & objectivity",
+      clarity: "Clarity & use of templates"
+    },
+    managing_agenda: {
+      adherence: "Adherence to schedule",
+      time_reminders: "Effective time reminders",
+      coordination: "Coordination with Speaker"
+    },
+    documenting_bills: {
+      registration: "Registering bills/resolutions",
+      amendments: "Recording amendments",
+      documentation: "Timely & neat documentation"
+    },
+    support_leadership: {
+      responsiveness: "Responsiveness",
+      updates: "Quick updates/data",
+      conduct: "Neutral & professional conduct"
+    },
+    teamwork_support: {
+      coordination: "Role division & coordination",
+      flexibility: "Stepping in when needed",
+      communication: "Communication & collaboration"
+    },
+    attitude_commitment: {
+      punctuality: "Punctuality & preparedness",
+      composure: "Calm under pressure",
+      enthusiasm: "Enthusiasm & ownership"
+    },
     content_substance: {
       relevance: "Relevance to the topic",
       research: "Research",
