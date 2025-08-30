@@ -225,8 +225,12 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
     return null;
   }
 
-  // Don't show results to students unless explicitly made public by organizers
-  if (showResultsPublicly !== undefined && !showResultsPublicly) {
+  // Determine visibility from prop or fetched poll data
+  const isPublic = (typeof showResultsPublicly === 'boolean') 
+    ? showResultsPublicly 
+    : (poll as any)?.show_results_publicly === true;
+
+  if (!isPublic) {
     return (
       <Card className="bg-white/15 backdrop-blur-lg border border-white/25 shadow-xl">
         <CardContent className="p-6">
