@@ -30,6 +30,7 @@ const PollDisplay = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('PollDisplay: Setting up real-time subscriptions');
     fetchActivePolls();
     
     // Real-time updates with more specific channels
@@ -43,11 +44,14 @@ const PollDisplay = () => {
           table: 'polls' 
         }, 
         (payload) => {
-          console.log('Real-time poll change on display:', payload);
+          console.log('PollDisplay: Real-time poll change detected:', payload);
+          console.log('PollDisplay: Refetching polls due to change');
           fetchActivePolls();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('PollDisplay: Polls channel subscription status:', status);
+      });
 
     const votesChannel = supabase
       .channel('votes_channel_display')
@@ -59,16 +63,19 @@ const PollDisplay = () => {
           table: 'poll_votes' 
         }, 
         (payload) => {
-          console.log('Real-time vote change on display:', payload);
+          console.log('PollDisplay: Real-time vote change detected:', payload);
+          console.log('PollDisplay: Refetching polls due to vote change');
           fetchActivePolls();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('PollDisplay: Votes channel subscription status:', status);
+      });
 
     // Space bar toggle removed; stage display follows organizer stop action.
 
-
     return () => {
+      console.log('PollDisplay: Cleaning up real-time subscriptions');
       supabase.removeChannel(pollsChannel);
       supabase.removeChannel(votesChannel);
     };
@@ -76,12 +83,28 @@ const PollDisplay = () => {
 
   const fetchActivePolls = async () => {
     try {
-      // Use public view for unauthenticated access
-      const { data: pollsData, error: pollsError } = await supabase
-        .from('public_polls')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+      // Try authenticated query first, fall back to public view
+      let pollsData, pollsError;
+      
+      try {
+        // Try authenticated query first
+        const result = await supabase
+          .from('polls')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+        pollsData = result.data;
+        pollsError = result.error;
+      } catch (authError) {
+        // Fall back to public view if authentication fails
+        const result = await supabase
+          .from('public_polls')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+        pollsData = result.data;
+        pollsError = result.error;
+      }
 
       if (pollsError) throw pollsError;
       
@@ -90,26 +113,59 @@ const PollDisplay = () => {
 
       // If no active polls, show the most recent poll marked for post-analysis
       if (effectivePollsList.length === 0) {
-        const { data: postData, error: postError } = await supabase
-          .from('public_polls')
-          .select('*')
-          .eq('show_post_analysis', true)
-          .order('updated_at', { ascending: false })
-          .limit(1);
+        let postData, postError;
+        
+        try {
+          // Try authenticated query first
+          const result = await supabase
+            .from('polls')
+            .select('*')
+            .eq('show_post_analysis', true)
+            .order('updated_at', { ascending: false })
+            .limit(1);
+          postData = result.data;
+          postError = result.error;
+        } catch (authError) {
+          // Fall back to public view
+          const result = await supabase
+            .from('public_polls')
+            .select('*')
+            .eq('show_post_analysis', true)
+            .order('updated_at', { ascending: false })
+            .limit(1);
+          postData = result.data;
+          postError = result.error;
+        }
+        
         if (postError) throw postError;
         effectivePollsList = (postData || []) as Poll[];
       }
 
       setPolls(effectivePollsList);
 
-      // Fetch results for each poll using public view
+      // Fetch results for each poll with similar fallback approach
       const resultsMap: Record<string, PollResult[]> = {};
       
       for (const poll of effectivePollsList) {
-        const { data: votesData, error: votesError } = await supabase
-          .from('public_poll_votes')
-          .select('option_id')
-          .eq('poll_id', poll.id);
+        let votesData, votesError;
+        
+        try {
+          // Try authenticated query first
+          const result = await supabase
+            .from('poll_votes')
+            .select('option_id')
+            .eq('poll_id', poll.id);
+          votesData = result.data;
+          votesError = result.error;
+        } catch (authError) {
+          // Fall back to public view
+          const result = await supabase
+            .from('public_poll_votes')
+            .select('option_id')
+            .eq('poll_id', poll.id);
+          votesData = result.data;
+          votesError = result.error;
+        }
 
         if (votesError) throw votesError;
 

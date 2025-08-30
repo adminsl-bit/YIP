@@ -103,12 +103,28 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
     try {
       setLoading(true);
       
-      // Fetch poll details using public view
-      const { data: pollData, error: pollError } = await supabase
-        .from('public_polls')
-        .select('*')
-        .eq('id', pollId)
-        .single();
+      // Try authenticated query first, fall back to public view
+      let pollData, pollError;
+      
+      try {
+        // Try authenticated query first
+        const result = await supabase
+          .from('polls')
+          .select('*')
+          .eq('id', pollId)
+          .single();
+        pollData = result.data;
+        pollError = result.error;
+      } catch (authError) {
+        // Fall back to public view if authentication fails
+        const result = await supabase
+          .from('public_polls')
+          .select('*')
+          .eq('id', pollId)
+          .single();
+        pollData = result.data;
+        pollError = result.error;
+      }
 
       if (pollError) throw pollError;
       setPoll(pollData as Poll);
@@ -117,11 +133,26 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
       // We'll just show vote counts without participation rate
       let totalVoters = 0;
 
-      // Fetch all votes for this poll using public view
-      const { data: votesData, error: votesError } = await supabase
-        .from('public_poll_votes')
-        .select('option_id')
-        .eq('poll_id', pollId);
+      // Fetch all votes for this poll with hybrid approach
+      let votesData, votesError;
+      
+      try {
+        // Try authenticated query first
+        const result = await supabase
+          .from('poll_votes')
+          .select('option_id')
+          .eq('poll_id', pollId);
+        votesData = result.data;
+        votesError = result.error;
+      } catch (authError) {
+        // Fall back to public view
+        const result = await supabase
+          .from('public_poll_votes')
+          .select('option_id')
+          .eq('poll_id', pollId);
+        votesData = result.data;
+        votesError = result.error;
+      }
 
       if (votesError) throw votesError;
 

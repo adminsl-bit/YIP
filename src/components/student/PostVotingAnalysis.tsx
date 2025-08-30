@@ -38,10 +38,25 @@ export const PostVotingAnalysis = ({ pollId, pollTitle }: PostVotingAnalysisProp
       setLoading(true);
 
       // For public display, we only show vote counts without student details
-      const { data: votes, error: votesError } = await supabase
-        .from('public_poll_votes')
-        .select('option_id')
-        .eq('poll_id', pollId);
+      let votesData, votesError;
+      
+      try {
+        // Try authenticated query first
+        const result = await supabase
+          .from('poll_votes')
+          .select('option_id')
+          .eq('poll_id', pollId);
+        votesData = result.data;
+        votesError = result.error;
+      } catch (authError) {
+        // Fall back to public view
+        const result = await supabase
+          .from('public_poll_votes')
+          .select('option_id')
+          .eq('poll_id', pollId);
+        votesData = result.data;
+        votesError = result.error;
+      }
 
       if (votesError) throw votesError;
 
