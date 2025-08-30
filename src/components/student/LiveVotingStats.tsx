@@ -129,9 +129,17 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
       if (pollError) throw pollError;
       setPoll(pollData as Poll);
 
-      // For public display, we don't need total eligible voters count
-      // We'll just show vote counts without participation rate
+      // Get total student count for participation stats
       let totalVoters = 0;
+      try {
+        // Try to get total student count for participation stats
+        const { data: totalCount, error: countError } = await supabase.rpc('get_total_active_students');
+        if (!countError && totalCount !== null) {
+          totalVoters = totalCount;
+        }
+      } catch (error) {
+        console.log('Could not fetch total student count for participation stats');
+      }
 
       // Fetch all votes for this poll with hybrid approach
       let votesData, votesError;
@@ -174,13 +182,15 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
       });
 
       const totalVoted = Object.values(voteCounts).reduce((sum, count) => sum + count, 0);
+      const notVoted = Math.max(0, totalVoters - totalVoted);
+      const participationRate = totalVoters > 0 ? (totalVoted / totalVoters) * 100 : 0;
       
       setStats({
-        totalEligibleVoters: 0, // Not available in public view
+        totalEligibleVoters: totalVoters,
         yesVotes: voteCounts.yes || 0,
         noVotes: voteCounts.no || 0,
-        notVoted: 0, // Not available in public view
-        participationRate: 0, // Not available in public view
+        notVoted: notVoted,
+        participationRate: participationRate,
         customOptions: voteCounts
       });
 
@@ -263,28 +273,41 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
       </CardHeader>
       
       <CardContent className="space-y-6">
-        {/* Overall Participation - Simplified for public display */}
+        {/* Overall Participation */}
         <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-bold text-slate-800 flex items-center gap-2">
               <Users className="w-4 h-4" />
-              Vote Summary
+              Participation Overview
             </h4>
             <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold">
-              {totalVoted} votes
+              {stats.participationRate.toFixed(1)}%
             </Badge>
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+            <div className="text-center">
+              <div className="text-2xl font-black text-slate-800">{stats.totalEligibleVoters}</div>
+              <div className="text-sm text-slate-600">Total Students</div>
+            </div>
             <div className="text-center">
               <div className="text-2xl font-black text-emerald-600">{totalVoted}</div>
-              <div className="text-sm text-slate-600">Total Votes Cast</div>
+              <div className="text-sm text-slate-600">Have Voted</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-black text-blue-600">{poll?.options?.length || 0}</div>
-              <div className="text-sm text-slate-600">Options Available</div>
+              <div className="text-2xl font-black text-orange-600">{stats.notVoted}</div>
+              <div className="text-sm text-slate-600">Not Voted</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-black text-blue-600">{stats.participationRate.toFixed(1)}%</div>
+              <div className="text-sm text-slate-600">Participation</div>
             </div>
           </div>
+          
+          <Progress 
+            value={stats.participationRate} 
+            className="h-3 bg-white/30"
+          />
         </div>
 
         {/* Vote Breakdown by Option */}

@@ -641,6 +641,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_type"]
       }
+      get_total_active_students: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
       log_audit_event: {
         Args: {
           p_action: string
