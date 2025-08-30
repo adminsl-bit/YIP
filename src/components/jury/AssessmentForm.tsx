@@ -233,6 +233,7 @@ export const AssessmentForm = ({
 
   // Determine seat role from position
   const getSeatRole = (position: string): keyof typeof RUBRICS => {
+    if (!position) return 'mp';
     const pos = position.toLowerCase();
     if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
     if (pos.includes('speaker')) return 'speaker';
@@ -241,11 +242,13 @@ export const AssessmentForm = ({
     return 'mp';
   };
 
-  const seatRole = getSeatRole(student.position);
-  const rubric = RUBRICS[seatRole];
+  const seatRole = getSeatRole(student?.position || '');
+  const rubric = RUBRICS[seatRole] || RUBRICS.mp;
 
   // Initialize scores with zero values
   useEffect(() => {
+    if (!student || !rubric) return;
+    
     if (!scores || Object.keys(scores || {}).length === 0) {
       const initialScoreState: Record<string, any> = {};
       Object.keys(rubric).forEach(criteriaKey => {
@@ -261,7 +264,7 @@ export const AssessmentForm = ({
       });
       setScores(initialScoreState);
     }
-  }, [rubric, scores]);
+  }, [rubric, scores, student]);
 
   // Check assessment lock setting
   useEffect(() => {
@@ -319,18 +322,23 @@ export const AssessmentForm = ({
   }, [student.id, initialScores]);
 
   const calculateTotal = () => {
-    if (!scores || !rubric) return 0;
+    if (!scores || !rubric || !student) return 0;
     let total = 0;
-    Object.keys(rubric).forEach(criteriaKey => {
-      const criteria = rubric[criteriaKey];
-      if (criteria.subcriteria) {
-        Object.keys(criteria.subcriteria).forEach(subKey => {
-          total += scores[criteriaKey]?.[subKey] || 0;
-        });
-      } else {
-        total += scores[criteriaKey] || 0;
-      }
-    });
+    try {
+      Object.keys(rubric).forEach(criteriaKey => {
+        const criteria = rubric[criteriaKey];
+        if (criteria && criteria.subcriteria) {
+          Object.keys(criteria.subcriteria).forEach(subKey => {
+            total += scores[criteriaKey]?.[subKey] || 0;
+          });
+        } else if (criteria) {
+          total += scores[criteriaKey] || 0;
+        }
+      });
+    } catch (error) {
+      console.error('Error calculating total:', error);
+      return 0;
+    }
     return total;
   };
 
@@ -378,10 +386,19 @@ export const AssessmentForm = ({
     }
   };
 
-  const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
+  const initials = student?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'UN';
   const total = calculateTotal();
   const maxTotal = getMaxTotal();
-  const percentage = Math.round((total / maxTotal) * 100);
+  const percentage = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
+  
+  // Early return if essential data is missing
+  if (!student || !rubric) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
   
   
   // Force cache clear for changes
