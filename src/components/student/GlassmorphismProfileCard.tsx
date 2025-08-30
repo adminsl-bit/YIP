@@ -33,7 +33,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
     const pos = position.toLowerCase();
     if (pos.includes('president') || pos.includes('prime minister')) {
       return <Crown className="w-5 h-5 text-amber-400" />;
-    } else if (pos.includes('speaker') || pos.includes('deputy')) {
+    } else if (pos.includes('speaker') || pos.includes('deputy') || pos.includes('minister') || pos.includes('ministry')) {
       return <Gavel className="w-5 h-5 text-blue-400" />;
     }
     return <Users className="w-5 h-5 text-slate-400" />;
@@ -65,6 +65,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
     ];
     
     return pos.includes('minister') || 
+           pos.includes('ministry') ||
            pos.includes('leader') || 
            pos.includes('president') || 
            pos.includes('speaker') ||

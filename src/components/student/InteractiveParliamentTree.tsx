@@ -107,13 +107,24 @@ const InteractiveParliamentTree = () => {
     } finally {
       setLoading(false);
     }
-  };
+};
+
+  // Realtime: refresh when profiles change
+  useEffect(() => {
+    const channel = supabase
+      .channel('public:profiles-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchStudents();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const getPositionIcon = (position: string) => {
     const pos = position.toLowerCase();
     if (pos.includes('president') || pos.includes('prime minister')) {
       return <Crown className="w-4 h-4 text-yellow-500" />;
-    } else if (pos.includes('speaker') || pos.includes('deputy')) {
+    } else if (pos.includes('speaker') || pos.includes('deputy') || pos.includes('minister') || pos.includes('ministry')) {
       return <Gavel className="w-4 h-4 text-blue-500" />;
     }
     return <Users className="w-4 h-4 text-gray-500" />;
@@ -131,6 +142,7 @@ const InteractiveParliamentTree = () => {
     ];
     
     return pos.includes('minister') || 
+           pos.includes('ministry') ||
            pos.includes('leader') || 
            pos.includes('president') || 
            pos.includes('speaker') ||

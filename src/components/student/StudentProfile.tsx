@@ -36,6 +36,7 @@ const isSpecialPosition = (position: string, name?: string) => {
   ];
   
   return pos.includes('minister') || 
+         pos.includes('ministry') ||
          pos.includes('leader') || 
          pos.includes('president') || 
          pos.includes('speaker') ||
