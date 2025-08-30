@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
-import { Save, Send, Edit, Lock } from "lucide-react";
+import { Save, Send, Edit, Lock, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -524,12 +524,17 @@ export const AssessmentForm = ({
                 className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white hover:scale-105 transition-all duration-300 rounded-2xl px-6 py-3 font-bold shadow-lg"
               >
                 <Send className="w-5 h-5 mr-2" />
-                Submit Assessment
+                {initialStatus === 'submitted' ? 'Update Assessment' : 'Submit Assessment'}
               </Button>
               {initialStatus === 'submitted' && (
-                <div className="text-sm text-slate-600 bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/20">
-                  <Edit className="w-4 h-4 mr-2 inline" />
-                  This assessment was submitted but can still be edited and resubmitted.
+                <div className="w-full bg-green-100/80 backdrop-blur-sm rounded-xl p-4 border border-green-200/50">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-600" />
+                    <div className="text-sm">
+                      <span className="font-bold text-green-800">Assessment Previously Submitted</span>
+                      <p className="text-green-700">You can modify the scores and notes above, then click "Update Assessment" to save changes.</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
