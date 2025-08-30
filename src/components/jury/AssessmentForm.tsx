@@ -365,22 +365,10 @@ export const AssessmentForm = ({
       await onSubmit(scores, notes, status);
       if (status === 'submitted') {
         localStorage.removeItem(`assessment_draft_${student.id}`);
-        toast({
-          title: "Assessment Submitted",
-          description: "Your assessment has been submitted successfully.",
-        });
-      } else {
-        toast({
-          title: "Assessment Saved",
-          description: "Your assessment has been saved as draft.",
-        });
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save assessment. Please try again.",
-        variant: "destructive",
-      });
+      // Error toast is now handled in JuryStudentList
+      console.error('Error submitting assessment:', error);
     } finally {
       setIsSubmitting(false);
     }

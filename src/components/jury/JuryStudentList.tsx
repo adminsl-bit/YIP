@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Filter, Users, CheckCircle, Clock, Lock } from "lucide-react";
 import { AssessmentForm } from "./AssessmentForm";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "@/hooks/use-toast";
 
 interface Student {
   id: string;
@@ -247,11 +248,29 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       
       if (error) throw error;
 
+      // Show success message
+      if (status === 'submitted') {
+        toast({
+          title: "Assessment Submitted",
+          description: "Your assessment has been submitted successfully.",
+        });
+      } else {
+        toast({
+          title: "Assessment Saved",
+          description: "Your assessment has been saved as draft.",
+        });
+      }
+
       // Refresh assessments
       await fetchAssessments();
       setSelectedStudent(null);
     } catch (error) {
       console.error('Error saving assessment:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save assessment. Please try again.",
+        variant: "destructive",
+      });
       throw error;
     }
   };
