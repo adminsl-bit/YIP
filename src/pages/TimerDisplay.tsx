@@ -46,43 +46,8 @@ const TimerDisplay = () => {
     };
   }, []);
 
-  // Start/stop countdown interval based on timer status
-  useEffect(() => {
-    if (timer?.status === 'running') {
-      startCountdown();
-    } else {
-      stopCountdown();
-    }
-  }, [timer?.status]);
-
-  const startCountdown = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-
-    intervalRef.current = setInterval(() => {
-      setTimer(prev => {
-        if (!prev || prev.status !== 'running') return prev;
-
-        const newRemaining = Math.max(0, prev.remaining_seconds - 1);
-        
-        if (newRemaining === 0) {
-          // Timer completed, stop countdown
-          clearInterval(intervalRef.current!);
-          return { ...prev, remaining_seconds: 0, status: 'completed' as const };
-        }
-
-        return { ...prev, remaining_seconds: newRemaining };
-      });
-    }, 1000);
-  };
-
-  const stopCountdown = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  };
+  // Display component should not run its own countdown - rely on TimerControl component for time management
+  // This prevents conflicts between multiple timer instances
 
   // Bell sound effect when timer reaches 0
   useEffect(() => {
