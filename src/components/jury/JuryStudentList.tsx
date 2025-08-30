@@ -472,18 +472,21 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       <Dialog open={!!selectedStudent} onOpenChange={() => setSelectedStudent(null)}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Assess Student</DialogTitle>
+            <DialogTitle>Assess Student: {selectedStudent?.name}</DialogTitle>
           </DialogHeader>
           {selectedStudent && (
-            <AssessmentForm
-              student={selectedStudent}
-              onSubmit={(scores, notes, status) => 
-                handleAssessmentSubmit(selectedStudent.user_id, scores, notes, status)
-              }
-              initialScores={getAssessment(selectedStudent.user_id)?.scores || {}}
-              initialNotes={getAssessment(selectedStudent.user_id)?.notes || ""}
-              initialStatus={getAssessment(selectedStudent.user_id)?.status}
-            />
+            <div className="mt-4">
+              <AssessmentForm
+                key={selectedStudent.user_id} // Force re-render when student changes
+                student={selectedStudent}
+                onSubmit={(scores, notes, status) => 
+                  handleAssessmentSubmit(selectedStudent.user_id, scores, notes, status)
+                }
+                initialScores={getAssessment(selectedStudent.user_id)?.scores || {}}
+                initialNotes={getAssessment(selectedStudent.user_id)?.notes || ""}
+                initialStatus={getAssessment(selectedStudent.user_id)?.status}
+              />
+            </div>
           )}
         </DialogContent>
       </Dialog>
