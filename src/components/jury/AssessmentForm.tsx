@@ -539,14 +539,10 @@ export const AssessmentForm = ({
                 Submit Assessment
               </Button>
               {initialStatus === 'submitted' && (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-700 hover:bg-white/30 rounded-2xl px-4 py-2 font-semibold"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit Submitted
-                </Button>
+                <div className="text-sm text-slate-600 bg-white/20 backdrop-blur-sm rounded-xl p-3 border border-white/20">
+                  <Edit className="w-4 h-4 mr-2 inline" />
+                  This assessment was submitted but can still be edited and resubmitted.
+                </div>
               )}
             </div>
           )}
