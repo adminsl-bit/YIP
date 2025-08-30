@@ -195,7 +195,10 @@ const PollDisplay = () => {
         </div>
 
         {/* Live Voting Statistics */}
-        <LiveVotingStats pollId={activePoll.id} />
+        <LiveVotingStats 
+          pollId={activePoll.id} 
+          showResultsPublicly={activePoll.show_results_publicly}
+        />
 
         {/* Post-Voting Analysis */}
         {showPostAnalysis && (

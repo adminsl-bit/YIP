@@ -54,7 +54,7 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
       
       // Set up real-time subscription for vote changes
       const channel = supabase
-        .channel('poll_votes_changes')
+        .channel(`poll_votes_${pollId}`)
         .on(
           'postgres_changes',
           {
@@ -68,6 +68,19 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
             fetchPollAndStats(); // Refresh stats on any vote change
             setIsLive(true);
             setTimeout(() => setIsLive(false), 1000); // Flash effect
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'polls',
+            filter: `id=eq.${pollId}`
+          },
+          (payload) => {
+            console.log('Real-time poll change:', payload);
+            fetchPollAndStats(); // Refresh stats on poll changes
           }
         )
         .subscribe();
@@ -263,18 +276,19 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
           />
         </div>
 
-        {/* Vote Breakdown */}
+        {/* Vote Breakdown by Option */}
         <div className="space-y-4">
           <h4 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
             <CheckCircle className="w-4 h-4" />
-            Vote Breakdown
+            Vote Results by Option
           </h4>
           
           <AnimatePresence>
-            {/* Dynamic Options */}
+            {/* Dynamic Options - Show vote count and percentage of total votes */}
             {poll && Array.isArray(poll.options) && poll.options.map((option: string, index: number) => {
               const voteCount = stats.customOptions?.[option] || 0;
-              const percentage = stats.totalEligibleVoters > 0 ? (voteCount / stats.totalEligibleVoters) * 100 : 0;
+              const percentage = totalVoted > 0 ? (voteCount / totalVoted) * 100 : 0;
+              const percentageOfTotal = stats.totalEligibleVoters > 0 ? (voteCount / stats.totalEligibleVoters) * 100 : 0;
               
               // Choose colors based on index
               const colorClasses = [
@@ -303,13 +317,16 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
                     </div>
                     <div className="text-right">
                       <div className={`text-2xl font-black ${colors.count}`}>{voteCount}</div>
-                      <div className={`text-sm ${colors.percent}`}>
-                        {percentage.toFixed(1)}% of total
+                      <div className={`text-xs ${colors.percent}`}>
+                        {totalVoted > 0 ? percentage.toFixed(1) : '0'}% of votes
+                      </div>
+                      <div className={`text-xs ${colors.percent} opacity-75`}>
+                        {percentageOfTotal.toFixed(1)}% of students
                       </div>
                     </div>
                   </div>
                   <Progress 
-                    value={percentage} 
+                    value={totalVoted > 0 ? percentage : 0} 
                     className={`h-2 ${colors.progress}`}
                   />
                 </motion.div>
