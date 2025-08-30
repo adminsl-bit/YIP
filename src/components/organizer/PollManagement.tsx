@@ -20,6 +20,7 @@ interface Poll {
   options: string[];
   is_active: boolean;
   show_results_publicly: boolean;
+  show_post_analysis: boolean;
   created_at: string;
   starts_at?: string;
   ends_at?: string;
@@ -244,6 +245,31 @@ export const PollManagement = () => {
         title: "Error",
         description: "Failed to update results visibility",
         variant: "destructive"
+      });
+    }
+  };
+
+  const stopPoll = async (poll: Poll) => {
+    try {
+      const { error } = await supabase
+        .from('polls')
+        .update({ is_active: false, show_post_analysis: true })
+        .eq('id', poll.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Voting Stopped',
+        description: `"${poll.title}" results are now visible on the stage screen.`
+      });
+
+      fetchPolls();
+    } catch (error) {
+      console.error('Error stopping poll:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to stop poll',
+        variant: 'destructive'
       });
     }
   };
@@ -493,9 +519,7 @@ export const PollManagement = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setShowPostVotingAnalysis(
-                          showPostVotingAnalysis === poll.id ? null : poll.id
-                        )}
+                        onClick={() => stopPoll(poll)}
                         title="Stop Voting & Show Analysis"
                       >
                         <Square className="w-4 h-4" />

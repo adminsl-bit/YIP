@@ -13,6 +13,7 @@ interface Poll {
   options: string[];
   is_active: boolean;
   show_results_publicly: boolean;
+  show_post_analysis: boolean;
   created_at: string;
 }
 
@@ -25,7 +26,7 @@ interface PollResult {
 const PollDisplay = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [results, setResults] = useState<Record<string, PollResult[]>>({});
-  const [showPostAnalysis, setShowPostAnalysis] = useState(false);
+  
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -64,20 +65,12 @@ const PollDisplay = () => {
       )
       .subscribe();
 
-    // Listen for keypress to toggle post-analysis view (space bar)
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.code === 'Space') {
-        event.preventDefault();
-        setShowPostAnalysis(prev => !prev);
-      }
-    };
+    // Space bar toggle removed; stage display follows organizer stop action.
 
-    window.addEventListener('keydown', handleKeyPress);
 
     return () => {
       supabase.removeChannel(pollsChannel);
       supabase.removeChannel(votesChannel);
-      window.removeEventListener('keydown', handleKeyPress);
     };
   }, []);
 
@@ -92,12 +85,26 @@ const PollDisplay = () => {
       if (pollsError) throw pollsError;
       
       const pollsList = (pollsData || []) as Poll[];
-      setPolls(pollsList);
+      let effectivePollsList = pollsList;
+
+      // If no active polls, show the most recent poll marked for post-analysis
+      if (effectivePollsList.length === 0) {
+        const { data: postData, error: postError } = await supabase
+          .from('polls')
+          .select('*')
+          .eq('show_post_analysis', true)
+          .order('updated_at', { ascending: false })
+          .limit(1);
+        if (postError) throw postError;
+        effectivePollsList = (postData || []) as Poll[];
+      }
+
+      setPolls(effectivePollsList);
 
       // Fetch results for each poll
       const resultsMap: Record<string, PollResult[]> = {};
       
-      for (const poll of pollsList) {
+      for (const poll of effectivePollsList) {
         const { data: votesData, error: votesError } = await supabase
           .from('poll_votes')
           .select('option_id')
@@ -220,20 +227,14 @@ const PollDisplay = () => {
         {/* Live Voting Statistics */}
         <LiveVotingStats 
           pollId={activePoll.id} 
-          showResultsPublicly={activePoll.show_results_publicly}
+          showResultsPublicly={activePoll.show_post_analysis}
         />
 
-        {/* Post-Voting Analysis */}
-        {showPostAnalysis && (
+        {/* Post-Voting Analysis (shown only after organizer presses Stop) */}
+        {activePoll.show_post_analysis && (
           <PostVotingAnalysis pollId={activePoll.id} pollTitle={activePoll.title} />
         )}
 
-        {/* Instructions */}
-        <div className="text-center">
-          <p className="text-slate-600 text-sm">
-            Press <kbd className="px-2 py-1 bg-slate-200 rounded">Space</kbd> to toggle post-voting analysis
-          </p>
-        </div>
       </div>
     </div>
   );

@@ -249,6 +249,7 @@ export type Database = {
           id: string
           is_active: boolean
           options: Json
+          show_post_analysis: boolean
           show_results_publicly: boolean
           starts_at: string | null
           title: string
@@ -262,6 +263,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           options?: Json
+          show_post_analysis?: boolean
           show_results_publicly?: boolean
           starts_at?: string | null
           title: string
@@ -275,6 +277,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           options?: Json
+          show_post_analysis?: boolean
           show_results_publicly?: boolean
           starts_at?: string | null
           title?: string
