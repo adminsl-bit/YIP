@@ -58,6 +58,34 @@ export const PollManagement = () => {
     });
   }, [polls]);
 
+  // Realtime subscriptions: keep votes and poll list in sync without refresh
+  useEffect(() => {
+    const channel = supabase
+      .channel('organizer_poll_management')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'poll_votes' },
+        (payload) => {
+          const pollId = (payload as any)?.new?.poll_id || (payload as any)?.old?.poll_id;
+          if (pollId) {
+            fetchPollResults(pollId);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'polls' },
+        () => {
+          fetchPolls();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const fetchPolls = async () => {
     try {
       const { data, error } = await supabase
