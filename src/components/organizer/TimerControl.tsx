@@ -95,10 +95,8 @@ export const TimerControl = () => {
           return { ...prev, remaining_seconds: 0, status: 'completed' as const };
         }
 
-        // Update in database every 10 seconds or when timer completes
-        if (newRemaining % 10 === 0 || newRemaining === 0) {
-          updateTimerInDB(prev.id, { remaining_seconds: newRemaining });
-        }
+        // Update in database every second to keep stage view in sync
+        updateTimerInDB(prev.id, { remaining_seconds: newRemaining });
 
         return { ...prev, remaining_seconds: newRemaining };
       });
