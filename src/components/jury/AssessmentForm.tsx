@@ -225,7 +225,7 @@ export const AssessmentForm = ({
   initialStatus = 'draft',
   isLocked = false 
 }: AssessmentFormProps) => {
-  const [scores, setScores] = useState<Record<string, any>>(initialScores);
+  const [scores, setScores] = useState<Record<string, any>>(initialScores || {});
   const [notes, setNotes] = useState(initialNotes);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -246,7 +246,7 @@ export const AssessmentForm = ({
 
   // Initialize scores with zero values
   useEffect(() => {
-    if (Object.keys(scores).length === 0) {
+    if (!scores || Object.keys(scores || {}).length === 0) {
       const initialScoreState: Record<string, any> = {};
       Object.keys(rubric).forEach(criteriaKey => {
         const criteria = rubric[criteriaKey];
@@ -287,7 +287,7 @@ export const AssessmentForm = ({
   // Auto-save to localStorage every 2 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      if (Object.keys(scores).length > 0) {
+      if (scores && Object.keys(scores || {}).length > 0) {
         localStorage.setItem(`assessment_draft_${student.id}`, JSON.stringify({
           scores,
           notes,
@@ -303,11 +303,15 @@ export const AssessmentForm = ({
   // Load from localStorage on mount
   useEffect(() => {
     const saved = localStorage.getItem(`assessment_draft_${student.id}`);
-    if (saved && Object.keys(initialScores).length === 0) {
+    if (saved && Object.keys(initialScores || {}).length === 0) {
       try {
         const { scores: savedScores, notes: savedNotes } = JSON.parse(saved);
-        setScores(savedScores);
-        setNotes(savedNotes);
+        if (savedScores) {
+          setScores(savedScores);
+        }
+        if (savedNotes) {
+          setNotes(savedNotes);
+        }
       } catch (error) {
         console.error('Error loading saved assessment:', error);
       }
@@ -315,6 +319,7 @@ export const AssessmentForm = ({
   }, [student.id, initialScores]);
 
   const calculateTotal = () => {
+    if (!scores || !rubric) return 0;
     let total = 0;
     Object.keys(rubric).forEach(criteriaKey => {
       const criteria = rubric[criteriaKey];
