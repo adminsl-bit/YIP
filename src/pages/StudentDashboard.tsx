@@ -6,6 +6,7 @@ import { StudentProfile } from "@/components/student/StudentProfile";
 import InteractiveParliamentTree from "@/components/student/InteractiveParliamentTree";
 import { StudentVotingTab } from "@/components/student/StudentVotingTab";
 import { ParliamentAgenda } from "@/components/student/ParliamentAgenda";
+import { StudentTable } from "@/components/student/StudentTable";
 
 const StudentDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -84,7 +85,7 @@ const StudentDashboard = () => {
           </div>
 
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 gap-2 mb-8 sm:mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-2 sm:p-3 rounded-2xl sm:rounded-3xl shadow-xl h-auto">
+            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 gap-2 mb-8 sm:mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-2 sm:p-3 rounded-2xl sm:rounded-3xl shadow-xl h-auto">
               <TabsTrigger 
                 value="profile" 
                 className="flex flex-col items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-4 sm:py-6 rounded-xl sm:rounded-2xl text-xs sm:text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[60px] sm:min-h-[80px] touch-target"
@@ -121,6 +122,15 @@ const StudentDashboard = () => {
                 </div>
                 <span className="text-center">Schedule</span>
               </TabsTrigger>
+              <TabsTrigger 
+                value="directory" 
+                className="flex flex-col items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-4 sm:py-6 rounded-xl sm:rounded-2xl text-xs sm:text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[60px] sm:min-h-[80px] touch-target"
+              >
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Award className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <span className="text-center">Directory</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="profile" className="space-y-6">
@@ -141,6 +151,10 @@ const StudentDashboard = () => {
 
             <TabsContent value="schedule">
               <ParliamentAgenda />
+            </TabsContent>
+
+            <TabsContent value="directory">
+              <StudentTable />
             </TabsContent>
           </Tabs>
         </div>
