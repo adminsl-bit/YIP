@@ -185,14 +185,15 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
   };
 
   const getSeatRole = (position: string): string => {
+    if (!position) return 'mp';
     const pos = position.toLowerCase();
     if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
     if (pos.includes('speaker')) return 'speaker';
     if (pos.includes('administrator') || pos.includes('admin')) return 'administrator';
-    if (pos.includes('minister') || pos.includes('shadow minister')) return 'minister';
+    // Normalize all minister roles to MP as per rubric/DB constraint
+    if (pos.includes('minister') || pos.includes('shadow minister')) return 'mp';
     return 'mp';
   };
-
   // Party badge styling consistent with other components
   const getPartyBadgeClass = (partyNumber: number) => {
     const colors = [
