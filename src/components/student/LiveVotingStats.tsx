@@ -12,6 +12,7 @@ interface VotingStats {
   noVotes: number;
   notVoted: number;
   participationRate: number;
+  customOptions?: Record<string, number>;
 }
 
 interface Poll {
@@ -116,28 +117,34 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
 
       if (votesError) throw votesError;
 
-      // Count votes by option
-      const voteCounts = {
-        yes: 0,
-        no: 0
-      };
-
-      (votesData || []).forEach((vote: PollVoteData) => {
-        const option = vote.option_id.toLowerCase();
-        if (option.includes('yes')) voteCounts.yes++;
-        else if (option.includes('no')) voteCounts.no++;
+      // Count votes by option - handle custom options dynamically
+      const voteCounts: Record<string, number> = {};
+      const pollOptions = Array.isArray(pollData.options) ? pollData.options : [];
+      
+      // Initialize all options with 0 votes
+      pollOptions.forEach((option: string) => {
+        voteCounts[option] = 0;
       });
 
-      const totalVoted = voteCounts.yes + voteCounts.no;
+      // Count actual votes
+      (votesData || []).forEach((vote: PollVoteData) => {
+        const option = vote.option_id;
+        if (voteCounts.hasOwnProperty(option)) {
+          voteCounts[option]++;
+        }
+      });
+
+      const totalVoted = Object.values(voteCounts).reduce((sum, count) => sum + count, 0);
       const notVoted = (totalVoters || 0) - totalVoted;
       const participationRate = totalVoters ? (totalVoted / totalVoters) * 100 : 0;
 
       setStats({
         totalEligibleVoters: totalVoters || 0,
-        yesVotes: voteCounts.yes,
-        noVotes: voteCounts.no,
+        yesVotes: voteCounts.yes || 0,
+        noVotes: voteCounts.no || 0,
         notVoted: Math.max(0, notVoted),
-        participationRate
+        participationRate,
+        customOptions: voteCounts
       });
 
     } catch (error) {
@@ -190,7 +197,7 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
     );
   }
 
-  const totalVoted = stats.yesVotes + stats.noVotes;
+  const totalVoted = Object.values(stats.customOptions || {}).reduce((sum, count) => sum + count, 0);
 
   return (
     <Card className={`bg-white/15 backdrop-blur-lg border border-white/25 shadow-xl transition-all duration-300 ${isLive ? 'ring-2 ring-green-400 shadow-green-400/20' : ''}`}>
@@ -264,86 +271,76 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
           </h4>
           
           <AnimatePresence>
-            {/* YES Votes */}
-            <motion.div 
-              key="yes-votes"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-green-50/50 backdrop-blur-sm rounded-xl p-4 border border-green-200/50"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
-                    <CheckCircle className="w-4 h-4 text-white" />
+            {/* Dynamic Options */}
+            {poll && Array.isArray(poll.options) && poll.options.map((option: string, index: number) => {
+              const voteCount = stats.customOptions?.[option] || 0;
+              const percentage = stats.totalEligibleVoters > 0 ? (voteCount / stats.totalEligibleVoters) * 100 : 0;
+              
+              // Choose colors based on index
+              const colorClasses = [
+                { bg: "bg-green-50/50", border: "border-green-200/50", icon: "bg-green-500", text: "text-green-800", count: "text-green-700", percent: "text-green-600", progress: "bg-green-100" },
+                { bg: "bg-blue-50/50", border: "border-blue-200/50", icon: "bg-blue-500", text: "text-blue-800", count: "text-blue-700", percent: "text-blue-600", progress: "bg-blue-100" },
+                { bg: "bg-purple-50/50", border: "border-purple-200/50", icon: "bg-purple-500", text: "text-purple-800", count: "text-purple-700", percent: "text-purple-600", progress: "bg-purple-100" },
+                { bg: "bg-orange-50/50", border: "border-orange-200/50", icon: "bg-orange-500", text: "text-orange-800", count: "text-orange-700", percent: "text-orange-600", progress: "bg-orange-100" },
+                { bg: "bg-pink-50/50", border: "border-pink-200/50", icon: "bg-pink-500", text: "text-pink-800", count: "text-pink-700", percent: "text-pink-600", progress: "bg-pink-100" }
+              ];
+              const colors = colorClasses[index % colorClasses.length];
+              
+              return (
+                <motion.div 
+                  key={`option-${index}`}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className={`${colors.bg} backdrop-blur-sm rounded-xl p-4 border ${colors.border}`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 ${colors.icon} rounded-lg flex items-center justify-center`}>
+                        <CheckCircle className="w-4 h-4 text-white" />
+                      </div>
+                      <span className={`font-bold ${colors.text}`}>{option}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-2xl font-black ${colors.count}`}>{voteCount}</div>
+                      <div className={`text-sm ${colors.percent}`}>
+                        {percentage.toFixed(1)}% of total
+                      </div>
+                    </div>
                   </div>
-                  <span className="font-bold text-green-800">YES</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-black text-green-700">{stats.yesVotes}</div>
-                  <div className="text-sm text-green-600">
-                    {stats.totalEligibleVoters > 0 ? ((stats.yesVotes / stats.totalEligibleVoters) * 100).toFixed(1) : 0}% of total
-                  </div>
-                </div>
-              </div>
-              <Progress 
-                value={stats.totalEligibleVoters > 0 ? (stats.yesVotes / stats.totalEligibleVoters) * 100 : 0} 
-                className="h-2 bg-green-100"
-              />
-            </motion.div>
-
-            {/* NO Votes */}
-            <motion.div 
-              key="no-votes"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-red-50/50 backdrop-blur-sm rounded-xl p-4 border border-red-200/50"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
-                    <XCircle className="w-4 h-4 text-white" />
-                  </div>
-                  <span className="font-bold text-red-800">NO</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-black text-red-700">{stats.noVotes}</div>
-                  <div className="text-sm text-red-600">
-                    {stats.totalEligibleVoters > 0 ? ((stats.noVotes / stats.totalEligibleVoters) * 100).toFixed(1) : 0}% of total
-                  </div>
-                </div>
-              </div>
-              <Progress 
-                value={stats.totalEligibleVoters > 0 ? (stats.noVotes / stats.totalEligibleVoters) * 100 : 0} 
-                className="h-2 bg-red-100"
-              />
-            </motion.div>
+                  <Progress 
+                    value={percentage} 
+                    className={`h-2 ${colors.progress}`}
+                  />
+                </motion.div>
+              );
+            })}
 
             {/* NOT VOTED */}
             <motion.div 
               key="not-voted"
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-orange-50/50 backdrop-blur-sm rounded-xl p-4 border border-orange-200/50"
+              transition={{ delay: (poll?.options?.length || 0) * 0.1 }}
+              className="bg-slate-50/50 backdrop-blur-sm rounded-xl p-4 border border-slate-200/50"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                  <div className="w-8 h-8 bg-slate-500 rounded-lg flex items-center justify-center">
                     <Clock className="w-4 h-4 text-white" />
                   </div>
-                  <span className="font-bold text-orange-800">NOT VOTED</span>
+                  <span className="font-bold text-slate-800">NOT VOTED</span>
                 </div>
                 <div className="text-right">
-                  <div className="text-2xl font-black text-orange-700">{stats.notVoted}</div>
-                  <div className="text-sm text-orange-600">
+                  <div className="text-2xl font-black text-slate-700">{stats.notVoted}</div>
+                  <div className="text-sm text-slate-600">
                     {stats.totalEligibleVoters > 0 ? ((stats.notVoted / stats.totalEligibleVoters) * 100).toFixed(1) : 0}% of total
                   </div>
                 </div>
               </div>
               <Progress 
                 value={stats.totalEligibleVoters > 0 ? (stats.notVoted / stats.totalEligibleVoters) * 100 : 0} 
-                className="h-2 bg-orange-100"
+                className="h-2 bg-slate-100"
               />
             </motion.div>
           </AnimatePresence>
