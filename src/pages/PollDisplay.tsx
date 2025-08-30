@@ -227,7 +227,7 @@ const PollDisplay = () => {
         {/* Live Voting Statistics */}
         <LiveVotingStats 
           pollId={activePoll.id} 
-          showResultsPublicly={activePoll.show_post_analysis}
+          showResultsPublicly={activePoll.show_results_publicly}
         />
 
         {/* Post-Voting Analysis (shown only after organizer presses Stop) */}
