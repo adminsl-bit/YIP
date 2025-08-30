@@ -153,6 +153,8 @@ export const OrganizerStats = () => {
     const pos = position.toLowerCase();
     if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
     if (pos.includes('speaker')) return 'speaker';
+    if (pos.includes('administrator') || pos.includes('admin')) return 'administrator';
+    if (pos.includes('minister') || pos.includes('shadow minister')) return 'minister';
     return 'mp';
   };
 

@@ -189,6 +189,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
     if (pos.includes('speaker')) return 'speaker';
     if (pos.includes('administrator') || pos.includes('admin')) return 'administrator';
+    if (pos.includes('minister') || pos.includes('shadow minister')) return 'minister';
     return 'mp';
   };
 
@@ -333,11 +334,12 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
               <SelectTrigger className="h-12 bg-white/30 backdrop-blur-sm border-white/40 rounded-2xl">
                 <SelectValue placeholder="Filter by Role" />
               </SelectTrigger>
-              <SelectContent className="bg-white/95 backdrop-blur-lg border-white/40">
+               <SelectContent className="bg-white/95 backdrop-blur-lg border-white/40">
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="speaker">Speaker</SelectItem>
                 <SelectItem value="deputy_speaker">Deputy Speaker</SelectItem>
                 <SelectItem value="administrator">Administrator</SelectItem>
+                <SelectItem value="minister">Minister</SelectItem>
                 <SelectItem value="mp">MP</SelectItem>
               </SelectContent>
             </Select>
