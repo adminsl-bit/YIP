@@ -274,7 +274,7 @@ export const AwardShowcase = () => {
   const currentAwardee = awardees[currentIndex];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 relative overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 relative overflow-hidden flex flex-col">
       {/* Animated background */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,_rgba(59,130,246,0.15)_1px,_transparent_0)] bg-[length:40px_40px] animate-pulse"></div>
@@ -284,8 +284,8 @@ export const AwardShowcase = () => {
       </div>
 
       {/* Header */}
-      <div className="relative z-10 p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="relative z-10 p-4 flex-shrink-0">
+        <div className="flex items-center justify-between mb-4">
           <Button 
             onClick={() => navigate('/organizer')}
             variant="outline"
@@ -296,15 +296,15 @@ export const AwardShowcase = () => {
           </Button>
           
           <div className="text-center">
-            <h1 className="text-3xl md:text-4xl font-black text-transparent bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text">
+            <h1 className="text-2xl md:text-3xl font-black text-transparent bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text">
               🏆 Award Showcase
             </h1>
-            <p className="text-slate-600 font-medium mt-2">
+            <p className="text-slate-600 font-medium mt-1 text-sm">
               Recognizing Excellence in Young Indians Parliament
             </p>
           </div>
 
-          <div className="text-right space-y-2">
+          <div className="text-right">
             <Button
               onClick={downloadPDF}
               variant="outline"
@@ -323,7 +323,7 @@ export const AwardShowcase = () => {
         </div>
 
         {/* Navigation dots */}
-        <div className="flex justify-center space-x-2 mb-8">
+        <div className="flex justify-center space-x-2 mb-4">
           {awardees.map((_, index) => (
             <button
               key={index}
@@ -338,36 +338,36 @@ export const AwardShowcase = () => {
         </div>
       </div>
 
-      {/* Main showcase */}
-      <div className="relative z-10 px-6 pb-6">
-        <div className="max-w-6xl mx-auto">
+      {/* Main showcase - flexible height */}
+      <div className="relative z-10 px-4 flex-1 flex items-center">
+        <div className="max-w-6xl mx-auto w-full">
           <Card className="bg-white/25 backdrop-blur-xl border border-white/30 shadow-2xl overflow-hidden animate-fade-in">
-            <CardContent className="p-12">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <CardContent className="p-6 lg:p-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                 {/* Photo and Basic Info */}
                 <div className="text-center">
-                  <div className="relative inline-block mb-8">
-                    <div className="absolute -inset-4 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 rounded-full blur-lg opacity-75 animate-pulse"></div>
-                    <Avatar className="relative w-64 h-64 border-8 border-white shadow-2xl">
+                  <div className="relative inline-block mb-4">
+                    <div className="absolute -inset-2 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 rounded-full blur-lg opacity-75 animate-pulse"></div>
+                    <Avatar className="relative w-40 h-40 lg:w-52 lg:h-52 border-6 border-white shadow-2xl">
                       <AvatarImage 
                         src={currentAwardee.photo_url} 
                         alt={currentAwardee.student_name}
                         className="object-cover"
                       />
-                      <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-600 text-white text-6xl font-bold">
+                      <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-600 text-white text-3xl lg:text-5xl font-bold">
                         {currentAwardee.student_name.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                   </div>
                   
-                  <h2 className="text-4xl md:text-5xl font-black text-slate-800 mb-4">
+                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-800 mb-3">
                     {currentAwardee.student_name}
                   </h2>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <Badge 
                       variant="outline" 
-                      className="text-xl px-6 py-3 bg-white/30 border-white/40 text-slate-700 font-bold"
+                      className="text-base lg:text-lg px-4 py-2 bg-white/30 border-white/40 text-slate-700 font-bold"
                     >
                       {currentAwardee.position}
                     </Badge>
@@ -376,51 +376,51 @@ export const AwardShowcase = () => {
                       <PartyBadge partyNumber={currentAwardee.party_number} size="md" />
                     </div>
                     
-                    <div className="flex items-center justify-center gap-6 text-slate-600">
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-slate-600">
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-5 h-5" />
-                        <span className="font-medium">{currentAwardee.city}</span>
+                        <MapPin className="w-4 h-4" />
+                        <span className="font-medium text-sm">{currentAwardee.city}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Users className="w-5 h-5" />
-                        <span className="font-medium">{currentAwardee.constituency}</span>
+                        <Users className="w-4 h-4" />
+                        <span className="font-medium text-sm">{currentAwardee.constituency}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Awards */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <div className="text-center">
-                    <h3 className="text-3xl font-black text-transparent bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text mb-2">
+                    <h3 className="text-xl lg:text-2xl font-black text-transparent bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text mb-2">
                       🏆 Awards Received
                     </h3>
-                    <p className="text-slate-600 font-medium">Recognition for Outstanding Performance</p>
+                    <p className="text-slate-600 font-medium text-sm">Recognition for Outstanding Performance</p>
                   </div>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-3 max-h-64 lg:max-h-80 overflow-y-auto pr-2">
                     {currentAwardee.awards.map((award, index) => (
                       <div 
                         key={award.id}
-                        className="bg-gradient-to-r from-yellow-100/80 to-orange-100/80 backdrop-blur-sm rounded-2xl p-6 border border-yellow-200/50 shadow-lg animate-scale-in"
+                        className="bg-gradient-to-r from-yellow-100/80 to-orange-100/80 backdrop-blur-sm rounded-xl p-4 border border-yellow-200/50 shadow-lg animate-scale-in"
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                            <Trophy className="w-6 h-6 text-white" />
+                        <div className="flex items-start gap-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                            <Trophy className="w-4 h-4 text-white" />
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-xl font-black text-slate-800 mb-2">
+                            <h4 className="text-lg font-black text-slate-800 mb-1">
                               {award.name}
                             </h4>
                             {award.description && (
-                              <p className="text-slate-600 mb-3 font-medium">
+                              <p className="text-slate-600 mb-2 font-medium text-sm">
                                 {award.description}
                               </p>
                             )}
                             <Badge 
                               variant={award.assigned_by_jury_consensus ? "default" : "secondary"}
-                              className={`font-medium ${
+                              className={`font-medium text-xs ${
                                 award.assigned_by_jury_consensus 
                                   ? "bg-blue-500/20 text-blue-700 border border-blue-500/30" 
                                   : "bg-purple-500/20 text-purple-700 border border-purple-500/30"
@@ -441,8 +441,8 @@ export const AwardShowcase = () => {
       </div>
 
       {/* Navigation controls */}
-      <div className="relative z-10 fixed bottom-8 left-1/2 transform -translate-x-1/2">
-        <div className="flex items-center gap-4 bg-white/20 backdrop-blur-lg rounded-2xl border border-white/25 shadow-xl p-4">
+      <div className="relative z-10 p-4 flex-shrink-0">
+        <div className="flex items-center justify-center gap-4 bg-white/20 backdrop-blur-lg rounded-2xl border border-white/25 shadow-xl p-3 max-w-md mx-auto">
           <Button 
             onClick={previousSlide}
             variant="outline"
