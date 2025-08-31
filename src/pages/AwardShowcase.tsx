@@ -4,10 +4,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { PartyBadge } from "@/components/ui/party-badge";
-import { ChevronLeft, ChevronRight, Trophy, MapPin, Users, ArrowLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, Trophy, MapPin, Users, ArrowLeft, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface Awardee {
   student_id: string;
@@ -142,6 +144,104 @@ export const AwardShowcase = () => {
     setCurrentIndex(index);
   };
 
+  const downloadPDF = async () => {
+    try {
+      toast({
+        title: "Generating PDF",
+        description: "Creating award showcase PDF...",
+      });
+
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 20;
+
+      // Add title page
+      pdf.setFontSize(24);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('🏆 Award Showcase', pageWidth / 2, 40, { align: 'center' });
+      
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Young Indians Parliament', pageWidth / 2, 55, { align: 'center' });
+      pdf.text('Recognizing Excellence', pageWidth / 2, 70, { align: 'center' });
+
+      // Add current date
+      pdf.setFontSize(12);
+      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 85, { align: 'center' });
+
+      let yPosition = 110;
+
+      // Add each awardee
+      for (let i = 0; i < awardees.length; i++) {
+        const awardee = awardees[i];
+        
+        // Check if we need a new page
+        if (yPosition > pageHeight - 80) {
+          pdf.addPage();
+          yPosition = margin;
+        }
+
+        // Student name
+        pdf.setFontSize(18);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(awardee.student_name, margin, yPosition);
+        yPosition += 10;
+
+        // Position and party
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(`Position: ${awardee.position}`, margin, yPosition);
+        yPosition += 6;
+        pdf.text(`Party: ${awardee.party_number}`, margin, yPosition);
+        yPosition += 6;
+        pdf.text(`Location: ${awardee.city}, ${awardee.constituency}`, margin, yPosition);
+        yPosition += 10;
+
+        // Awards
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('Awards:', margin, yPosition);
+        yPosition += 8;
+
+        awardee.awards.forEach(award => {
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(`• ${award.name}`, margin + 5, yPosition);
+          yPosition += 6;
+          
+          if (award.description) {
+            pdf.setFont('helvetica', 'normal');
+            const splitDescription = pdf.splitTextToSize(award.description, pageWidth - margin * 2 - 10);
+            pdf.text(splitDescription, margin + 10, yPosition);
+            yPosition += splitDescription.length * 5;
+          }
+          
+          pdf.setFont('helvetica', 'italic');
+          pdf.text(`Type: ${award.assigned_by_jury_consensus ? 'Award Received' : 'Recognition Given'}`, margin + 10, yPosition);
+          yPosition += 8;
+        });
+
+        yPosition += 15; // Space between students
+      }
+
+      // Save the PDF
+      pdf.save('award-showcase.pdf');
+      
+      toast({
+        title: "PDF Downloaded",
+        description: "Award showcase PDF has been downloaded successfully!",
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF",
+        variant: "destructive",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center">
@@ -204,11 +304,21 @@ export const AwardShowcase = () => {
             </p>
           </div>
 
-          <div className="text-right">
-            <p className="text-lg font-bold text-slate-800">
-              {currentIndex + 1} of {awardees.length}
-            </p>
-            <p className="text-sm text-slate-600">Awardees</p>
+          <div className="text-right space-y-2">
+            <Button
+              onClick={downloadPDF}
+              variant="outline"
+              className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 mb-2"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Download PDF
+            </Button>
+            <div>
+              <p className="text-lg font-bold text-slate-800">
+                {currentIndex + 1} of {awardees.length}
+              </p>
+              <p className="text-sm text-slate-600">Awardees</p>
+            </div>
           </div>
         </div>
 
