@@ -252,45 +252,52 @@ const PollDisplay = () => {
   const maxVotes = getMaxVotes(activePoll.id);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <div className="max-w-6xl w-full mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-3xl flex items-center justify-center shadow-lg">
-              <BarChart3 className="w-8 h-8 text-white" />
+    <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col p-4 overflow-hidden">
+      <div className="max-w-6xl w-full mx-auto flex flex-col h-full">
+        {/* Compact Header */}
+        <div className="text-center mb-4 flex-shrink-0">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+              <BarChart3 className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-4xl md:text-6xl font-bold text-slate-800">
+            <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
               {activePoll.title}
             </h1>
           </div>
           
           {activePoll.description && (
-            <p className="text-xl text-slate-600 mb-6">{activePoll.description}</p>
+            <p className="text-lg text-slate-600 mb-3">{activePoll.description}</p>
           )}
           
-          <div className="flex justify-center items-center gap-4">
-            <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white text-lg px-4 py-2">
-              <Users className="w-5 h-5 mr-2" />
+          <div className="flex justify-center items-center gap-3">
+            <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1">
+              <Users className="w-4 h-4 mr-1" />
               {totalVotes} votes
             </Badge>
-            <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-lg px-4 py-2">
-              <TrendingUp className="w-5 h-5 mr-2" />
+            <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1">
+              <TrendingUp className="w-4 h-4 mr-1" />
               Live Results
             </Badge>
           </div>
         </div>
 
-        {/* Live Voting Statistics */}
-        <LiveVotingStats 
-          pollId={activePoll.id} 
-          showResultsPublicly={activePoll.show_results_publicly}
-        />
+        {/* Content Area - Scrollable if needed */}
+        <div className="flex-1 min-h-0 space-y-4">
+          {/* Live Voting Statistics */}
+          <div className="h-full overflow-y-auto">
+            <LiveVotingStats 
+              pollId={activePoll.id} 
+              showResultsPublicly={activePoll.show_results_publicly}
+            />
 
-        {/* Post-Voting Analysis (shown only after organizer presses Stop) */}
-        {activePoll.show_post_analysis && (
-          <PostVotingAnalysis pollId={activePoll.id} pollTitle={activePoll.title} />
-        )}
+            {/* Post-Voting Analysis (shown only after organizer presses Stop) */}
+            {activePoll.show_post_analysis && (
+              <div className="mt-4">
+                <PostVotingAnalysis pollId={activePoll.id} pollTitle={activePoll.title} />
+              </div>
+            )}
+          </div>
+        </div>
 
       </div>
     </div>
