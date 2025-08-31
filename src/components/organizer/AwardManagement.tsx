@@ -471,7 +471,7 @@ export const AwardManagement = () => {
             <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
               <Award className="w-5 h-5 text-white" />
             </div>
-            <CardTitle className="text-slate-800">Available Awards</CardTitle>
+            <CardTitle className="text-slate-800">Available Awards and recognitions</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
