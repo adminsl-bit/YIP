@@ -24,10 +24,27 @@ export const TimerControl = () => {
   const { user } = useAuth();
   const [currentTimer, setCurrentTimer] = useState<TimerSession | null>(null);
   const [title, setTitle] = useState("Parliament Session");
-  const [duration, setDuration] = useState(300); // 5 minutes default
+  const [hours, setHours] = useState(0);
+  const [minutes, setMinutes] = useState(5);
+  const [seconds, setSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Helper function to convert H:M:S to total seconds
+  const getDurationInSeconds = () => {
+    return hours * 3600 + minutes * 60 + seconds;
+  };
+
+  // Helper function to convert seconds to H:M:S
+  const setDurationFromSeconds = (totalSeconds: number) => {
+    const hrs = Math.floor(totalSeconds / 3600);
+    const mins = Math.floor((totalSeconds % 3600) / 60);
+    const secs = totalSeconds % 60;
+    setHours(hrs);
+    setMinutes(mins);
+    setSeconds(secs);
+  };
 
   useEffect(() => {
     fetchActiveTimer();
@@ -63,7 +80,7 @@ export const TimerControl = () => {
       if (data && data.length > 0) {
         setCurrentTimer(data[0] as TimerSession);
         setTitle(data[0].title);
-        setDuration(data[0].duration_seconds);
+        setDurationFromSeconds(data[0].duration_seconds);
       } else {
         setCurrentTimer(null);
       }
@@ -130,14 +147,24 @@ export const TimerControl = () => {
   const createTimer = async () => {
     if (!user) return;
 
+    const totalDuration = getDurationInSeconds();
+    if (totalDuration < 1) {
+      toast({
+        title: "Invalid Duration",
+        description: "Timer duration must be at least 1 second",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase
         .from('timer_sessions')
         .insert({
           title,
-          duration_seconds: duration,
-          remaining_seconds: duration,
+          duration_seconds: totalDuration,
+          remaining_seconds: totalDuration,
           created_by: user.id
         })
         .select()
@@ -146,9 +173,10 @@ export const TimerControl = () => {
       if (error) throw error;
 
       setCurrentTimer(data as TimerSession);
+      const formattedTime = `${hours}h ${minutes}m ${seconds}s`;
       toast({
         title: "Timer Created",
-        description: `Timer "${title}" set for ${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}`
+        description: `Timer "${title}" set for ${formattedTime}`
       });
     } catch (error) {
       console.error('Error creating timer:', error);
@@ -264,7 +292,9 @@ export const TimerControl = () => {
 
       setCurrentTimer(null);
       setTitle("Parliament Session");
-      setDuration(300);
+      setHours(0);
+      setMinutes(5);
+      setSeconds(0);
 
       toast({
         title: "Timer Deleted",
@@ -347,17 +377,47 @@ export const TimerControl = () => {
             />
           </div>
           <div>
-            <label className="text-sm font-medium text-slate-700">Duration (seconds)</label>
-            <Input
-              type="number"
-              value={duration}
-              onChange={(e) => setDuration(parseInt(e.target.value) || 300)}
-              min={60}
-              max={3600}
-              className="bg-white/50"
-            />
+            <label className="text-sm font-medium text-slate-700">Duration</label>
+            <div className="grid grid-cols-3 gap-3 mt-1">
+              <div>
+                <label className="text-xs text-slate-600">Hours</label>
+                <Input
+                  type="number"
+                  value={hours}
+                  onChange={(e) => setHours(Math.max(0, parseInt(e.target.value) || 0))}
+                  min={0}
+                  max={23}
+                  className="bg-white/50"
+                  placeholder="0"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-600">Minutes</label>
+                <Input
+                  type="number"
+                  value={minutes}
+                  onChange={(e) => setMinutes(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                  min={0}
+                  max={59}
+                  className="bg-white/50"
+                  placeholder="5"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-600">Seconds</label>
+                <Input
+                  type="number"
+                  value={seconds}
+                  onChange={(e) => setSeconds(Math.max(0, Math.min(59, parseInt(e.target.value) || 0)))}
+                  min={0}
+                  max={59}
+                  className="bg-white/50"
+                  placeholder="0"
+                />
+              </div>
+            </div>
             <p className="text-xs text-slate-600 mt-1">
-              Default: 300 seconds (5 minutes)
+              Total: {getDurationInSeconds()} seconds ({hours}h {minutes}m {seconds}s)
             </p>
           </div>
           <button 
