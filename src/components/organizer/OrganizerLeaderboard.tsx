@@ -24,6 +24,7 @@ interface LeaderboardEntry {
   average_score: number;
   assessment_count: number;
   award_ids: string[];
+  serial_number: number;
 }
 
 interface Award {
@@ -58,10 +59,13 @@ export const OrganizerLeaderboard = () => {
 
   const fetchData = async () => {
     try {
-      // Fetch leaderboard data
+      // Fetch leaderboard data with serial numbers
       const { data: leaderboardData, error: leaderboardError } = await supabase
         .from('jury_leaderboard')
-        .select('*');
+        .select(`
+          *,
+          profiles!inner(serial_number)
+        `);
 
       if (leaderboardError) throw leaderboardError;
 
@@ -95,7 +99,12 @@ export const OrganizerLeaderboard = () => {
 
       if (studentAwardsError) throw studentAwardsError;
 
-      setLeaderboard(leaderboardData || []);
+      // Process leaderboard data to include serial_number
+      const processedLeaderboard = leaderboardData?.map(entry => ({
+        ...entry,
+        serial_number: (entry.profiles as any)?.serial_number || 0
+      })) || [];
+      setLeaderboard(processedLeaderboard);
       setAwards(awardsData || []);
       
       const formattedVotes = votesData?.map(vote => ({
@@ -189,7 +198,8 @@ export const OrganizerLeaderboard = () => {
     const matchesSearch = entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.constituency?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.city?.toLowerCase().includes(searchTerm.toLowerCase());
+      entry.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      entry.serial_number.toString().includes(searchTerm);
     
     const matchesCity = !cityFilter || cityFilter === 'all' || entry.city === cityFilter;
     const matchesParty = !partyFilter || partyFilter === 'all' || entry.party_number.toString() === partyFilter;
@@ -338,7 +348,7 @@ export const OrganizerLeaderboard = () => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
             <Input
-              placeholder="Search by name, position, constituency, city..."
+              placeholder="Search by name, position, constituency, city, serial number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
