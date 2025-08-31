@@ -25,6 +25,7 @@ interface LeaderboardEntry {
   assessment_count: number;
   award_ids: string[];
   serial_number: number;
+  original_rank: number;
 }
 
 interface Award {
@@ -81,11 +82,15 @@ export const OrganizerLeaderboard = () => {
         serialNumberMap.set(profile.user_id, profile.serial_number);
       });
 
-      // Process leaderboard data to include serial_number
-      const processedLeaderboard = leaderboardData?.map(entry => ({
+      // Sort leaderboard by average score (descending) to get correct ranking
+      const sortedLeaderboard = leaderboardData?.sort((a, b) => (b.average_score || 0) - (a.average_score || 0)) || [];
+      
+      // Process leaderboard data to include serial_number and original rank
+      const processedLeaderboard = sortedLeaderboard.map((entry, index) => ({
         ...entry,
-        serial_number: serialNumberMap.get(entry.user_id) || 0
-      })) || [];
+        serial_number: serialNumberMap.get(entry.user_id) || 0,
+        original_rank: index + 1
+      }));
       setLeaderboard(processedLeaderboard);
 
       // Fetch awards
@@ -222,8 +227,8 @@ export const OrganizerLeaderboard = () => {
   });
 
   const exportToCSV = () => {
-    const exportData = filteredLeaderboard.map((entry, index) => ({
-      Rank: hasRealScores ? index + 1 : '',
+    const exportData = filteredLeaderboard.map((entry) => ({
+      Rank: hasRealScores ? entry.original_rank : '',
       Name: entry.name,
       Position: entry.position,
       Party: `Party ${entry.party_number}`,
@@ -280,8 +285,8 @@ export const OrganizerLeaderboard = () => {
     y += 10;
     
     // Data rows
-    filteredLeaderboard.slice(0, 30).forEach((entry, index) => { // Limit to 30 for PDF space
-      const rank = hasRealScores ? (index + 1).toString() : '—';
+    filteredLeaderboard.slice(0, 30).forEach((entry) => { // Limit to 30 for PDF space
+      const rank = hasRealScores ? entry.original_rank.toString() : '—';
       const awards = studentAwards[entry.user_id]?.length || 0;
       
       pdf.text(rank, 20, y);
@@ -504,11 +509,11 @@ export const OrganizerLeaderboard = () => {
                               {initials}
                             </AvatarFallback>
                           </Avatar>
-                          {hasRealScores && (
-                            <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                              <span className="text-white text-xs font-bold">#{index + 1}</span>
-                            </div>
-                          )}
+                           {hasRealScores && (
+                             <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                               <span className="text-white text-xs font-bold">#{entry.original_rank}</span>
+                             </div>
+                           )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <h3 className="font-bold text-lg text-foreground truncate mb-1">{entry.name}</h3>
