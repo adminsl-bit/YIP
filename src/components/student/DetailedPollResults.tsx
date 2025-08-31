@@ -4,7 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { FileText, Users, CheckCircle, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { FileText, Users, CheckCircle, XCircle, Download } from "lucide-react";
+import jsPDF from "jspdf";
+import { toast } from "@/hooks/use-toast";
 
 interface Student {
   user_id: string;
@@ -185,19 +188,87 @@ export const DetailedPollResults = ({ pollId, pollTitle, options }: DetailedPoll
     );
   }
 
+  const downloadPDF = () => {
+    try {
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const margin = 20;
+      let yPosition = margin;
+
+      // Title
+      pdf.setFontSize(20);
+      pdf.text(`Poll Results: ${pollTitle}`, margin, yPosition);
+      yPosition += 20;
+
+      // Summary
+      pdf.setFontSize(12);
+      pdf.text(`Total Students: ${votesWithStudents.length}`, margin, yPosition);
+      yPosition += 10;
+      pdf.text(`Generated on: ${new Date().toLocaleString()}`, margin, yPosition);
+      yPosition += 20;
+
+      // Results for each option
+      [...options, 'did_not_vote'].forEach((option) => {
+        const optionVotes = getVotesForOption(option);
+        const displayTitle = option === 'did_not_vote' ? 'Did Not Vote' : option;
+        
+        pdf.setFontSize(14);
+        pdf.text(`${displayTitle}: ${optionVotes.length} students`, margin, yPosition);
+        yPosition += 15;
+
+        // List students for this option
+        optionVotes.forEach((vote) => {
+          if (yPosition > 280) { // Start new page if needed
+            pdf.addPage();
+            yPosition = margin;
+          }
+          
+          pdf.setFontSize(10);
+          const studentInfo = `${vote.student.name} - ${vote.student.position} - Party ${vote.student.party_number}`;
+          pdf.text(studentInfo, margin + 10, yPosition);
+          yPosition += 8;
+        });
+        
+        yPosition += 10;
+      });
+
+      pdf.save(`poll-results-${pollTitle.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`);
+      
+      toast({
+        title: "PDF Downloaded",
+        description: "Poll results have been downloaded as PDF"
+      });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <Card className="bg-white/95 backdrop-blur-lg border border-gray/25 shadow-xl">
       <CardHeader>
-        <CardTitle className="flex items-center gap-3">
-          <FileText className="w-5 h-5" />
-          Detailed Results: {pollTitle}
-        </CardTitle>
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <Users className="w-4 h-4" />
-          Total Votes: {votesWithStudents.length}
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-3">
+              <FileText className="w-5 h-5" />
+              Detailed Results: {pollTitle}
+            </CardTitle>
+            <div className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+              <Users className="w-4 h-4" />
+              Total Students: {votesWithStudents.length}
+            </div>
+          </div>
+          <Button variant="outline" onClick={downloadPDF} className="flex items-center gap-2">
+            <Download className="w-4 h-4" />
+            Download PDF
+          </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 max-h-96 overflow-y-auto">
         {[...options, 'did_not_vote'].map((option, index) => {
           const optionVotes = getVotesForOption(option);
           const totalStudents = votesWithStudents.filter(v => v.option_id !== 'did_not_vote').length + votesWithStudents.filter(v => v.option_id === 'did_not_vote').length;

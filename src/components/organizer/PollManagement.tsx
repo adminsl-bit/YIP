@@ -575,7 +575,7 @@ export const PollManagement = () => {
                 ...(showDetailedResults === poll.id ? [
                   <TableRow key={`${poll.id}-details`}>
                     <TableCell colSpan={6} className="p-0">
-                      <div className="p-4 bg-gray-50/50">
+                      <div className="p-4 bg-gray-50/50 max-h-[600px] overflow-hidden">
                         <DetailedPollResults 
                           pollId={poll.id} 
                           pollTitle={poll.title} 
