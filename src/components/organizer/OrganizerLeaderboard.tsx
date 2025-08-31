@@ -26,6 +26,12 @@ interface LeaderboardEntry {
   award_ids: string[];
   serial_number: number;
   original_rank: number;
+  missing_jury_assessments?: string[];
+}
+
+interface JuryMember {
+  user_id: string;
+  name: string;
 }
 
 interface Award {
@@ -46,10 +52,12 @@ export const OrganizerLeaderboard = () => {
   const [awards, setAwards] = useState<Award[]>([]);
   const [awardVotes, setAwardVotes] = useState<AwardVote[]>([]);
   const [studentAwards, setStudentAwards] = useState<Record<string, string[]>>({});
+  const [juryMembers, setJuryMembers] = useState<JuryMember[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('');
   const [partyFilter, setPartyFilter] = useState('');
   const [positionFilter, setPositionFilter] = useState('');
+  const [assessmentStatusFilter, setAssessmentStatusFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -67,6 +75,22 @@ export const OrganizerLeaderboard = () => {
 
       if (leaderboardError) throw leaderboardError;
 
+      // Fetch jury members
+      const { data: juryData, error: juryError } = await supabase
+        .from('profiles')
+        .select('user_id, name')
+        .eq('user_type', 'jury');
+
+      if (juryError) throw juryError;
+      setJuryMembers(juryData || []);
+
+      // Fetch all assessments to determine missing jury assessments
+      const { data: assessmentsData, error: assessmentsError } = await supabase
+        .from('assessments')
+        .select('student_id, jury_id, status');
+
+      if (assessmentsError) throw assessmentsError;
+
       // Fetch serial numbers for all students in the leaderboard
       const userIds = leaderboardData?.map(entry => entry.user_id) || [];
       const { data: profilesData, error: profilesError } = await supabase
@@ -82,15 +106,30 @@ export const OrganizerLeaderboard = () => {
         serialNumberMap.set(profile.user_id, profile.serial_number);
       });
 
+      // Create a map of submitted assessments
+      const submittedAssessments = new Set();
+      assessmentsData?.forEach(assessment => {
+        if (assessment.status === 'submitted') {
+          submittedAssessments.add(`${assessment.student_id}-${assessment.jury_id}`);
+        }
+      });
+
       // Sort leaderboard by average score (descending) to get correct ranking
       const sortedLeaderboard = leaderboardData?.sort((a, b) => (b.average_score || 0) - (a.average_score || 0)) || [];
       
-      // Process leaderboard data to include serial_number and original rank
-      const processedLeaderboard = sortedLeaderboard.map((entry, index) => ({
-        ...entry,
-        serial_number: serialNumberMap.get(entry.user_id) || 0,
-        original_rank: index + 1
-      }));
+      // Process leaderboard data to include serial_number, original rank, and missing assessments
+      const processedLeaderboard = sortedLeaderboard.map((entry, index) => {
+        const missingJuryAssessments = juryData?.filter(jury => 
+          !submittedAssessments.has(`${entry.user_id}-${jury.user_id}`)
+        ).map(jury => jury.name) || [];
+
+        return {
+          ...entry,
+          serial_number: serialNumberMap.get(entry.user_id) || 0,
+          original_rank: index + 1,
+          missing_jury_assessments: missingJuryAssessments
+        };
+      });
       setLeaderboard(processedLeaderboard);
 
       // Fetch awards
@@ -212,6 +251,13 @@ export const OrganizerLeaderboard = () => {
 
   const hasRealScores = leaderboard.some(e => (e.average_score ?? 0) > 0);
 
+  const getAssessmentStatus = (entry: LeaderboardEntry) => {
+    const totalJury = juryMembers.length;
+    if (entry.assessment_count === 0) return 'not-assessed';
+    if (entry.assessment_count < totalJury) return 'partially-assessed';
+    return 'fully-assessed';
+  };
+
   const filteredLeaderboard = leaderboard.filter(entry => {
     const matchesSearch = entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       entry.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -223,7 +269,10 @@ export const OrganizerLeaderboard = () => {
     const matchesParty = !partyFilter || partyFilter === 'all' || entry.party_number.toString() === partyFilter;
     const matchesPosition = !positionFilter || positionFilter === 'all' || entry.position === positionFilter;
     
-    return matchesSearch && matchesCity && matchesParty && matchesPosition;
+    const matchesAssessmentStatus = !assessmentStatusFilter || assessmentStatusFilter === 'all' || 
+      getAssessmentStatus(entry) === assessmentStatusFilter;
+    
+    return matchesSearch && matchesCity && matchesParty && matchesPosition && matchesAssessmentStatus;
   });
 
   const exportToCSV = () => {
@@ -374,7 +423,7 @@ export const OrganizerLeaderboard = () => {
           </div>
 
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* City Filter */}
             <Select value={cityFilter} onValueChange={setCityFilter}>
               <SelectTrigger>
@@ -420,6 +469,22 @@ export const OrganizerLeaderboard = () => {
                 {uniquePositions.map((position) => (
                   <SelectItem key={position} value={position}>{position}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+
+            {/* Assessment Status Filter */}
+            <Select value={assessmentStatusFilter} onValueChange={setAssessmentStatusFilter}>
+              <SelectTrigger>
+                <div className="flex items-center gap-2">
+                  <Target className="w-4 h-4" />
+                  <SelectValue placeholder="Filter by assessment status" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Assessment Status</SelectItem>
+                <SelectItem value="not-assessed">Not Assessed</SelectItem>
+                <SelectItem value="partially-assessed">Partially Assessed</SelectItem>
+                <SelectItem value="fully-assessed">Fully Assessed</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -542,6 +607,37 @@ export const OrganizerLeaderboard = () => {
                           <div className="text-xs font-medium text-muted-foreground">Home City</div>
                           <div className="text-sm text-foreground truncate">{entry.city || '—'}</div>
                         </div>
+                      </div>
+
+                       {/* Assessment Status Section */}
+                      <div className="mb-4 p-3 bg-orange/5 rounded-xl">
+                        <div className="text-xs font-medium text-muted-foreground mb-2">Assessment Status</div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge 
+                            variant={getAssessmentStatus(entry) === 'fully-assessed' ? 'default' : 
+                                   getAssessmentStatus(entry) === 'partially-assessed' ? 'secondary' : 'destructive'}
+                            className="text-xs"
+                          >
+                            {getAssessmentStatus(entry) === 'not-assessed' ? 'Not Assessed' :
+                             getAssessmentStatus(entry) === 'partially-assessed' ? 'Partially Assessed' :
+                             'Fully Assessed'}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">
+                            ({entry.assessment_count}/{juryMembers.length})
+                          </span>
+                        </div>
+                        {entry.missing_jury_assessments && entry.missing_jury_assessments.length > 0 && (
+                          <div className="text-xs text-red-600">
+                            <div className="font-medium mb-1">Missing assessments from:</div>
+                            <div className="space-y-1">
+                              {entry.missing_jury_assessments.map((juryName, idx) => (
+                                <div key={idx} className="text-xs bg-red-50 px-2 py-1 rounded">
+                                  {juryName}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       {/* Awards Section */}
