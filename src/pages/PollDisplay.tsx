@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, Users, TrendingUp, Vote } from "lucide-react";
+import { BarChart3, Users, TrendingUp, Vote, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { LiveVotingStats } from "@/components/student/LiveVotingStats";
 import { PostVotingAnalysis } from "@/components/student/PostVotingAnalysis";
+import { DetailedPollResults } from "@/components/student/DetailedPollResults";
 
 interface Poll {
   id: string;
@@ -26,7 +28,7 @@ interface PollResult {
 const PollDisplay = () => {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [results, setResults] = useState<Record<string, PollResult[]>>({});
-  
+  const [showDetailedResults, setShowDetailedResults] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -278,23 +280,43 @@ const PollDisplay = () => {
               <TrendingUp className="w-4 h-4 mr-1" />
               Live Results
             </Badge>
+            <Button
+              onClick={() => setShowDetailedResults(!showDetailedResults)}
+              variant="outline"
+              size="sm"
+              className="bg-white/20 border-white/30 text-slate-700 hover:bg-white/30"
+            >
+              <FileText className="w-4 h-4 mr-1" />
+              {showDetailedResults ? 'Hide' : 'Show'} Detailed Results
+            </Button>
           </div>
         </div>
 
         {/* Content Area - Scrollable if needed */}
         <div className="flex-1 min-h-0 space-y-4">
-          {/* Live Voting Statistics */}
           <div className="h-full overflow-y-auto">
-            <LiveVotingStats 
-              pollId={activePoll.id} 
-              showResultsPublicly={activePoll.show_results_publicly}
-            />
+            {/* Detailed Results View */}
+            {showDetailedResults ? (
+              <DetailedPollResults 
+                pollId={activePoll.id} 
+                pollTitle={activePoll.title}
+                options={activePoll.options}
+              />
+            ) : (
+              <>
+                {/* Live Voting Statistics */}
+                <LiveVotingStats 
+                  pollId={activePoll.id} 
+                  showResultsPublicly={activePoll.show_results_publicly}
+                />
 
-            {/* Post-Voting Analysis (shown only after organizer presses Stop) */}
-            {activePoll.show_post_analysis && (
-              <div className="mt-4">
-                <PostVotingAnalysis pollId={activePoll.id} pollTitle={activePoll.title} />
-              </div>
+                {/* Post-Voting Analysis (shown only after organizer presses Stop) */}
+                {activePoll.show_post_analysis && (
+                  <div className="mt-4">
+                    <PostVotingAnalysis pollId={activePoll.id} pollTitle={activePoll.title} />
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
