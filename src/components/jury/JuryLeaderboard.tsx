@@ -38,6 +38,7 @@ interface AwardVote {
   student_id: string;
   jury_id: string;
   award_name: string;
+  jury_name?: string;
 }
 
 interface JuryLeaderboardProps {
@@ -83,7 +84,7 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
 
       if (awardsError) throw awardsError;
 
-      // Fetch award votes
+      // Fetch award votes with jury names
       const { data: votesData, error: votesError } = await supabase
         .from('award_votes')
         .select(`
@@ -94,6 +95,16 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
         `);
 
       if (votesError) throw votesError;
+
+      // Fetch jury names for the votes
+      const juryIds = [...new Set(votesData?.map(v => v.jury_id) || [])];
+      const { data: juryData, error: juryError } = await supabase
+        .from('profiles')
+        .select('user_id, name')
+        .in('user_id', juryIds)
+        .eq('user_type', 'jury');
+
+      if (juryError) throw juryError;
 
       // Fetch student awards
       const { data: studentAwardsData, error: studentAwardsError } = await supabase
@@ -108,12 +119,16 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
       setLeaderboard(leaderboardData || []);
       setAwards(awardsData || []);
       
-      const formattedVotes = votesData?.map(vote => ({
-        award_id: vote.award_id,
-        student_id: vote.student_id,
-        jury_id: vote.jury_id,
-        award_name: (vote.awards as any)?.name || ''
-      })) || [];
+      const formattedVotes = votesData?.map(vote => {
+        const juryProfile = juryData?.find(j => j.user_id === vote.jury_id);
+        return {
+          award_id: vote.award_id,
+          student_id: vote.student_id,
+          jury_id: vote.jury_id,
+          award_name: (vote.awards as any)?.name || '',
+          jury_name: juryProfile?.name || 'Unknown Jury'
+        };
+      }) || [];
       setAwardVotes(formattedVotes);
 
       // Group student awards by student_id
@@ -245,6 +260,12 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
     return awardVotes.some(vote => 
       vote.award_id === awardId && vote.student_id === studentId && vote.jury_id === juryId
     );
+  };
+
+  const getVoters = (awardId: string, studentId: string) => {
+    return awardVotes
+      .filter(vote => vote.award_id === awardId && vote.student_id === studentId)
+      .map(vote => vote.jury_name || 'Unknown');
   };
 
   const getRankIcon = (rank: number) => {
@@ -589,22 +610,37 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                                  {awards.filter(award => hasVoted(award.id, entry.user_id)).length > 0 ? (
                                    <div className="space-y-2">
                                      {awards.filter(award => hasVoted(award.id, entry.user_id)).map((award) => (
-                                       <div key={award.id} className="flex items-center justify-between bg-blue-50/80 rounded-lg p-2 border border-blue-200/50">
-                                         <div className="flex items-center gap-2">
-                                           <CheckCircle2 className="w-4 h-4 text-blue-600" />
-                                           <span className="text-sm font-medium text-slate-700">{award.name}</span>
-                                           <span className="text-xs text-slate-500">({getVoteCount(award.id, entry.user_id)}/3 votes)</span>
-                                         </div>
-                                         <Button
-                                           size="sm"
-                                           variant="outline"
-                                           onClick={() => handleRemoveVote(award.id, entry.user_id)}
-                                           className="h-7 px-2 bg-red-50/80 border-red-200/50 text-red-600 hover:bg-red-100/80 text-xs"
-                                         >
-                                           <X className="w-3 h-3 mr-1" />
-                                           Remove
-                                         </Button>
-                                       </div>
+                                        <div key={award.id} className="bg-blue-50/80 rounded-lg p-3 border border-blue-200/50">
+                                          <div className="flex items-center justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                              <CheckCircle2 className="w-4 h-4 text-blue-600" />
+                                              <span className="text-sm font-medium text-slate-700">{award.name}</span>
+                                              <span className="text-xs text-slate-500">({getVoteCount(award.id, entry.user_id)}/3 votes)</span>
+                                            </div>
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              onClick={() => handleRemoveVote(award.id, entry.user_id)}
+                                              className="h-7 px-2 bg-red-50/80 border-red-200/50 text-red-600 hover:bg-red-100/80 text-xs"
+                                            >
+                                              <X className="w-3 h-3 mr-1" />
+                                              Remove
+                                            </Button>
+                                          </div>
+                                          {/* Show which jury members voted for this award */}
+                                          {getVoters(award.id, entry.user_id).length > 0 && (
+                                            <div className="mt-2 pt-2 border-t border-blue-200/30">
+                                              <div className="text-xs text-slate-600 font-medium mb-1">Voted by:</div>
+                                              <div className="flex flex-wrap gap-1">
+                                                {getVoters(award.id, entry.user_id).map((voterName, voterIdx) => (
+                                                  <Badge key={voterIdx} variant="secondary" className="text-xs bg-blue-100/80 text-blue-700 border border-blue-200/50">
+                                                    {voterName}
+                                                  </Badge>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
                                      ))}
                                    </div>
                                  ) : (
