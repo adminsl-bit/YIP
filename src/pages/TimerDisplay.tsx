@@ -159,65 +159,115 @@ const TimerDisplay = () => {
 
   return (
     <div className={`min-h-screen flex items-center justify-center transition-all duration-1000 ${getBackgroundColor()}`}>
-      <div className="max-w-4xl w-full mx-auto p-8">
-        <Card className="bg-black/20 backdrop-blur-md border-white/20">
+      <div className="max-w-6xl w-full mx-auto p-8">
+        <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl rounded-3xl overflow-hidden">
           <CardContent className="p-12 text-center">
             {timer ? (
               <div className={`space-y-8 ${getTextColor()}`}>
                 {/* Timer Title */}
-                <h1 className="text-4xl md:text-6xl font-bold mb-8">
+                <h1 className="text-4xl md:text-6xl font-bold mb-8 animate-fade-in">
                   {timer.title}
                 </h1>
 
-                {/* Status Icon */}
+                {/* Tiger Timekeeper Character */}
                 <div className="flex justify-center mb-8">
-                  {getStatusIcon()}
-                </div>
-
-                {/* Main Timer Display */}
-                <div className="text-8xl md:text-9xl font-mono font-bold tracking-wider mb-8">
-                  {formatTime(timer.remaining_seconds)}
-                </div>
-
-                {/* Progress Bar */}
-                <div className="max-w-2xl mx-auto mb-8">
-                  <Progress 
-                    value={getProgressValue()} 
-                    className="h-4 bg-white/20"
-                  />
-                  <div className="flex justify-between text-xl mt-4">
-                    <span>0:00</span>
-                    <span>{formatTime(timer.duration_seconds)}</span>
+                  <div className="relative animate-scale-in">
+                    <img 
+                      src="/lovable-uploads/9850b13c-f0c3-4079-ade9-bc1be0b69ee0.png"
+                      alt="Tiger Timekeeper"
+                      className="w-32 h-32 md:w-48 md:h-48 animate-pulse hover:scale-110 transition-transform duration-500 filter drop-shadow-lg"
+                    />
+                    {timer.status === 'running' && (
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full animate-ping"></div>
+                    )}
+                    {timer.status === 'paused' && (
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full animate-pulse"></div>
+                    )}
+                    {timer.status === 'completed' && (
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-400 rounded-full animate-bounce"></div>
+                    )}
                   </div>
                 </div>
 
-                {/* Status Badge */}
+                {/* Main Timer Display with soft glow */}
+                <div className="relative">
+                  <div className="text-8xl md:text-9xl font-mono font-bold tracking-wider mb-8 animate-fade-in relative">
+                    <span className="relative z-10">{formatTime(timer.remaining_seconds)}</span>
+                    <div className="absolute inset-0 text-8xl md:text-9xl font-mono font-bold tracking-wider text-white/20 blur-lg animate-pulse">
+                      {formatTime(timer.remaining_seconds)}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress Bar with soft styling */}
+                <div className="max-w-2xl mx-auto mb-8">
+                  <div className="bg-white/20 rounded-full p-2 shadow-inner">
+                    <Progress 
+                      value={getProgressValue()} 
+                      className="h-6 bg-transparent"
+                    />
+                  </div>
+                  <div className="flex justify-between text-xl mt-4 font-semibold">
+                    <span className="bg-white/20 px-4 py-2 rounded-full">0:00</span>
+                    <span className="bg-white/20 px-4 py-2 rounded-full">{formatTime(timer.duration_seconds)}</span>
+                  </div>
+                </div>
+
+                {/* Status Badge with animations */}
                 <div className="flex justify-center">
                   <Badge 
                     variant="outline" 
-                    className="text-2xl px-6 py-3 border-white/40 text-white bg-white/10"
+                    className={`text-2xl px-8 py-4 border-white/40 text-white bg-white/20 rounded-2xl backdrop-blur-sm shadow-lg transition-all duration-300 ${
+                      timer.status === 'running' ? 'animate-pulse' : 
+                      timer.status === 'completed' ? 'animate-bounce' : ''
+                    }`}
                   >
+                    {timer.status === 'running' && '⏰ '}{timer.status === 'paused' && '⏸️ '}{timer.status === 'completed' && '🔔 '}
                     {timer.status.toUpperCase()}
                   </Badge>
                 </div>
 
-                {/* Completion Message */}
+                {/* Completion Message with celebration */}
                 {timer.status === 'completed' && (
-                  <div className="mt-8 p-6 bg-white/20 rounded-lg">
-                    <h2 className="text-3xl font-bold mb-2">TIME'S UP!</h2>
-                    <p className="text-xl">Session has completed</p>
+                  <div className="mt-8 p-8 bg-gradient-to-r from-purple-400/30 to-pink-400/30 rounded-3xl backdrop-blur-sm border border-white/30 animate-scale-in">
+                    <div className="text-6xl mb-4 animate-bounce">🎉</div>
+                    <h2 className="text-4xl font-bold mb-4 animate-fade-in">TIME'S UP!</h2>
+                    <p className="text-2xl animate-fade-in">Session has completed successfully!</p>
+                    <div className="mt-4 text-4xl animate-pulse">⏰ 🎊 ⏰</div>
+                  </div>
+                )}
+
+                {/* Motivational messages based on time remaining */}
+                {timer.status === 'running' && (
+                  <div className="mt-8 text-lg font-medium animate-fade-in">
+                    {timer.remaining_seconds > timer.duration_seconds * 0.8 && (
+                      <p className="text-green-200">🌟 Session is going strong! Keep up the great work!</p>
+                    )}
+                    {timer.remaining_seconds <= timer.duration_seconds * 0.8 && timer.remaining_seconds > timer.duration_seconds * 0.3 && (
+                      <p className="text-yellow-200">⚡ Halfway there! Maintain the momentum!</p>
+                    )}
+                    {timer.remaining_seconds <= timer.duration_seconds * 0.3 && timer.remaining_seconds > 0 && (
+                      <p className="text-orange-200">🚀 Final stretch! Time to wrap up!</p>
+                    )}
                   </div>
                 )}
               </div>
             ) : (
               <div className="text-white space-y-8">
-                <Clock className="w-24 h-24 mx-auto opacity-50" />
-                <h1 className="text-4xl md:text-6xl font-bold">
-                  No Active Timer
+                <div className="animate-scale-in">
+                  <img 
+                    src="/lovable-uploads/9850b13c-f0c3-4079-ade9-bc1be0b69ee0.png"
+                    alt="Tiger Timekeeper Waiting"
+                    className="w-48 h-48 mx-auto opacity-75 animate-pulse filter drop-shadow-lg"
+                  />
+                </div>
+                <h1 className="text-4xl md:text-6xl font-bold animate-fade-in">
+                  🐅 Timekeeper Ready!
                 </h1>
-                <p className="text-xl opacity-75">
-                  Waiting for organizer to start a timer session
+                <p className="text-xl opacity-75 animate-fade-in">
+                  Waiting for organizer to start a timer session...
                 </p>
+                <div className="text-2xl animate-pulse">⏰ 🎯 ⏰</div>
               </div>
             )}
           </CardContent>
