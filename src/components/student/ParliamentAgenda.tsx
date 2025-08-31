@@ -68,6 +68,24 @@ const scheduleData: DaySchedule[] = [
       { time: "3:00 - 4:45 PM", session: "9. Committee Presentation, Debates & Discussion (committees led by cabinet ministers)", type: "discussion" },
       { time: "4:45 - 5:00 PM", session: "10. Day 1 Adjournment with High Tea", type: "ceremony" }
     ]
+  },
+  {
+    day: 2,
+    date: "31st August 2025 Host: Yi Madurai - YIP 2.0 SRTN Regional Day 2 Agenda",
+    duration: "8:30 AM to 5:30 PM",
+    items: [
+      { time: "8:30 AM - 10:00 AM", session: "11. Committee Presentation, Debates & Discussion (committees led by cabinet ministers)", type: "discussion" },
+      { time: "10:00 AM - 11:00 AM", session: "12. Question Hour", type: "session" },
+      { time: "11:00 AM - 11:15 AM", session: "13. Tea Break", type: "break" },
+      { time: "11:15 AM - 12:15 AM", session: "14. Private Members Bill (Debated & Voted)", type: "voting" },
+      { time: "12:15 PM - 1:15 PM", session: "15. Zero Hour", type: "session" },
+      { time: "1:15 PM - 2:15 PM", session: "16. Lunch Break", type: "break" },
+      { time: "2:15 PM - 3:45 PM", session: "17. Bills Presentation Debates and Discussion (Ruling Bills)", type: "discussion" },
+      { time: "3:45 PM - 4:15 PM", session: "18. Observation by administrators (review on key contents discussed)", type: "session" },
+      { time: "4:15 PM - 4:30 PM", session: "19. Closing remarks by prime minister and leader of opposition", type: "ceremony" },
+      { time: "4:30 - 5:30 PM", session: "20. Valedictory Ceremony & National Anthem", type: "ceremony" },
+      { time: "5:30 PM", session: "High Tea", type: "break" }
+    ]
   }
 ];
 
