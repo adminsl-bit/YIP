@@ -25,7 +25,7 @@ export const TimerControl = () => {
   const [currentTimer, setCurrentTimer] = useState<TimerSession | null>(null);
   const [title, setTitle] = useState("Parliament Session");
   const [hours, setHours] = useState(0);
-  const [minutes, setMinutes] = useState(5);
+  const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -293,7 +293,7 @@ export const TimerControl = () => {
       setCurrentTimer(null);
       setTitle("Parliament Session");
       setHours(0);
-      setMinutes(5);
+      setMinutes(0);
       setSeconds(0);
 
       toast({
@@ -400,7 +400,7 @@ export const TimerControl = () => {
                   min={0}
                   max={59}
                   className="bg-white/50"
-                  placeholder="5"
+                  placeholder="0"
                 />
               </div>
               <div>
