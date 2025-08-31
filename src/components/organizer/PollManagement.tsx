@@ -8,9 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash, Play, Pause, BarChart3, ExternalLink, Square } from "lucide-react";
+import { Plus, Edit, Trash, Play, Pause, BarChart3, ExternalLink, Square, FileText } from "lucide-react";
 import { LiveVotingStats } from "@/components/student/LiveVotingStats";
 import { PostVotingAnalysis } from "@/components/student/PostVotingAnalysis";
+import { DetailedPollResults } from "@/components/student/DetailedPollResults";
 import { toast } from "@/hooks/use-toast";
 
 interface Poll {
@@ -39,6 +40,7 @@ export const PollManagement = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [showPostVotingAnalysis, setShowPostVotingAnalysis] = useState<string | null>(null);
+  const [showDetailedResults, setShowDetailedResults] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
@@ -483,7 +485,7 @@ export const PollManagement = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {polls.map((poll) => (
+              {polls.map((poll) => [
                 <TableRow key={poll.id}>
                   <TableCell>
                     <div>
@@ -555,14 +557,35 @@ export const PollManagement = () => {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={() => setShowDetailedResults(showDetailedResults === poll.id ? null : poll.id)}
+                        title="View Detailed Results"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={() => deletePoll(poll.id)}
                       >
                         <Trash className="w-4 h-4" />
                       </Button>
                     </div>
                   </TableCell>
-                </TableRow>
-              ))}
+                </TableRow>,
+                ...(showDetailedResults === poll.id ? [
+                  <TableRow key={`${poll.id}-details`}>
+                    <TableCell colSpan={6} className="p-0">
+                      <div className="p-4 bg-gray-50/50">
+                        <DetailedPollResults 
+                          pollId={poll.id} 
+                          pollTitle={poll.title} 
+                          options={poll.options} 
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ] : [])
+              ]).flat()}
             </TableBody>
           </Table>
 

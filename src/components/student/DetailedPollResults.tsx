@@ -52,32 +52,37 @@ export const DetailedPollResults = ({ pollId, pollTitle, options }: DetailedPoll
         throw votesError;
       }
 
-      // Get unique voter IDs
-      const voterIds = Array.from(new Set((votesData || []).map(vote => vote.voter_id)));
-
-      // Fetch student information for all voters
-      const { data: studentsData, error: studentsError } = await supabase
+      // Fetch all active student profiles
+      const { data: allStudentsData, error: allStudentsError } = await supabase
         .from('profiles')
         .select('user_id, name, position, party_number, constituency, state, photo_url')
-        .in('user_id', voterIds);
+        .eq('user_type', 'student')
+        .eq('is_active', true);
 
-      if (studentsError) {
-        throw studentsError;
+      if (allStudentsError) {
+        throw allStudentsError;
       }
 
-      // Create a map of voter ID to student data
-      const studentMap = new Map();
-      (studentsData || []).forEach(student => {
-        studentMap.set(student.user_id, student);
+      // Create a map of all students
+      const allStudentsMap = new Map();
+      (allStudentsData || []).forEach(student => {
+        allStudentsMap.set(student.user_id, student);
       });
 
-      // Transform the data structure
-      const transformedVotes: VoteWithStudent[] = (votesData || [])
-        .map(vote => {
-          const student = studentMap.get(vote.voter_id);
-          if (!student) return null;
-          
-          return {
+      // Create a map of voters
+      const voterMap = new Map();
+      (votesData || []).forEach(vote => {
+        voterMap.set(vote.voter_id, vote.option_id);
+      });
+
+      // Transform the data structure - include both voters and non-voters
+      const transformedVotes: VoteWithStudent[] = [];
+      
+      // Add voters
+      (votesData || []).forEach(vote => {
+        const student = allStudentsMap.get(vote.voter_id);
+        if (student) {
+          transformedVotes.push({
             voter_id: vote.voter_id,
             option_id: vote.option_id,
             student: {
@@ -89,9 +94,28 @@ export const DetailedPollResults = ({ pollId, pollTitle, options }: DetailedPoll
               state: student.state,
               photo_url: student.photo_url
             }
-          };
-        })
-        .filter(vote => vote !== null) as VoteWithStudent[];
+          });
+        }
+      });
+
+      // Add non-voters
+      (allStudentsData || []).forEach(student => {
+        if (!voterMap.has(student.user_id)) {
+          transformedVotes.push({
+            voter_id: student.user_id,
+            option_id: 'did_not_vote',
+            student: {
+              user_id: student.user_id,
+              name: student.name,
+              position: student.position,
+              party_number: student.party_number,
+              constituency: student.constituency,
+              state: student.state,
+              photo_url: student.photo_url
+            }
+          });
+        }
+      });
 
       setVotesWithStudents(transformedVotes);
 
@@ -174,21 +198,26 @@ export const DetailedPollResults = ({ pollId, pollTitle, options }: DetailedPoll
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {options.map((option, index) => {
+        {[...options, 'did_not_vote'].map((option, index) => {
           const optionVotes = getVotesForOption(option);
-          const percentage = votesWithStudents.length > 0 
-            ? ((optionVotes.length / votesWithStudents.length) * 100).toFixed(1)
+          const totalStudents = votesWithStudents.filter(v => v.option_id !== 'did_not_vote').length + votesWithStudents.filter(v => v.option_id === 'did_not_vote').length;
+          const percentage = totalStudents > 0 
+            ? ((optionVotes.length / totalStudents) * 100).toFixed(1)
             : 0;
 
+          const isNonVoteOption = option === 'did_not_vote';
+          const displayTitle = isNonVoteOption ? 'Did Not Vote' : option;
+          const colorClass = isNonVoteOption ? 'bg-gray-50 border-gray-200' : getOptionColor(option);
+
           return (
-            <div key={option} className={`rounded-lg border p-4 ${getOptionColor(option)}`}>
+            <div key={option} className={`rounded-lg border p-4 ${colorClass}`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  {getOptionIcon(option)}
-                  <h3 className="text-lg font-semibold capitalize">{option}</h3>
+                  {isNonVoteOption ? <Users className="w-4 h-4 text-gray-600" /> : getOptionIcon(option)}
+                  <h3 className="text-lg font-semibold capitalize">{displayTitle}</h3>
                 </div>
                 <Badge variant="secondary">
-                  {optionVotes.length} votes ({percentage}%)
+                  {optionVotes.length} students ({percentage}%)
                 </Badge>
               </div>
 
@@ -236,7 +265,7 @@ export const DetailedPollResults = ({ pollId, pollTitle, options }: DetailedPoll
                 </div>
               ) : (
                 <p className="text-gray-500 italic text-center py-4">
-                  No votes for this option
+                  {isNonVoteOption ? 'All students voted' : 'No votes for this option'}
                 </p>
               )}
             </div>
