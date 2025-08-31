@@ -316,7 +316,7 @@ export const AwardShowcase = () => {
                                   : "bg-purple-500/20 text-purple-700 border border-purple-500/30"
                               }`}
                             >
-                              {award.assigned_by_jury_consensus ? "Jury Recognition" : "Organizer Recognition"}
+                              {award.assigned_by_jury_consensus ? "Award Received" : "Recognition Given"}
                             </Badge>
                           </div>
                         </div>
