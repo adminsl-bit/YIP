@@ -156,69 +156,81 @@ export const PollVoting = () => {
         const hasVoted = !!votedChoice;
         return (
           <div key={poll.id} className="space-y-6">
-            {/* Live Voting Statistics */}
-            <LiveVotingStats 
-              pollId={poll.id} 
-              refreshTrigger={refreshTrigger}
-              showResultsPublicly={poll.show_results_publicly}
-            />
-            
             {/* Voting Interface */}
-            <Card className="bg-white/15 backdrop-blur-lg border border-white/25 shadow-xl">
+            <Card className="bg-white/20 backdrop-blur-lg border border-white/25 shadow-xl">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
-                      <Vote className="w-4 h-4 text-white" />
+                  <CardTitle className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                      <Vote className="w-5 h-5 text-white" />
                     </div>
-                    {poll.title}
+                    <span className="text-slate-800 font-bold">{poll.title}</span>
                   </CardTitle>
-                  <Badge variant={poll.is_active ? 'default' : 'secondary'}>
+                  <Badge 
+                    variant={poll.is_active ? 'default' : 'secondary'}
+                    className={poll.is_active ? 'bg-green-500 hover:bg-green-600' : ''}
+                  >
                     {poll.is_active ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
-              </CardHeader>
-              <CardContent>
                 {poll.description && (
-                  <p className="text-slate-600 mb-4 font-medium">{poll.description}</p>
+                  <p className="text-slate-600 mt-3 font-medium leading-relaxed">{poll.description}</p>
                 )}
-
+              </CardHeader>
+              <CardContent className="space-y-6">
                 {hasVoted ? (
-                  <div className="flex items-center gap-2 p-4 rounded-xl bg-green-50/50 border border-green-200 backdrop-blur-sm">
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    <p className="text-green-800 font-medium">You voted: <span className="font-bold">{votedChoice}</span></p>
+                  <div className="flex items-center gap-3 p-6 rounded-2xl bg-gradient-to-r from-green-50/80 to-emerald-50/80 border border-green-200/50 backdrop-blur-sm shadow-sm">
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-green-800 font-semibold">Vote Successfully Cast!</p>
+                      <p className="text-green-700 text-sm">Your choice: <span className="font-bold">{votedChoice}</span></p>
+                    </div>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    <RadioGroup
-                      value={selectedOptions[poll.id] || ''}
-                      onValueChange={(val) => setSelectedOptions(prev => ({ ...prev, [poll.id]: val }))}
-                      className="space-y-3"
-                    >
-                      {(Array.isArray(poll.options) ? poll.options : []).map((opt: string, idx: number) => (
-                        <div key={idx} className="flex items-center gap-3 p-4 rounded-xl bg-white/30 hover:bg-white/40 transition-all duration-200 border border-white/20">
-                          <RadioGroupItem id={`${poll.id}-${idx}`} value={opt} className="border-2" />
-                          <Label htmlFor={`${poll.id}-${idx}`} className="cursor-pointer font-semibold text-slate-800 flex-1">
-                            {opt}
-                          </Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <h4 className="text-lg font-semibold text-slate-800 mb-4">Cast Your Vote</h4>
+                      <RadioGroup
+                        value={selectedOptions[poll.id] || ''}
+                        onValueChange={(val) => setSelectedOptions(prev => ({ ...prev, [poll.id]: val }))}
+                        className="space-y-3"
+                      >
+                        {(Array.isArray(poll.options) ? poll.options : []).map((opt: string, idx: number) => (
+                          <div key={idx} className="group">
+                            <div className="flex items-center gap-4 p-5 rounded-2xl bg-white/40 hover:bg-white/60 transition-all duration-300 border border-white/30 hover:border-white/50 hover:shadow-md cursor-pointer">
+                              <RadioGroupItem 
+                                id={`${poll.id}-${idx}`} 
+                                value={opt} 
+                                className="border-2 border-slate-400 text-primary" 
+                              />
+                              <Label 
+                                htmlFor={`${poll.id}-${idx}`} 
+                                className="cursor-pointer font-semibold text-slate-800 flex-1 text-lg"
+                              >
+                                {opt}
+                              </Label>
+                            </div>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </div>
 
                     <Button
                       onClick={() => handleVote(poll)}
                       disabled={!selectedOptions[poll.id] || submitting === poll.id || !settings.voting_enabled}
-                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-lg py-6 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold text-lg py-8 rounded-2xl shadow-lg hover:shadow-xl hover:scale-[1.02] transition-all duration-300 disabled:hover:scale-100"
                     >
                       {submitting === poll.id ? (
                         <div className="flex items-center justify-center gap-3">
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          <span>Casting Vote...</span>
+                          <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span className="text-xl">Casting Vote...</span>
                         </div>
                       ) : (
                         <div className="flex items-center justify-center gap-3">
-                          <Vote className="w-5 h-5" />
-                          <span>Cast Your Vote</span>
+                          <Vote className="w-6 h-6" />
+                          <span className="text-xl">Cast Your Vote</span>
                         </div>
                       )}
                     </Button>
@@ -226,13 +238,25 @@ export const PollVoting = () => {
                 )}
 
                 {!poll.is_active && (
-                  <div className="mt-4 flex items-center gap-2 text-orange-700 bg-orange-50/50 border border-orange-200 p-3 rounded-lg backdrop-blur-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    <span className="font-medium">Voting is currently disabled for this poll.</span>
+                  <div className="mt-6 flex items-center gap-3 text-orange-800 bg-gradient-to-r from-orange-50/80 to-yellow-50/80 border border-orange-200/50 p-5 rounded-2xl backdrop-blur-sm shadow-sm">
+                    <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                      <AlertCircle className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">Voting Disabled</p>
+                      <p className="text-sm text-orange-700">This poll is currently inactive.</p>
+                    </div>
                   </div>
                 )}
               </CardContent>
             </Card>
+
+            {/* Live Voting Statistics */}
+            <LiveVotingStats 
+              pollId={poll.id} 
+              refreshTrigger={refreshTrigger}
+              showResultsPublicly={poll.show_results_publicly}
+            />
           </div>
         );
       })}
