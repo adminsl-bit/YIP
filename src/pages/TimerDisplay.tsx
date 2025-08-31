@@ -164,7 +164,7 @@ const TimerDisplay = () => {
                 {/* Tiger Timekeeper Character - Fixed positioning and removed flickering */}
                 <div className="flex justify-center mb-8">
                   <div className="relative">
-                    <div className="w-32 h-32 md:w-48 md:h-48 flex items-center justify-center">
+                    <div className="w-48 h-48 md:w-64 md:h-64 flex items-center justify-center">
                       <img 
                         src="/lovable-uploads/9850b13c-f0c3-4079-ade9-bc1be0b69ee0.png"
                         alt="Tiger Timekeeper"
