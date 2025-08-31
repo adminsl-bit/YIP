@@ -96,15 +96,29 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
 
       if (votesError) throw votesError;
 
-      // Fetch jury names for the votes
-      const juryIds = [...new Set(votesData?.map(v => v.jury_id) || [])];
-      const { data: juryData, error: juryError } = await supabase
+      // Fetch ALL jury profiles to ensure we have complete data
+      const { data: allJuryData, error: allJuryError } = await supabase
         .from('profiles')
         .select('user_id, name')
-        .in('user_id', juryIds)
         .eq('user_type', 'jury');
 
-      if (juryError) throw juryError;
+      if (allJuryError) throw allJuryError;
+
+      // Clean up any orphaned votes (votes from jury members who no longer exist)
+      const validJuryIds = allJuryData?.map(j => j.user_id) || [];
+      const validVotes = votesData?.filter(vote => validJuryIds.includes(vote.jury_id)) || [];
+      
+      // If there are orphaned votes, clean them up
+      const orphanedVotes = votesData?.filter(vote => !validJuryIds.includes(vote.jury_id)) || [];
+      if (orphanedVotes.length > 0) {
+        console.warn(`Found ${orphanedVotes.length} orphaned vote(s) from non-existent jury members`);
+        // Optionally clean up orphaned votes
+        const orphanedJuryIds = orphanedVotes.map(v => v.jury_id);
+        await supabase
+          .from('award_votes')
+          .delete()
+          .in('jury_id', orphanedJuryIds);
+      }
 
       // Fetch student awards
       const { data: studentAwardsData, error: studentAwardsError } = await supabase
@@ -119,8 +133,8 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
       setLeaderboard(leaderboardData || []);
       setAwards(awardsData || []);
       
-      const formattedVotes = votesData?.map(vote => {
-        const juryProfile = juryData?.find(j => j.user_id === vote.jury_id);
+      const formattedVotes = validVotes?.map(vote => {
+        const juryProfile = allJuryData?.find(j => j.user_id === vote.jury_id);
         return {
           award_id: vote.award_id,
           student_id: vote.student_id,
