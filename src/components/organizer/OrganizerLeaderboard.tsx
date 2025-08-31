@@ -59,15 +59,34 @@ export const OrganizerLeaderboard = () => {
 
   const fetchData = async () => {
     try {
-      // Fetch leaderboard data with serial numbers
+      // Fetch leaderboard data
       const { data: leaderboardData, error: leaderboardError } = await supabase
         .from('jury_leaderboard')
-        .select(`
-          *,
-          profiles!inner(serial_number)
-        `);
+        .select('*');
 
       if (leaderboardError) throw leaderboardError;
+
+      // Fetch serial numbers for all students in the leaderboard
+      const userIds = leaderboardData?.map(entry => entry.user_id) || [];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, serial_number')
+        .in('user_id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Create a map of user_id to serial_number
+      const serialNumberMap = new Map();
+      profilesData?.forEach(profile => {
+        serialNumberMap.set(profile.user_id, profile.serial_number);
+      });
+
+      // Process leaderboard data to include serial_number
+      const processedLeaderboard = leaderboardData?.map(entry => ({
+        ...entry,
+        serial_number: serialNumberMap.get(entry.user_id) || 0
+      })) || [];
+      setLeaderboard(processedLeaderboard);
 
       // Fetch awards
       const { data: awardsData, error: awardsError } = await supabase
@@ -99,12 +118,6 @@ export const OrganizerLeaderboard = () => {
 
       if (studentAwardsError) throw studentAwardsError;
 
-      // Process leaderboard data to include serial_number
-      const processedLeaderboard = leaderboardData?.map(entry => ({
-        ...entry,
-        serial_number: (entry.profiles as any)?.serial_number || 0
-      })) || [];
-      setLeaderboard(processedLeaderboard);
       setAwards(awardsData || []);
       
       const formattedVotes = votesData?.map(vote => ({
