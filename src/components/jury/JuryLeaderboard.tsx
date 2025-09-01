@@ -618,12 +618,12 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                                  Student: <span className="font-black text-slate-800">{entry.name}</span>
                                </div>
 
-                               {/* Current Votes Section */}
-                               <div className="space-y-2">
-                                 <h4 className="text-sm font-semibold text-slate-700">Your Current Votes:</h4>
-                                 {awards.filter(award => hasVoted(award.id, entry.user_id)).length > 0 ? (
+                                {/* All Votes Section */}
+                                <div className="space-y-2">
+                                  <h4 className="text-sm font-semibold text-slate-700">All Jury Votes:</h4>
+                                  {awards.filter(award => getVoteCount(award.id, entry.user_id) > 0).length > 0 ? (
                                    <div className="space-y-2">
-                                     {awards.filter(award => hasVoted(award.id, entry.user_id)).map((award) => (
+                                     {awards.filter(award => getVoteCount(award.id, entry.user_id) > 0).map((award) => (
                                         <div key={award.id} className="bg-blue-50/80 rounded-lg p-3 border border-blue-200/50">
                                           <div className="flex items-center justify-between mb-2">
                                             <div className="flex items-center gap-2">
@@ -631,15 +631,17 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
                                               <span className="text-sm font-medium text-slate-700">{award.name}</span>
                                               <span className="text-xs text-slate-500">({getVoteCount(award.id, entry.user_id)}/3 votes)</span>
                                             </div>
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              onClick={() => handleRemoveVote(award.id, entry.user_id)}
-                                              className="h-7 px-2 bg-red-50/80 border-red-200/50 text-red-600 hover:bg-red-100/80 text-xs"
-                                            >
-                                              <X className="w-3 h-3 mr-1" />
-                                              Remove
-                                            </Button>
+                                             {hasVoted(award.id, entry.user_id) && (
+                                               <Button
+                                                 size="sm"
+                                                 variant="outline"
+                                                 onClick={() => handleRemoveVote(award.id, entry.user_id)}
+                                                 className="h-7 px-2 bg-red-50/80 border-red-200/50 text-red-600 hover:bg-red-100/80 text-xs"
+                                               >
+                                                 <X className="w-3 h-3 mr-1" />
+                                                 Remove
+                                               </Button>
+                                             )}
                                           </div>
                                           {/* Show which jury members voted for this award */}
                                           {getVoters(award.id, entry.user_id).length > 0 && (
