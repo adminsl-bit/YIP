@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface LeaderboardEntry {
   user_id: string;
@@ -303,67 +304,50 @@ export const OrganizerLeaderboard = () => {
   };
 
   const exportToPDF = () => {
-    const pdf = new jsPDF();
-    
+    const pdf = new jsPDF('p', 'mm', 'a4');
+
     // Title
-    pdf.setFontSize(20);
-    pdf.text('Student Leaderboard Report', 20, 20);
-    
-    // Date
-    pdf.setFontSize(12);
-    const timestamp = new Date().toLocaleDateString();
-    pdf.text(`Generated on: ${timestamp}`, 20, 35);
-    
-    // Summary stats
-    pdf.text(`Total Students: ${leaderboard.length}`, 20, 50);
-    pdf.text(`Filtered Results: ${filteredLeaderboard.length}`, 20, 60);
-    pdf.text(`Top Score: ${leaderboard.length > 0 ? Math.round(leaderboard[0]?.average_score || 0) : 0}`, 20, 70);
-    
-    // Table headers
-    let y = 90;
-    pdf.setFontSize(10);
-    pdf.text('Rank', 20, y);
-    pdf.text('Name', 40, y);
-    pdf.text('Position', 100, y);
-    pdf.text('Party', 140, y);
-    pdf.text('Score', 160, y);
-    pdf.text('Awards', 180, y);
-    
-    // Draw header line
-    pdf.line(20, y + 2, 200, y + 2);
-    y += 10;
-    
-    // Data rows
-    filteredLeaderboard.slice(0, 30).forEach((entry) => { // Limit to 30 for PDF space
+    pdf.setFontSize(18);
+    pdf.text('Student Leaderboard Report', 14, 16);
+
+    // Metadata
+    pdf.setFontSize(11);
+    const timestamp = new Date().toLocaleString();
+    pdf.text(`Generated on: ${timestamp}`, 14, 24);
+    pdf.text(`Total Students: ${leaderboard.length}`, 14, 30);
+    pdf.text(`Filtered Results: ${filteredLeaderboard.length}`, 14, 36);
+
+    // Build table data for all rows (no truncation)
+    const body = filteredLeaderboard.map((entry) => {
       const rank = hasRealScores ? entry.original_rank.toString() : '—';
-      const awards = studentAwards[entry.user_id]?.length || 0;
-      
-      pdf.text(rank, 20, y);
-      pdf.text(entry.name.substring(0, 25), 40, y);
-      pdf.text(entry.position.substring(0, 15), 100, y);
-      pdf.text(`Party ${entry.party_number}`, 140, y);
-      pdf.text(Math.round(entry.average_score || 0).toString(), 160, y);
-      pdf.text(awards.toString(), 180, y);
-      
-      y += 8;
-      
-      // Add new page if needed
-      if (y > 270) {
-        pdf.addPage();
-        y = 20;
+      const awards = (studentAwards[entry.user_id]?.length || 0).toString();
+      const score = Math.round(entry.average_score || 0).toString();
+      return [rank, entry.name, entry.position, `Party ${entry.party_number}`, score, awards];
+    });
+
+    autoTable(pdf, {
+      head: [[ 'Rank', 'Name', 'Position', 'Party', 'Score', 'Awards' ]],
+      body,
+      startY: 42,
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [33, 150, 243] },
+      theme: 'striped',
+      margin: { left: 14, right: 14 },
+      columnStyles: {
+        0: { cellWidth: 12 },
+        1: { cellWidth: 62 },
+        2: { cellWidth: 36 },
+        3: { cellWidth: 28 },
+        4: { cellWidth: 18, halign: 'right' },
+        5: { cellWidth: 18, halign: 'right' }
       }
     });
-    
-    if (filteredLeaderboard.length > 30) {
-      pdf.text(`... and ${filteredLeaderboard.length - 30} more students`, 20, y + 10);
-    }
-    
-    const filename = `leaderboard-${new Date().toISOString().split('T')[0]}.pdf`;
-    pdf.save(filename);
-    
+
+    pdf.save(`leaderboard-${new Date().toISOString().split('T')[0]}.pdf`);
+
     toast({
-      title: "Export Successful",
-      description: "Leaderboard report exported to PDF",
+      title: 'Export Successful',
+      description: 'Leaderboard report exported to PDF',
     });
   };
 
