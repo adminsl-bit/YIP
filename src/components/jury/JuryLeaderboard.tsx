@@ -88,9 +88,10 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
       const { data: votesData, error: votesError } = await supabase
         .from('award_votes')
         .select(`
-          *,
-          awards (name),
-          profiles!award_votes_jury_id_fkey (name)
+          award_id,
+          student_id,
+          jury_id,
+          awards (name)
         `);
 
       if (votesError) throw votesError;
@@ -133,14 +134,13 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
       setAwards(awardsData || []);
       
       const formattedVotes = validVotes?.map(vote => {
-        // Get jury name from the foreign key relationship
-        const juryName = (vote as any).profiles?.name || 'Unknown Jury';
+        const juryProfile = allJuryData?.find(j => j.user_id === vote.jury_id);
         return {
           award_id: vote.award_id,
           student_id: vote.student_id,
           jury_id: vote.jury_id,
           award_name: (vote.awards as any)?.name || '',
-          jury_name: juryName
+          jury_name: juryProfile?.name || 'Unknown Jury'
         };
       }) || [];
       setAwardVotes(formattedVotes);
