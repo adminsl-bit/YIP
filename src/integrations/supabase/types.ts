@@ -641,6 +641,13 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: Database["public"]["Enums"]["user_type"]
       }
+      get_jury_directory: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          name: string
+          user_id: string
+        }[]
+      }
       get_total_active_students: {
         Args: Record<PropertyKey, never>
         Returns: number

@@ -96,11 +96,8 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
 
       if (votesError) throw votesError;
 
-      // Fetch ALL jury profiles to ensure we have complete data
-      const { data: allJuryData, error: allJuryError } = await supabase
-        .from('profiles')
-        .select('user_id, name')
-        .eq('user_type', 'jury');
+      // Fetch all jury profiles to map names using secure function
+      const { data: allJuryData, error: allJuryError } = await supabase.rpc('get_jury_directory');
 
       if (allJuryError) throw allJuryError;
 
