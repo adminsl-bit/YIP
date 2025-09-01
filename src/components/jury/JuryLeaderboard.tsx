@@ -104,20 +104,12 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
 
       if (allJuryError) throw allJuryError;
 
-      // Clean up any orphaned votes (votes from jury members who no longer exist)
-      const validJuryIds = allJuryData?.map(j => j.user_id) || [];
-      const validVotes = votesData?.filter(vote => validJuryIds.includes(vote.jury_id)) || [];
-      
-      // If there are orphaned votes, clean them up
-      const orphanedVotes = votesData?.filter(vote => !validJuryIds.includes(vote.jury_id)) || [];
+      // Identify orphaned votes (do not delete on client)
+      const allVotes = votesData || [];
+      const validJuryIds = new Set((allJuryData?.map(j => j.user_id)) || []);
+      const orphanedVotes = allVotes.filter(vote => !validJuryIds.has(vote.jury_id));
       if (orphanedVotes.length > 0) {
-        console.warn(`Found ${orphanedVotes.length} orphaned vote(s) from non-existent jury members`);
-        // Optionally clean up orphaned votes
-        const orphanedJuryIds = orphanedVotes.map(v => v.jury_id);
-        await supabase
-          .from('award_votes')
-          .delete()
-          .in('jury_id', orphanedJuryIds);
+        console.warn(`Found ${orphanedVotes.length} vote(s) from jury profiles not found. Displaying as "Unknown Jury".`);
       }
 
       // Fetch student awards
@@ -133,7 +125,7 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
       setLeaderboard(leaderboardData || []);
       setAwards(awardsData || []);
       
-      const formattedVotes = validVotes?.map(vote => {
+      const formattedVotes = allVotes.map(vote => {
         const juryProfile = allJuryData?.find(j => j.user_id === vote.jury_id);
         return {
           award_id: vote.award_id,
@@ -142,7 +134,7 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
           award_name: (vote.awards as any)?.name || '',
           jury_name: juryProfile?.name || 'Unknown Jury'
         };
-      }) || [];
+      });
       setAwardVotes(formattedVotes);
 
       // Group student awards by student_id
