@@ -210,17 +210,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 .maybeSingle();
               
               if (roleData) {
-                setTimeout(() => {
-                  window.location.href = '/admin-student';
-                }, 100);
+                navigate('/admin-student');
                 return;
               }
             }
             
-            // Small delay to ensure auth state is updated
-            setTimeout(() => {
-              redirectByRole(profileData.user_type);
-            }, 100);
+            // Redirect based on user type
+            redirectByRole(profileData.user_type);
           }
         }
       }
