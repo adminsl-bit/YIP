@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { Users, CheckCircle, Clock, Trophy, Download, FileText } from "lucide-react";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { toast } from "@/hooks/use-toast";
 
 interface DashboardStats {
   totalStudents: number;
@@ -274,7 +275,11 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
     try {
       const container = reportRef.current;
       if (!container) {
-        alert('Report not ready to export');
+        toast({
+          title: "Error",
+          description: "Report not ready to export",
+          variant: "destructive",
+        });
         return;
       }
 
@@ -313,9 +318,17 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
       }
 
       pdf.save(`jury-dashboard-${new Date().toISOString().split('T')[0]}.pdf`);
+      toast({
+        title: "Success",
+        description: "PDF exported successfully",
+      });
     } catch (error) {
       console.error('Error exporting PDF:', error);
-      alert('Failed to export PDF');
+      toast({
+        title: "Error",
+        description: "Failed to export PDF",
+        variant: "destructive",
+      });
     }
   };
 
@@ -331,7 +344,10 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
       if (assessErr) throw assessErr;
 
       if (!assessments || assessments.length === 0) {
-        alert('No assessments to export');
+        toast({
+          title: "No Data",
+          description: "No assessments to export",
+        });
         return;
       }
 
@@ -373,9 +389,17 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
+      toast({
+        title: "Success",
+        description: "CSV exported successfully",
+      });
     } catch (error) {
       console.error('Error exporting CSV:', error);
-      alert('Failed to export CSV');
+      toast({
+        title: "Error",
+        description: "Failed to export CSV",
+        variant: "destructive",
+      });
     }
   };
 

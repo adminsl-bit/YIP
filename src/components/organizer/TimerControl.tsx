@@ -9,6 +9,17 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Play, Pause, Square, RotateCcw, Clock, ExternalLink, Volume2, Trash2, Plus } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface TimerSession {
   id: string;
@@ -28,6 +39,7 @@ export const TimerControl = () => {
   const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -272,9 +284,6 @@ export const TimerControl = () => {
   const deleteTimer = async () => {
     if (!currentTimer || !user) return;
 
-    const confirmDelete = window.confirm(`Are you sure you want to delete the timer "${currentTimer.title}"? This action cannot be undone.`);
-    if (!confirmDelete) return;
-
     try {
       const { error } = await supabase
         .from('timer_sessions')
@@ -308,6 +317,7 @@ export const TimerControl = () => {
         variant: "destructive"
       });
     }
+    setShowDeleteDialog(false);
   };
 
   const openStageView = () => {
@@ -501,13 +511,30 @@ export const TimerControl = () => {
               <span>Open Stage View</span>
             </button>
             
-            <button 
-              onClick={deleteTimer}
-              className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-2"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Delete Timer</span>
-            </button>
+            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+              <AlertDialogTrigger asChild>
+                <button 
+                  className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-bold py-3 px-4 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Delete Timer</span>
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete Timer?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Are you sure you want to delete the timer "{currentTimer.title}"? This action cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={deleteTimer} className="bg-red-600 hover:bg-red-700">
+                    Delete
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
 
           {currentTimer.status === 'completed' && (

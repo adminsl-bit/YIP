@@ -5,6 +5,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap, Image as ImageIcon, AlertTriangle, Trophy, Award, Presentation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { FeatureToggles } from "@/components/organizer/FeatureToggles";
 import { TimerControl } from "@/components/organizer/TimerControl";
 import { PollManagement } from "@/components/organizer/PollManagement";
@@ -22,10 +34,6 @@ const OrganizerDashboard = () => {
   const navigate = useNavigate();
 
   const resetAllAssessments = async () => {
-    if (!confirm('Are you sure you want to reset ALL assessments for ALL juries? This will clear all scores and notes.')) {
-      return;
-    }
-    
     try {
       // First get all assessment IDs to ensure we have a proper WHERE clause
       const { data: allAssessments, error: fetchError } = await supabase
@@ -35,7 +43,10 @@ const OrganizerDashboard = () => {
       if (fetchError) throw fetchError;
 
       if (!allAssessments || allAssessments.length === 0) {
-        alert('No assessments found to reset.');
+        toast({
+          title: "No Assessments",
+          description: "No assessments found to reset.",
+        });
         return;
       }
 
@@ -53,10 +64,17 @@ const OrganizerDashboard = () => {
 
       if (error) throw error;
 
-      alert(`${allAssessments.length} assessments have been reset successfully.`);
+      toast({
+        title: "Success",
+        description: `${allAssessments.length} assessments have been reset successfully.`,
+      });
     } catch (error) {
       console.error('Error resetting assessments:', error);
-      alert('Failed to reset assessments. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to reset assessments. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -228,14 +246,31 @@ const OrganizerDashboard = () => {
                 </div>
                 
                 <div className="flex justify-center">
-                  <Button 
-                    onClick={resetAllAssessments}
-                    className="bg-red-500/20 hover:bg-red-500/30 border-red-500/30 text-red-700 font-semibold px-6 py-3"
-                    variant="outline"
-                  >
-                    <AlertTriangle className="w-4 h-4 mr-2" />
-                    Reset All Assessments
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        className="bg-red-500/20 hover:bg-red-500/30 border-red-500/30 text-red-700 font-semibold px-6 py-3"
+                        variant="outline"
+                      >
+                        <AlertTriangle className="w-4 h-4 mr-2" />
+                        Reset All Assessments
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Reset All Assessments?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to reset ALL assessments for ALL juries? This will clear all scores and notes. This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={resetAllAssessments} className="bg-red-600 hover:bg-red-700">
+                          Reset All
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </TabsContent>

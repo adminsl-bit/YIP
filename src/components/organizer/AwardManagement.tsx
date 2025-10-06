@@ -9,6 +9,17 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Award, Plus, Trophy, Users, Edit, Trash2, UserCheck, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,6 +62,7 @@ export const AwardManagement = () => {
   const [selectedStudent, setSelectedStudent] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
+  const [deleteAwardId, setDeleteAwardId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -261,10 +273,6 @@ export const AwardManagement = () => {
       return;
     }
 
-    if (!confirm('Are you sure you want to delete this award? This action cannot be undone.')) {
-      return;
-    }
-
     try {
       const { error } = await supabase
         .from('awards')
@@ -286,6 +294,8 @@ export const AwardManagement = () => {
         description: "Failed to delete award",
         variant: "destructive",
       });
+    } finally {
+      setDeleteAwardId(null);
     }
   };
 
@@ -514,14 +524,32 @@ export const AwardManagement = () => {
                       </div>
                       <div className="flex items-center gap-2 ml-2">
                         <Trophy className="w-5 h-5 text-yellow-600" />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => deleteAward(award.id)}
-                          className="text-red-600 border-red-200 hover:bg-red-50 ml-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <AlertDialog open={deleteAwardId === award.id} onOpenChange={(open) => !open && setDeleteAwardId(null)}>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setDeleteAwardId(award.id)}
+                              className="text-red-600 border-red-200 hover:bg-red-50 ml-2"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete Award?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Are you sure you want to delete this award? This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => deleteAward(award.id)} className="bg-red-600 hover:bg-red-700">
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </div>
                     </div>
                   </div>
