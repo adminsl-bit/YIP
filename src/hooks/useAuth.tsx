@@ -200,6 +200,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             .maybeSingle();
           
           if (profileData?.user_type) {
+            // Check if student has admin role
+            if (profileData.user_type === 'student') {
+              const { data: roleData } = await supabase
+                .from('user_roles')
+                .select('role')
+                .eq('user_id', data.user.id)
+                .eq('role', 'admin_student')
+                .maybeSingle();
+              
+              if (roleData) {
+                setTimeout(() => {
+                  window.location.href = '/admin-student';
+                }, 100);
+                return;
+              }
+            }
+            
             // Small delay to ensure auth state is updated
             setTimeout(() => {
               redirectByRole(profileData.user_type);

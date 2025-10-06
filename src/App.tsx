@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import StudentDashboard from "./pages/StudentDashboard";
+import AdminStudentDashboard from "./pages/AdminStudentDashboard";
 import JuryDashboard from "./pages/JuryDashboard";
 import OrganizerDashboard from "./pages/OrganizerDashboard";
 import TimerDisplay from "./pages/TimerDisplay";
@@ -31,6 +32,11 @@ const App = () => (
             <Route path="/student" element={
               <AuthenticatedRoute>
                 <StudentDashboard />
+              </AuthenticatedRoute>
+            } />
+            <Route path="/admin-student" element={
+              <AuthenticatedRoute>
+                <AdminStudentDashboard />
               </AuthenticatedRoute>
             } />
             <Route path="/jury" element={
