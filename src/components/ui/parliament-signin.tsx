@@ -347,12 +347,12 @@ export function ParliamentSignIn() {
                 <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-green-200/60">
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="w-4 h-4 text-green-600" />
-                    <span className="font-semibold text-green-700 text-sm">Student</span>
+                    <span className="font-semibold text-green-700 text-sm">Student (SRI RAKSHYA KUMARI)</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <span className="text-slate-500">Login ID:</span>
-                      <p className="font-mono font-semibold text-slate-800">11</p>
+                      <p className="font-mono font-semibold text-slate-800">114</p>
                     </div>
                     <div>
                       <span className="text-slate-500">Password:</span>
@@ -365,12 +365,12 @@ export function ParliamentSignIn() {
                 <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-purple-200/60">
                   <div className="flex items-center gap-2 mb-2">
                     <Crown className="w-4 h-4 text-purple-600" />
-                    <span className="font-semibold text-purple-700 text-sm">Admin Student</span>
+                    <span className="font-semibold text-purple-700 text-sm">Admin Student (SHYAAM NITHICK V)</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <span className="text-slate-500">Login ID:</span>
-                      <p className="font-mono font-semibold text-slate-800">12</p>
+                      <p className="font-mono font-semibold text-slate-800">125</p>
                     </div>
                     <div>
                       <span className="text-slate-500">Password:</span>
@@ -383,12 +383,12 @@ export function ParliamentSignIn() {
                 <div className="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-orange-200/60">
                   <div className="flex items-center gap-2 mb-2">
                     <Shield className="w-4 h-4 text-orange-600" />
-                    <span className="font-semibold text-orange-700 text-sm">Jury</span>
+                    <span className="font-semibold text-orange-700 text-sm">Jury (Tulsi Patel)</span>
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <span className="text-slate-500">Email:</span>
-                      <p className="font-mono font-semibold text-slate-800 break-all">jury@example.com</p>
+                      <p className="font-mono font-semibold text-slate-800 break-all">jury1@yip.org</p>
                     </div>
                     <div>
                       <span className="text-slate-500">Password:</span>
@@ -406,7 +406,7 @@ export function ParliamentSignIn() {
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <span className="text-slate-500">Email:</span>
-                      <p className="font-mono font-semibold text-slate-800 break-all">organizer@example.com</p>
+                      <p className="font-mono font-semibold text-slate-800 break-all">00@yip.org</p>
                     </div>
                     <div>
                       <span className="text-slate-500">Password:</span>
