@@ -7,7 +7,7 @@ import { ParliamentAgenda } from '@/components/student/ParliamentAgenda';
 import { TimerControl } from '@/components/organizer/TimerControl';
 import { PollManagement } from '@/components/organizer/PollManagement';
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Users, Vote, Calendar, Clock, BarChart } from "lucide-react";
+import { LogOut, User, Users, Calendar, Clock, BarChart } from "lucide-react";
 
 export const AdminStudentDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -57,7 +57,7 @@ export const AdminStudentDashboard = () => {
           </div>
 
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-6 lg:w-auto lg:inline-grid gap-2 mb-6">
+            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid gap-2 mb-6">
               <TabsTrigger value="profile" className="gap-2">
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline">My Profile</span>
@@ -65,10 +65,6 @@ export const AdminStudentDashboard = () => {
               <TabsTrigger value="parliament" className="gap-2">
                 <Users className="h-4 w-4" />
                 <span className="hidden sm:inline">Parliament Tree</span>
-              </TabsTrigger>
-              <TabsTrigger value="voting" className="gap-2">
-                <Vote className="h-4 w-4" />
-                <span className="hidden sm:inline">Voting</span>
               </TabsTrigger>
               <TabsTrigger value="schedule" className="gap-2">
                 <Calendar className="h-4 w-4" />
@@ -90,10 +86,6 @@ export const AdminStudentDashboard = () => {
 
             <TabsContent value="parliament">
               <InteractiveParliamentTree />
-            </TabsContent>
-
-            <TabsContent value="voting">
-              <StudentVotingTab />
             </TabsContent>
 
             <TabsContent value="schedule">
