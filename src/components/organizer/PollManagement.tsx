@@ -8,7 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Edit, Trash, Play, Pause, BarChart3, ExternalLink, Square, FileText } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Plus, Trash, Play, Pause, MoreVertical, ExternalLink, Eye } from "lucide-react";
 import { LiveVotingStats } from "@/components/student/LiveVotingStats";
 import { PostVotingAnalysis } from "@/components/student/PostVotingAnalysis";
 import { DetailedPollResults } from "@/components/student/DetailedPollResults";
@@ -42,6 +44,7 @@ export const PollManagement = () => {
   const [showPostVotingAnalysis, setShowPostVotingAnalysis] = useState<string | null>(null);
   const [showDetailedResults, setShowDetailedResults] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pollToDelete, setPollToDelete] = useState<Poll | null>(null);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -222,9 +225,18 @@ export const PollManagement = () => {
     try {
       const newStatus = !poll.is_active;
       
+      // When starting a poll, automatically make results public
+      // When stopping a poll, enable post-analysis
+      const updates: any = { is_active: newStatus };
+      if (newStatus) {
+        updates.show_results_publicly = true;
+      } else {
+        updates.show_post_analysis = true;
+      }
+      
       const { error } = await supabase
         .from('polls')
-        .update({ is_active: newStatus })
+        .update(updates)
         .eq('id', poll.id);
 
       if (error) throw error;
@@ -237,8 +249,10 @@ export const PollManagement = () => {
       });
 
       toast({
-        title: `Poll ${newStatus ? 'Activated' : 'Deactivated'}`,
-        description: `"${poll.title}" is now ${newStatus ? 'active' : 'inactive'}`
+        title: newStatus ? "Poll Started" : "Poll Stopped",
+        description: newStatus 
+          ? `"${poll.title}" is now accepting votes` 
+          : `"${poll.title}" voting has ended and results are visible`
       });
 
       fetchPolls();
@@ -252,64 +266,12 @@ export const PollManagement = () => {
     }
   };
 
-  const toggleResultsVisibility = async (poll: Poll) => {
-    try {
-      const newVisibility = !poll.show_results_publicly;
-      
-      const { error } = await supabase
-        .from('polls')
-        .update({ show_results_publicly: newVisibility })
-        .eq('id', poll.id);
-
-      if (error) throw error;
-
-      toast({
-        title: `Results ${newVisibility ? 'Public' : 'Hidden'}`,
-        description: `Poll results are now ${newVisibility ? 'visible to everyone' : 'hidden from public'}`
-      });
-
-      fetchPolls();
-    } catch (error) {
-      console.error('Error toggling results visibility:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update results visibility",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const stopPoll = async (poll: Poll) => {
-    try {
-      const { error } = await supabase
-        .from('polls')
-        .update({ is_active: false, show_post_analysis: true })
-        .eq('id', poll.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Voting Stopped',
-        description: `"${poll.title}" results are now visible on the stage screen.`
-      });
-
-      fetchPolls();
-    } catch (error) {
-      console.error('Error stopping poll:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to stop poll',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const deletePoll = async (pollId: string) => {
+  const deletePoll = async (poll: Poll) => {
     try {
       const { error } = await supabase
         .from('polls')
         .delete()
-        .eq('id', pollId);
+        .eq('id', poll.id);
 
       if (error) throw error;
 
@@ -318,6 +280,7 @@ export const PollManagement = () => {
         description: "Poll has been permanently deleted"
       });
 
+      setPollToDelete(null);
       fetchPolls();
     } catch (error) {
       console.error('Error deleting poll:', error);
@@ -476,12 +439,10 @@ export const PollManagement = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Options</TableHead>
+                <TableHead>Poll</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Votes</TableHead>
-                <TableHead>Results</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -491,84 +452,78 @@ export const PollManagement = () => {
                     <div>
                       <div className="font-medium">{poll.title}</div>
                       {poll.description && (
-                        <div className="text-sm text-muted-foreground">{poll.description}</div>
+                        <div className="text-sm text-muted-foreground mt-1">{poll.description}</div>
                       )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      {(Array.isArray(poll.options) ? poll.options : []).map((option: string, index: number) => (
-                        <div key={index} className="text-sm">
-                          {option}
-                        </div>
-                      ))}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={poll.is_active ? "default" : "secondary"}>
-                      {poll.is_active ? "Active" : "Inactive"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <div className="font-medium">{getTotalVotes(poll.id)} votes</div>
-                      <div className="text-muted-foreground">
-                        {Array.isArray(poll.options) ? poll.options.length : 0} options
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {(Array.isArray(poll.options) ? poll.options : []).map((option: string, index: number) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {option}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={poll.show_results_publicly ? "default" : "outline"}>
-                      {poll.show_results_publicly ? "Public" : "Hidden"}
+                    <Badge variant={poll.is_active ? "default" : "secondary"}>
+                      {poll.is_active ? "Live" : "Ended"}
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <div className="flex space-x-2">
+                    <div className="text-sm font-medium">{getTotalVotes(poll.id)} votes</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex justify-end items-center gap-2">
+                      {/* Primary Action: Start/Stop Poll */}
                       <Button
-                        variant="outline"
+                        variant={poll.is_active ? "destructive" : "default"}
                         size="sm"
                         onClick={() => togglePollStatus(poll)}
                       >
-                        {poll.is_active ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                        {poll.is_active ? (
+                          <>
+                            <Pause className="w-4 h-4 mr-2" />
+                            Stop
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-4 h-4 mr-2" />
+                            Start
+                          </>
+                        )}
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => toggleResultsVisibility(poll)}
-                      >
-                        <BarChart3 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={openStageView}
-                        title="Open Stage View"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => stopPoll(poll)}
-                        title="Stop Voting & Show Analysis"
-                      >
-                        <Square className="w-4 h-4" />
-                      </Button>
+                      
+                      {/* View Results Button */}
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setShowDetailedResults(showDetailedResults === poll.id ? null : poll.id)}
-                        title="View Detailed Results"
                       >
-                        <FileText className="w-4 h-4" />
+                        <Eye className="w-4 h-4 mr-2" />
+                        Results
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => deletePoll(poll.id)}
-                      >
-                        <Trash className="w-4 h-4" />
-                      </Button>
+                      
+                      {/* More Options Menu */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem onClick={openStageView}>
+                            <ExternalLink className="w-4 h-4 mr-2" />
+                            Open Stage Display
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            onClick={() => setPollToDelete(poll)}
+                            className="text-destructive"
+                          >
+                            <Trash className="w-4 h-4 mr-2" />
+                            Delete Poll
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </TableCell>
                 </TableRow>,
@@ -596,6 +551,27 @@ export const PollManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!pollToDelete} onOpenChange={() => setPollToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Poll?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{pollToDelete?.title}"? This action cannot be undone and will permanently remove all votes.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => pollToDelete && deletePoll(pollToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
