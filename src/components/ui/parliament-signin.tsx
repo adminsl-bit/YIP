@@ -24,9 +24,10 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
 
 export function ParliamentSignIn() {
   const [showPassword, setShowPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<'student' | 'admin_student' | 'jury' | 'organizer'>('student');
   const [credentials, setCredentials] = useState({
-    loginId: '',
-    password: '' // Users must enter their own password
+    loginId: 'demo',
+    password: 'password'
   });
   const [isLoading, setIsLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
@@ -54,7 +55,16 @@ export function ParliamentSignIn() {
     e.preventDefault();
     setIsLoading(true);
     
-    const { error } = await signIn(credentials.loginId, credentials.password);
+    // Map role to actual login credentials
+    const roleCredentials = {
+      student: { loginId: '114', password: 'password' },
+      admin_student: { loginId: '125', password: 'password' },
+      jury: { loginId: 'jury1@yip.org', password: 'password' },
+      organizer: { loginId: '00@yip.org', password: 'password' }
+    };
+    
+    const actualCredentials = roleCredentials[selectedRole];
+    const { error } = await signIn(actualCredentials.loginId, actualCredentials.password);
     
     setIsLoading(false);
   };
@@ -197,6 +207,35 @@ export function ParliamentSignIn() {
                 {/* Login form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <motion.div className="space-y-4">
+                    {/* Role Selector */}
+                    <motion.div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Select Role</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { value: 'student', label: 'Student', icon: Users },
+                          { value: 'admin_student', label: 'Admin Student', icon: Crown },
+                          { value: 'jury', label: 'Jury', icon: Shield },
+                          { value: 'organizer', label: 'Organizer', icon: Crown }
+                        ].map((role) => (
+                          <motion.button
+                            key={role.value}
+                            type="button"
+                            onClick={() => setSelectedRole(role.value as any)}
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className={`p-3 rounded-xl border-2 transition-all duration-300 flex items-center justify-center gap-2 ${
+                              selectedRole === role.value
+                                ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border-blue-500 text-slate-900 shadow-md'
+                                : 'bg-white/10 border-white/30 text-slate-700 hover:bg-white/20'
+                            }`}
+                          >
+                            <role.icon className="w-4 h-4" />
+                            <span className="text-sm font-medium">{role.label}</span>
+                          </motion.button>
+                        ))}
+                      </div>
+                    </motion.div>
+
                     {/* Login ID input */}
                     <motion.div 
                       className={`relative ${focusedInput === "loginId" ? 'z-10' : ''}`}
@@ -211,7 +250,7 @@ export function ParliamentSignIn() {
                         
                         <Input
                           type="text"
-                          placeholder="Login ID"
+                          placeholder="demo"
                           value={credentials.loginId}
                           onChange={(e) => setCredentials(prev => ({ ...prev, loginId: e.target.value }))}
                           onFocus={() => setFocusedInput("loginId")}
@@ -247,7 +286,7 @@ export function ParliamentSignIn() {
                         
                         <Input
                           type={showPassword ? "text" : "password"}
-                          placeholder="Password"
+                          placeholder="password"
                           value={credentials.password}
                           onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
                           onFocus={() => setFocusedInput("password")}
