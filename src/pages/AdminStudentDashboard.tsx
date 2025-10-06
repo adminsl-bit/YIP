@@ -57,7 +57,7 @@ export const AdminStudentDashboard = () => {
           </div>
 
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid gap-2 mb-6">
+            <TabsList className="grid w-full grid-cols-5 gap-2 mb-6">
               <TabsTrigger value="profile" className="gap-2">
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline">My Profile</span>
@@ -70,11 +70,11 @@ export const AdminStudentDashboard = () => {
                 <Calendar className="h-4 w-4" />
                 <span className="hidden sm:inline">Schedule</span>
               </TabsTrigger>
-              <TabsTrigger value="timer" className="gap-2 bg-primary/10">
+              <TabsTrigger value="timer" className="gap-2">
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Timer</span>
               </TabsTrigger>
-              <TabsTrigger value="polls" className="gap-2 bg-primary/10">
+              <TabsTrigger value="polls" className="gap-2">
                 <BarChart className="h-4 w-4" />
                 <span className="hidden sm:inline">Polls</span>
               </TabsTrigger>
