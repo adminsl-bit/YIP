@@ -57,8 +57,8 @@ export function ParliamentSignIn() {
     
     // Map role to actual login credentials
     const roleCredentials = {
-      student: { loginId: '114', password: 'password' },
-      admin_student: { loginId: '125', password: 'password' },
+      student: { loginId: '1702@yip.parliament', password: 'password' },
+      admin_student: { loginId: '825@yip.parliament', password: 'password' },
       jury: { loginId: 'jury1@yip.org', password: 'password' },
       organizer: { loginId: '00@yip.org', password: 'password' }
     };
