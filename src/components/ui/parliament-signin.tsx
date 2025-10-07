@@ -51,22 +51,24 @@ export function ParliamentSignIn() {
     mouseY.set(0);
   };
 
+  // Centralized role -> credential mapping and quick login helper
+  const roleCredentials = {
+    student: { loginId: '1702@yip.parliament', password: 'password' },
+    admin_student: { loginId: '825@yip.parliament', password: 'password' },
+    jury: { loginId: 'jury1@yip.org', password: 'password' },
+    organizer: { loginId: '00@yip.org', password: 'password' }
+  } as const;
+
+  const signInWithRole = async (role: 'student' | 'admin_student' | 'jury' | 'organizer') => {
+    setIsLoading(true);
+    const creds = roleCredentials[role];
+    await signIn(creds.loginId, creds.password);
+    setIsLoading(false);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    
-    // Map role to actual login credentials
-    const roleCredentials = {
-      student: { loginId: '1702@yip.parliament', password: 'password' },
-      admin_student: { loginId: '825@yip.parliament', password: 'password' },
-      jury: { loginId: 'jury1@yip.org', password: 'password' },
-      organizer: { loginId: '00@yip.org', password: 'password' }
-    };
-    
-    const actualCredentials = roleCredentials[selectedRole];
-    const { error } = await signIn(actualCredentials.loginId, actualCredentials.password);
-    
-    setIsLoading(false);
+    await signInWithRole(selectedRole);
   };
 
   return (
@@ -220,7 +222,7 @@ export function ParliamentSignIn() {
                           <motion.button
                             key={role.value}
                             type="button"
-                            onClick={() => setSelectedRole(role.value as any)}
+                            onClick={() => { setSelectedRole(role.value as any); signInWithRole(role.value as any); }}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             className={`p-3 rounded-xl border-2 transition-all duration-300 flex items-center justify-center gap-2 ${
