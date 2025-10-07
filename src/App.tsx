@@ -16,6 +16,7 @@ import LeaderboardDisplay from "./pages/LeaderboardDisplay";
 import NotFound from "./pages/NotFound";
 import { AwardShowcase } from "./pages/AwardShowcase";
 import { AuthenticatedRoute } from "./components/AuthenticatedRoute";
+import SeedDemoUsers from "./pages/SeedDemoUsers";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/display/polls" element={<PollDisplay />} />
             <Route path="/display/leaderboard" element={<LeaderboardDisplay />} />
             <Route path="/display/awards" element={<AwardShowcase />} />
+            <Route path="/seed-demo" element={<SeedDemoUsers />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

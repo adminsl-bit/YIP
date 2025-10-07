@@ -53,10 +53,10 @@ export function ParliamentSignIn() {
 
   // Centralized role -> credential mapping and quick login helper
   const roleCredentials = {
-    student: { loginId: '1702@yip.parliament', password: 'password' },
-    admin_student: { loginId: '825@yip.parliament', password: 'password' },
-    jury: { loginId: 'jury1@yip.org', password: 'password' },
-    organizer: { loginId: '00@yip.org', password: 'password' }
+    student: { loginId: 'demo@student.yip', password: '1234' },
+    admin_student: { loginId: 'demo@admin.yip', password: '1234' },
+    jury: { loginId: 'demo@jury.yip', password: '1234' },
+    organizer: { loginId: 'demo@organizer.yip', password: '1234' }
   } as const;
 
   const signInWithRole = async (role: 'student' | 'admin_student' | 'jury' | 'organizer') => {
