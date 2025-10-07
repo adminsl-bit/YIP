@@ -100,8 +100,8 @@ export function ParliamentSignIn() {
 
       {/* Content */}
       <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
-        {/* Back Button */}
-        <div className="absolute top-8 left-8">
+        {/* Top Controls */}
+        <div className="absolute top-8 left-8 z-20">
           <Link to="/">
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -110,6 +110,17 @@ export function ParliamentSignIn() {
             >
               <ArrowLeft className="w-4 h-4" />
               Back to Home
+            </motion.button>
+          </Link>
+        </div>
+        <div className="absolute top-8 right-8 z-20">
+          <Link to="/seed-demo">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-white/20 backdrop-blur-lg border border-white/30 rounded-2xl px-6 py-3 text-slate-800 hover:bg-white/30 transition-all duration-300 shadow-lg"
+            >
+              Seed demo users
             </motion.button>
           </Link>
         </div>
