@@ -27,7 +27,7 @@ export function ParliamentSignIn() {
   const [selectedRole, setSelectedRole] = useState<'student' | 'admin_student' | 'jury' | 'organizer'>('student');
   const [credentials, setCredentials] = useState({
     loginId: 'demo',
-    password: 'password'
+    password: '1234'
   });
   const [isLoading, setIsLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
@@ -53,10 +53,10 @@ export function ParliamentSignIn() {
 
   // Centralized role -> credential mapping and quick login helper
   const roleCredentials = {
-    student: { loginId: 'demo@student.yip', password: '1234' },
-    admin_student: { loginId: 'demo@admin.yip', password: '1234' },
-    jury: { loginId: 'demo@jury.yip', password: '1234' },
-    organizer: { loginId: 'demo@organizer.yip', password: '1234' }
+    student: { loginId: 'demo', password: '1234' },
+    admin_student: { loginId: 'demo', password: '1234' },
+    jury: { loginId: 'demo', password: '1234' },
+    organizer: { loginId: 'demo', password: '1234' }
   } as const;
 
   const signInWithRole = async (role: 'student' | 'admin_student' | 'jury' | 'organizer') => {
