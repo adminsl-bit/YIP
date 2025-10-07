@@ -59,10 +59,18 @@ export function ParliamentSignIn() {
     organizer: { loginId: 'demo', password: '1234' }
   } as const;
 
+  const roleEmailMap = {
+    student: 'demo@student.yip',
+    admin_student: 'demo@admin.yip',
+    jury: 'demo@jury.yip',
+    organizer: 'demo@organizer.yip',
+  } as const;
+
   const signInWithRole = async (role: 'student' | 'admin_student' | 'jury' | 'organizer') => {
     setIsLoading(true);
     const creds = roleCredentials[role];
-    await signIn(creds.loginId, creds.password);
+    const loginIdToUse = creds.loginId === 'demo' ? roleEmailMap[role] : creds.loginId;
+    await signIn(loginIdToUse, creds.password);
     setIsLoading(false);
   };
 
@@ -233,7 +241,7 @@ export function ParliamentSignIn() {
                           <motion.button
                             key={role.value}
                             type="button"
-                            onClick={() => { setSelectedRole(role.value as any); signInWithRole(role.value as any); }}
+                            onClick={() => setSelectedRole(role.value as any)}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             className={`p-3 cursor-pointer pointer-events-auto rounded-xl border-2 transition-all duration-300 flex items-center justify-center gap-2 ${
