@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +7,7 @@ import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function SeedDemoUsers() {
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [result, setResult] = useState<any>(null);
   const navigate = useNavigate();
 
@@ -30,6 +30,11 @@ export default function SeedDemoUsers() {
       setLoading(false);
     }
   };
+
+  // Auto-seed on mount
+  useEffect(() => {
+    seedUsers();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/50 to-background flex items-center justify-center p-4">
