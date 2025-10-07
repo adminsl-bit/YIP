@@ -166,69 +166,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       let email: string;
       
-      // Handle demo account - map to appropriate email based on common demo emails
-      if (loginId === 'demo') {
-        // Try all demo accounts until one works
-        const demoEmails = [
-          'demo@student.yip',
-          'demo@admin.yip', 
-          'demo@jury.yip',
-          'demo@organizer.yip'
-        ];
-        
-        for (const demoEmail of demoEmails) {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: demoEmail,
-            password,
-          });
-          
-          if (!error && data.user) {
-            toast.success('Welcome to Young Indians Parliament!');
-            await logUserLogin(data.user.id);
-            
-            // Get profile to determine redirect
-            const { data: profileData } = await supabase
-              .from('profiles')
-              .select('user_type')
-              .eq('user_id', data.user.id)
-              .maybeSingle();
-            
-            if (profileData?.user_type) {
-              // Check if student has admin role
-              if (profileData.user_type === 'student') {
-                const { data: roleData } = await supabase
-                  .from('user_roles')
-                  .select('role')
-                  .eq('user_id', data.user.id)
-                  .eq('role', 'admin_student')
-                  .maybeSingle();
-                
-                if (roleData) {
-                  navigate('/admin-student');
-                  return { error: null };
-                }
-              }
-              
-              redirectByRole(profileData.user_type);
-            }
-            return { error: null };
-          }
-        }
-        
-        // If we get here, none of the demo accounts worked
-        toast.error('Invalid credentials');
-        return { error: new Error('Invalid credentials') };
-      }
-      
-      // Check if this is a student login (numeric) or jury/organizer (email format)
-      if (/^\d+$/.test(loginId)) {
+      // Check if this is an email (already formatted)
+      if (loginId.includes('@')) {
+        email = loginId;
+      } else if (/^\d+$/.test(loginId)) {
         // Student login: serial+party format -> email format
         email = `${loginId}@yip.parliament`;
-      } else if (loginId.includes('@')) {
-        // Jury/Organizer: direct email
-        email = loginId;
       } else {
-        // Jury/Organizer: username -> convert to email format
+        // Other: username -> convert to email format
         email = `${loginId}@yip.org`;
       }
       
