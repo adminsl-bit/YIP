@@ -130,55 +130,55 @@ export function ParliamentSignIn() {
           >
             <div className="relative group">
               {/* Card glow effect */}
-              <motion.div 
-                className="absolute -inset-[1px] rounded-3xl opacity-0 group-hover:opacity-70 transition-opacity duration-700 pointer-events-none"
-                animate={{
-                  boxShadow: [
-                    "0 0 20px 5px rgba(255,165,0,0.1)",
-                    "0 0 30px 10px rgba(255,165,0,0.15)",
-                    "0 0 20px 5px rgba(255,165,0,0.1)"
-                  ],
-                  opacity: [0.3, 0.5, 0.3]
-                }}
-                transition={{ 
-                  duration: 4, 
-                  repeat: Infinity, 
-                  ease: "easeInOut", 
-                  repeatType: "mirror" 
-                }}
-              />
+               <motion.div 
+                 className="absolute -inset-[1px] rounded-3xl opacity-0 group-hover:opacity-70 transition-opacity duration-700 pointer-events-none -z-10"
+                 animate={{
+                   boxShadow: [
+                     "0 0 20px 5px rgba(255,165,0,0.1)",
+                     "0 0 30px 10px rgba(255,165,0,0.15)",
+                     "0 0 20px 5px rgba(255,165,0,0.1)"
+                   ],
+                   opacity: [0.3, 0.5, 0.3]
+                 }}
+                 transition={{ 
+                   duration: 4, 
+                   repeat: Infinity, 
+                   ease: "easeInOut", 
+                   repeatType: "mirror" 
+                 }}
+               />
 
-              {/* Traveling light beam effect */}
-              <div className="absolute -inset-[1px] rounded-3xl overflow-hidden pointer-events-none">
-                <motion.div 
-                  className="absolute top-0 left-0 h-[3px] w-[50%] bg-gradient-to-r from-transparent via-orange-400/60 to-transparent"
-                  animate={{ 
-                    left: ["-50%", "100%"],
-                    opacity: [0.4, 0.8, 0.4]
-                  }}
-                  transition={{ 
-                    left: { duration: 3, ease: "easeInOut", repeat: Infinity, repeatDelay: 1 },
-                    opacity: { duration: 1.5, repeat: Infinity, repeatType: "mirror" }
-                  }}
-                />
-                
-                <motion.div 
-                  className="absolute top-0 right-0 h-[50%] w-[3px] bg-gradient-to-b from-transparent via-green-400/60 to-transparent"
-                  animate={{ 
-                    top: ["-50%", "100%"],
-                    opacity: [0.4, 0.8, 0.4]
-                  }}
-                  transition={{ 
-                    top: { duration: 3, ease: "easeInOut", repeat: Infinity, repeatDelay: 1, delay: 0.8 },
-                    opacity: { duration: 1.5, repeat: Infinity, repeatType: "mirror", delay: 0.8 }
-                  }}
-                />
-              </div>
+               {/* Traveling light beam effect */}
+               <div className="absolute -inset-[1px] rounded-3xl overflow-hidden pointer-events-none -z-10">
+                 <motion.div 
+                   className="absolute top-0 left-0 h-[3px] w-[50%] bg-gradient-to-r from-transparent via-orange-400/60 to-transparent"
+                   animate={{ 
+                     left: ["-50%", "100%"],
+                     opacity: [0.4, 0.8, 0.4]
+                   }}
+                   transition={{ 
+                     left: { duration: 3, ease: "easeInOut", repeat: Infinity, repeatDelay: 1 },
+                     opacity: { duration: 1.5, repeat: Infinity, repeatType: "mirror" }
+                   }}
+                 />
+                 
+                 <motion.div 
+                   className="absolute top-0 right-0 h-[50%] w-[3px] bg-gradient-to-b from-transparent via-green-400/60 to-transparent"
+                   animate={{ 
+                     top: ["-50%", "100%"],
+                     opacity: [0.4, 0.8, 0.4]
+                   }}
+                   transition={{ 
+                     top: { duration: 3, ease: "easeInOut", repeat: Infinity, repeatDelay: 1, delay: 0.8 },
+                     opacity: { duration: 1.5, repeat: Infinity, repeatType: "mirror", delay: 0.8 }
+                   }}
+                 />
+               </div>
 
               {/* Glass card background */}
-              <div className="relative bg-white/20 backdrop-blur-xl rounded-3xl p-8 border border-white/30 shadow-2xl overflow-hidden">
+              <div className="relative z-10 bg-white/20 backdrop-blur-xl rounded-3xl p-8 border border-white/30 shadow-2xl overflow-hidden">
                 {/* Subtle card inner patterns */}
-                <div className="absolute inset-0 opacity-[0.05]" 
+                <div className="absolute inset-0 opacity-[0.05] pointer-events-none -z-10" 
                   style={{
                     backgroundImage: `linear-gradient(135deg, #ff6b35 0.5px, transparent 0.5px), linear-gradient(45deg, #22c55e 0.5px, transparent 0.5px)`,
                     backgroundSize: '30px 30px'
@@ -212,7 +212,7 @@ export function ParliamentSignIn() {
                     {/* Role Selector */}
                     <motion.div className="space-y-2">
                       <label className="text-sm font-medium text-slate-700">Select Role</label>
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-2 relative z-20">
                         {[
                           { value: 'student', label: 'Student', icon: Users },
                           { value: 'admin_student', label: 'Admin Student', icon: Crown },
@@ -225,7 +225,7 @@ export function ParliamentSignIn() {
                             onClick={() => { setSelectedRole(role.value as any); signInWithRole(role.value as any); }}
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            className={`p-3 rounded-xl border-2 transition-all duration-300 flex items-center justify-center gap-2 ${
+                            className={`p-3 cursor-pointer pointer-events-auto rounded-xl border-2 transition-all duration-300 flex items-center justify-center gap-2 ${
                               selectedRole === role.value
                                 ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border-blue-500 text-slate-900 shadow-md'
                                 : 'bg-white/10 border-white/30 text-slate-700 hover:bg-white/20'
