@@ -129,7 +129,7 @@ export function ParliamentSignIn() {
             <div className="relative group">
               {/* Card glow effect */}
               <motion.div 
-                className="absolute -inset-[1px] rounded-3xl opacity-0 group-hover:opacity-70 transition-opacity duration-700"
+                className="absolute -inset-[1px] rounded-3xl opacity-0 group-hover:opacity-70 transition-opacity duration-700 pointer-events-none"
                 animate={{
                   boxShadow: [
                     "0 0 20px 5px rgba(255,165,0,0.1)",
@@ -147,7 +147,7 @@ export function ParliamentSignIn() {
               />
 
               {/* Traveling light beam effect */}
-              <div className="absolute -inset-[1px] rounded-3xl overflow-hidden">
+              <div className="absolute -inset-[1px] rounded-3xl overflow-hidden pointer-events-none">
                 <motion.div 
                   className="absolute top-0 left-0 h-[3px] w-[50%] bg-gradient-to-r from-transparent via-orange-400/60 to-transparent"
                   animate={{ 
