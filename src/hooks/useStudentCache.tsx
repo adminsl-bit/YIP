@@ -13,7 +13,6 @@ interface Student {
   state?: string;
   city?: string;
   photo_url?: string;
-  email?: string;
   user_type: string;
 }
 
@@ -74,7 +73,7 @@ export const useStudentCache = () => {
       
       const { data, error: fetchError } = await supabase
         .from('profiles')
-        .select('id, user_id, name, position, party_number, party_name, serial_number, constituency, state, city, photo_url, email, user_type')
+        .select('id, user_id, name, position, party_number, party_name, serial_number, constituency, state, city, photo_url, user_type')
         .eq('user_type', 'student')
         .order('party_number', { ascending: true })
         .order('serial_number', { ascending: true });
