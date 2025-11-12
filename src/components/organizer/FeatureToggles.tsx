@@ -274,14 +274,14 @@ export const FeatureToggles = () => {
               <div className="flex items-center justify-between w-full py-4">
                 <div className="flex items-center space-x-4">
                   {globalLocked ? (
-                    <Lock className="w-5 h-5 text-red-600" />
+                    <Lock className="w-5 h-5 text-primary" />
                   ) : (
                     <Unlock className="w-5 h-5 text-muted-foreground" />
                   )}
                   <div className="text-left">
                     <div className="flex items-center space-x-2">
                       <h3 className="font-medium">Assessment Locks</h3>
-                      <Badge variant={globalLocked ? 'destructive' : 'secondary'}>
+                      <Badge variant={globalLocked ? 'default' : 'secondary'}>
                         {globalLocked ? 'LOCKED' : 'UNLOCKED'}
                       </Badge>
                     </div>
@@ -294,7 +294,7 @@ export const FeatureToggles = () => {
                   checked={globalLocked}
                   onCheckedChange={toggleGlobalLock}
                   onClick={(e) => e.stopPropagation()}
-                  className={globalLocked ? 'data-[state=checked]:bg-red-600' : ''}
+                  className={globalLocked ? 'data-[state=checked]:bg-primary' : ''}
                 />
               </div>
             </AccordionTrigger>
@@ -314,7 +314,7 @@ export const FeatureToggles = () => {
                     <div
                       key={jury.user_id}
                       className={`flex items-center justify-between p-4 border rounded-lg ${
-                        isLocked ? 'border-red-300 bg-red-50' : 'border-border bg-background hover:border-primary/30'
+                        isLocked ? 'border-primary/30 bg-primary/5' : 'border-border bg-background hover:border-primary/30'
                       } ${globalLocked ? 'opacity-50' : ''}`}
                     >
                       <div className="flex items-center gap-3">
@@ -328,7 +328,7 @@ export const FeatureToggles = () => {
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium">{jury.name}</h4>
                             {isLocked && (
-                              <Badge variant="destructive" className="text-xs">
+                              <Badge variant="default" className="text-xs">
                                 <Lock className="w-3 h-3 mr-1" />
                                 Locked
                               </Badge>
@@ -343,7 +343,7 @@ export const FeatureToggles = () => {
                         checked={isLocked}
                         onCheckedChange={(checked) => toggleJuryLock(jury.user_id, jury.name, checked)}
                         disabled={globalLocked}
-                        className={isLocked ? 'data-[state=checked]:bg-red-600' : ''}
+                        className={isLocked ? 'data-[state=checked]:bg-primary' : ''}
                       />
                     </div>
                   );
