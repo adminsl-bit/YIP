@@ -77,7 +77,7 @@ export const LandingHero = () => {
             <div className="text-center mb-8 sm:mb-16">
               <Badge className="mb-6 sm:mb-8 px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-lg bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/30 shadow-lg">
                 <div className="w-2 h-2 sm:w-3 sm:h-3 bg-green-500 rounded-full mr-2 sm:mr-3 shadow-lg shadow-green-500/50 animate-pulse"></div>
-                Regional Round 2025 - Now Live
+                National Finals 2025 - Now Live
               </Badge>
               
               <div className="flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 mb-8">
