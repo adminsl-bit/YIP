@@ -57,16 +57,17 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
 
       if (error) throw error;
 
-      // If no data exists or score is null, don't show leaderboard
-      if (!data || data.final_total_score === null) {
+      // If no data exists, score is null, or score is 0, don't show leaderboard
+      if (!data || data.final_total_score === null || data.final_total_score <= 0) {
         setLeaderboardData(null);
         return;
       }
 
+      // Only count students with scores greater than 0
       const { count } = await supabase
         .from('organizer_leaderboard')
         .select('*', { count: 'exact', head: true })
-        .not('final_total_score', 'is', null);
+        .gt('final_total_score', 0);
 
       const { count: higherScores } = await supabase
         .from('organizer_leaderboard')
