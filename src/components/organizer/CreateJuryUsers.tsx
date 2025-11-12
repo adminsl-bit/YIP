@@ -59,9 +59,9 @@ export const CreateJuryUsers = () => {
           <AlertDialogDescription>
             This will create 3 new jury accounts:
             <ul className="mt-2 space-y-1 list-disc list-inside">
-              <li>Jury 4 (jury4@yip.com / jury4@123)</li>
-              <li>Jury 5 (jury5@yip.com / jury5@123)</li>
-              <li>Jury 6 (jury6@yip.com / jury6@123)</li>
+              <li>Jury 4 (jury4@yip.com / jury2025)</li>
+              <li>Jury 5 (jury5@yip.com / jury2025)</li>
+              <li>Jury 6 (jury6@yip.com / jury2025)</li>
             </ul>
           </AlertDialogDescription>
         </AlertDialogHeader>
