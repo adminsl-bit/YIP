@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { PartyBadge } from '@/components/ui/party-badge';
-import { Hash, MapPin, Building, Mail, Crown, Gavel, Users } from 'lucide-react';
+import { Hash, MapPin, Building, Mail, Crown, Gavel, Users, Trophy, Award } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 interface Student {
   id: string;
@@ -20,14 +22,62 @@ interface Student {
   user_type: string;
 }
 
+interface LeaderboardData {
+  final_total_score: number | null;
+  ranking: number;
+  total_students: number;
+}
+
 interface GlassmorphismProfileCardProps {
   student: Student;
 }
 
 const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) => {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const { settings } = useSystemSettings();
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardData | null>(null);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   
   const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
+
+  useEffect(() => {
+    if (settings.leaderboard_visible && student.id) {
+      fetchLeaderboardData();
+    }
+  }, [settings.leaderboard_visible, student.id]);
+
+  const fetchLeaderboardData = async () => {
+    setLoadingLeaderboard(true);
+    try {
+      const { data, error } = await supabase
+        .from('organizer_leaderboard')
+        .select('final_total_score')
+        .eq('user_id', student.id)
+        .single();
+
+      if (error) throw error;
+
+      const { count } = await supabase
+        .from('organizer_leaderboard')
+        .select('*', { count: 'exact', head: true })
+        .not('final_total_score', 'is', null);
+
+      const { count: higherScores } = await supabase
+        .from('organizer_leaderboard')
+        .select('*', { count: 'exact', head: true })
+        .gt('final_total_score', data?.final_total_score || 0);
+
+      setLeaderboardData({
+        final_total_score: data?.final_total_score || null,
+        ranking: (higherScores || 0) + 1,
+        total_students: count || 0
+      });
+    } catch (error) {
+      console.error('Error fetching leaderboard data:', error);
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
   
   const getPositionIcon = (position: string) => {
     const pos = position.toLowerCase();
@@ -99,6 +149,28 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
     },
   ].filter(item => item.value);
 
+  // Add leaderboard items if visible
+  const leaderboardItems = settings.leaderboard_visible && leaderboardData ? [
+    {
+      id: 'ranking',
+      icon: Trophy,
+      label: 'Ranking',
+      value: `#${leaderboardData.ranking} of ${leaderboardData.total_students}`,
+      color: 'bg-gradient-to-br from-amber-400 to-yellow-500',
+      iconColor: 'text-white'
+    },
+    leaderboardData.final_total_score !== null ? {
+      id: 'score',
+      icon: Award,
+      label: 'Total Score',
+      value: `${leaderboardData.final_total_score.toFixed(2)} / 100`,
+      color: 'bg-gradient-to-br from-primary to-primary-glow',
+      iconColor: 'text-white'
+    } : null
+  ].filter(Boolean) : [];
+
+  const allInfoItems = [...infoItems, ...leaderboardItems];
+
   return (
     <div className="relative w-full max-w-sm">
       <div 
@@ -166,7 +238,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
 
         {/* Info Items */}
         <div className="w-full space-y-3">
-          {infoItems.map((item) => (
+          {allInfoItems.map((item) => (
             <InfoItem 
               key={item.id} 
               item={item} 
@@ -174,6 +246,12 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
               hoveredItem={hoveredItem} 
             />
           ))}
+          
+          {settings.leaderboard_visible && loadingLeaderboard && (
+            <div className="flex items-center justify-center py-3">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            </div>
+          )}
         </div>
       </div>
       

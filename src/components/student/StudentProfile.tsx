@@ -1,9 +1,12 @@
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PartyBadge } from "@/components/ui/party-badge";
 import { ProfilePhotoUploader } from "./ProfilePhotoUploader";
-import { Hash, MapPin, Building, Users, Crown } from "lucide-react";
+import { Hash, MapPin, Building, Users, Crown, Trophy, Award } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 interface Profile {
   id: string;
@@ -19,6 +22,12 @@ interface Profile {
   photo_url?: string;
   updated_at?: string;
   user_type: string;
+}
+
+interface LeaderboardData {
+  final_total_score: number | null;
+  ranking: number;
+  total_students: number;
 }
 
 interface StudentProfileProps {
@@ -48,6 +57,51 @@ const isSpecialPosition = (position: string, name?: string) => {
 export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfileProps) => {
   const initials = profile.name.split(' ').map(n => n[0]).join('').toUpperCase();
   const isSpecial = isSpecialPosition(profile.position, profile.name);
+  const { settings } = useSystemSettings();
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardData | null>(null);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+
+  useEffect(() => {
+    if (settings.leaderboard_visible && profile.id) {
+      fetchLeaderboardData();
+    }
+  }, [settings.leaderboard_visible, profile.id]);
+
+  const fetchLeaderboardData = async () => {
+    setLoadingLeaderboard(true);
+    try {
+      // Fetch student's score and ranking
+      const { data, error } = await supabase
+        .from('organizer_leaderboard')
+        .select('final_total_score')
+        .eq('user_id', profile.id)
+        .single();
+
+      if (error) throw error;
+
+      // Get total number of students
+      const { count } = await supabase
+        .from('organizer_leaderboard')
+        .select('*', { count: 'exact', head: true })
+        .not('final_total_score', 'is', null);
+
+      // Calculate ranking
+      const { count: higherScores } = await supabase
+        .from('organizer_leaderboard')
+        .select('*', { count: 'exact', head: true })
+        .gt('final_total_score', data?.final_total_score || 0);
+
+      setLeaderboardData({
+        final_total_score: data?.final_total_score || null,
+        ranking: (higherScores || 0) + 1,
+        total_students: count || 0
+      });
+    } catch (error) {
+      console.error('Error fetching leaderboard data:', error);
+    } finally {
+      setLoadingLeaderboard(false);
+    }
+  };
 
   return (
     <Card className={`w-full rounded-3xl shadow-lg border overflow-hidden ${
@@ -162,6 +216,45 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
                     <p className="text-xl font-semibold text-foreground">
                       {profile.state}
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Leaderboard Scores - Only shown when leaderboard is visible */}
+              {settings.leaderboard_visible && leaderboardData && (
+                <div className="pt-4 mt-4 border-t-2 border-primary/20 space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                      <Trophy className="w-6 h-6 text-white" />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-base font-semibold text-muted-foreground">Ranking</p>
+                      <p className="text-2xl font-bold text-foreground">
+                        #{leaderboardData.ranking} <span className="text-base text-muted-foreground">of {leaderboardData.total_students}</span>
+                      </p>
+                    </div>
+                  </div>
+
+                  {leaderboardData.final_total_score !== null && (
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-glow rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                        <Award className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-base font-semibold text-muted-foreground">Total Score</p>
+                        <p className="text-2xl font-bold text-foreground">
+                          {leaderboardData.final_total_score.toFixed(2)} <span className="text-base text-muted-foreground">/ 100</span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {settings.leaderboard_visible && loadingLeaderboard && (
+                <div className="pt-4 mt-4 border-t-2 border-primary/20">
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
                 </div>
               )}
