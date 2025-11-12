@@ -339,6 +339,7 @@ export type Database = {
           is_active: boolean | null
           last_login_at: string | null
           name: string
+          organizer_manual_score: number | null
           party_name: string | null
           party_number: number
           photo_url: string | null
@@ -361,6 +362,7 @@ export type Database = {
           is_active?: boolean | null
           last_login_at?: string | null
           name: string
+          organizer_manual_score?: number | null
           party_name?: string | null
           party_number: number
           photo_url?: string | null
@@ -383,6 +385,7 @@ export type Database = {
           is_active?: boolean | null
           last_login_at?: string | null
           name?: string
+          organizer_manual_score?: number | null
           party_name?: string | null
           party_number?: number
           photo_url?: string | null
@@ -489,6 +492,13 @@ export type Database = {
             foreignKeyName: "student_speeches_recorded_by_fkey"
             columns: ["recorded_by"]
             isOneToOne: false
+            referencedRelation: "organizer_manual_scoring"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "student_speeches_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
@@ -511,6 +521,13 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "organizer_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "student_speeches_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "organizer_manual_scoring"
             referencedColumns: ["user_id"]
           },
           {
@@ -740,6 +757,45 @@ export type Database = {
           serial_number: number | null
           state: string | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      organizer_manual_scoring: {
+        Row: {
+          name: string | null
+          organizer_manual_score: number | null
+          party_name: string | null
+          party_number: number | null
+          photo_url: string | null
+          position: string | null
+          serial_number: number | null
+          special_role: string | null
+          user_id: string | null
+          user_type: Database["public"]["Enums"]["user_type"] | null
+        }
+        Insert: {
+          name?: string | null
+          organizer_manual_score?: number | null
+          party_name?: string | null
+          party_number?: number | null
+          photo_url?: string | null
+          position?: string | null
+          serial_number?: number | null
+          special_role?: never
+          user_id?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"] | null
+        }
+        Update: {
+          name?: string | null
+          organizer_manual_score?: number | null
+          party_name?: string | null
+          party_number?: number | null
+          photo_url?: string | null
+          position?: string | null
+          serial_number?: number | null
+          special_role?: never
+          user_id?: string | null
+          user_type?: Database["public"]["Enums"]["user_type"] | null
         }
         Relationships: []
       }
