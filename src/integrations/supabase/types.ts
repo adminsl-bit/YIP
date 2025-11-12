@@ -479,6 +479,13 @@ export type Database = {
             foreignKeyName: "student_speeches_recorded_by_fkey"
             columns: ["recorded_by"]
             isOneToOne: false
+            referencedRelation: "organizer_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "student_speeches_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
@@ -494,6 +501,13 @@ export type Database = {
             columns: ["student_id"]
             isOneToOne: false
             referencedRelation: "jury_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "student_speeches_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "organizer_leaderboard"
             referencedColumns: ["user_id"]
           },
           {
@@ -700,6 +714,27 @@ export type Database = {
           party_number: number | null
           photo_url: string | null
           position: string | null
+          state: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
+      organizer_leaderboard: {
+        Row: {
+          assessment_count: number | null
+          award_ids: string[] | null
+          city: string | null
+          constituency: string | null
+          final_total_score: number | null
+          jury_average_score: number | null
+          jury_converted_score: number | null
+          name: string | null
+          party_name: string | null
+          party_number: number | null
+          photo_url: string | null
+          position: string | null
+          preevent_scores: number | null
+          serial_number: number | null
           state: string | null
           user_id: string | null
         }

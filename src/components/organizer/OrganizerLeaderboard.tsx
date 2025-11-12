@@ -22,7 +22,10 @@ interface LeaderboardEntry {
   state: string;
   city: string;
   photo_url?: string;
-  average_score: number;
+  preevent_scores: number;
+  jury_average_score: number;
+  jury_converted_score: number;
+  final_total_score: number;
   assessment_count: number;
   award_ids: string[];
   serial_number: number;
@@ -69,9 +72,9 @@ export const OrganizerLeaderboard = () => {
 
   const fetchData = async () => {
     try {
-      // Fetch leaderboard data
+      // Fetch leaderboard data from organizer view
       const { data: leaderboardData, error: leaderboardError } = await supabase
-        .from('jury_leaderboard')
+        .from('organizer_leaderboard')
         .select('*');
 
       if (leaderboardError) throw leaderboardError;
@@ -115,10 +118,10 @@ export const OrganizerLeaderboard = () => {
         }
       });
 
-      // Sort leaderboard by average score (descending) to get correct ranking
-      const sortedLeaderboard = leaderboardData?.sort((a, b) => (b.average_score || 0) - (a.average_score || 0)) || [];
+      // Sort leaderboard by final_total_score (descending) to get correct ranking
+      const sortedLeaderboard = leaderboardData?.sort((a, b) => (b.final_total_score || 0) - (a.final_total_score || 0)) || [];
       
-      // Process leaderboard data to include serial_number, original rank, and missing assessments
+      // Process leaderboard data to include original rank and missing assessments
       const processedLeaderboard = sortedLeaderboard.map((entry, index) => {
         const missingJuryAssessments = juryData?.filter(jury => 
           !submittedAssessments.has(`${entry.user_id}-${jury.user_id}`)
@@ -126,7 +129,6 @@ export const OrganizerLeaderboard = () => {
 
         return {
           ...entry,
-          serial_number: serialNumberMap.get(entry.user_id) || 0,
           original_rank: index + 1,
           missing_jury_assessments: missingJuryAssessments
         };
@@ -250,7 +252,7 @@ export const OrganizerLeaderboard = () => {
   const uniquePositions = [...new Set(leaderboard.map(entry => entry.position))].sort();
 
 
-  const hasRealScores = leaderboard.some(e => (e.average_score ?? 0) > 0);
+  const hasRealScores = leaderboard.some(e => (e.final_total_score ?? 0) > 0);
 
   const getAssessmentStatus = (entry: LeaderboardEntry) => {
     const totalJury = juryMembers.length;
@@ -282,7 +284,10 @@ export const OrganizerLeaderboard = () => {
       Name: entry.name,
       Position: entry.position,
       Party: `Party ${entry.party_number}`,
-      'Average Score': Math.round(entry.average_score || 0),
+      'Pre-Event Score (60)': entry.preevent_scores?.toFixed(2) || '0.00',
+      'Jury Score (40)': entry.jury_converted_score?.toFixed(2) || '0.00',
+      'Final Total (100)': entry.final_total_score?.toFixed(2) || '0.00',
+      'Jury Average (100 scale)': entry.jury_average_score?.toFixed(2) || '0.00',
       'Assessment Count': entry.assessment_count,
       Constituency: entry.constituency || '',
       State: entry.state || '',
@@ -321,12 +326,14 @@ export const OrganizerLeaderboard = () => {
     const body = filteredLeaderboard.map((entry) => {
       const rank = hasRealScores ? entry.original_rank.toString() : '—';
       const awards = (studentAwards[entry.user_id]?.length || 0).toString();
-      const score = Math.round(entry.average_score || 0).toString();
-      return [rank, entry.name, entry.position, `Party ${entry.party_number}`, score, awards];
+      const preEventScore = entry.preevent_scores?.toFixed(1) || '0';
+      const juryScore = entry.jury_converted_score?.toFixed(1) || '0';
+      const finalScore = entry.final_total_score?.toFixed(1) || '0';
+      return [rank, entry.name, entry.position, `Party ${entry.party_number}`, preEventScore, juryScore, finalScore, awards];
     });
 
     autoTable(pdf, {
-      head: [[ 'Rank', 'Name', 'Position', 'Party', 'Score', 'Awards' ]],
+      head: [[ 'Rank', 'Name', 'Position', 'Party', 'Pre(60)', 'Jury(40)', 'Total', 'Awards' ]],
       body,
       startY: 42,
       styles: { fontSize: 9, cellPadding: 2 },
@@ -335,11 +342,13 @@ export const OrganizerLeaderboard = () => {
       margin: { left: 14, right: 14 },
       columnStyles: {
         0: { cellWidth: 12 },
-        1: { cellWidth: 62 },
-        2: { cellWidth: 36 },
-        3: { cellWidth: 28 },
+        1: { cellWidth: 45 },
+        2: { cellWidth: 32 },
+        3: { cellWidth: 22 },
         4: { cellWidth: 18, halign: 'right' },
-        5: { cellWidth: 18, halign: 'right' }
+        5: { cellWidth: 18, halign: 'right' },
+        6: { cellWidth: 18, halign: 'right' },
+        7: { cellWidth: 18, halign: 'right' }
       }
     });
 
@@ -496,9 +505,9 @@ export const OrganizerLeaderboard = () => {
               <Trophy className="w-6 h-6 text-white" />
             </div>
             <div className="text-3xl font-black text-slate-800 mb-2">
-              {leaderboard.length > 0 ? Math.round(leaderboard[0].average_score) : 0}
+              {leaderboard.length > 0 ? Math.round(leaderboard[0].final_total_score) : 0}
             </div>
-            <p className="text-slate-600 font-semibold">Top Score</p>
+            <p className="text-slate-600 font-semibold">Top Final Score</p>
           </CardContent>
         </Card>
 
@@ -576,23 +585,39 @@ export const OrganizerLeaderboard = () => {
                         </div>
                       </div>
 
-                      {/* Student Details Grid */}
-                      <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-accent/20 rounded-xl">
-                        <div className="space-y-1">
-                          <div className="text-xs font-medium text-muted-foreground">Average Score</div>
-                          <div className="text-2xl font-black text-primary">{Math.round(entry.average_score)}</div>
+                      {/* Scoring Breakdown */}
+                      <div className="space-y-3 mb-4">
+                        {/* Final Score - Prominent */}
+                        <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border-2 border-primary/20">
+                          <div className="text-xs font-medium text-muted-foreground mb-1">Final Total Score</div>
+                          <div className="text-3xl font-black text-primary">{entry.final_total_score?.toFixed(2) || '0.00'}</div>
+                          <div className="text-xs text-muted-foreground">out of 100</div>
                         </div>
-                        <div className="space-y-1">
-                          <div className="text-xs font-medium text-muted-foreground">Assessments</div>
-                          <div className="text-lg font-bold text-foreground">{entry.assessment_count}</div>
+                        
+                        {/* Score Components */}
+                        <div className="grid grid-cols-2 gap-3 p-3 bg-accent/20 rounded-xl">
+                          <div className="space-y-1">
+                            <div className="text-xs font-medium text-muted-foreground">Pre-Event Score</div>
+                            <div className="text-lg font-bold text-foreground">{entry.preevent_scores?.toFixed(2) || '0.00'}</div>
+                            <div className="text-xs text-muted-foreground">out of 60</div>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-xs font-medium text-muted-foreground">Jury Score</div>
+                            <div className="text-lg font-bold text-foreground">{entry.jury_converted_score?.toFixed(2) || '0.00'}</div>
+                            <div className="text-xs text-muted-foreground">out of 40</div>
+                          </div>
                         </div>
-                        <div className="space-y-1">
-                          <div className="text-xs font-medium text-muted-foreground">Constituency</div>
-                          <div className="text-sm text-foreground truncate">{entry.constituency || '—'}</div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="text-xs font-medium text-muted-foreground">Home City</div>
-                          <div className="text-sm text-foreground truncate">{entry.city || '—'}</div>
+                        
+                        {/* Additional Info */}
+                        <div className="grid grid-cols-2 gap-3 p-3 bg-muted/30 rounded-xl">
+                          <div className="space-y-1">
+                            <div className="text-xs font-medium text-muted-foreground">Assessments</div>
+                            <div className="text-sm font-bold text-foreground">{entry.assessment_count}</div>
+                          </div>
+                          <div className="space-y-1">
+                            <div className="text-xs font-medium text-muted-foreground">Constituency</div>
+                            <div className="text-sm text-foreground truncate">{entry.constituency || '—'}</div>
+                          </div>
                         </div>
                       </div>
 
