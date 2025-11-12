@@ -50,7 +50,27 @@ const OrganizerDashboard = () => {
         return;
       }
 
-      // Now update with a proper WHERE clause
+      // Delete all award votes (jury consensus votes)
+      const { error: votesError } = await supabase
+        .from('award_votes')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+
+      if (votesError) {
+        console.error('Error deleting award votes:', votesError);
+      }
+
+      // Delete all student awards that were assigned by jury consensus
+      const { error: awardsError } = await supabase
+        .from('student_awards')
+        .delete()
+        .eq('assigned_by_jury_consensus', true);
+
+      if (awardsError) {
+        console.error('Error deleting jury consensus awards:', awardsError);
+      }
+
+      // Now update assessments with a proper WHERE clause
       const { error } = await supabase
         .from('assessments')
         .update({
@@ -66,7 +86,7 @@ const OrganizerDashboard = () => {
 
       toast({
         title: "Success",
-        description: `${allAssessments.length} assessments have been reset successfully.`,
+        description: `${allAssessments.length} assessments, all jury consensus awards, and award votes have been reset successfully.`,
       });
     } catch (error) {
       console.error('Error resetting assessments:', error);
