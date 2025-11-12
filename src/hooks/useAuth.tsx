@@ -172,12 +172,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Determine base email from loginId
       if (loginId.includes('@')) {
         email = loginId;
-      } else if (/^\d+$/.test(loginId)) {
-        // Student login: numeric id -> internal email alias
+      } else if (/^\d+$/.test(loginId) || /^YIP\d+$/i.test(loginId)) {
+        // Student login: numeric id or YIP prefix -> internal email alias
         email = `${loginId}@yip.parliament`;
       } else {
-        // Username (e.g., jury4) -> default to .com domain
-        email = `${loginId}@yip.com`;
+        // Username (e.g., jury4, admin1) -> default to .com or .org domain
+        if (loginId.startsWith('admin')) {
+          email = `${loginId}@yip.org`;
+        } else {
+          email = `${loginId}@yip.com`;
+        }
       }
 
       // Helper to attempt sign-in with a specific email
