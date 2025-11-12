@@ -13,6 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 interface Student {
   id: string;
+  user_id: string;
   name: string;
   position: string;
   party_number: number;
@@ -434,7 +435,7 @@ const InteractiveParliamentTree = () => {
                                   
                                   {/* Serial number badge */}
                                   <Badge 
-                                    className="absolute -top-2 -right-2 w-6 h-6 p-0 flex items-center justify-center text-xs font-bold bg-gradient-to-r from-orange-500 to-yellow-500 text-white border-0 shadow-lg"
+                                    className="hidden"
                                   >
                                     {student.serial_number}
                                   </Badge>

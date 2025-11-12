@@ -8,6 +8,7 @@ import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 interface Student {
   id: string;
+  user_id?: string;
   name: string;
   position: string;
   party_number: number;
@@ -52,7 +53,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
       const { data, error } = await supabase
         .from('organizer_leaderboard')
         .select('final_total_score')
-        .eq('user_id', student.id)
+        .eq('user_id', student.user_id || student.id)
         .maybeSingle();
 
       if (error) throw error;
