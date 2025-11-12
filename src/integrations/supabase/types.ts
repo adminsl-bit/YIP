@@ -336,6 +336,7 @@ export type Database = {
           party_number: number
           photo_url: string | null
           position: string
+          preevent_scores: number | null
           serial_number: number
           session_id: string | null
           state: string | null
@@ -356,6 +357,7 @@ export type Database = {
           party_number: number
           photo_url?: string | null
           position: string
+          preevent_scores?: number | null
           serial_number: number
           session_id?: string | null
           state?: string | null
@@ -376,6 +378,7 @@ export type Database = {
           party_number?: number
           photo_url?: string | null
           position?: string
+          preevent_scores?: number | null
           serial_number?: number
           session_id?: string | null
           state?: string | null
