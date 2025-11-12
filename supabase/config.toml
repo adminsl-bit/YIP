@@ -1,7 +1,4 @@
 project_id = "ybxktwmpxdnpkfeewrpe"
 
-[functions.create-student-user]
-verify_jwt = false
-
 [functions.seed-demo-users]
 verify_jwt = false
