@@ -71,6 +71,18 @@ export const OrganizerStudentList = () => {
     fetchStudents();
     fetchJuryAssessments();
     fetchAssessments();
+
+    // Realtime: refresh when profiles change (e.g., after import)
+    const channel = supabase
+      .channel('realtime-profiles-organizer')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
+        fetchStudents();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   useEffect(() => {
