@@ -6,7 +6,7 @@ import { StudentProfile } from "@/components/student/StudentProfile";
 import InteractiveParliamentTree from "@/components/student/InteractiveParliamentTree";
 import { StudentVotingTab } from "@/components/student/StudentVotingTab";
 import { ParliamentAgenda } from "@/components/student/ParliamentAgenda";
-
+import { getPartyLetter } from "@/lib/utils";
 
 const StudentDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -53,7 +53,7 @@ const StudentDashboard = () => {
           {profile && (
             <div className="text-center sm:text-right bg-white/20 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-white/30 order-2 sm:order-1">
               <p className="font-bold text-slate-800 text-base sm:text-lg">{profile.name}</p>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium">{profile.position} - Party {profile.party_number}</p>
+              <p className="text-xs sm:text-sm text-slate-600 font-medium">{profile.position} - Party {getPartyLetter(profile.party_number)}</p>
             </div>
           )}
           <Button 
@@ -79,7 +79,7 @@ const StudentDashboard = () => {
             </div>
             <div className="bg-white/20 backdrop-blur-lg rounded-2xl sm:rounded-3xl border border-white/25 responsive-padding shadow-xl max-w-xl sm:max-w-2xl mx-auto">
               <p className="responsive-text-base text-slate-700 font-semibold">
-                You are participating as <span className="font-black text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">{profile?.position}</span> from <span className="font-black text-transparent bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text">Party {profile?.party_number}</span>
+                You are participating as <span className="font-black text-transparent bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text">{profile?.position}</span> from <span className="font-black text-transparent bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text">Party {getPartyLetter(profile?.party_number ?? 0)}</span>
               </p>
             </div>
           </div>
