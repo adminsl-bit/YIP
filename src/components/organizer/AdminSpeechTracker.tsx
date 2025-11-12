@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
@@ -32,24 +31,10 @@ export const AdminSpeechTracker = () => {
     loading,
     filters,
     setFilters,
-    recordSpeech,
     undoLastSpeech,
-    quickRecordBySerial,
     totalCount,
     filteredCount,
   } = useAdminSpeechTracking();
-
-  const [quickSerialInput, setQuickSerialInput] = useState('');
-  const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
-
-  const handleQuickRecord = (e: React.FormEvent) => {
-    e.preventDefault();
-    const serialNum = parseInt(quickSerialInput);
-    if (!isNaN(serialNum)) {
-      quickRecordBySerial(serialNum);
-      setQuickSerialInput('');
-    }
-  };
 
   const uniqueParties = Array.from(new Set(students.map((s) => s.party_number))).sort(
     (a, b) => a - b
@@ -68,33 +53,6 @@ export const AdminSpeechTracker = () => {
 
   return (
     <div className="space-y-6">
-      {/* Quick Serial Entry */}
-      <Card className="p-6 bg-gradient-to-br from-primary/5 to-primary/10 border-primary/20">
-        <div className="space-y-4">
-          <div className="flex items-center gap-2">
-            <Mic className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-semibold">Quick Speech Entry</h3>
-          </div>
-          <form onSubmit={handleQuickRecord} className="flex gap-2">
-            <Input
-              type="number"
-              placeholder="Enter Serial Number (e.g., 25)"
-              value={quickSerialInput}
-              onChange={(e) => setQuickSerialInput(e.target.value)}
-              className="flex-1 text-lg font-mono"
-              autoFocus
-            />
-            <Button type="submit" size="lg" className="px-8">
-              <Mic className="h-4 w-4 mr-2" />
-              Record Speech
-            </Button>
-          </form>
-          <p className="text-sm text-muted-foreground">
-            Type serial number and press Enter for instant recording
-          </p>
-        </div>
-      </Card>
-
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4">
@@ -300,16 +258,8 @@ export const AdminSpeechTracker = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => recordSpeech(student.user_id)}
-                  className="gap-2"
-                >
-                  <Mic className="h-4 w-4" />
-                  +1
-                </Button>
-                {student.speech_count > 0 && (
+              {student.speech_count > 0 && (
+                <div className="flex gap-2">
                   <Button
                     size="sm"
                     variant="outline"
@@ -319,8 +269,8 @@ export const AdminSpeechTracker = () => {
                     <Undo2 className="h-4 w-4" />
                     Undo
                   </Button>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </Card>
         ))}
