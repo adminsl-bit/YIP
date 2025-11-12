@@ -6,6 +6,7 @@ import { StudentProfile } from "@/components/student/StudentProfile";
 import InteractiveParliamentTree from "@/components/student/InteractiveParliamentTree";
 import { StudentVotingTab } from "@/components/student/StudentVotingTab";
 import { ParliamentAgenda } from "@/components/student/ParliamentAgenda";
+import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
 import { getPartyLetter } from "@/lib/utils";
 
 const StudentDashboard = () => {
@@ -13,6 +14,7 @@ const StudentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 relative overflow-hidden">
+      <BreakingNewsTicker />
       {/* Enhanced animated background matching landing page */}
       <div className="absolute inset-0">
         {/* Enhanced dot pattern */}

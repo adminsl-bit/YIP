@@ -179,6 +179,7 @@ export type Database = {
           id: string
           is_active: boolean
           journalist_id: string
+          journalist_name: string | null
           published_at: string
           updated_at: string
         }
@@ -188,6 +189,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           journalist_id: string
+          journalist_name?: string | null
           published_at?: string
           updated_at?: string
         }
@@ -197,6 +199,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           journalist_id?: string
+          journalist_name?: string | null
           published_at?: string
           updated_at?: string
         }

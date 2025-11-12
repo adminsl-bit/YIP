@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
 
 interface Awardee {
   student_id: string;
@@ -275,6 +276,7 @@ export const AwardShowcase = () => {
 
   return (
     <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 relative overflow-hidden flex flex-col">
+      <BreakingNewsTicker />
       {/* Animated background */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,_rgba(59,130,246,0.15)_1px,_transparent_0)] bg-[length:40px_40px] animate-pulse"></div>

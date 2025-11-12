@@ -8,6 +8,7 @@ import { JuryDashboardStats } from "@/components/jury/JuryDashboardStats";
 import { JuryLeaderboard } from "@/components/jury/JuryLeaderboard";
 import { ProfilePhotoUploader } from "@/components/jury/ProfilePhotoUploader";
 import { JuryProfileEditor } from "@/components/jury/JuryProfileEditor";
+import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -105,6 +106,7 @@ const JuryDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 relative overflow-hidden">
+      <BreakingNewsTicker />
       {/* Enhanced animated background matching other dashboards */}
       <div className="absolute inset-0">
         {/* Enhanced dot pattern */}

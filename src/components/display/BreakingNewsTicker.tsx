@@ -8,7 +8,7 @@ export const BreakingNewsTicker = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('breaking_news')
-        .select('*')
+        .select('*, journalist_name')
         .eq('is_active', true)
         .order('published_at', { ascending: false })
         .limit(5);
@@ -34,7 +34,7 @@ export const BreakingNewsTicker = () => {
           <div className="animate-marquee whitespace-nowrap inline-block">
             {activeNews.map((news, index) => (
               <span key={news.id} className="inline-block mx-8 text-base font-medium">
-                {news.headline}
+                <span className="font-bold">{news.journalist_name}:</span> {news.headline}
                 {index < activeNews.length - 1 && (
                   <span className="mx-4 text-white/60">•</span>
                 )}

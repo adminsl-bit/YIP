@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { LiveVotingStats } from "@/components/student/LiveVotingStats";
 import { PostVotingAnalysis } from "@/components/student/PostVotingAnalysis";
 import { DetailedPollResults } from "@/components/student/DetailedPollResults";
+import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
 
 interface Poll {
   id: string;
@@ -255,6 +256,7 @@ const PollDisplay = () => {
 
   return (
     <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col p-4 overflow-hidden">
+      <BreakingNewsTicker />
       <div className="max-w-6xl w-full mx-auto flex flex-col h-full">
         {/* Compact Header */}
         <div className="text-center mb-4 flex-shrink-0">

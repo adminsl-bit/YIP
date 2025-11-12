@@ -7,6 +7,7 @@ import { ParliamentAgenda } from '@/components/student/ParliamentAgenda';
 import { TimerControl } from '@/components/organizer/TimerControl';
 import { PollManagement } from '@/components/organizer/PollManagement';
 import { AdminSpeechTracker } from '@/components/organizer/AdminSpeechTracker';
+import { BreakingNewsTicker } from '@/components/display/BreakingNewsTicker';
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Users, Calendar, Clock, BarChart, Mic } from "lucide-react";
 
@@ -15,6 +16,7 @@ export const AdminStudentDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10">
+      <BreakingNewsTicker />
       {/* Header */}
       <div className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
         <div className="container mx-auto px-4 py-4">

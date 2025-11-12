@@ -6,12 +6,14 @@ import { StudentProfile } from "@/components/student/StudentProfile";
 import InteractiveParliamentTree from "@/components/student/InteractiveParliamentTree";
 import { ParliamentAgenda } from "@/components/student/ParliamentAgenda";
 import { BreakingNewsPublisher } from "@/components/journalist/BreakingNewsPublisher";
+import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
 
 const JournalistDashboard = () => {
   const { profile, signOut } = useAuth();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-red-50 relative overflow-hidden">
+      <BreakingNewsTicker />
       {/* Enhanced animated background */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-0 w-full h-full opacity-40">

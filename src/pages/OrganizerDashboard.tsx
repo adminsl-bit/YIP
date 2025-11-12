@@ -6,6 +6,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap, Image as ImageIcon, AlertTriangle, Trophy, Award, Presentation } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -102,6 +103,7 @@ const OrganizerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 relative overflow-hidden">
+      <BreakingNewsTicker />
       {/* Enhanced animated background matching student dashboard */}
       <div className="absolute inset-0">
         {/* Enhanced dot pattern */}

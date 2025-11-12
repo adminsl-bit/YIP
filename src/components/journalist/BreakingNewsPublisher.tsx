@@ -9,7 +9,7 @@ import { Newspaper, Send } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 export const BreakingNewsPublisher = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [headline, setHeadline] = useState('');
@@ -36,6 +36,7 @@ export const BreakingNewsPublisher = () => {
         .from('breaking_news')
         .insert({
           journalist_id: user?.id,
+          journalist_name: profile?.name || 'Anonymous',
           headline: text,
           is_active: true,
         });
