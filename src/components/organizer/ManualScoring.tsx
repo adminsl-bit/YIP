@@ -20,12 +20,14 @@ interface ManualScoringStudent {
   photo_url: string | null;
   special_role: 'journalist' | 'admin_student';
   organizer_manual_score: number | null;
+  preevent_score: number | null;
 }
 
 export const ManualScoring = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [scores, setScores] = useState<Record<string, string>>({});
+  const [preeventScores, setPreeventScores] = useState<Record<string, string>>({});
+  const [liveScores, setLiveScores] = useState<Record<string, string>>({});
 
   const { data: students, isLoading } = useQuery({
     queryKey: ['manual-scoring-students'],
@@ -36,11 +38,54 @@ export const ManualScoring = () => {
         .order('serial_number', { ascending: true });
 
       if (error) throw error;
-      return data as ManualScoringStudent[];
+      
+      // Fetch preevent_scores from profiles table
+      const studentsWithPreEventScores = await Promise.all(
+        (data || []).map(async (student) => {
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('preevent_scores')
+            .eq('user_id', student.user_id)
+            .single();
+          
+          return {
+            ...student,
+            preevent_score: profileData?.preevent_scores || null,
+          };
+        })
+      );
+      
+      return studentsWithPreEventScores as ManualScoringStudent[];
     },
   });
 
-  const updateScoreMutation = useMutation({
+  const updatePreeventScoreMutation = useMutation({
+    mutationFn: async ({ userId, score }: { userId: string; score: number }) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ preevent_scores: score })
+        .eq('user_id', userId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Pre-Event Score Updated',
+        description: 'Pre-event score has been saved successfully',
+      });
+      queryClient.invalidateQueries({ queryKey: ['manual-scoring-students'] });
+      queryClient.invalidateQueries({ queryKey: ['organizer-leaderboard'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update pre-event score',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const updateLiveScoreMutation = useMutation({
     mutationFn: async ({ userId, score }: { userId: string; score: number }) => {
       const { error } = await supabase
         .from('profiles')
@@ -51,8 +96,8 @@ export const ManualScoring = () => {
     },
     onSuccess: () => {
       toast({
-        title: 'Score Updated',
-        description: 'Manual score has been saved successfully',
+        title: 'Live Event Score Updated',
+        description: 'Live event score has been saved successfully',
       });
       queryClient.invalidateQueries({ queryKey: ['manual-scoring-students'] });
       queryClient.invalidateQueries({ queryKey: ['organizer-leaderboard'] });
@@ -60,32 +105,54 @@ export const ManualScoring = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update score',
+        description: error.message || 'Failed to update live event score',
         variant: 'destructive',
       });
     },
   });
 
-  const handleScoreChange = (userId: string, value: string) => {
+  const handlePreeventScoreChange = (userId: string, value: string) => {
     // Only allow numbers and decimal point
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
-      setScores({ ...scores, [userId]: value });
+      setPreeventScores({ ...preeventScores, [userId]: value });
     }
   };
 
-  const handleSaveScore = (userId: string) => {
-    const scoreValue = parseFloat(scores[userId] || '0');
+  const handleLiveScoreChange = (userId: string, value: string) => {
+    // Only allow numbers and decimal point
+    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      setLiveScores({ ...liveScores, [userId]: value });
+    }
+  };
+
+  const handleSavePreeventScore = (userId: string) => {
+    const scoreValue = parseFloat(preeventScores[userId] || '0');
     
-    if (isNaN(scoreValue) || scoreValue < 0 || scoreValue > 100) {
+    if (isNaN(scoreValue) || scoreValue < 0 || scoreValue > 60) {
       toast({
         title: 'Invalid Score',
-        description: 'Score must be between 0 and 100',
+        description: 'Pre-event score must be between 0 and 60',
         variant: 'destructive',
       });
       return;
     }
 
-    updateScoreMutation.mutate({ userId, score: scoreValue });
+    updatePreeventScoreMutation.mutate({ userId, score: scoreValue });
+  };
+
+  const handleSaveLiveScore = (userId: string) => {
+    const scoreValue = parseFloat(liveScores[userId] || '0');
+    
+    if (isNaN(scoreValue) || scoreValue < 0 || scoreValue > 40) {
+      toast({
+        title: 'Invalid Score',
+        description: 'Live event score must be between 0 and 40',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    updateLiveScoreMutation.mutate({ userId, score: scoreValue });
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -130,7 +197,7 @@ export const ManualScoring = () => {
           <div>
             <h3 className="font-semibold text-lg mb-1">Manual Scoring</h3>
             <p className="text-sm text-muted-foreground">
-              Enter scores (0-100) for journalists and admin students. These scores will be used in the final leaderboard calculations.
+              Enter pre-event scores (0-60) and live event scores (0-40) for journalists and admin students. Pre-event scores from imports will appear here.
             </p>
           </div>
         </div>
@@ -139,15 +206,19 @@ export const ManualScoring = () => {
       {/* Students List */}
       <div className="space-y-3">
         {students.map((student) => {
-          const currentScore = scores[student.user_id] ?? student.organizer_manual_score?.toString() ?? '';
-          const hasUnsavedChanges = scores[student.user_id] !== undefined && 
-            scores[student.user_id] !== student.organizer_manual_score?.toString();
+          const currentPreeventScore = preeventScores[student.user_id] ?? student.preevent_score?.toString() ?? '';
+          const currentLiveScore = liveScores[student.user_id] ?? student.organizer_manual_score?.toString() ?? '';
+          const hasPreeventChanges = preeventScores[student.user_id] !== undefined && 
+            preeventScores[student.user_id] !== student.preevent_score?.toString();
+          const hasLiveChanges = liveScores[student.user_id] !== undefined && 
+            liveScores[student.user_id] !== student.organizer_manual_score?.toString();
+          const hasAnyChanges = hasPreeventChanges || hasLiveChanges;
 
           return (
             <Card
               key={student.user_id}
               className={`p-4 hover:shadow-lg transition-all duration-200 ${
-                hasUnsavedChanges ? 'border-2 border-amber-400 bg-amber-50/50' : ''
+                hasAnyChanges ? 'border-2 border-amber-400 bg-amber-50/50' : ''
               }`}
             >
               <div className="flex items-center gap-4">
@@ -186,23 +257,47 @@ export const ManualScoring = () => {
                   </p>
                 </div>
 
-                {/* Score Input */}
+                {/* Score Inputs */}
                 <div className="flex items-center gap-3">
+                  {/* Pre-Event Score */}
                   <div className="flex flex-col items-end gap-1">
                     <label className="text-xs font-medium text-muted-foreground">
-                      Score (out of 100)
+                      Pre-Event (out of 60)
                     </label>
                     <Input
                       type="text"
-                      value={currentScore}
-                      onChange={(e) => handleScoreChange(student.user_id, e.target.value)}
+                      value={currentPreeventScore}
+                      onChange={(e) => handlePreeventScoreChange(student.user_id, e.target.value)}
                       placeholder="0.00"
                       className="w-24 text-center text-lg font-semibold"
                     />
                   </div>
                   <Button
-                    onClick={() => handleSaveScore(student.user_id)}
-                    disabled={updateScoreMutation.isPending || !currentScore}
+                    onClick={() => handleSavePreeventScore(student.user_id)}
+                    disabled={updatePreeventScoreMutation.isPending || !currentPreeventScore}
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    Save
+                  </Button>
+                  
+                  {/* Live Event Score */}
+                  <div className="flex flex-col items-end gap-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Live Event (out of 40)
+                    </label>
+                    <Input
+                      type="text"
+                      value={currentLiveScore}
+                      onChange={(e) => handleLiveScoreChange(student.user_id, e.target.value)}
+                      placeholder="0.00"
+                      className="w-24 text-center text-lg font-semibold"
+                    />
+                  </div>
+                  <Button
+                    onClick={() => handleSaveLiveScore(student.user_id)}
+                    disabled={updateLiveScoreMutation.isPending || !currentLiveScore}
                     size="sm"
                     className="gap-2"
                   >
@@ -211,7 +306,7 @@ export const ManualScoring = () => {
                   </Button>
                 </div>
               </div>
-              {hasUnsavedChanges && (
+              {hasAnyChanges && (
                 <div className="mt-2 text-xs text-amber-600 font-medium">
                   ⚠️ You have unsaved changes
                 </div>

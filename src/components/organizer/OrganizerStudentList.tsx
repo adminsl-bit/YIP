@@ -580,15 +580,24 @@ export const OrganizerStudentList = () => {
 
                     {/* Assessment Information */}
                     <div className="flex items-center justify-between mb-4 p-3 bg-primary/5 rounded-xl min-h-[64px]">
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium text-muted-foreground">Assessments</div>
-                        <div className="text-sm font-bold text-foreground">{assessmentCount} completed</div>
-                      </div>
-                      {assessmentCount > 0 && (
-                        <div className="space-y-1 text-right">
-                          <div className="text-xs font-medium text-muted-foreground">Average Score</div>
-                          <div className="text-lg font-bold text-primary">{averageScore}</div>
+                      {(getSeatRole(student.position) === 'administrator' || getSeatRole(student.position) === 'journalist') ? (
+                        <div className="space-y-1 w-full">
+                          <div className="text-xs font-medium text-muted-foreground">Assessment Status</div>
+                          <div className="text-sm font-bold text-foreground">Organizer</div>
                         </div>
+                      ) : (
+                        <>
+                          <div className="space-y-1">
+                            <div className="text-xs font-medium text-muted-foreground">Assessments</div>
+                            <div className="text-sm font-bold text-foreground">{assessmentCount} completed</div>
+                          </div>
+                          {assessmentCount > 0 && (
+                            <div className="space-y-1 text-right">
+                              <div className="text-xs font-medium text-muted-foreground">Average Score</div>
+                              <div className="text-lg font-bold text-primary">{averageScore}</div>
+                            </div>
+                          )}
+                        </>
                       )}
                     </div>
 
