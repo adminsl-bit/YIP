@@ -3,17 +3,22 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
-import { Upload, Camera } from "lucide-react";
+import { Upload, Camera, X } from "lucide-react";
 
 interface ProfilePhotoUploaderProps {
   className?: string;
+  currentPhotoUrl?: string | null;
 }
 
-export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({ className = "" }) => {
+export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({ 
+  className = "",
+  currentPhotoUrl 
+}) => {
   const { user, refreshProfile } = useAuth();
   const { toast } = useToast();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [removing, setRemoving] = useState(false);
 
   const onClick = () => {
     inputRef.current?.click();
@@ -83,6 +88,47 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({ clas
     }
   };
 
+  const removePhoto = async () => {
+    if (!user) {
+      toast({ title: "Not signed in", description: "Please sign in to remove your photo.", variant: "destructive" });
+      return;
+    }
+
+    try {
+      setRemoving(true);
+
+      // Clear the photo_url in the profile
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ photo_url: null })
+        .eq("user_id", user.id);
+
+      if (updateError) throw updateError;
+
+      // Try to delete the file from storage (optional - file may not exist)
+      const path = `${user.id}/profile`;
+      await supabase.storage
+        .from("student-photos")
+        .remove([`${path}.jpg`, `${path}.jpeg`, `${path}.png`, `${path}.webp`]);
+
+      await refreshProfile();
+
+      toast({ 
+        title: "Photo removed", 
+        description: "Your profile picture has been removed successfully." 
+      });
+    } catch (err: any) {
+      console.error("Remove error", err);
+      toast({ 
+        title: "Remove failed", 
+        description: err?.message || "Please try again.", 
+        variant: "destructive" 
+      });
+    } finally {
+      setRemoving(false);
+    }
+  };
+
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <input
@@ -94,7 +140,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({ clas
       />
       <Button
         onClick={onClick}
-        disabled={uploading}
+        disabled={uploading || removing}
         variant="outline"
         size="sm"
         className="gap-2"
@@ -112,6 +158,29 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({ clas
           </>
         )}
       </Button>
+      
+      {currentPhotoUrl && (
+        <Button
+          onClick={removePhoto}
+          disabled={uploading || removing}
+          variant="outline"
+          size="sm"
+          className="gap-2 text-destructive hover:bg-destructive/10"
+          aria-label="Remove profile photo"
+        >
+          {removing ? (
+            <>
+              <X className="w-4 h-4 animate-pulse" />
+              Removing...
+            </>
+          ) : (
+            <>
+              <X className="w-4 h-4" />
+              Remove Photo
+            </>
+          )}
+        </Button>
+      )}
     </div>
   );
 };

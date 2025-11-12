@@ -93,7 +93,7 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
             )}
             {isOwnProfile && (
               <div className="absolute bottom-4 right-4">
-                <ProfilePhotoUploader />
+                <ProfilePhotoUploader currentPhotoUrl={profile.photo_url} />
               </div>
             )}
           </div>
