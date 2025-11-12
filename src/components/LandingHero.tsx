@@ -212,7 +212,7 @@ export const LandingHero = () => {
               
               {/* Animated Logo Carousel */}
               <div className="flex justify-center">
-                <LogoCarousel columnCount={3} logos={partnerLogos} />
+                <LogoCarousel columnCount={2} logos={partnerLogos} />
               </div>
             </div>
           </div>
@@ -223,11 +223,11 @@ export const LandingHero = () => {
           <div className="max-w-7xl mx-auto">
             <div className="text-center">
               <div className="flex items-center justify-center gap-3 mb-2">
-                <span className="text-sm font-medium text-slate-600">Powered by</span>
+                <span className="text-base md:text-lg font-medium text-slate-600">Powered by</span>
                 <img 
                   src="/lovable-uploads/strawlabs.png" 
                   alt="Strawlabs" 
-                  className="h-8 md:h-10 object-contain"
+                  className="h-12 md:h-16 object-contain"
                 />
               </div>
               <p className="text-sm text-slate-500">© 2025 All rights reserved</p>

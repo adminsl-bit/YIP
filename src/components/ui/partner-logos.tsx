@@ -76,6 +76,7 @@ export const StrawlabsIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) =>
   <LogoImage 
     src="/lovable-uploads/strawlabs.png"
     alt="Strawlabs Logo"
+    className="h-28 w-28 md:h-40 md:w-40"
     {...props}
   />
 );
