@@ -24,10 +24,9 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
 
 export function ParliamentSignIn() {
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedRole, setSelectedRole] = useState<'student' | 'admin_student' | 'jury' | 'organizer'>('student');
   const [credentials, setCredentials] = useState({
-    loginId: 'demo',
-    password: '1234'
+    loginId: '',
+    password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [focusedInput, setFocusedInput] = useState<string | null>(null);
@@ -51,32 +50,11 @@ export function ParliamentSignIn() {
     mouseY.set(0);
   };
 
-  // Centralized role -> credential mapping and quick login helper
-  const roleCredentials = {
-    student: { loginId: 'demo', password: '1234' },
-    admin_student: { loginId: 'demo', password: '1234' },
-    jury: { loginId: 'demo', password: '1234' },
-    organizer: { loginId: 'demo', password: '1234' }
-  } as const;
-
-  const roleEmailMap = {
-    student: 'demo@student.yip',
-    admin_student: 'demo@admin.yip',
-    jury: 'demo@jury.yip',
-    organizer: 'demo@organizer.yip',
-  } as const;
-
-  const signInWithRole = async (role: 'student' | 'admin_student' | 'jury' | 'organizer') => {
-    setIsLoading(true);
-    const creds = roleCredentials[role];
-    const loginIdToUse = creds.loginId === 'demo' ? roleEmailMap[role] : creds.loginId;
-    await signIn(loginIdToUse, creds.password);
-    setIsLoading(false);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await signInWithRole(selectedRole);
+    setIsLoading(true);
+    await signIn(credentials.loginId, credentials.password);
+    setIsLoading(false);
   };
 
   return (
@@ -228,35 +206,6 @@ export function ParliamentSignIn() {
                 {/* Login form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <motion.div className="space-y-4">
-                    {/* Role Selector */}
-                    <motion.div className="space-y-2">
-                      <label className="text-sm font-medium text-slate-700">Select Role</label>
-                      <div className="grid grid-cols-2 gap-2 relative z-20">
-                        {[
-                          { value: 'student', label: 'Student', icon: Users },
-                          { value: 'admin_student', label: 'Admin Student', icon: Crown },
-                          { value: 'jury', label: 'Jury', icon: Shield },
-                          { value: 'organizer', label: 'Organizer', icon: Crown }
-                        ].map((role) => (
-                          <motion.button
-                            key={role.value}
-                            type="button"
-                            onClick={() => setSelectedRole(role.value as any)}
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            className={`p-3 cursor-pointer pointer-events-auto rounded-xl border-2 transition-all duration-300 flex items-center justify-center gap-2 ${
-                              selectedRole === role.value
-                                ? 'bg-gradient-to-r from-blue-500/20 to-indigo-500/20 border-blue-500 text-slate-900 shadow-md'
-                                : 'bg-white/10 border-white/30 text-slate-700 hover:bg-white/20'
-                            }`}
-                          >
-                            <role.icon className="w-4 h-4" />
-                            <span className="text-sm font-medium">{role.label}</span>
-                          </motion.button>
-                        ))}
-                      </div>
-                    </motion.div>
-
                     {/* Login ID input */}
                     <motion.div 
                       className={`relative ${focusedInput === "loginId" ? 'z-10' : ''}`}
@@ -271,7 +220,7 @@ export function ParliamentSignIn() {
                         
                         <Input
                           type="text"
-                          placeholder="demo"
+                          placeholder="Enter your login ID"
                           value={credentials.loginId}
                           onChange={(e) => setCredentials(prev => ({ ...prev, loginId: e.target.value }))}
                           onFocus={() => setFocusedInput("loginId")}
@@ -307,7 +256,7 @@ export function ParliamentSignIn() {
                         
                         <Input
                           type={showPassword ? "text" : "password"}
-                          placeholder="password"
+                          placeholder="Enter your password"
                           value={credentials.password}
                           onChange={(e) => setCredentials(prev => ({ ...prev, password: e.target.value }))}
                           onFocus={() => setFocusedInput("password")}
