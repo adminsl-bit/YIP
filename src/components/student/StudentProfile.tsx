@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PartyBadge } from "@/components/ui/party-badge";
+import { ProfilePhotoUploader } from "./ProfilePhotoUploader";
 import { Hash, MapPin, Building, Users, Crown } from "lucide-react";
 
 interface Profile {
@@ -88,6 +89,11 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
             {isSpecial && (
               <div className="absolute top-4 left-4 bg-amber-500 rounded-full p-2 shadow-lg">
                 <Crown className="w-6 h-6 text-white" />
+              </div>
+            )}
+            {isOwnProfile && (
+              <div className="absolute bottom-4 right-4">
+                <ProfilePhotoUploader />
               </div>
             )}
           </div>

@@ -640,10 +640,7 @@ export type Database = {
       }
     }
     Functions: {
-      calculate_total_score: {
-        Args: { scores_json: Json }
-        Returns: number
-      }
+      calculate_total_score: { Args: { scores_json: Json }; Returns: number }
       check_award_consensus: {
         Args: { p_award_id: string; p_student_id: string }
         Returns: boolean
@@ -662,20 +659,17 @@ export type Database = {
         Returns: undefined
       }
       get_current_user_type: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: Database["public"]["Enums"]["user_type"]
       }
       get_jury_directory: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           name: string
           user_id: string
         }[]
       }
-      get_total_active_students: {
-        Args: Record<PropertyKey, never>
-        Returns: number
-      }
+      get_total_active_students: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

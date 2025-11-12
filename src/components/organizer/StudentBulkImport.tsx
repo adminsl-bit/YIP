@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Upload, FileSpreadsheet, Download, CheckCircle, AlertCircle, Info } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Upload, FileSpreadsheet, Download, CheckCircle, AlertCircle, Info, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
@@ -24,6 +25,7 @@ interface StudentData {
 export const StudentBulkImport = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<{
     success: number;
@@ -163,6 +165,39 @@ export const StudentBulkImport = () => {
     }
   };
 
+  const handleDeleteAllStudents = async () => {
+    setIsDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('No active session');
+        return;
+      }
+
+      const response = await fetch('https://ybxktwmpxdnpkfeewrpe.supabase.co/functions/v1/delete-all-students', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success(result.message);
+        setResults(null); // Clear any previous import results
+      } else {
+        toast.error(result.error || 'Failed to delete students');
+      }
+    } catch (error) {
+      console.error('Error deleting students:', error);
+      toast.error('Failed to delete students');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const downloadTemplate = () => {
     const template = [
       {
@@ -209,8 +244,50 @@ export const StudentBulkImport = () => {
               <strong>Google Drive photos:</strong> Use shareable links - they'll be converted automatically
               <br />
               <strong>Re-upload support:</strong> Existing students will be updated with new data
+              <br />
+              <strong>Photo upload:</strong> Students can now upload their own photos after logging in
             </AlertDescription>
           </Alert>
+
+          <div className="flex justify-between items-center">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  variant="destructive" 
+                  disabled={isDeleting}
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  {isDeleting ? "Deleting..." : "Delete All Students"}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>⚠️ Delete All Students?</AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-2">
+                    <p>This will permanently delete:</p>
+                    <ul className="list-disc list-inside text-sm space-y-1">
+                      <li>All student login credentials</li>
+                      <li>All student profiles and data</li>
+                      <li>All assessments, votes, and related records</li>
+                    </ul>
+                    <p className="text-red-600 font-semibold mt-4">
+                      This action cannot be undone!
+                    </p>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleDeleteAllStudents}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Yes, Delete All Students
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
             <Button
