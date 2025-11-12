@@ -31,6 +31,7 @@ interface LeaderboardEntry {
   serial_number: number;
   original_rank: number;
   missing_jury_assessments?: string[];
+  organizer_manual_score?: number;
 }
 
 interface JuryMember {
@@ -78,6 +79,20 @@ export const OrganizerLeaderboard = () => {
         .select('*');
 
       if (leaderboardError) throw leaderboardError;
+      
+      // Fetch organizer_manual_score for admin/journalist students
+      const { data: manualScoreData, error: manualScoreError } = await supabase
+        .from('profiles')
+        .select('user_id, organizer_manual_score')
+        .in('user_id', leaderboardData?.map(entry => entry.user_id) || []);
+      
+      if (manualScoreError) throw manualScoreError;
+      
+      // Create map of user_id to organizer_manual_score
+      const manualScoreMap = new Map();
+      manualScoreData?.forEach(profile => {
+        manualScoreMap.set(profile.user_id, profile.organizer_manual_score);
+      });
 
       // Fetch jury members
       const { data: juryData, error: juryError } = await supabase
@@ -97,16 +112,16 @@ export const OrganizerLeaderboard = () => {
 
       // Fetch serial numbers for all students in the leaderboard
       const userIds = leaderboardData?.map(entry => entry.user_id) || [];
-      const { data: profilesData, error: profilesError } = await supabase
+      const { data: serialData, error: serialError } = await supabase
         .from('profiles')
         .select('user_id, serial_number')
         .in('user_id', userIds);
 
-      if (profilesError) throw profilesError;
+      if (serialError) throw serialError;
 
       // Create a map of user_id to serial_number
       const serialNumberMap = new Map();
-      profilesData?.forEach(profile => {
+      serialData?.forEach(profile => {
         serialNumberMap.set(profile.user_id, profile.serial_number);
       });
 
@@ -121,7 +136,7 @@ export const OrganizerLeaderboard = () => {
       // Sort leaderboard by final_total_score (descending) to get correct ranking
       const sortedLeaderboard = leaderboardData?.sort((a, b) => (b.final_total_score || 0) - (a.final_total_score || 0)) || [];
       
-      // Process leaderboard data to include original rank and missing assessments
+      // Process leaderboard data to include original rank, missing assessments, and manual scores
       const processedLeaderboard = sortedLeaderboard.map((entry, index) => {
         const missingJuryAssessments = juryData?.filter(jury => 
           !submittedAssessments.has(`${entry.user_id}-${jury.user_id}`)
@@ -130,7 +145,8 @@ export const OrganizerLeaderboard = () => {
         return {
           ...entry,
           original_rank: index + 1,
-          missing_jury_assessments: missingJuryAssessments
+          missing_jury_assessments: missingJuryAssessments,
+          organizer_manual_score: manualScoreMap.get(entry.user_id) || 0
         };
       });
       setLeaderboard(processedLeaderboard);
@@ -615,7 +631,7 @@ export const OrganizerLeaderboard = () => {
                             entry.position.toLowerCase().includes('journalist')) && (
                             <div className="space-y-1">
                               <div className="text-xs font-medium text-muted-foreground">Live Event Score</div>
-                              <div className="text-lg font-bold text-foreground">{entry.jury_converted_score?.toFixed(2) || '0.00'}</div>
+                              <div className="text-lg font-bold text-foreground">{entry.organizer_manual_score?.toFixed(2) || '0.00'}</div>
                               <div className="text-xs text-muted-foreground">out of 40</div>
                             </div>
                           )}
