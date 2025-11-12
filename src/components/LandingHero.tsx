@@ -12,7 +12,8 @@ import {
   MahatmaIcon, 
   SriKaliSwariIcon, 
   BharatRisingIcon,
-  WondrDiamondsIcon
+  WondrDiamondsIcon,
+  StrawlabsIcon
 } from "@/components/ui/partner-logos";
 
 // Logo data for the carousel
@@ -21,6 +22,7 @@ const partnerLogos = [
   { name: "Thalir", id: 2, img: ThalirIcon },
   { name: "CII", id: 3, img: CIIIcon },
   { name: "Bharat Rising", id: 6, img: BharatRisingIcon },
+  { name: "Strawlabs", id: 7, img: StrawlabsIcon },
 ];
 
 export const LandingHero = () => {
@@ -220,9 +222,14 @@ export const LandingHero = () => {
         <div className="px-8 py-8 bg-transparent">
           <div className="max-w-7xl mx-auto">
             <div className="text-center">
-              <div className="flex items-center justify-center gap-4 mb-2">
-                <Award className="w-6 h-6 text-slate-600" />
-                <span className="text-lg font-medium text-slate-700">Powered by Strawlabs for Yi Madurai chapter</span>
+              <div className="flex flex-col items-center justify-center gap-3 mb-2">
+                <span className="text-sm font-medium text-slate-600">Powered by</span>
+                <img 
+                  src="/lovable-uploads/strawlabs.png" 
+                  alt="Strawlabs" 
+                  className="h-12 md:h-16 object-contain"
+                />
+                <span className="text-sm text-slate-600">for Yi Madurai chapter</span>
               </div>
               <p className="text-sm text-slate-500">© 2025 All rights reserved</p>
             </div>

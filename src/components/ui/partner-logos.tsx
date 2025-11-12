@@ -71,3 +71,11 @@ export const WondrDiamondsIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props
     {...props}
   />
 );
+
+export const StrawlabsIcon: React.FC<React.SVGProps<SVGSVGElement>> = (props) => (
+  <LogoImage 
+    src="/lovable-uploads/strawlabs.png"
+    alt="Strawlabs Logo"
+    {...props}
+  />
+);
