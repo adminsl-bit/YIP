@@ -64,18 +64,31 @@ serve(async (req) => {
         const seatRoleLower = student.seatRole.toLowerCase();
         const isAdmin = seatRoleLower.includes('administrator');
         const isJournalist = seatRoleLower.includes('journalist');
+        const isStudentRole = !(isAdmin || isJournalist);
         
         // Determine party number from party letter (A=1, B=2, C=3, D=4, E=5)
         const partyMap: Record<string, number> = { 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5 };
         let partyNumber = 0;
         
-        if (student.party) {
-          const partyTrimmed = student.party.toString().trim().toUpperCase();
-          // Only map if it's a single letter A-E
-          if (partyTrimmed.length === 1 && partyMap[partyTrimmed]) {
-            partyNumber = partyMap[partyTrimmed];
-          } else if (partyTrimmed !== 'NO PARTY' && partyTrimmed !== '') {
-            console.warn(`Invalid party value for ${student.name}: "${student.party}" - defaulting to 0`);
+        // Normalize and validate party input. Accepts: "A", "Party A", "A - ..."
+        const rawParty = (student.party ?? '').toString().trim().toUpperCase();
+        if (rawParty) {
+          const match = rawParty.match(/\b([A-E])\b/);
+          const letter = match ? match[1] : (rawParty.length === 1 ? rawParty : '');
+          if (letter && partyMap[letter]) {
+            partyNumber = partyMap[letter];
+          } else if (rawParty !== 'NO PARTY') {
+            if (isStudentRole) {
+              results.errors.push(`${student.name}: Invalid party value "${student.party}". Use letters A-E.`);
+              results.failed++;
+              continue;
+            }
+          }
+        } else {
+          if (isStudentRole) {
+            results.errors.push(`${student.name}: Missing party letter (A-E)`);
+            results.failed++;
+            continue;
           }
         }
 
