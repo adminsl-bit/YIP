@@ -65,9 +65,19 @@ serve(async (req) => {
         const isAdmin = seatRoleLower.includes('administrator');
         const isJournalist = seatRoleLower.includes('journalist');
         
-        // Determine party number from party letter
+        // Determine party number from party letter (A=1, B=2, C=3, D=4, E=5)
         const partyMap: Record<string, number> = { 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5 };
-        const partyNumber = student.party ? (partyMap[student.party] || 0) : 0;
+        let partyNumber = 0;
+        
+        if (student.party) {
+          const partyTrimmed = student.party.toString().trim().toUpperCase();
+          // Only map if it's a single letter A-E
+          if (partyTrimmed.length === 1 && partyMap[partyTrimmed]) {
+            partyNumber = partyMap[partyTrimmed];
+          } else if (partyTrimmed !== 'NO PARTY' && partyTrimmed !== '') {
+            console.warn(`Invalid party value for ${student.name}: "${student.party}" - defaulting to 0`);
+          }
+        }
 
         // Check if user already exists
         const { data: existingProfile } = await supabaseAdmin
