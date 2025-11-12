@@ -80,7 +80,7 @@ export const LandingHero = () => {
               </Badge>
               
               <div className="flex flex-col lg:flex-row items-center justify-center gap-4 lg:gap-8 mb-8">
-                <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-9xl font-black tracking-tight drop-shadow-2xl">
+                <h1 className="text-4xl sm:text-6xl lg:text-7xl xl:text-9xl font-black tracking-tight drop-shadow-2xl text-center">
                   <span className="block text-transparent bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 bg-clip-text">
                     YOUNG
                   </span>
