@@ -109,15 +109,29 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
 
   const fetchStudents = async () => {
     try {
-      const { data, error } = await supabase
+      // Get all students first
+      const { data: studentsData, error: studentsError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_type', 'student')
         .order('party_number', { ascending: true })
         .order('serial_number', { ascending: true });
 
-      if (error) throw error;
-      setStudents(data || []);
+      if (studentsError) throw studentsError;
+
+      // Get all user_ids with admin_student or journalist roles
+      const { data: specialRoles, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .in('role', ['admin_student', 'journalist']);
+
+      if (rolesError) throw rolesError;
+
+      // Filter out students who have special roles
+      const specialRoleIds = new Set(specialRoles?.map(r => r.user_id) || []);
+      const regularStudents = studentsData?.filter(student => !specialRoleIds.has(student.user_id)) || [];
+
+      setStudents(regularStudents);
     } catch (error) {
       console.error('Error fetching students:', error);
     }
@@ -362,8 +376,6 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                 <SelectItem value="all">All Roles</SelectItem>
                 <SelectItem value="speaker">Speaker</SelectItem>
                 <SelectItem value="deputy_speaker">Deputy Speaker</SelectItem>
-                <SelectItem value="administrator">Administrator</SelectItem>
-                <SelectItem value="journalist">Journalist</SelectItem>
                 <SelectItem value="minister">Minister</SelectItem>
                 <SelectItem value="mp">MP</SelectItem>
               </SelectContent>
