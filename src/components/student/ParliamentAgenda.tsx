@@ -53,38 +53,41 @@ const getSessionColor = (type: string) => {
 const scheduleData: DaySchedule[] = [
   {
     day: 1,
-    date: "YIP 2.0 SRTN Regional Day 1 Agenda",
-    duration: "9:00 AM to 5:00 PM",
+    date: "15 November 2025 (Saturday)",
+    duration: "8:00 AM to 5:30 PM",
     items: [
-      { time: "9:00 AM - 9:30 AM", session: "0. Technical Demo", type: "session" },
-      { time: "9:30 - 10:15 AM", session: "1. Inaugural Event", type: "ceremony" },
-      { time: "10:16 AM onwards", session: "2. Floor officially handed over to the event chairman", type: "ceremony" },
-      { time: "10:16 - 10:30 AM", session: "3. Introduction of the 7 Political Parties", type: "ceremony" },
-      { time: "10:30 - 10:45 AM", session: "4. Oath of Affirmation", type: "ceremony" },
-      { time: "10:45 - 11:00 AM", session: "5. Tea Break & break for reorganizing the house", type: "break" },
-      { time: "11:00 AM - 12:55 PM", session: "6. Question Hour", type: "session" },
-      { time: "1:00 - 2:00 PM", session: "7. Lunch Break", type: "break" },
-      { time: "2:00 - 3:00 PM", session: "8. Zero Hour", type: "session" },
-      { time: "3:00 - 4:45 PM", session: "9. Committee Presentation, Debates & Discussion (committees led by cabinet ministers)", type: "discussion" },
-      { time: "4:45 - 5:00 PM", session: "10. Day 1 Adjournment with High Tea", type: "ceremony" }
+      { time: "08:00", session: "Registration & Networking Breakfast", type: "break" },
+      { time: "08:45 - 09:00", session: "Inauguration & Oath of Affirmation - Formal opening; all MPs inducted into the House", type: "ceremony" },
+      { time: "09:00 - 10:30", session: "Voice of the Nation – Special Address Series on the Central Theme - Party Leaders, Shadow Ministers, Cabinet Ministers, Leader of Opposition, and Prime Minister share their visions", type: "session" },
+      { time: "10:30 - 10:45", session: "Networking & Tea Break", type: "break" },
+      { time: "10:45 - 13:00", session: "Question Hour (6 mins per question) - 14 starred/pre-selected questions with 5-6 surprise inclusions", type: "session" },
+      { time: "13:00 - 13:45", session: "Lunch & Cross-Party Consultations - Journalists interact with members and collect statements", type: "break" },
+      { time: "13:45 - 15:00", session: "Government Bills (20 min each) - Ministers present bills, members debate, and voting takes place", type: "voting" },
+      { time: "15:00 - 15:05", session: "Opening Remarks by Ms Sangeetha Muthuavinashiappan, Chair-Thalir", type: "ceremony" },
+      { time: "15:05 - 15:15", session: "Welcome Address by Mr Tarang Khurana, Yi National Chairman", type: "ceremony" },
+      { time: "15:15 - 15:35", session: "Inaugural Address by Chief Guest Shri Baijayant Panda, Hon'ble Member of Parliament", type: "ceremony" },
+      { time: "15:35 - 15:40", session: "Vote of Thanks by Mr Aseem Abhyankar, Co-Chair-Thalir", type: "ceremony" },
+      { time: "16:00 - 17:00", session: "Government Bills (Continued) - Remaining government bills presentation, debate, and voting", type: "voting" },
+      { time: "17:00", session: "Adjournment - Speaker closes proceedings of the day", type: "ceremony" },
+      { time: "17:00 - 17:30", session: "High Tea - End of Program on Day I", type: "break" }
     ]
   },
   {
     day: 2,
-    date: "31st August 2025 Host: Yi Madurai - YIP 2.0 SRTN Regional Day 2 Agenda",
-    duration: "8:30 AM to 5:30 PM",
+    date: "16 November 2025 (Sunday)",
+    duration: "8:00 AM to 5:00 PM",
     items: [
-      { time: "8:30 AM - 10:00 AM", session: "11. Committee Presentation, Debates & Discussion (committees led by cabinet ministers)", type: "discussion" },
-      { time: "10:00 AM - 11:00 AM", session: "12. Question Hour", type: "session" },
-      { time: "11:00 AM - 11:15 AM", session: "13. Tea Break", type: "break" },
-      { time: "11:15 AM - 12:15 AM", session: "14. Private Members Bill (Debated & Voted)", type: "voting" },
-      { time: "12:15 PM - 1:15 PM", session: "15. Zero Hour", type: "session" },
-      { time: "1:15 PM - 2:15 PM", session: "16. Lunch Break", type: "break" },
-      { time: "2:15 PM - 3:45 PM", session: "17. Bills Presentation Debates and Discussion (Ruling Bills)", type: "discussion" },
-      { time: "3:45 PM - 4:15 PM", session: "18. Observation by administrators (review on key contents discussed)", type: "session" },
-      { time: "4:15 PM - 4:30 PM", session: "19. Closing remarks by prime minister and leader of opposition", type: "ceremony" },
-      { time: "4:30 - 5:30 PM", session: "20. Valedictory Ceremony & National Anthem", type: "ceremony" },
-      { time: "5:30 PM", session: "High Tea", type: "break" }
+      { time: "08:00", session: "Reporting & Breakfast - Arrival at India Habitat Centre with breakfast served at venue", type: "break" },
+      { time: "09:00 - 11:00", session: "Private Members' Bills (15 min each) - Private member bills presentation, debate, and voting", type: "voting" },
+      { time: "11:00 - 12:45", session: "Committee Reports (15 min each) - Committees present reports; House debates and discusses each point", type: "discussion" },
+      { time: "12:45 - 13:30", session: "Lunch & Networking - Journalists interact with members and collect statements", type: "break" },
+      { time: "13:30 - 15:15", session: "Zero Hour - Breaking news items circulated; members share views, ministers and shadow ministers respond, PM gives final remarks", type: "session" },
+      { time: "15:15 - 15:30", session: "Administrator Observations & closing remarks by LoP, PM and Speakers - Visionary reflections on YIP experience", type: "ceremony" },
+      { time: "15:30 - 15:40", session: "Valedictory Session: Remarks by Ms Sangeetha Muthuavinashiappan", type: "ceremony" },
+      { time: "15:40 - 15:50", session: "Valedictory Session: Remarks by Mr Aseem Abhyankar", type: "ceremony" },
+      { time: "15:50 - 16:00", session: "Valedictory Session: Special Remarks by Mr Darshan Mutha, Mentor YIP & Chair-Accessibility", type: "ceremony" },
+      { time: "16:00 - 16:55", session: "Recognition to Winners", type: "ceremony" },
+      { time: "16:55 - 17:00", session: "Concluding & Vote of thanks by Mr Aseem Abhyankar - End of the Program", type: "ceremony" }
     ]
   }
 ];
@@ -99,8 +102,8 @@ export const ParliamentAgenda = () => {
             <Calendar className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold text-foreground">Parliament Agenda</h2>
-            <p className="text-muted-foreground">Technical Session Flow</p>
+            <h2 className="text-3xl font-bold text-foreground">National Finals Agenda</h2>
+            <p className="text-muted-foreground">15-16 November 2025, New Delhi</p>
           </div>
         </div>
       </div>
