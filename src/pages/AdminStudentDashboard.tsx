@@ -6,8 +6,9 @@ import { StudentVotingTab } from '@/components/student/StudentVotingTab';
 import { ParliamentAgenda } from '@/components/student/ParliamentAgenda';
 import { TimerControl } from '@/components/organizer/TimerControl';
 import { PollManagement } from '@/components/organizer/PollManagement';
+import { AdminSpeechTracker } from '@/components/organizer/AdminSpeechTracker';
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Users, Calendar, Clock, BarChart } from "lucide-react";
+import { LogOut, User, Users, Calendar, Clock, BarChart, Mic } from "lucide-react";
 
 export const AdminStudentDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -56,8 +57,12 @@ export const AdminStudentDashboard = () => {
             </p>
           </div>
 
-          <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 gap-2 mb-6">
+          <Tabs defaultValue="tracking" className="w-full">
+            <TabsList className="grid w-full grid-cols-6 gap-2 mb-6">
+              <TabsTrigger value="tracking" className="gap-2">
+                <Mic className="h-4 w-4" />
+                <span className="hidden sm:inline">Speech Tracking</span>
+              </TabsTrigger>
               <TabsTrigger value="profile" className="gap-2">
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline">My Profile</span>
@@ -79,6 +84,10 @@ export const AdminStudentDashboard = () => {
                 <span className="hidden sm:inline">Polls</span>
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="tracking">
+              <AdminSpeechTracker />
+            </TabsContent>
 
             <TabsContent value="profile">
               {profile && <StudentProfile profile={profile} isOwnProfile={true} />}

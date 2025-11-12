@@ -393,6 +393,79 @@ export type Database = {
           },
         ]
       }
+      student_speeches: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          recorded_at: string
+          recorded_by: string
+          session_info: string | null
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recorded_at?: string
+          recorded_by: string
+          session_info?: string | null
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          recorded_at?: string
+          recorded_by?: string
+          session_info?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_speeches_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "admin_student_dashboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "student_speeches_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "jury_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "student_speeches_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "student_speeches_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "admin_student_dashboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "student_speeches_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "jury_leaderboard"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "student_speeches_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           description: string | null
@@ -556,6 +629,27 @@ export type Database = {
       }
     }
     Views: {
+      admin_student_dashboard: {
+        Row: {
+          assessment_count: number | null
+          average_score: number | null
+          city: string | null
+          constituency: string | null
+          has_jury_score: boolean | null
+          is_active: boolean | null
+          last_speech_at: string | null
+          name: string | null
+          party_name: string | null
+          party_number: number | null
+          photo_url: string | null
+          position: string | null
+          serial_number: number | null
+          speech_count: number | null
+          state: string | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
       jury_leaderboard: {
         Row: {
           assessment_count: number | null
