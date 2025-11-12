@@ -319,23 +319,30 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentE
                   <SelectValue placeholder="Select party" />
                 </SelectTrigger>
                 <SelectContent className="bg-background z-50">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].map(num => (
-                    <SelectItem key={num} value={num.toString()}>Party {num}</SelectItem>
-                  ))}
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => {
+                    const partyLetter = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'][num - 1];
+                    return (
+                      <SelectItem key={num} value={num.toString()}>Party {partyLetter}</SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
 
             <div>
               <Label htmlFor="email" className="text-sm font-medium text-slate-700">
-                Email Address
+                Login ID
               </Label>
               <Input
                 id="email"
-                type="email"
-                value={formData.email || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                placeholder="email@example.com"
+                type="text"
+                value={formData.email?.split('@')[0] || ''}
+                onChange={(e) => {
+                  const loginId = e.target.value;
+                  const domain = formData.email?.includes('@') ? formData.email.split('@')[1] : 'yip.parliament';
+                  setFormData(prev => ({ ...prev, email: `${loginId}@${domain}` }));
+                }}
+                placeholder="YIP0001"
                 className="mt-1"
               />
             </div>

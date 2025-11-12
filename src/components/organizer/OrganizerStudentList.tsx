@@ -451,9 +451,12 @@ export const OrganizerStudentList = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Parties</SelectItem>
-                {[...new Set(students.map(s => s.party_number))].sort().map(party => (
-                  <SelectItem key={party} value={party.toString()}>Party {party}</SelectItem>
-                ))}
+                {[...new Set(students.map(s => s.party_number))].sort().map(party => {
+                  const partyLetter = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'][party - 1] || party;
+                  return (
+                    <SelectItem key={party} value={party.toString()}>Party {partyLetter}</SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
 
@@ -543,7 +546,9 @@ export const OrganizerStudentList = () => {
                       </div>
                       <div className="space-y-1">
                         <div className="text-xs font-medium text-muted-foreground">Party</div>
-                        <div className="text-sm font-bold text-foreground">{student.party_number}</div>
+                        <div className="text-sm font-bold text-foreground">
+                          {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'][student.party_number - 1] || student.party_number}
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <div className="text-xs font-medium text-muted-foreground">Constituency</div>

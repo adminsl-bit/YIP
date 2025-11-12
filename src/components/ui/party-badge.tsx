@@ -20,13 +20,21 @@ const partyPillClasses = [
   "bg-teal-500 text-white border-teal-600",
 ];
 
+// Map party numbers to letters for display
+const partyNumberToLetter: Record<number, string> = {
+  1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 
+  6: 'F', 7: 'G', 8: 'H', 9: 'I', 10: 'J'
+};
+
 export const PartyBadge: React.FC<PartyBadgeProps> = ({ partyNumber, partyName, className = "", size = "sm" }) => {
   const idx = Math.abs(partyNumber || 0) % partyPillClasses.length;
   const base = partyPillClasses[idx] ?? "bg-slate-500 text-white border-slate-600";
   const padd = size === "sm" ? "px-4 py-1 text-xs" : "px-5 py-1.5 text-sm";
+  const partyLetter = partyNumberToLetter[partyNumber] || partyNumber.toString();
+  
   return (
     <Badge className={`rounded-full border shadow-sm font-semibold tracking-tight whitespace-nowrap ${base} ${padd} ${className}`}>
-      {partyName ? `${partyName} (${partyNumber})` : `Party ${partyNumber}`}
+      {partyName ? `${partyName} (${partyLetter})` : `Party ${partyLetter}`}
     </Badge>
   );
 };

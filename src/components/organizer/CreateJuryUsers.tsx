@@ -50,15 +50,18 @@ export const CreateJuryUsers = () => {
       <AlertDialogTrigger asChild>
         <Button variant="outline" className="gap-2">
           <UserPlus className="w-4 h-4" />
-          Create Jury 4, 5, 6
+          Create Jury 1-6
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Create New Jury Users?</AlertDialogTitle>
+          <AlertDialogTitle>Create Jury Users?</AlertDialogTitle>
           <AlertDialogDescription>
-            This will create 3 new jury accounts:
+            This will create 6 jury accounts:
             <ul className="mt-2 space-y-1 list-disc list-inside">
+              <li>Jury 1 (jury1@yip.com / jury2025)</li>
+              <li>Jury 2 (jury2@yip.com / jury2025)</li>
+              <li>Jury 3 (jury3@yip.com / jury2025)</li>
               <li>Jury 4 (jury4@yip.com / jury2025)</li>
               <li>Jury 5 (jury5@yip.com / jury2025)</li>
               <li>Jury 6 (jury6@yip.com / jury2025)</li>

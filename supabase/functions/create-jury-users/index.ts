@@ -24,6 +24,27 @@ Deno.serve(async (req) => {
 
     const juryUsers = [
       {
+        email: 'jury1@yip.com',
+        password: 'jury2025',
+        name: 'Jury 1',
+        position: 'Senior Evaluator',
+        serial_number: 1,
+      },
+      {
+        email: 'jury2@yip.com',
+        password: 'jury2025',
+        name: 'Jury 2',
+        position: 'Senior Evaluator',
+        serial_number: 2,
+      },
+      {
+        email: 'jury3@yip.com',
+        password: 'jury2025',
+        name: 'Jury 3',
+        position: 'Senior Evaluator',
+        serial_number: 3,
+      },
+      {
         email: 'jury4@yip.com',
         password: 'jury2025',
         name: 'Jury 4',
