@@ -70,44 +70,103 @@ Deno.serve(async (req) => {
     const results = []
 
     for (const juryUser of juryUsers) {
-      // Create auth user
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: juryUser.email,
-        password: juryUser.password,
-        email_confirm: true,
-      })
+      try {
+        // 1) If a profile already exists for this email, update auth + profile (idempotent)
+        const { data: existingProfile } = await supabaseAdmin
+          .from('profiles')
+          .select('user_id')
+          .eq('email', juryUser.email)
+          .single();
 
-      if (authError) {
-        console.error(`Error creating jury user ${juryUser.email}:`, authError)
-        results.push({ email: juryUser.email, success: false, error: authError.message })
-        continue
-      }
+        if (existingProfile?.user_id) {
+          const userId = existingProfile.user_id as string;
 
-      if (!authData.user) {
-        results.push({ email: juryUser.email, success: false, error: 'No user returned' })
-        continue
-      }
+          const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+            password: juryUser.password,
+            email: juryUser.email,
+            email_confirm: true,
+          });
+          if (updateAuthError) throw new Error(`Auth update failed: ${updateAuthError.message}`);
 
-      // Create profile
-      const { error: profileError } = await supabaseAdmin
-        .from('profiles')
-        .insert({
-          user_id: authData.user.id,
-          name: juryUser.name,
-          position: juryUser.position,
-          serial_number: juryUser.serial_number,
-          party_number: 0,
-          user_type: 'jury',
+          const { error: updateProfileError } = await supabaseAdmin
+            .from('profiles')
+            .update({
+              name: juryUser.name,
+              position: juryUser.position,
+              serial_number: juryUser.serial_number,
+              party_number: 0,
+              user_type: 'jury',
+              email: juryUser.email,
+            })
+            .eq('user_id', userId);
+          if (updateProfileError) throw new Error(`Profile update failed: ${updateProfileError.message}`);
+
+          results.push({ email: juryUser.email, success: true, action: 'updated' });
+          continue;
+        }
+
+        // 2) Create auth user
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: juryUser.email,
-        })
+          password: juryUser.password,
+          email_confirm: true,
+        });
 
-      if (profileError) {
-        console.error(`Error creating profile for ${juryUser.email}:`, profileError)
-        results.push({ email: juryUser.email, success: false, error: profileError.message })
-        continue
+        let userId = authData?.user?.id as string | undefined;
+
+        // If email already exists, find the existing auth user and proceed
+        if (authError) {
+          // Try to locate existing user via admin listUsers
+          const { data: usersList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+          const existing = usersList?.users?.find((u: any) => u.email?.toLowerCase() === juryUser.email.toLowerCase());
+          if (!existing) {
+            console.error(`Error creating jury user ${juryUser.email}:`, authError);
+            results.push({ email: juryUser.email, success: false, error: authError.message });
+            continue;
+          }
+          userId = existing.id;
+
+          // Ensure auth password/email are up to date
+          const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+            password: juryUser.password,
+            email: juryUser.email,
+            email_confirm: true,
+          });
+          if (updateAuthError) {
+            results.push({ email: juryUser.email, success: false, error: updateAuthError.message });
+            continue;
+          }
+        }
+
+        if (!userId) {
+          results.push({ email: juryUser.email, success: false, error: 'No user id resolved' });
+          continue;
+        }
+
+        // 3) Upsert profile for this auth user
+        const { error: profileError } = await supabaseAdmin
+          .from('profiles')
+          .upsert({
+            user_id: userId,
+            name: juryUser.name,
+            position: juryUser.position,
+            serial_number: juryUser.serial_number,
+            party_number: 0,
+            user_type: 'jury',
+            email: juryUser.email,
+          }, { onConflict: 'user_id' });
+
+        if (profileError) {
+          console.error(`Error creating/updating profile for ${juryUser.email}:`, profileError);
+          results.push({ email: juryUser.email, success: false, error: profileError.message });
+          continue;
+        }
+
+        results.push({ email: juryUser.email, success: true, action: authError ? 'relinked' : 'created' });
+      } catch (e: any) {
+        console.error(`Unexpected error for ${juryUser.email}:`, e);
+        results.push({ email: juryUser.email, success: false, error: e?.message || 'Unexpected error' });
       }
-
-      results.push({ email: juryUser.email, success: true })
     }
 
     return new Response(JSON.stringify({ results }), {
