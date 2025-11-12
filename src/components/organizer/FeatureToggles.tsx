@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Power, Eye, Lock, Trophy, AlertCircle } from "lucide-react";
+import { Settings, Power, Eye, Trophy, AlertCircle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface SystemSetting {
@@ -21,7 +21,6 @@ export const FeatureToggles = () => {
   const [settings, setSettings] = useState<Record<string, boolean>>({
     voting_enabled: false,
     results_public: false,
-    assessments_locked: false,
     leaderboard_visible: true
   });
   const [loading, setLoading] = useState(true);
@@ -35,7 +34,7 @@ export const FeatureToggles = () => {
       const { data, error } = await supabase
         .from('system_settings')
         .select('*')
-        .in('setting_key', ['voting_enabled', 'results_public', 'assessments_locked', 'leaderboard_visible']);
+        .in('setting_key', ['voting_enabled', 'results_public', 'leaderboard_visible']);
 
       if (error) throw error;
 
@@ -108,13 +107,6 @@ export const FeatureToggles = () => {
       description: 'Display voting results and poll outcomes to all users',
       icon: Eye,
       color: 'text-blue-600'
-    },
-    {
-      key: 'assessments_locked',
-      label: 'Lock Assessments',
-      description: 'Prevent jury members from modifying their assessments',
-      icon: Lock,
-      color: 'text-red-600'
     },
     {
       key: 'leaderboard_visible',

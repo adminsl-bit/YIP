@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           id: string
           is_global_lock: boolean
+          jury_id: string | null
           locked_at: string
           locked_by: string
           reason: string | null
@@ -25,6 +26,7 @@ export type Database = {
         Insert: {
           id?: string
           is_global_lock?: boolean
+          jury_id?: string | null
           locked_at?: string
           locked_by: string
           reason?: string | null
@@ -32,6 +34,7 @@ export type Database = {
         Update: {
           id?: string
           is_global_lock?: boolean
+          jury_id?: string | null
           locked_at?: string
           locked_by?: string
           reason?: string | null
@@ -843,6 +846,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_jury_assessment_locked: {
+        Args: { p_jury_id: string }
         Returns: boolean
       }
       log_audit_event: {

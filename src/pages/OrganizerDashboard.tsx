@@ -18,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { FeatureToggles } from "@/components/organizer/FeatureToggles";
+import { AssessmentLockControls } from "@/components/organizer/AssessmentLockControls";
 import { TimerControl } from "@/components/organizer/TimerControl";
 import { PollManagement } from "@/components/organizer/PollManagement";
 import { SecurityLogsManager } from "@/components/organizer/SecurityLogsManager";
@@ -250,6 +251,12 @@ const OrganizerDashboard = () => {
             </TabsList>
 
             <TabsContent value="controls" className="space-y-6">
+              {/* Assessment Lock Controls */}
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <AssessmentLockControls />
+              </div>
+
+              {/* Feature Toggles */}
               <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
                 <FeatureToggles />
               </div>
