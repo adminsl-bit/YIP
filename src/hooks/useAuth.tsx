@@ -165,41 +165,49 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (loginId: string, password: string) => {
     try {
       let email: string;
-      
-      // Check if this is an email (already formatted)
+
+      // Determine base email from loginId
       if (loginId.includes('@')) {
         email = loginId;
       } else if (/^\d+$/.test(loginId)) {
-        // Student login: serial+party format -> email format
+        // Student login: numeric id -> internal email alias
         email = `${loginId}@yip.parliament`;
       } else {
-        // Other: username -> convert to email format
-        email = `${loginId}@yip.org`;
+        // Username (e.g., jury4) -> default to .com domain
+        email = `${loginId}@yip.com`;
       }
-      
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+
+      // Helper to attempt sign-in with a specific email
+      const attemptSignIn = async (em: string) => {
+        return await supabase.auth.signInWithPassword({ email: em, password });
+      };
+
+      // First attempt
+      let { data, error } = await attemptSignIn(email);
+
+      // If username-based login failed with .com, try legacy .org as fallback
+      if (error && !loginId.includes('@') && !/^\d+$/.test(loginId)) {
+        const fallbackEmail = `${loginId}@yip.org`;
+        const fallback = await attemptSignIn(fallbackEmail);
+        data = fallback.data;
+        error = fallback.error;
+      }
 
       if (error) {
         toast.error(error.message);
       } else {
         toast.success('Welcome to Young Indians Parliament!');
-        
-        // Only log user login and redirect after successful sign in
+
         if (data.user) {
           await logUserLogin(data.user.id);
-          
-          // Get profile to determine redirect
+
           const { data: profileData } = await supabase
             .from('profiles')
             .select('user_type')
             .eq('user_id', data.user.id)
             .maybeSingle();
-          
+
           if (profileData?.user_type) {
-            // Check if student has admin role
             if (profileData.user_type === 'student') {
               const { data: roleData } = await supabase
                 .from('user_roles')
@@ -207,14 +215,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 .eq('user_id', data.user.id)
                 .eq('role', 'admin_student')
                 .maybeSingle();
-              
+
               if (roleData) {
                 navigate('/admin-student');
-                return;
+                return { error: null };
               }
             }
-            
-            // Redirect based on user type
             redirectByRole(profileData.user_type);
           }
         }

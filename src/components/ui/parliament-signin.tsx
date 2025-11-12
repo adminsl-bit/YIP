@@ -222,7 +222,7 @@ export function ParliamentSignIn() {
                         
                         <Input
                           type="text"
-                          placeholder="Enter your login ID"
+                          placeholder="Email or username (e.g., jury4)"
                           value={credentials.loginId}
                           onChange={(e) => setCredentials(prev => ({ ...prev, loginId: e.target.value }))}
                           onFocus={() => setFocusedInput("loginId")}
