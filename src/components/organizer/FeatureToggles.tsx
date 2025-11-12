@@ -269,35 +269,37 @@ export const FeatureToggles = () => {
         })}
 
         <Accordion type="single" collapsible className="mt-2">
-          <AccordionItem value="assessment-locks">
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center space-x-4">
-                {globalLocked ? (
-                  <Lock className="w-5 h-5 text-red-600" />
-                ) : (
-                  <Unlock className="w-5 h-5 text-muted-foreground" />
-                )}
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-medium">Assessment Locks</h3>
-                    <Badge variant={globalLocked ? 'destructive' : 'secondary'}>
-                      {globalLocked ? 'LOCKED' : 'UNLOCKED'}
-                    </Badge>
+          <AccordionItem value="assessment-locks" className="border rounded-lg">
+            <AccordionTrigger className="hover:no-underline px-4 py-0">
+              <div className="flex items-center justify-between w-full py-4">
+                <div className="flex items-center space-x-4">
+                  {globalLocked ? (
+                    <Lock className="w-5 h-5 text-red-600" />
+                  ) : (
+                    <Unlock className="w-5 h-5 text-muted-foreground" />
+                  )}
+                  <div className="text-left">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="font-medium">Assessment Locks</h3>
+                      <Badge variant={globalLocked ? 'destructive' : 'secondary'}>
+                        {globalLocked ? 'LOCKED' : 'UNLOCKED'}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {globalLocked ? 'All jury assessments are locked' : 'Lock all assessments or expand for per‑jury locks'}
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {globalLocked ? 'All jury assessments are locked' : 'Lock all assessments or expand for per‑jury locks'}
-                  </p>
                 </div>
+                <Switch
+                  checked={globalLocked}
+                  onCheckedChange={toggleGlobalLock}
+                  onClick={(e) => e.stopPropagation()}
+                  className={globalLocked ? 'data-[state=checked]:bg-red-600' : ''}
+                />
               </div>
-              <Switch
-                checked={globalLocked}
-                onCheckedChange={toggleGlobalLock}
-                onClick={(e) => e.stopPropagation()}
-                className={globalLocked ? 'data-[state=checked]:bg-red-600' : ''}
-              />
-            </div>
-            <AccordionContent className="mt-4">
-              <div className="flex items-center justify-between mb-2">
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-4">
+              <div className="flex items-center justify-between mb-3 pt-2">
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4" />
                   <span className="text-sm font-medium">Individual Jury Locks</span>
@@ -313,7 +315,7 @@ export const FeatureToggles = () => {
                       key={jury.user_id}
                       className={`flex items-center justify-between p-4 border rounded-lg ${
                         isLocked ? 'border-red-300 bg-red-50' : 'border-border bg-background hover:border-primary/30'
-                      }`}
+                      } ${globalLocked ? 'opacity-50' : ''}`}
                     >
                       <div className="flex items-center gap-3">
                         <Avatar className="w-10 h-10 border-2 border-border">
