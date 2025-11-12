@@ -288,11 +288,15 @@ const InteractiveParliamentTree = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Parties</SelectItem>
-              {getUniqueParties().map(party => (
-                <SelectItem key={party} value={party.toString()}>
-                  {students.find(s => s.party_number === party)?.party_name || `Party ${party}`}
-                </SelectItem>
-              ))}
+              {getUniqueParties().map(party => {
+                const partyLetter = ['No Party', 'A', 'B', 'C', 'D', 'E'][party] || party;
+                const partyName = students.find(s => s.party_number === party)?.party_name;
+                return (
+                  <SelectItem key={party} value={party.toString()}>
+                    {partyName ? `${partyName} (${partyLetter})` : `Party ${partyLetter}`}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
 
@@ -366,8 +370,8 @@ const InteractiveParliamentTree = () => {
                   <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r ${getPartyColor(parseInt(partyNumber))} text-white font-black text-xl shadow-lg`}>
                     <Users className="w-6 h-6" />
                     {partyStudents[0]?.party_name 
-                      ? `${partyStudents[0].party_name} (${partyNumber})`
-                      : `Party ${partyNumber}`}
+                      ? `${partyStudents[0].party_name} (${['No Party', 'A', 'B', 'C', 'D', 'E'][parseInt(partyNumber)] || partyNumber})`
+                      : `Party ${['No Party', 'A', 'B', 'C', 'D', 'E'][parseInt(partyNumber)] || partyNumber}`}
                     <Badge className="bg-white/20 text-white font-bold">
                       {partyStudents.length} members
                     </Badge>
@@ -458,8 +462,8 @@ const InteractiveParliamentTree = () => {
                                     <div className={`w-4 h-2 bg-gradient-to-r ${getPartyColor(student.party_number)} rounded-full`} />
                                     <span className="text-xs font-medium text-slate-600">
                                       {student.party_name 
-                                        ? `${student.party_name} (${student.party_number})`
-                                        : `Party ${student.party_number}`}
+                                        ? `${student.party_name} (${['No Party', 'A', 'B', 'C', 'D', 'E'][student.party_number] || student.party_number})`
+                                        : `Party ${['No Party', 'A', 'B', 'C', 'D', 'E'][student.party_number] || student.party_number}`}
                                     </span>
                                   </div>
                                 </div>

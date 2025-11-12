@@ -244,11 +244,15 @@ export const ParliamentTree = () => {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Parties</SelectItem>
-              {getUniqueParties().map(party => (
-                <SelectItem key={party} value={party.toString()}>
-                  {students.find(s => s.party_number === party)?.party_name || `Party ${party}`}
-                </SelectItem>
-              ))}
+              {getUniqueParties().map(party => {
+                const partyLetter = ['No Party', 'A', 'B', 'C', 'D', 'E'][party] || party;
+                const partyName = students.find(s => s.party_number === party)?.party_name;
+                return (
+                  <SelectItem key={party} value={party.toString()}>
+                    {partyName ? `${partyName} (${partyLetter})` : `Party ${partyLetter}`}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
 
@@ -286,8 +290,8 @@ export const ParliamentTree = () => {
               <h3 className="font-semibold text-lg mb-4 flex items-center">
                 <Badge variant="outline" className="mr-2">
                   {partyGroups[parseInt(party)][0]?.party_name 
-                    ? `${partyGroups[parseInt(party)][0].party_name} (${party})`
-                    : `Party ${party}`}
+                    ? `${partyGroups[parseInt(party)][0].party_name} (${['No Party', 'A', 'B', 'C', 'D', 'E'][parseInt(party)] || party})`
+                    : `Party ${['No Party', 'A', 'B', 'C', 'D', 'E'][parseInt(party)] || party}`}
                 </Badge>
                 <span className="text-sm text-muted-foreground">
                   ({partyGroups[parseInt(party)].length} members)

@@ -4,3 +4,8 @@ import { twMerge } from "tailwind-merge"
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
+
+export function getPartyLetter(partyNumber: number): string {
+  const partyMap: Record<number, string> = { 0: 'No Party', 1: 'A', 2: 'B', 3: 'C', 4: 'D', 5: 'E', 6: 'F', 7: 'G', 8: 'H', 9: 'I', 10: 'J' };
+  return partyMap[partyNumber] || partyNumber.toString();
+}

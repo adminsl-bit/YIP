@@ -224,7 +224,8 @@ export const DetailedPollResults = ({ pollId, pollTitle, options }: DetailedPoll
           }
           
           pdf.setFontSize(10);
-          const studentInfo = `${vote.student.name} - ${vote.student.position} - Party ${vote.student.party_number}`;
+          const partyLetter = ['No Party', 'A', 'B', 'C', 'D', 'E'][vote.student.party_number] || vote.student.party_number;
+          const studentInfo = `${vote.student.name} - ${vote.student.position} - Party ${partyLetter}`;
           pdf.text(studentInfo, margin + 10, yPosition);
           yPosition += 8;
         });
@@ -324,7 +325,7 @@ export const DetailedPollResults = ({ pollId, pollTitle, options }: DetailedPoll
                           <TableCell>{vote.student.position}</TableCell>
                           <TableCell>
                             <Badge variant="outline">
-                              Party {vote.student.party_number}
+                              Party {['No Party', 'A', 'B', 'C', 'D', 'E'][vote.student.party_number] || vote.student.party_number}
                             </Badge>
                           </TableCell>
                           <TableCell>{vote.student.constituency || 'N/A'}</TableCell>
