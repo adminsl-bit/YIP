@@ -63,9 +63,16 @@ export const StudentBulkImport = () => {
           const students: StudentData[] = jsonData.map((row: any, index) => {
             // Handle various column name formats
             const getColumnValue = (possibleNames: string[]) => {
+              const keys = Object.keys(row);
+              const findKey = (target: string) => keys.find(k => k.toString().trim().toLowerCase() === target.trim().toLowerCase());
               for (const name of possibleNames) {
-                if (row[name] !== undefined) return row[name];
+                const exact = findKey(name);
+                if (exact) return row[exact];
               }
+              // Loose match: allow headers like "Party Code" or "Party Letter"
+              const targets = possibleNames.map(n => n.trim().toLowerCase());
+              const loose = keys.find(k => targets.some(t => k.toString().trim().toLowerCase().includes(t)));
+              if (loose) return row[loose];
               return '';
             };
 
@@ -74,7 +81,7 @@ export const StudentBulkImport = () => {
             const name = getColumnValue(['Name', 'name', 'student_name']);
             const seatRole = getColumnValue(['seat role', 'seat_role', 'Seat Role', 'Role']);
             const alliance = getColumnValue(['Alliance', 'alliance']);
-            const party = getColumnValue(['Party', 'party']);
+            const party = getColumnValue(['Party', 'party', 'PARTY', 'Party Code', 'party code', 'Party Letter', 'party letter', 'Party (A-E)']);
             const partyName = getColumnValue(['Party Name', 'party_name']);
             const committee = getColumnValue(['Committee', 'committee']);
             const constituency = getColumnValue(['constituency', 'Constituency']);
