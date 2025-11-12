@@ -103,6 +103,7 @@ serve(async (req) => {
             state: student.state,
             city: student.city,
             email: `${student.loginId}@yip.parliament`,
+            user_type: 'student',
           };
 
           // Only update preevent_scores if provided
