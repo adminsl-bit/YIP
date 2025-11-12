@@ -131,6 +131,10 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       const specialRoleIds = new Set(specialRoles?.map(r => r.user_id) || []);
       const regularStudents = studentsData?.filter(student => !specialRoleIds.has(student.user_id)) || [];
 
+      console.log('Total students:', studentsData?.length);
+      console.log('Special role IDs:', Array.from(specialRoleIds));
+      console.log('Regular students after filter:', regularStudents.length);
+
       setStudents(regularStudents);
     } catch (error) {
       console.error('Error fetching students:', error);
