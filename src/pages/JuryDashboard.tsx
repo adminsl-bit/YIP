@@ -7,6 +7,7 @@ import { JuryStudentList } from "@/components/jury/JuryStudentList";
 import { JuryDashboardStats } from "@/components/jury/JuryDashboardStats";
 import { JuryLeaderboard } from "@/components/jury/JuryLeaderboard";
 import { ProfilePhotoUploader } from "@/components/jury/ProfilePhotoUploader";
+import { JuryProfileEditor } from "@/components/jury/JuryProfileEditor";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -315,6 +316,9 @@ const JuryDashboard = () => {
                   </div>
                   <h3 className="text-2xl font-black text-slate-800 mb-2">Jury Profile</h3>
                   <p className="text-slate-600 font-medium">Your information and assessment progress overview</p>
+                </div>
+                <div className="flex justify-center mb-4">
+                  <JuryProfileEditor />
                 </div>
                 {profile && (
                   <div className="bg-white/20 backdrop-blur-lg rounded-3xl border border-white/25 shadow-xl overflow-hidden">
