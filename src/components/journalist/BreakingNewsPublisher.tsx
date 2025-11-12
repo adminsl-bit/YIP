@@ -5,8 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Newspaper, Send } from 'lucide-react';
+import { Newspaper, Send, Edit2, Trash2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export const BreakingNewsPublisher = () => {
   const { user, profile } = useAuth();
@@ -14,6 +25,7 @@ export const BreakingNewsPublisher = () => {
   const queryClient = useQueryClient();
   const [headline, setHeadline] = useState('');
   const [wordCount, setWordCount] = useState(0);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const { data: myHeadlines } = useQuery({
     queryKey: ['journalist-headlines', user?.id],
@@ -32,29 +44,45 @@ export const BreakingNewsPublisher = () => {
 
   const publishMutation = useMutation({
     mutationFn: async (text: string) => {
-      const { error } = await supabase
-        .from('breaking_news')
-        .insert({
-          journalist_id: user?.id,
-          journalist_name: profile?.name || 'Anonymous',
-          headline: text,
-          is_active: true,
-        });
-      
-      if (error) throw error;
+      if (editingId) {
+        // Update existing headline
+        const { error } = await supabase
+          .from('breaking_news')
+          .update({
+            headline: text,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingId);
+        
+        if (error) throw error;
+      } else {
+        // Insert new headline
+        const { error } = await supabase
+          .from('breaking_news')
+          .insert({
+            journalist_id: user?.id,
+            journalist_name: profile?.name || 'Anonymous',
+            headline: text,
+            is_active: true,
+          });
+        
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       toast({
-        title: 'Breaking News Published!',
-        description: 'Your headline is now live on stage displays.',
+        title: editingId ? 'Headline Updated!' : 'Breaking News Published!',
+        description: editingId ? 'Your headline has been updated.' : 'Your headline is now live on stage displays.',
       });
       setHeadline('');
       setWordCount(0);
+      setEditingId(null);
       queryClient.invalidateQueries({ queryKey: ['journalist-headlines'] });
+      queryClient.invalidateQueries({ queryKey: ['active-breaking-news'] });
     },
     onError: (error: any) => {
       toast({
-        title: 'Failed to publish',
+        title: editingId ? 'Failed to update' : 'Failed to publish',
         description: error.message,
         variant: 'destructive',
       });
@@ -72,13 +100,69 @@ export const BreakingNewsPublisher = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['journalist-headlines'] });
+      queryClient.invalidateQueries({ queryKey: ['active-breaking-news'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('breaking_news')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Headline Deleted',
+        description: 'Your headline has been permanently deleted.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['journalist-headlines'] });
+      queryClient.invalidateQueries({ queryKey: ['active-breaking-news'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Failed to delete',
+        description: error.message,
+        variant: 'destructive',
+      });
     },
   });
 
   const handleTextChange = (text: string) => {
     const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-    setWordCount(words.length);
-    setHeadline(text);
+    const count = text.trim() === '' ? 0 : words.length;
+    
+    // Enforce 1000 word limit by truncating
+    if (count > 1000) {
+      const truncatedWords = words.slice(0, 1000);
+      const truncatedText = truncatedWords.join(' ');
+      setHeadline(truncatedText);
+      setWordCount(1000);
+      toast({
+        title: 'Word limit reached',
+        description: 'Maximum 1000 words allowed. Text has been truncated.',
+        variant: 'destructive',
+      });
+    } else {
+      setWordCount(count);
+      setHeadline(text);
+    }
+  };
+
+  const handleEdit = (item: any) => {
+    setHeadline(item.headline);
+    const words = item.headline.trim().split(/\s+/).filter((word: string) => word.length > 0);
+    setWordCount(item.headline.trim() === '' ? 0 : words.length);
+    setEditingId(item.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setHeadline('');
+    setWordCount(0);
+    setEditingId(null);
   };
 
   const handlePublish = () => {
@@ -109,10 +193,10 @@ export const BreakingNewsPublisher = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
             <Newspaper className="w-6 h-6 text-orange-600" />
-            Publish Breaking News
+            {editingId ? 'Edit Breaking News' : 'Publish Breaking News'}
           </CardTitle>
           <CardDescription>
-            Share live updates from inside the Parliament to stage displays
+            {editingId ? 'Update your headline' : 'Share live updates from inside the Parliament to stage displays'}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -122,20 +206,30 @@ export const BreakingNewsPublisher = () => {
               value={headline}
               onChange={(e) => handleTextChange(e.target.value)}
               className="min-h-[150px] resize-none text-base"
-              maxLength={7000} // Character limit to ensure word count stays reasonable
             />
             <div className="flex justify-between items-center">
               <span className={`text-sm font-medium ${wordCount > 1000 ? 'text-red-600' : 'text-slate-600'}`}>
                 {wordCount} / 1000 words
               </span>
-              <Button
-                onClick={handlePublish}
-                disabled={publishMutation.isPending || wordCount === 0 || wordCount > 1000}
-                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
-              >
-                <Send className="w-4 h-4 mr-2" />
-                Publish Breaking News
-              </Button>
+              <div className="flex gap-2">
+                {editingId && (
+                  <Button
+                    onClick={handleCancelEdit}
+                    variant="outline"
+                    disabled={publishMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                )}
+                <Button
+                  onClick={handlePublish}
+                  disabled={publishMutation.isPending || wordCount === 0 || wordCount > 1000}
+                  className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                >
+                  <Send className="w-4 h-4 mr-2" />
+                  {editingId ? 'Update Headline' : 'Publish Breaking News'}
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -164,14 +258,58 @@ export const BreakingNewsPublisher = () => {
                       <p className="text-xs text-slate-500 mt-1">
                         Published: {new Date(item.published_at).toLocaleString()}
                       </p>
+                      {item.is_active && (
+                        <span className="inline-block mt-1 px-2 py-0.5 bg-green-500 text-white text-xs rounded-full">
+                          Live
+                        </span>
+                      )}
                     </div>
-                    <Button
-                      variant={item.is_active ? "destructive" : "default"}
-                      size="sm"
-                      onClick={() => toggleActiveMutation.mutate({ id: item.id, isActive: item.is_active })}
-                    >
-                      {item.is_active ? 'Deactivate' : 'Activate'}
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(item)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        variant={item.is_active ? "destructive" : "default"}
+                        size="sm"
+                        onClick={() => toggleActiveMutation.mutate({ id: item.id, isActive: item.is_active })}
+                        disabled={toggleActiveMutation.isPending}
+                      >
+                        {item.is_active ? 'Deactivate' : 'Activate'}
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={deleteMutation.isPending}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Headline?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete your headline.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => deleteMutation.mutate(item.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </div>
               ))}
