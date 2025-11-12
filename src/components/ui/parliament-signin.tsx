@@ -201,7 +201,7 @@ export function ParliamentSignIn() {
                     transition={{ delay: 0.3 }}
                     className="text-slate-600 text-sm"
                   >
-                    Young Indians Parliament - Madurai Regional Round
+                    Young Indians Parliament - National Finals
                   </motion.p>
                 </div>
 
