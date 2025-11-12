@@ -601,19 +601,44 @@ export const OrganizerLeaderboard = () => {
                             <div className="text-lg font-bold text-foreground">{entry.preevent_scores?.toFixed(2) || '0.00'}</div>
                             <div className="text-xs text-muted-foreground">out of 60</div>
                           </div>
-                          <div className="space-y-1">
-                            <div className="text-xs font-medium text-muted-foreground">Jury Score</div>
-                            <div className="text-lg font-bold text-foreground">{entry.jury_converted_score?.toFixed(2) || '0.00'}</div>
-                            <div className="text-xs text-muted-foreground">out of 40</div>
-                          </div>
+                          {/* Only show Jury Score for regular students (not administrators or journalists) */}
+                          {!entry.position.toLowerCase().includes('administrator') && 
+                           !entry.position.toLowerCase().includes('journalist') && (
+                            <div className="space-y-1">
+                              <div className="text-xs font-medium text-muted-foreground">Jury Score</div>
+                              <div className="text-lg font-bold text-foreground">{entry.jury_converted_score?.toFixed(2) || '0.00'}</div>
+                              <div className="text-xs text-muted-foreground">out of 40</div>
+                            </div>
+                          )}
+                          {/* Show Live Event Score for administrators and journalists */}
+                          {(entry.position.toLowerCase().includes('administrator') || 
+                            entry.position.toLowerCase().includes('journalist')) && (
+                            <div className="space-y-1">
+                              <div className="text-xs font-medium text-muted-foreground">Live Event Score</div>
+                              <div className="text-lg font-bold text-foreground">{entry.jury_converted_score?.toFixed(2) || '0.00'}</div>
+                              <div className="text-xs text-muted-foreground">out of 40</div>
+                            </div>
+                          )}
                         </div>
                         
                         {/* Additional Info */}
                         <div className="grid grid-cols-2 gap-3 p-3 bg-muted/30 rounded-xl">
-                          <div className="space-y-1">
-                            <div className="text-xs font-medium text-muted-foreground">Assessments</div>
-                            <div className="text-sm font-bold text-foreground">{entry.assessment_count}</div>
-                          </div>
+                          {/* Only show Assessments count for regular students */}
+                          {!entry.position.toLowerCase().includes('administrator') && 
+                           !entry.position.toLowerCase().includes('journalist') && (
+                            <div className="space-y-1">
+                              <div className="text-xs font-medium text-muted-foreground">Assessments</div>
+                              <div className="text-sm font-bold text-foreground">{entry.assessment_count}</div>
+                            </div>
+                          )}
+                          {/* Show Scoring Type for administrators and journalists */}
+                          {(entry.position.toLowerCase().includes('administrator') || 
+                            entry.position.toLowerCase().includes('journalist')) && (
+                            <div className="space-y-1">
+                              <div className="text-xs font-medium text-muted-foreground">Scoring Type</div>
+                              <div className="text-sm font-bold text-foreground">Organizer Manual</div>
+                            </div>
+                          )}
                           <div className="space-y-1">
                             <div className="text-xs font-medium text-muted-foreground">Constituency</div>
                             <div className="text-sm text-foreground truncate">{entry.constituency || '—'}</div>
@@ -621,36 +646,39 @@ export const OrganizerLeaderboard = () => {
                         </div>
                       </div>
 
-                       {/* Assessment Status Section */}
-                      <div className="mb-4 p-3 bg-orange/5 rounded-xl">
-                        <div className="text-xs font-medium text-muted-foreground mb-2">Assessment Status</div>
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge 
-                            variant={getAssessmentStatus(entry) === 'fully-assessed' ? 'default' : 
-                                   getAssessmentStatus(entry) === 'partially-assessed' ? 'secondary' : 'destructive'}
-                            className="text-xs"
-                          >
-                            {getAssessmentStatus(entry) === 'not-assessed' ? 'Not Assessed' :
-                             getAssessmentStatus(entry) === 'partially-assessed' ? 'Partially Assessed' :
-                             'Fully Assessed'}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            ({entry.assessment_count}/{juryMembers.length})
-                          </span>
-                        </div>
-                        {entry.missing_jury_assessments && entry.missing_jury_assessments.length > 0 && (
-                          <div className="text-xs text-red-600">
-                            <div className="font-medium mb-1">Missing assessments from:</div>
-                            <div className="space-y-1">
-                              {entry.missing_jury_assessments.map((juryName, idx) => (
-                                <div key={idx} className="text-xs bg-red-50 px-2 py-1 rounded">
-                                  {juryName}
-                                </div>
-                              ))}
-                            </div>
+                       {/* Assessment Status Section - Only for regular students */}
+                      {!entry.position.toLowerCase().includes('administrator') && 
+                       !entry.position.toLowerCase().includes('journalist') && (
+                        <div className="mb-4 p-3 bg-orange/5 rounded-xl">
+                          <div className="text-xs font-medium text-muted-foreground mb-2">Assessment Status</div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge 
+                              variant={getAssessmentStatus(entry) === 'fully-assessed' ? 'default' : 
+                                     getAssessmentStatus(entry) === 'partially-assessed' ? 'secondary' : 'destructive'}
+                              className="text-xs"
+                            >
+                              {getAssessmentStatus(entry) === 'not-assessed' ? 'Not Assessed' :
+                               getAssessmentStatus(entry) === 'partially-assessed' ? 'Partially Assessed' :
+                               'Fully Assessed'}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              ({entry.assessment_count}/{juryMembers.length})
+                            </span>
                           </div>
-                        )}
-                      </div>
+                          {entry.missing_jury_assessments && entry.missing_jury_assessments.length > 0 && (
+                            <div className="text-xs text-red-600">
+                              <div className="font-medium mb-1">Missing assessments from:</div>
+                              <div className="space-y-1">
+                                {entry.missing_jury_assessments.map((juryName, idx) => (
+                                  <div key={idx} className="text-xs bg-red-50 px-2 py-1 rounded">
+                                    {juryName}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Awards Section */}
                       <div className="mb-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
