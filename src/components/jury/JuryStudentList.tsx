@@ -119,20 +119,13 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
 
       if (studentsError) throw studentsError;
 
-      // Get all user_ids with admin_student or journalist roles
-      const { data: specialRoles, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .in('role', ['admin_student', 'journalist']);
-
-      if (rolesError) throw rolesError;
-
-      // Filter out students who have special roles
-      const specialRoleIds = new Set(specialRoles?.map(r => r.user_id) || []);
-      const regularStudents = studentsData?.filter(student => !specialRoleIds.has(student.user_id)) || [];
+      // Filter out students with Administrator or Journalist positions
+      const regularStudents = studentsData?.filter(student => {
+        const position = student.position.toLowerCase();
+        return !position.includes('administrator') && !position.includes('journalist');
+      }) || [];
 
       console.log('Total students:', studentsData?.length);
-      console.log('Special role IDs:', Array.from(specialRoleIds));
       console.log('Regular students after filter:', regularStudents.length);
 
       setStudents(regularStudents);
