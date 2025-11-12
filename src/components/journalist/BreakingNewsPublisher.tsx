@@ -131,18 +131,16 @@ export const BreakingNewsPublisher = () => {
   });
 
   const handleTextChange = (text: string) => {
-    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-    const count = text.trim() === '' ? 0 : words.length;
+    const count = text.length;
     
-    // Enforce 1000 word limit by truncating
+    // Enforce 1000 character limit by truncating
     if (count > 1000) {
-      const truncatedWords = words.slice(0, 1000);
-      const truncatedText = truncatedWords.join(' ');
+      const truncatedText = text.slice(0, 1000);
       setHeadline(truncatedText);
       setWordCount(1000);
       toast({
-        title: 'Word limit reached',
-        description: 'Maximum 1000 words allowed. Text has been truncated.',
+        title: 'Character limit reached',
+        description: 'Maximum 1000 characters allowed. Text has been truncated.',
         variant: 'destructive',
       });
     } else {
@@ -153,8 +151,7 @@ export const BreakingNewsPublisher = () => {
 
   const handleEdit = (item: any) => {
     setHeadline(item.headline);
-    const words = item.headline.trim().split(/\s+/).filter((word: string) => word.length > 0);
-    setWordCount(item.headline.trim() === '' ? 0 : words.length);
+    setWordCount(item.headline.length);
     setEditingId(item.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -178,7 +175,7 @@ export const BreakingNewsPublisher = () => {
     if (wordCount > 1000) {
       toast({
         title: 'Too long',
-        description: 'Headline cannot exceed 1000 words.',
+        description: 'Headline cannot exceed 1000 characters.',
         variant: 'destructive',
       });
       return;
@@ -209,7 +206,7 @@ export const BreakingNewsPublisher = () => {
             />
             <div className="flex justify-between items-center">
               <span className={`text-sm font-medium ${wordCount > 1000 ? 'text-red-600' : 'text-slate-600'}`}>
-                {wordCount} / 1000 words
+                {wordCount} / 1000 characters
               </span>
               <div className="flex gap-2">
                 {editingId && (
