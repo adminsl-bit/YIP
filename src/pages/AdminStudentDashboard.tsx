@@ -59,12 +59,8 @@ export const AdminStudentDashboard = () => {
             </p>
           </div>
 
-          <Tabs defaultValue="tracking" className="w-full">
+          <Tabs defaultValue="profile" className="w-full">
             <TabsList className="grid w-full grid-cols-6 gap-2 mb-6">
-              <TabsTrigger value="tracking" className="gap-2">
-                <Mic className="h-4 w-4" />
-                <span className="hidden sm:inline">Speech Tracking</span>
-              </TabsTrigger>
               <TabsTrigger value="profile" className="gap-2">
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline">My Profile</span>
@@ -77,6 +73,10 @@ export const AdminStudentDashboard = () => {
                 <Calendar className="h-4 w-4" />
                 <span className="hidden sm:inline">Schedule</span>
               </TabsTrigger>
+              <TabsTrigger value="tracking" className="gap-2">
+                <Mic className="h-4 w-4" />
+                <span className="hidden sm:inline">Speech Tracking</span>
+              </TabsTrigger>
               <TabsTrigger value="timer" className="gap-2">
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Timer</span>
@@ -86,10 +86,6 @@ export const AdminStudentDashboard = () => {
                 <span className="hidden sm:inline">Polls</span>
               </TabsTrigger>
             </TabsList>
-
-            <TabsContent value="tracking">
-              <AdminSpeechTracker />
-            </TabsContent>
 
             <TabsContent value="profile">
               {profile && <StudentProfile profile={profile} isOwnProfile={true} />}
@@ -101,6 +97,10 @@ export const AdminStudentDashboard = () => {
 
             <TabsContent value="schedule">
               <ParliamentAgenda />
+            </TabsContent>
+
+            <TabsContent value="tracking">
+              <AdminSpeechTracker />
             </TabsContent>
 
             <TabsContent value="timer">

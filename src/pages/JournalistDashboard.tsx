@@ -94,6 +94,15 @@ const JournalistDashboard = () => {
                 <span className="text-center">Publish</span>
               </TabsTrigger>
               <TabsTrigger 
+                value="schedule" 
+                className="flex flex-col items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-4 sm:py-6 rounded-xl sm:rounded-2xl text-xs sm:text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[60px] sm:min-h-[80px] touch-target"
+              >
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <span className="text-center">Schedule</span>
+              </TabsTrigger>
+              <TabsTrigger 
                 value="profile" 
                 className="flex flex-col items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-4 sm:py-6 rounded-xl sm:rounded-2xl text-xs sm:text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[60px] sm:min-h-[80px] touch-target"
               >
@@ -111,19 +120,14 @@ const JournalistDashboard = () => {
                 </div>
                 <span className="text-center">Parliament Tree</span>
               </TabsTrigger>
-              <TabsTrigger 
-                value="schedule" 
-                className="flex flex-col items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-4 sm:py-6 rounded-xl sm:rounded-2xl text-xs sm:text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[60px] sm:min-h-[80px] touch-target"
-              >
-                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-orange-500 to-yellow-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                  <Calendar className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
-                </div>
-                <span className="text-center">Schedule</span>
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="publish" className="space-y-6">
               <BreakingNewsPublisher />
+            </TabsContent>
+
+            <TabsContent value="schedule">
+              <ParliamentAgenda />
             </TabsContent>
 
             <TabsContent value="profile" className="space-y-6">
@@ -136,10 +140,6 @@ const JournalistDashboard = () => {
 
             <TabsContent value="members">
               <InteractiveParliamentTree />
-            </TabsContent>
-
-            <TabsContent value="schedule">
-              <ParliamentAgenda />
             </TabsContent>
           </Tabs>
         </div>

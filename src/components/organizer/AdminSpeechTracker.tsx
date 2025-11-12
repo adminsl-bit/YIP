@@ -264,8 +264,13 @@ export const AdminSpeechTracker = () => {
               {/* Action Buttons */}
               <div className="flex gap-2">
                 <Button
+                  type="button"
                   size="sm"
-                  onClick={() => recordSpeech(student.user_id)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    recordSpeech(student.user_id);
+                  }}
                   className="gap-2"
                 >
                   <Mic className="h-4 w-4" />
@@ -273,9 +278,14 @@ export const AdminSpeechTracker = () => {
                 </Button>
                 {student.speech_count > 0 && (
                   <Button
+                    type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => undoLastSpeech(student.user_id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      undoLastSpeech(student.user_id);
+                    }}
                     className="gap-2"
                   >
                     <Undo2 className="h-4 w-4" />
