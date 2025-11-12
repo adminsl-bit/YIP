@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
 
 const Index = () => {
   const { user, profile, loading } = useAuth();
@@ -40,6 +41,7 @@ const Index = () => {
   // Only show landing page for non-authenticated users
   return (
     <main>
+      <BreakingNewsTicker />
       <div className="absolute top-4 right-4 z-20">
         <Link to="/login">
           <Button 
