@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Medal, Award } from 'lucide-react';
+import { BreakingNewsTicker } from '@/components/display/BreakingNewsTicker';
 
 interface AssessmentResult {
   student_id: string;
@@ -200,6 +201,7 @@ const LeaderboardDisplay = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted p-8">
+      <BreakingNewsTicker />
       <div className="max-w-7xl mx-auto">
         <h1 className="text-8xl font-bold text-center mb-12 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
           Live Leaderboard

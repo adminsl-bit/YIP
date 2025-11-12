@@ -172,6 +172,36 @@ export type Database = {
         }
         Relationships: []
       }
+      breaking_news: {
+        Row: {
+          created_at: string
+          headline: string
+          id: string
+          is_active: boolean
+          journalist_id: string
+          published_at: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          headline: string
+          id?: string
+          is_active?: boolean
+          journalist_id: string
+          published_at?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          headline?: string
+          id?: string
+          is_active?: boolean
+          journalist_id?: string
+          published_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       login_audit: {
         Row: {
           created_at: string
@@ -794,7 +824,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin_student"
+      app_role: "admin_student" | "journalist"
       user_type: "student" | "jury" | "organizer"
     }
     CompositeTypes: {
@@ -923,7 +953,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin_student"],
+      app_role: ["admin_student", "journalist"],
       user_type: ["student", "jury", "organizer"],
     },
   },

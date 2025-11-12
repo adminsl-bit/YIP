@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Clock, Pause, Play, Square } from "lucide-react";
+import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
 
 interface TimerSession {
   id: string;
@@ -151,6 +152,7 @@ const TimerDisplay = () => {
 
   return (
     <div className={`min-h-screen flex items-center justify-center transition-all duration-1000 ${getBackgroundColor()}`}>
+      <BreakingNewsTicker />
       <div className="max-w-6xl w-full mx-auto p-8">
         <Card className="bg-white shadow-2xl rounded-3xl overflow-hidden border border-slate-200">
           <CardContent className="p-12 text-center">

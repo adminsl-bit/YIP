@@ -107,6 +107,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       case 'jury':
         navigate('/jury');
         break;
+      case 'journalist':
+        navigate('/journalist');
+        break;
       case 'organizer':
         navigate('/organizer');
         break;

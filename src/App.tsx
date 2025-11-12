@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import StudentDashboard from "./pages/StudentDashboard";
 import AdminStudentDashboard from "./pages/AdminStudentDashboard";
 import JuryDashboard from "./pages/JuryDashboard";
+import JournalistDashboard from "./pages/JournalistDashboard";
 import OrganizerDashboard from "./pages/OrganizerDashboard";
 import TimerDisplay from "./pages/TimerDisplay";
 import PollDisplay from "./pages/PollDisplay";
@@ -43,6 +44,11 @@ const App = () => (
             <Route path="/jury" element={
               <AuthenticatedRoute>
                 <JuryDashboard />
+              </AuthenticatedRoute>
+            } />
+            <Route path="/journalist" element={
+              <AuthenticatedRoute>
+                <JournalistDashboard />
               </AuthenticatedRoute>
             } />
             <Route path="/organizer" element={
