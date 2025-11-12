@@ -59,19 +59,23 @@ export const ManualScoring = () => {
     },
   });
 
-  const updatePreeventScoreMutation = useMutation({
-    mutationFn: async ({ userId, score }: { userId: string; score: number }) => {
+  const updateScoresMutation = useMutation({
+    mutationFn: async ({ userId, preeventScore, liveScore }: { userId: string; preeventScore: number | null; liveScore: number | null }) => {
+      const updates: any = {};
+      if (preeventScore !== null) updates.preevent_scores = preeventScore;
+      if (liveScore !== null) updates.organizer_manual_score = liveScore;
+      
       const { error } = await supabase
         .from('profiles')
-        .update({ preevent_scores: score })
+        .update(updates)
         .eq('user_id', userId);
 
       if (error) throw error;
     },
     onSuccess: () => {
       toast({
-        title: 'Pre-Event Score Updated',
-        description: 'Pre-event score has been saved successfully',
+        title: 'Scores Updated',
+        description: 'Scores have been saved successfully',
       });
       queryClient.invalidateQueries({ queryKey: ['manual-scoring-students'] });
       queryClient.invalidateQueries({ queryKey: ['organizer-leaderboard'] });
@@ -79,80 +83,67 @@ export const ManualScoring = () => {
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update pre-event score',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const updateLiveScoreMutation = useMutation({
-    mutationFn: async ({ userId, score }: { userId: string; score: number }) => {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ organizer_manual_score: score })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Live Event Score Updated',
-        description: 'Live event score has been saved successfully',
-      });
-      queryClient.invalidateQueries({ queryKey: ['manual-scoring-students'] });
-      queryClient.invalidateQueries({ queryKey: ['organizer-leaderboard'] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to update live event score',
+        description: error.message || 'Failed to update scores',
         variant: 'destructive',
       });
     },
   });
 
   const handlePreeventScoreChange = (userId: string, value: string) => {
-    // Only allow numbers and decimal point
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
       setPreeventScores({ ...preeventScores, [userId]: value });
     }
   };
 
   const handleLiveScoreChange = (userId: string, value: string) => {
-    // Only allow numbers and decimal point
     if (value === '' || /^\d*\.?\d*$/.test(value)) {
       setLiveScores({ ...liveScores, [userId]: value });
     }
   };
 
-  const handleSavePreeventScore = (userId: string) => {
-    const scoreValue = parseFloat(preeventScores[userId] || '0');
+  const handleSaveScores = (userId: string, student: ManualScoringStudent) => {
+    const preeventValue = preeventScores[userId] !== undefined ? preeventScores[userId] : student.preevent_score?.toString();
+    const liveValue = liveScores[userId] !== undefined ? liveScores[userId] : student.organizer_manual_score?.toString();
     
-    if (isNaN(scoreValue) || scoreValue < 0 || scoreValue > 60) {
+    let preeventScore: number | null = null;
+    let liveScore: number | null = null;
+    
+    if (preeventValue) {
+      const parsed = parseFloat(preeventValue);
+      if (isNaN(parsed) || parsed < 0 || parsed > 60) {
+        toast({
+          title: 'Invalid Score',
+          description: 'Pre-event score must be between 0 and 60',
+          variant: 'destructive',
+        });
+        return;
+      }
+      preeventScore = parsed;
+    }
+    
+    if (liveValue) {
+      const parsed = parseFloat(liveValue);
+      if (isNaN(parsed) || parsed < 0 || parsed > 40) {
+        toast({
+          title: 'Invalid Score',
+          description: 'Live event score must be between 0 and 40',
+          variant: 'destructive',
+        });
+        return;
+      }
+      liveScore = parsed;
+    }
+    
+    if (preeventScore === null && liveScore === null) {
       toast({
-        title: 'Invalid Score',
-        description: 'Pre-event score must be between 0 and 60',
+        title: 'No Scores to Save',
+        description: 'Please enter at least one score',
         variant: 'destructive',
       });
       return;
     }
 
-    updatePreeventScoreMutation.mutate({ userId, score: scoreValue });
-  };
-
-  const handleSaveLiveScore = (userId: string) => {
-    const scoreValue = parseFloat(liveScores[userId] || '0');
-    
-    if (isNaN(scoreValue) || scoreValue < 0 || scoreValue > 40) {
-      toast({
-        title: 'Invalid Score',
-        description: 'Live event score must be between 0 and 40',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    updateLiveScoreMutation.mutate({ userId, score: scoreValue });
+    updateScoresMutation.mutate({ userId, preeventScore, liveScore });
   };
 
   const getRoleBadgeColor = (role: string) => {
@@ -272,15 +263,6 @@ export const ManualScoring = () => {
                       className="w-24 text-center text-lg font-semibold"
                     />
                   </div>
-                  <Button
-                    onClick={() => handleSavePreeventScore(student.user_id)}
-                    disabled={updatePreeventScoreMutation.isPending || !currentPreeventScore}
-                    size="sm"
-                    className="gap-2"
-                  >
-                    <Save className="h-4 w-4" />
-                    Save
-                  </Button>
                   
                   {/* Live Event Score */}
                   <div className="flex flex-col items-end gap-1">
@@ -295,9 +277,10 @@ export const ManualScoring = () => {
                       className="w-24 text-center text-lg font-semibold"
                     />
                   </div>
+                  
                   <Button
-                    onClick={() => handleSaveLiveScore(student.user_id)}
-                    disabled={updateLiveScoreMutation.isPending || !currentLiveScore}
+                    onClick={() => handleSaveScores(student.user_id, student)}
+                    disabled={updateScoresMutation.isPending}
                     size="sm"
                     className="gap-2"
                   >
