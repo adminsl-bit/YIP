@@ -68,21 +68,30 @@ serve(async (req) => {
         // Determine party number from party letter (A=1, B=2, C=3, D=4, E=5)
         const partyMap: Record<string, number> = { 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5 };
         
-        // Normalize and validate party input. Accepts: "A", "Party A", "A - ..."
+        // Normalize and validate party input. Accepts: "A", "Party A", "A - ...", or "No Party"
         const rawParty = (student.party ?? '').toString().trim().toUpperCase();
+        let partyNumber = 0;
+        
         if (!rawParty) {
-          results.errors.push(`${student.name}: Missing party letter (A-E)`);
+          results.errors.push(`${student.name}: Missing party value. Use A-E or "No Party".`);
           results.failed++;
           continue;
         }
-        const match = rawParty.match(/\b([A-E])\b/);
-        const letter = match ? match[1] : (rawParty.length === 1 ? rawParty : '');
-        if (!letter || !partyMap[letter]) {
-          results.errors.push(`${student.name}: Invalid party value "${student.party}". Use letters A-E.`);
-          results.failed++;
-          continue;
+        
+        // Check if it's "No Party"
+        if (rawParty === 'NO PARTY' || rawParty === 'NOPARTY') {
+          partyNumber = 0; // No party = 0
+        } else {
+          // Try to extract party letter A-E
+          const match = rawParty.match(/\b([A-E])\b/);
+          const letter = match ? match[1] : (rawParty.length === 1 ? rawParty : '');
+          if (!letter || !partyMap[letter]) {
+            results.errors.push(`${student.name}: Invalid party value "${student.party}". Use A-E or "No Party".`);
+            results.failed++;
+            continue;
+          }
+          partyNumber = partyMap[letter];
         }
-        const partyNumber = partyMap[letter];
 
         // Check if user already exists
         const { data: existingProfile } = await supabaseAdmin
