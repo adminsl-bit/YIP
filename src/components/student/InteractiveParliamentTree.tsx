@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Crown, Gavel, Users, MapPin, Search, X, Filter } from 'lucide-react';
 import GlassmorphismProfileCard from './GlassmorphismProfileCard';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
 
 interface Student {
   id: string;
@@ -27,6 +28,11 @@ interface Student {
   user_type: string;
 }
 
+interface LeaderboardData {
+  ranking: number;
+  final_total_score: number;
+}
+
 const InteractiveParliamentTree = () => {
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
@@ -37,10 +43,16 @@ const InteractiveParliamentTree = () => {
   const [positionFilter, setPositionFilter] = useState<string>("all");
   const [partyFilter, setPartyFilter] = useState<string>("all");
   const [stateFilter, setStateFilter] = useState<string>("all");
+  const [leaderboardData, setLeaderboardData] = useState<Record<string, LeaderboardData>>({});
+
+  const { settings } = useSystemSettings();
 
   useEffect(() => {
     fetchStudents();
-  }, []);
+    if (settings.leaderboard_visible) {
+      fetchLeaderboardRankings();
+    }
+  }, [settings.leaderboard_visible]);
 
   useEffect(() => {
     applyFilters();
@@ -108,6 +120,41 @@ const InteractiveParliamentTree = () => {
       setLoading(false);
     }
 };
+
+  const fetchLeaderboardRankings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('organizer_leaderboard')
+        .select('user_id, final_total_score')
+        .gt('final_total_score', 0);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        setLeaderboardData({});
+        return;
+      }
+
+      // Sort by score to calculate rankings
+      const sortedData = [...data].sort((a, b) => 
+        (b.final_total_score || 0) - (a.final_total_score || 0)
+      );
+
+      // Create ranking map
+      const rankingMap: Record<string, LeaderboardData> = {};
+      sortedData.forEach((item, index) => {
+        rankingMap[item.user_id] = {
+          ranking: index + 1,
+          final_total_score: item.final_total_score || 0
+        };
+      });
+
+      setLeaderboardData(rankingMap);
+    } catch (error) {
+      console.error('Error fetching leaderboard rankings:', error);
+      setLeaderboardData({});
+    }
+  };
 
   // Realtime: refresh when profiles change
   useEffect(() => {
@@ -433,12 +480,14 @@ const InteractiveParliamentTree = () => {
                                     </AvatarFallback>
                                   </Avatar>
                                   
-                                  {/* Serial number badge */}
-                                  <Badge 
-                                    className="hidden"
-                                  >
-                                    {student.serial_number}
-                                  </Badge>
+                                  {/* Ranking badge - only show when leaderboard visible and student has ranking */}
+                                  {settings.leaderboard_visible && leaderboardData[student.user_id] && (
+                                    <Badge 
+                                      className="absolute -top-2 -right-2 w-8 h-8 p-0 flex items-center justify-center text-xs font-bold bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-2 border-white shadow-lg"
+                                    >
+                                      #{leaderboardData[student.user_id].ranking}
+                                    </Badge>
+                                  )}
 
                                   {/* Special position indicator */}
                                   {isSpecialPosition(student.position, student.name) && (
