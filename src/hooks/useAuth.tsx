@@ -212,14 +212,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
           if (profileData?.user_type) {
             if (profileData.user_type === 'student') {
+              // Check for special roles
               const { data: roleData } = await supabase
                 .from('user_roles')
                 .select('role')
-                .eq('user_id', data.user.id)
-                .eq('role', 'admin_student')
-                .maybeSingle();
+                .eq('user_id', data.user.id);
 
-              if (roleData) {
+              const roles = roleData?.map(r => r.role) || [];
+              
+              // Priority: journalist > admin_student > regular student
+              if (roles.includes('journalist')) {
+                navigate('/journalist');
+                return { error: null };
+              } else if (roles.includes('admin_student')) {
                 navigate('/admin-student');
                 return { error: null };
               }

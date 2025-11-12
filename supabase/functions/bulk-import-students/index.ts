@@ -12,12 +12,15 @@ interface StudentData {
   loginId: string;
   name: string;
   seatRole: string;
-  partyNumber: number;
+  alliance?: string;
+  party?: string;
+  partyName?: string;
+  committee?: string;
   constituency?: string;
   state?: string;
   city?: string;
-  photoUrl?: string;
   password: string;
+  preeventScores?: number;
 }
 
 function convertGoogleDriveUrl(url: string): string {
@@ -57,6 +60,15 @@ serve(async (req) => {
 
     for (const student of students as StudentData[]) {
       try {
+        // Determine role based on seat role
+        const seatRoleLower = student.seatRole.toLowerCase();
+        const isAdmin = seatRoleLower.includes('administrator');
+        const isJournalist = seatRoleLower.includes('journalist');
+        
+        // Determine party number from party letter
+        const partyMap: Record<string, number> = { 'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5 };
+        const partyNumber = student.party ? (partyMap[student.party] || 0) : 0;
+
         // Check if user already exists
         const { data: existingProfile } = await supabaseAdmin
           .from('profiles')
@@ -82,18 +94,25 @@ serve(async (req) => {
           userId = existingProfile.user_id;
 
           // Update existing profile
+          const updateData: any = {
+            name: student.name,
+            position: student.seatRole,
+            party_number: partyNumber,
+            party_name: student.partyName,
+            constituency: student.constituency,
+            state: student.state,
+            city: student.city,
+            email: `${student.loginId}@yip.parliament`,
+          };
+
+          // Only update preevent_scores if provided
+          if (student.preeventScores !== undefined && student.preeventScores !== null) {
+            updateData.preevent_scores = student.preeventScores;
+          }
+
           const { error: updateProfileError } = await supabaseAdmin
             .from('profiles')
-            .update({
-              name: student.name,
-              position: student.seatRole,
-              party_number: student.partyNumber,
-              constituency: student.constituency,
-              state: student.state,
-              city: student.city,
-              photo_url: convertGoogleDriveUrl(student.photoUrl),
-              email: `${student.loginId}@yip.parliament`,
-            })
+            .update(updateData)
             .eq('user_id', existingProfile.user_id);
 
           if (updateProfileError) {
@@ -101,6 +120,25 @@ serve(async (req) => {
             results.failed++;
             continue;
           }
+
+          // Update roles
+          await supabaseAdmin
+            .from('user_roles')
+            .delete()
+            .eq('user_id', userId);
+
+          if (isAdmin) {
+            await supabaseAdmin
+              .from('user_roles')
+              .insert({ user_id: userId, role: 'admin_student' });
+          }
+
+          if (isJournalist) {
+            await supabaseAdmin
+              .from('user_roles')
+              .insert({ user_id: userId, role: 'journalist' });
+          }
+
         } else {
           // Create new user account
           const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -118,26 +156,46 @@ serve(async (req) => {
           userId = authData.user.id;
 
           // Create new profile
+          const profileData: any = {
+            user_id: authData.user.id,
+            serial_number: student.serialNumber,
+            name: student.name,
+            position: student.seatRole,
+            party_number: partyNumber,
+            party_name: student.partyName,
+            constituency: student.constituency,
+            state: student.state,
+            city: student.city,
+            user_type: 'student',
+            email: `${student.loginId}@yip.parliament`,
+          };
+
+          // Only add preevent_scores if provided
+          if (student.preeventScores !== undefined && student.preeventScores !== null) {
+            profileData.preevent_scores = student.preeventScores;
+          }
+
           const { error: profileError } = await supabaseAdmin
             .from('profiles')
-            .insert({
-              user_id: authData.user.id,
-              serial_number: student.serialNumber,
-              name: student.name,
-              position: student.seatRole,
-              party_number: student.partyNumber,
-              constituency: student.constituency,
-              state: student.state,
-              city: student.city,
-              photo_url: convertGoogleDriveUrl(student.photoUrl),
-              user_type: 'student',
-              email: `${student.loginId}@yip.parliament`,
-            });
+            .insert(profileData);
 
           if (profileError) {
             results.errors.push(`${student.name}: Failed to create profile - ${profileError.message}`);
             results.failed++;
             continue;
+          }
+
+          // Assign roles
+          if (isAdmin) {
+            await supabaseAdmin
+              .from('user_roles')
+              .insert({ user_id: userId, role: 'admin_student' });
+          }
+
+          if (isJournalist) {
+            await supabaseAdmin
+              .from('user_roles')
+              .insert({ user_id: userId, role: 'journalist' });
           }
         }
 

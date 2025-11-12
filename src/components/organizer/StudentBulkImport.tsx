@@ -14,12 +14,15 @@ interface StudentData {
   loginId: string;
   name: string;
   seatRole: string;
-  partyNumber: number;
+  alliance?: string;
+  party?: string;
+  partyName?: string;
+  committee?: string;
   constituency?: string;
   state?: string;
   city?: string;
-  photoUrl?: string;
   password: string;
+  preeventScores?: number;
 }
 
 export const StudentBulkImport = () => {
@@ -66,19 +69,22 @@ export const StudentBulkImport = () => {
               return '';
             };
 
-            const serialNumber = getColumnValue(['serial_no', 'Serial no', 'S.No', 'Serial No', 'SNo', 's.no', 'serial_number']);
-            const loginId = getColumnValue(['login_id', 'login id', 'Login ID', 'LoginId']);
-            const name = getColumnValue(['name', 'Name', 'student_name', 'Student Name']);
-            const seatRole = getColumnValue(['seat_role', 'seat role', 'Seat Role', 'Role', 'role', 'Position', 'position']);
-            const partyNumber = getColumnValue(['party_number', 'partynumber', 'Party Number', 'Party No', 'party_no']);
+            const serialNumber = getColumnValue(['Serial no', 'serial_no', 'S.No', 'Serial No', 'SNo']);
+            const loginId = getColumnValue(['Login', 'login', 'login_id', 'Login ID']);
+            const name = getColumnValue(['Name', 'name', 'student_name']);
+            const seatRole = getColumnValue(['seat role', 'seat_role', 'Seat Role', 'Role']);
+            const alliance = getColumnValue(['Alliance', 'alliance']);
+            const party = getColumnValue(['Party', 'party']);
+            const partyName = getColumnValue(['Party Name', 'party_name']);
+            const committee = getColumnValue(['Committee', 'committee']);
             const constituency = getColumnValue(['constituency', 'Constituency']);
             const state = getColumnValue(['state', 'State']);
-            const city = getColumnValue(['city', 'home city', 'Home City', 'City']);
-            const photoUrl = getColumnValue(['photo_url', 'photo url', 'Photo URL', 'Photo Link', 'photo_link']);
+            const city = getColumnValue(['home city', 'city', 'City', 'Home City']);
             const password = getColumnValue(['password', 'Password']);
+            const preeventScores = getColumnValue(['Preevent scores', 'preevent_scores', 'Pre-event scores']);
 
             if (!name || !serialNumber || !loginId || !password) {
-              throw new Error(`Row ${index + 2}: Missing required fields (Serial no, Login ID, Name, or Password)`);
+              throw new Error(`Row ${index + 2}: Missing required fields (Serial no, Login, Name, or Password)`);
             }
 
             return {
@@ -86,12 +92,15 @@ export const StudentBulkImport = () => {
               loginId: loginId.toString().trim(),
               name: name.toString().trim(),
               seatRole: seatRole?.toString().trim() || 'Member of Parliament',
-              partyNumber: parseInt(partyNumber?.toString()) || 1,
+              alliance: alliance?.toString().trim(),
+              party: party?.toString().trim(),
+              partyName: partyName?.toString().trim(),
+              committee: committee?.toString().trim(),
               constituency: constituency?.toString().trim(),
               state: state?.toString().trim(),
               city: city?.toString().trim(),
-              photoUrl: photoUrl ? convertGoogleDriveUrl(photoUrl.toString().trim()) : undefined,
               password: password.toString().trim(),
+              preeventScores: preeventScores ? parseFloat(preeventScores.toString()) : undefined,
             };
           });
 
@@ -202,15 +211,48 @@ export const StudentBulkImport = () => {
     const template = [
       {
         'Serial no': 1,
-        'login id': '11',
-        'name': 'John Doe',
-        'seat role': 'Speaker',
-        'partynumber': 1,
+        'Name': 'John Doe',
+        'seat role': 'Member of Parliament',
+        'Alliance': 'Ruling',
+        'Party': 'A',
+        'Party Name': 'SAMPLE PARTY',
+        'Committee': '1',
         'constituency': 'Mumbai Central',
         'state': 'Maharashtra',
         'home city': 'Mumbai',
-        'photo url': 'https://drive.google.com/file/d/1ABC123/view?usp=sharing',
-        'password': 'student123'
+        'Login': 'YIP0001',
+        'password': 'student123',
+        'Preevent scores': ''
+      },
+      {
+        'Serial no': 2,
+        'Name': 'Jane Smith',
+        'seat role': 'Administrator',
+        'Alliance': 'Neutral',
+        'Party': 'No Party',
+        'Party Name': 'No Party',
+        'Committee': '1',
+        'constituency': 'Delhi',
+        'state': 'NCT Delhi',
+        'home city': 'Delhi',
+        'Login': 'YIP0002',
+        'password': 'admin123',
+        'Preevent scores': ''
+      },
+      {
+        'Serial no': 3,
+        'Name': 'Bob Reporter',
+        'seat role': 'Journalist',
+        'Alliance': 'Neutral',
+        'Party': 'No Party',
+        'Party Name': 'No Party',
+        'Committee': '1',
+        'constituency': 'Bangalore',
+        'state': 'Karnataka',
+        'home city': 'Bangalore',
+        'Login': 'YIP0003',
+        'password': 'journalist123',
+        'Preevent scores': ''
       }
     ];
     
@@ -237,15 +279,13 @@ export const StudentBulkImport = () => {
           <Alert>
             <Info className="w-4 h-4" />
             <AlertDescription>
-              <strong>Required columns:</strong> Serial no, login id, name, password
+              <strong>Required columns:</strong> Serial no, Name, seat role, Login, password
               <br />
-              <strong>Optional columns:</strong> seat role, partynumber, constituency, state, home city, photo url
+              <strong>Optional columns:</strong> Alliance, Party, Party Name, Committee, constituency, state, home city, Preevent scores
               <br />
-              <strong>Google Drive photos:</strong> Use shareable links - they'll be converted automatically
+              <strong>Role Assignment:</strong> "Administrator" → Admin access, "Journalist" → Publishing access, Others → Student access
               <br />
               <strong>Re-upload support:</strong> Existing students will be updated with new data
-              <br />
-              <strong>Photo upload:</strong> Students can now upload their own photos after logging in
             </AlertDescription>
           </Alert>
 
