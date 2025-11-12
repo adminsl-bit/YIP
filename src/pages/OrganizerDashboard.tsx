@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap, Image as ImageIcon, AlertTriangle, Trophy, Award, Presentation, Mic, Newspaper } from "lucide-react";
+import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap, Image as ImageIcon, AlertTriangle, Trophy, Award, Presentation, Mic, Newspaper, FileEdit } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -32,6 +32,7 @@ import { OrganizerLeaderboard } from "@/components/organizer/OrganizerLeaderboar
 import { AwardManagement } from "@/components/organizer/AwardManagement";
 import { AdminSpeechTracker } from "@/components/organizer/AdminSpeechTracker";
 import { BreakingNewsPublisher } from "@/components/journalist/BreakingNewsPublisher";
+import { ManualScoring } from "@/components/organizer/ManualScoring";
 
 const OrganizerDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -176,7 +177,7 @@ const OrganizerDashboard = () => {
           </div>
 
           <Tabs defaultValue="controls" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
               <TabsTrigger 
                 value="controls" 
                 className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
@@ -266,6 +267,15 @@ const OrganizerDashboard = () => {
                   <Newspaper className="w-4 h-4 text-white" />
                 </div>
                 <span className="text-center">Breaking News</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="manual-scoring" 
+                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
+              >
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <FileEdit className="w-4 h-4 text-white" />
+                </div>
+                <span className="text-center">Manual Scoring</span>
               </TabsTrigger>
             </TabsList>
 
@@ -507,6 +517,22 @@ const OrganizerDashboard = () => {
                   <p className="text-slate-600 font-medium">Publish and manage live breaking news updates</p>
                 </div>
                 <BreakingNewsPublisher />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="manual-scoring" className="space-y-6">
+              <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
+                <div className="text-center mb-8">
+                  <div className="relative inline-block mb-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-purple-500/30">
+                      <FileEdit className="w-8 h-8 text-white" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-purple-400/40 rounded-full animate-bounce"></div>
+                  </div>
+                  <h3 className="text-2xl font-black text-slate-800 mb-2">Manual Scoring</h3>
+                  <p className="text-slate-600 font-medium">Add scores for journalists and admin students</p>
+                </div>
+                <ManualScoring />
               </div>
             </TabsContent>
           </Tabs>
