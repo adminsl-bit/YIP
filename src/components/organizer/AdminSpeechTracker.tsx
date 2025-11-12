@@ -31,6 +31,7 @@ export const AdminSpeechTracker = () => {
     loading,
     filters,
     setFilters,
+    recordSpeech,
     undoLastSpeech,
     totalCount,
     filteredCount,
@@ -258,8 +259,16 @@ export const AdminSpeechTracker = () => {
               </div>
 
               {/* Action Buttons */}
-              {student.speech_count > 0 && (
-                <div className="flex gap-2">
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => recordSpeech(student.user_id)}
+                  className="gap-2"
+                >
+                  <Mic className="h-4 w-4" />
+                  +1
+                </Button>
+                {student.speech_count > 0 && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -269,8 +278,8 @@ export const AdminSpeechTracker = () => {
                     <Undo2 className="h-4 w-4" />
                     Undo
                   </Button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </Card>
         ))}
