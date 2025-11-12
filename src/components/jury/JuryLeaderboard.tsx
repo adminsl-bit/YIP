@@ -437,9 +437,12 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
               </SelectTrigger>
               <SelectContent className="bg-white/95 backdrop-blur-lg border border-white/25">
                 <SelectItem value="all-parties">All Parties</SelectItem>
-                {uniqueParties.map(party => (
-                  <SelectItem key={party} value={party.toString()}>Party {party}</SelectItem>
-                ))}
+                {uniqueParties.map(party => {
+                  const partyLetter = ['No Party', 'A', 'B', 'C', 'D', 'E'][party] || party;
+                  return (
+                    <SelectItem key={party} value={party.toString()}>Party {partyLetter}</SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
 

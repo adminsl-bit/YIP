@@ -264,6 +264,7 @@ export const OrganizerStudentList = () => {
     if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
     if (pos.includes('speaker')) return 'speaker';
     if (pos.includes('administrator') || pos.includes('admin')) return 'administrator';
+    if (pos.includes('journalist')) return 'journalist';
     if (pos.includes('minister') || pos.includes('shadow minister')) return 'minister';
     return 'mp';
   };
@@ -452,6 +453,7 @@ export const OrganizerStudentList = () => {
                 <SelectItem value="speaker">Speaker</SelectItem>
                 <SelectItem value="deputy_speaker">Deputy Speaker</SelectItem>
                 <SelectItem value="administrator">Administrator</SelectItem>
+                <SelectItem value="journalist">Journalist</SelectItem>
                 <SelectItem value="minister">Minister</SelectItem>
                 <SelectItem value="mp">MP</SelectItem>
               </SelectContent>

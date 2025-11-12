@@ -434,9 +434,12 @@ export const OrganizerLeaderboard = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Parties</SelectItem>
-                {uniqueParties.map((party) => (
-                  <SelectItem key={party} value={party.toString()}>Party {party}</SelectItem>
-                ))}
+                {uniqueParties.map((party) => {
+                  const partyLetter = ['No Party', 'A', 'B', 'C', 'D', 'E'][party] || party;
+                  return (
+                    <SelectItem key={party} value={party.toString()}>Party {partyLetter}</SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
 

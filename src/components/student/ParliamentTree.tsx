@@ -63,11 +63,10 @@ export const ParliamentTree = () => {
 
     // Apply position filter
     if (positionFilter !== "all") {
-      if (positionFilter === "special") {
-        filtered = filtered.filter(student => isSpecialPosition(student.position, student.name));
-      } else if (positionFilter === "mp") {
-        filtered = filtered.filter(student => !isSpecialPosition(student.position, student.name));
-      }
+      filtered = filtered.filter(student => {
+        const role = getSeatRole(student.position);
+        return role === positionFilter;
+      });
     }
 
     // Apply party filter
@@ -121,6 +120,16 @@ export const ParliamentTree = () => {
       return <Gavel className="w-4 h-4 text-blue-600" />;
     }
     return <Users className="w-4 h-4 text-gray-600" />;
+  };
+
+  const getSeatRole = (position: string): string => {
+    const pos = position.toLowerCase();
+    if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
+    if (pos.includes('speaker')) return 'speaker';
+    if (pos.includes('administrator') || pos.includes('admin')) return 'administrator';
+    if (pos.includes('journalist')) return 'journalist';
+    if (pos.includes('minister') || pos.includes('shadow minister')) return 'minister';
+    return 'mp';
   };
 
   const isSpecialPosition = (position: string, name?: string) => {
@@ -232,9 +241,13 @@ export const ParliamentTree = () => {
               <SelectValue placeholder="Position" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Positions</SelectItem>
-              <SelectItem value="special">Ministers & Leaders</SelectItem>
-              <SelectItem value="mp">Members of Parliament</SelectItem>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="speaker">Speaker</SelectItem>
+              <SelectItem value="deputy_speaker">Deputy Speaker</SelectItem>
+              <SelectItem value="administrator">Administrator</SelectItem>
+              <SelectItem value="journalist">Journalist</SelectItem>
+              <SelectItem value="minister">Minister/Shadow Minister</SelectItem>
+              <SelectItem value="mp">Member of Parliament</SelectItem>
             </SelectContent>
           </Select>
 

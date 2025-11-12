@@ -190,10 +190,10 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     const pos = position.toLowerCase();
     if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
     if (pos.includes('speaker')) return 'speaker';
-    // Normalize all admin/administrator roles to MP as per DB constraint
-    if (pos.includes('administrator') || pos.includes('admin')) return 'mp';
-    // Normalize all minister roles to MP as per rubric/DB constraint
-    if (pos.includes('minister') || pos.includes('shadow minister')) return 'mp';
+    if (pos.includes('administrator') || pos.includes('admin')) return 'administrator';
+    if (pos.includes('journalist')) return 'journalist';
+    // Normalize all minister roles to mp for assessment purposes
+    if (pos.includes('minister') || pos.includes('shadow minister')) return 'minister';
     return 'mp';
   };
   // Party badge styling consistent with other components
@@ -363,6 +363,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                 <SelectItem value="speaker">Speaker</SelectItem>
                 <SelectItem value="deputy_speaker">Deputy Speaker</SelectItem>
                 <SelectItem value="administrator">Administrator</SelectItem>
+                <SelectItem value="journalist">Journalist</SelectItem>
                 <SelectItem value="minister">Minister</SelectItem>
                 <SelectItem value="mp">MP</SelectItem>
               </SelectContent>
