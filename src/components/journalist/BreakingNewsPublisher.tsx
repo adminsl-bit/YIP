@@ -27,15 +27,22 @@ export const BreakingNewsPublisher = () => {
   const [wordCount, setWordCount] = useState(0);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  const isOrganizer = profile?.user_type === 'organizer';
+
   const { data: myHeadlines } = useQuery({
-    queryKey: ['journalist-headlines', user?.id],
+    queryKey: ['journalist-headlines', user?.id, isOrganizer],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Organizers see all headlines, journalists see only their own
+      const query = supabase
         .from('breaking_news')
         .select('*')
-        .eq('journalist_id', user?.id)
         .order('created_at', { ascending: false });
       
+      if (!isOrganizer) {
+        query.eq('journalist_id', user?.id);
+      }
+      
+      const { data, error } = await query;
       if (error) throw error;
       return data;
     },
@@ -57,11 +64,12 @@ export const BreakingNewsPublisher = () => {
         if (error) throw error;
       } else {
         // Insert new headline
+        // Organizers creating news need to specify a journalist name
         const { error } = await supabase
           .from('breaking_news')
           .insert({
             journalist_id: user?.id,
-            journalist_name: profile?.name || 'Anonymous',
+            journalist_name: isOrganizer ? 'Organizer' : (profile?.name || 'Anonymous'),
             headline: text,
             is_active: true,
           });
@@ -186,6 +194,24 @@ export const BreakingNewsPublisher = () => {
 
   return (
     <div className="space-y-6">
+      {/* Organizer Info Banner */}
+      {isOrganizer && (
+        <Card className="p-4 bg-orange-50 border-orange-200">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-orange-500 rounded-lg flex-shrink-0">
+              <Newspaper className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm mb-1">Organizer Override Mode</h3>
+              <p className="text-xs text-muted-foreground">
+                You can view and manage ALL breaking news headlines from journalists. 
+                Edit, activate/deactivate, or delete any headline regardless of who published it.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       <Card className="bg-white/80 backdrop-blur-sm border-2 border-orange-200 shadow-xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-2xl">
@@ -193,7 +219,12 @@ export const BreakingNewsPublisher = () => {
             {editingId ? 'Edit Breaking News' : 'Publish Breaking News'}
           </CardTitle>
           <CardDescription>
-            {editingId ? 'Update your headline' : 'Share live updates from inside the Parliament to stage displays'}
+            {editingId 
+              ? 'Update this headline' 
+              : isOrganizer 
+                ? 'Publish breaking news to all displays (as Organizer)'
+                : 'Share live updates from inside the Parliament to stage displays'
+            }
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -234,8 +265,13 @@ export const BreakingNewsPublisher = () => {
 
       <Card className="bg-white/80 backdrop-blur-sm border-2 border-slate-200 shadow-xl">
         <CardHeader>
-          <CardTitle>Your Published Headlines</CardTitle>
-          <CardDescription>Manage your active and past headlines</CardDescription>
+          <CardTitle>{isOrganizer ? 'All Published Headlines' : 'Your Published Headlines'}</CardTitle>
+          <CardDescription>
+            {isOrganizer 
+              ? 'Manage all breaking news headlines from journalists and organizers'
+              : 'Manage your active and past headlines'
+            }
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {myHeadlines && myHeadlines.length > 0 ? (
@@ -251,10 +287,19 @@ export const BreakingNewsPublisher = () => {
                 >
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-slate-900">{item.headline}</p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Published: {new Date(item.published_at).toLocaleString()}
-                      </p>
+                      <div className="flex items-center gap-2 mb-2">
+                        <p className="text-sm font-medium text-slate-900 flex-1">{item.headline}</p>
+                        {isOrganizer && item.journalist_id !== user?.id && (
+                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                            Can Override
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-slate-500">
+                          Published by {item.journalist_name} • {new Date(item.published_at).toLocaleString()}
+                        </p>
+                      </div>
                       {item.is_active && (
                         <span className="inline-block mt-1 px-2 py-0.5 bg-green-500 text-white text-xs rounded-full">
                           Live

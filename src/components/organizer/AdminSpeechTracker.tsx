@@ -20,12 +20,15 @@ import {
   TrendingUp,
   Users,
   Clock,
+  Info,
 } from 'lucide-react';
 import { useAdminSpeechTracking } from '@/hooks/useAdminSpeechTracking';
 import { PartyBadge } from '@/components/ui/party-badge';
 import { formatDistanceToNow } from 'date-fns';
+import { useAuth } from '@/hooks/useAuth';
 
 export const AdminSpeechTracker = () => {
+  const { profile } = useAuth();
   const {
     students,
     loading,
@@ -36,6 +39,8 @@ export const AdminSpeechTracker = () => {
     totalCount,
     filteredCount,
   } = useAdminSpeechTracking();
+
+  const isOrganizer = profile?.user_type === 'organizer';
 
   const uniqueParties = Array.from(new Set(students.map((s) => s.party_number))).sort(
     (a, b) => a - b
@@ -54,6 +59,24 @@ export const AdminSpeechTracker = () => {
 
   return (
     <div className="space-y-6">
+      {/* Organizer Info Banner */}
+      {isOrganizer && (
+        <Card className="p-4 bg-blue-50 border-blue-200">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-blue-500 rounded-lg flex-shrink-0">
+              <Info className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm mb-1">Organizer Override Mode</h3>
+              <p className="text-xs text-muted-foreground">
+                You can track speeches for all students and override recordings made by admin students. 
+                Use the +1 button to add speech counts and Undo to remove the last speech entry for any student.
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4">
