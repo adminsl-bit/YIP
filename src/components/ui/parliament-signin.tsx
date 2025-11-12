@@ -99,6 +99,7 @@ export function ParliamentSignIn() {
             </motion.button>
           </Link>
         </div>
+        {/* Temporarily hidden - Seed demo users button
         <div className="absolute top-8 right-8 z-20">
           <Link to="/seed-demo">
             <motion.button
@@ -110,6 +111,7 @@ export function ParliamentSignIn() {
             </motion.button>
           </Link>
         </div>
+        */}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
