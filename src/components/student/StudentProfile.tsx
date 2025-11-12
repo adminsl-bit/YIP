@@ -75,11 +75,17 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
         .from('organizer_leaderboard')
         .select('final_total_score')
         .eq('user_id', profile.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
-      // Get total number of students
+      // If no data exists or score is null, don't show leaderboard
+      if (!data || data.final_total_score === null) {
+        setLeaderboardData(null);
+        return;
+      }
+
+      // Get total number of students with scores
       const { count } = await supabase
         .from('organizer_leaderboard')
         .select('*', { count: 'exact', head: true })
@@ -89,15 +95,16 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
       const { count: higherScores } = await supabase
         .from('organizer_leaderboard')
         .select('*', { count: 'exact', head: true })
-        .gt('final_total_score', data?.final_total_score || 0);
+        .gt('final_total_score', data.final_total_score);
 
       setLeaderboardData({
-        final_total_score: data?.final_total_score || null,
+        final_total_score: data.final_total_score,
         ranking: (higherScores || 0) + 1,
         total_students: count || 0
       });
     } catch (error) {
       console.error('Error fetching leaderboard data:', error);
+      setLeaderboardData(null);
     } finally {
       setLoadingLeaderboard(false);
     }
