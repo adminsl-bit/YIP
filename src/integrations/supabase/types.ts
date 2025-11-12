@@ -325,6 +325,7 @@ export type Database = {
       profiles: {
         Row: {
           city: string | null
+          committee: string | null
           constituency: string | null
           created_at: string
           email: string | null
@@ -346,6 +347,7 @@ export type Database = {
         }
         Insert: {
           city?: string | null
+          committee?: string | null
           constituency?: string | null
           created_at?: string
           email?: string | null
@@ -367,6 +369,7 @@ export type Database = {
         }
         Update: {
           city?: string | null
+          committee?: string | null
           constituency?: string | null
           created_at?: string
           email?: string | null

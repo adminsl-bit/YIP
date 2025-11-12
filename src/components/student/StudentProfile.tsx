@@ -12,6 +12,7 @@ interface Profile {
   party_number: number;
   party_name?: string;
   serial_number: number;
+  committee?: string;
   constituency?: string;
   state?: string;
   city?: string;
@@ -125,6 +126,18 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
                   <p className="text-2xl font-bold text-foreground">{profile.serial_number}</p>
                 </div>
               </div>
+
+              {profile.committee && (
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Users className="w-6 h-6 text-gray-600" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-base font-semibold text-muted-foreground">Committee</p>
+                    <p className="text-2xl font-bold text-foreground">{profile.committee}</p>
+                  </div>
+                </div>
+              )}
               
 
               {profile.constituency && (
