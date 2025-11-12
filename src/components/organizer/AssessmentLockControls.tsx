@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -30,12 +30,7 @@ export const AssessmentLockControls = () => {
   const [locks, setLocks] = useState<AssessmentLock[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchData();
-    setupRealtimeSubscription();
-  }, []);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       // Fetch all jury members
       const { data: juryData, error: juryError } = await supabase
@@ -53,6 +48,7 @@ export const AssessmentLockControls = () => {
 
       if (locksError) throw locksError;
 
+      console.log('Fetched locks:', locksData);
       setJuryMembers(juryData || []);
       setLocks(locksData || []);
     } catch (error) {
@@ -65,24 +61,34 @@ export const AssessmentLockControls = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
-  const setupRealtimeSubscription = () => {
+  const setupRealtimeSubscription = useCallback(() => {
     const channel = supabase
       .channel('assessment-locks-changes')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'assessment_locks',
-      }, () => {
+      }, (payload) => {
+        console.log('Assessment lock change detected:', payload);
         fetchData();
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log('Subscription status:', status);
+      });
 
     return () => {
+      console.log('Cleaning up assessment locks subscription');
       supabase.removeChannel(channel);
     };
-  };
+  }, [fetchData]);
+
+  useEffect(() => {
+    fetchData();
+    const cleanup = setupRealtimeSubscription();
+    return cleanup;
+  }, [fetchData, setupRealtimeSubscription]);
 
   const isGlobalLocked = () => {
     return locks.some(lock => lock.is_global_lock);
