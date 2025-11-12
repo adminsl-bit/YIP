@@ -222,14 +222,13 @@ export const LandingHero = () => {
         <div className="px-8 py-8 bg-transparent">
           <div className="max-w-7xl mx-auto">
             <div className="text-center">
-              <div className="flex flex-col items-center justify-center gap-3 mb-2">
+              <div className="flex items-center justify-center gap-3 mb-2">
                 <span className="text-sm font-medium text-slate-600">Powered by</span>
                 <img 
                   src="/lovable-uploads/strawlabs.png" 
                   alt="Strawlabs" 
-                  className="h-12 md:h-16 object-contain"
+                  className="h-8 md:h-10 object-contain"
                 />
-                <span className="text-sm text-slate-600">for Yi Madurai chapter</span>
               </div>
               <p className="text-sm text-slate-500">© 2025 All rights reserved</p>
             </div>
