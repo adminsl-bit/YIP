@@ -5,6 +5,7 @@ import { Upload, FileText, FileSpreadsheet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
+import * as pdfjsLib from 'pdfjs-dist';
 
 interface SessionSubItemUploadProps {
   sessionId: string;
@@ -35,16 +36,34 @@ export const SessionSubItemUpload = ({ sessionId, onUploadComplete }: SessionSub
     });
   };
 
-  const parsePDF = async (file: File): Promise<string> => {
+  const parsePDF = async (file: File): Promise<string[]> => {
+    // Set worker source
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        // Simple text extraction - splits by line breaks
-        resolve(text);
+      reader.onload = async (e) => {
+        try {
+          const typedArray = new Uint8Array(e.target?.result as ArrayBuffer);
+          const pdf = await pdfjsLib.getDocument(typedArray).promise;
+          const textItems: string[] = [];
+          
+          for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items
+              .map((item: any) => item.str)
+              .filter((str: string) => str.trim().length > 0);
+            textItems.push(...pageText);
+          }
+          
+          resolve(textItems);
+        } catch (error) {
+          reject(error);
+        }
       };
       reader.onerror = reject;
-      reader.readAsText(file);
+      reader.readAsArrayBuffer(file);
     });
   };
 
@@ -79,14 +98,13 @@ export const SessionSubItemUpload = ({ sessionId, onUploadComplete }: SessionSub
           sort_order: index,
         }));
       } else if (fileType.endsWith('.pdf')) {
-        // Parse PDF - extract lines as items
-        const pdfText = await parsePDF(file);
-        const lines = pdfText.split('\n').filter(line => line.trim().length > 0);
-        items = lines.map((line, index) => ({
+        // Parse PDF - extract text items
+        const pdfTextItems = await parsePDF(file);
+        items = pdfTextItems.map((text, index) => ({
           parent_session_id: sessionId,
-          title: line.trim(),
+          title: text.substring(0, 200), // Limit title length
           description: '',
-          content: line.trim(),
+          content: text,
           sort_order: index,
         }));
       }
