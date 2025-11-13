@@ -108,12 +108,12 @@ export const SessionManagement = () => {
   const fetchSessionItems = async () => {
     try {
       const { data, error } = await supabase
-        .from('session_items')
+        .from('session_items' as any)
         .select('*')
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      setSessionItems(data as SessionItem[]);
+      setSessionItems(data as any as SessionItem[]);
     } catch (error) {
       console.error('Error fetching session items:', error);
     }
@@ -160,7 +160,7 @@ export const SessionManagement = () => {
     setLoading(true);
     try {
       const { error } = await supabase
-        .from('session_items')
+        .from('session_items' as any)
         .insert([{
           title,
           bill_type: billType as any,
@@ -171,7 +171,7 @@ export const SessionManagement = () => {
           status: 'pending',
           is_active: false,
           created_by: user.id,
-        }]);
+        } as any]);
 
       if (error) throw error;
 
@@ -205,17 +205,17 @@ export const SessionManagement = () => {
       if (!currentActive) {
         // Deactivate all other items first
         await supabase
-          .from('session_items')
+          .from('session_items' as any)
           .update({ is_active: false })
           .neq('id', itemId);
       }
 
       const { error } = await supabase
-        .from('session_items')
+        .from('session_items' as any)
         .update({ 
           is_active: !currentActive,
           status: !currentActive ? 'active' : 'pending'
-        })
+        } as any)
         .eq('id', itemId);
 
       if (error) throw error;
@@ -316,12 +316,12 @@ export const SessionManagement = () => {
     setLoading(true);
     try {
       const { error } = await supabase
-        .from('session_items')
+        .from('session_items' as any)
         .update({ 
           status: 'completed',
           is_active: false,
           completed_at: new Date().toISOString()
-        })
+        } as any)
         .eq('id', itemId);
 
       if (error) throw error;
@@ -363,8 +363,8 @@ export const SessionManagement = () => {
 
       for (const update of updates) {
         await supabase
-          .from('session_items')
-          .update({ sort_order: update.sort_order })
+          .from('session_items' as any)
+          .update({ sort_order: update.sort_order } as any)
           .eq('id', update.id);
       }
 
@@ -611,12 +611,12 @@ export const SessionManagement = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="timer">Link Timer (Optional)</Label>
-                      <Select value={linkedTimerId} onValueChange={setLinkedTimerId}>
+                      <Select value={linkedTimerId || "none"} onValueChange={(val) => setLinkedTimerId(val === "none" ? "" : val)}>
                         <SelectTrigger id="timer">
                           <SelectValue placeholder="Select a timer" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">No Timer</SelectItem>
+                          <SelectItem value="none">No Timer</SelectItem>
                           {availableTimers.map(timer => (
                             <SelectItem key={timer.id} value={timer.id}>
                               {timer.title} ({formatTime(timer.duration_seconds)})
@@ -628,12 +628,12 @@ export const SessionManagement = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="poll">Link Poll (Optional)</Label>
-                      <Select value={linkedPollId} onValueChange={setLinkedPollId}>
+                      <Select value={linkedPollId || "none"} onValueChange={(val) => setLinkedPollId(val === "none" ? "" : val)}>
                         <SelectTrigger id="poll">
                           <SelectValue placeholder="Select a poll" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">No Poll</SelectItem>
+                          <SelectItem value="none">No Poll</SelectItem>
                           {availablePolls.map(poll => (
                             <SelectItem key={poll.id} value={poll.id}>
                               {poll.title}

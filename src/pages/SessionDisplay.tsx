@@ -72,7 +72,7 @@ const SessionDisplay = () => {
   const fetchActiveSession = async () => {
     try {
       const { data: sessionData, error: sessionError } = await supabase
-        .from('session_items')
+        .from('session_items' as any)
         .select('*')
         .eq('is_active', true)
         .maybeSingle();
@@ -80,14 +80,14 @@ const SessionDisplay = () => {
       if (sessionError) throw sessionError;
 
       if (sessionData) {
-        setActiveSession(sessionData as SessionItem);
+        setActiveSession(sessionData as any as SessionItem);
 
         // Fetch linked timer if exists
-        if (sessionData.timer_id) {
+        if ((sessionData as any).timer_id) {
           const { data: timerData, error: timerError } = await supabase
             .from('timer_sessions')
             .select('*')
-            .eq('id', sessionData.timer_id)
+            .eq('id', (sessionData as any).timer_id)
             .single();
 
           if (!timerError && timerData) {
@@ -98,11 +98,11 @@ const SessionDisplay = () => {
         }
 
         // Fetch linked poll if exists
-        if (sessionData.poll_id) {
+        if ((sessionData as any).poll_id) {
           const { data: pollData, error: pollError } = await supabase
             .from('polls')
             .select('id, title, is_active')
-            .eq('id', sessionData.poll_id)
+            .eq('id', (sessionData as any).poll_id)
             .single();
 
           if (!pollError && pollData) {
