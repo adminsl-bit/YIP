@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Plus, GripVertical, Play, Pause, Square, CheckCircle, BarChart, Clock, ExternalLink } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Calendar, Plus, GripVertical, Play, Pause, Square, CheckCircle, BarChart, Clock, ExternalLink, Eye } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -63,6 +64,7 @@ interface Poll {
   id: string;
   title: string;
   is_active: boolean;
+  show_results_publicly: boolean;
 }
 
 export const SessionManagement = () => {
@@ -137,7 +139,7 @@ export const SessionManagement = () => {
     try {
       const { data, error } = await supabase
         .from('polls')
-        .select('id, title, is_active')
+        .select('id, title, is_active, show_results_publicly')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -305,6 +307,36 @@ export const SessionManagement = () => {
       toast({
         title: "Error",
         description: "Failed to toggle poll",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePollResultsToggle = async (pollId: string | null, currentStatus: boolean) => {
+    if (!pollId) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('polls')
+        .update({ show_results_publicly: !currentStatus })
+        .eq('id', pollId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: currentStatus ? "Results hidden from public" : "Results now visible publicly",
+      });
+
+      fetchAvailablePolls();
+    } catch (error) {
+      console.error('Error toggling poll results:', error);
+      toast({
+        title: "Error",
+        description: "Failed to toggle poll results visibility",
         variant: "destructive",
       });
     } finally {
@@ -496,7 +528,7 @@ export const SessionManagement = () => {
                 )}
 
                 {linkedPoll && (
-                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md flex-wrap">
                     <BarChart className="h-4 w-4" />
                     <span className="text-sm">{linkedPoll.title}</span>
                     <Button 
@@ -506,6 +538,14 @@ export const SessionManagement = () => {
                     >
                       {linkedPoll.is_active ? 'Close' : 'Open'} Voting
                     </Button>
+                    <div className="flex items-center gap-2 ml-2 pl-2 border-l">
+                      <Eye className="h-3 w-3 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">Public Results</span>
+                      <Switch
+                        checked={linkedPoll.show_results_publicly}
+                        onCheckedChange={() => handlePollResultsToggle(item.poll_id, linkedPoll.show_results_publicly)}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
