@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Calendar, Clock, BarChart, Play, Pause } from "lucide-react";
 import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
+import { SubItemCarousel } from "@/components/display/SubItemCarousel";
 
 interface SessionItem {
   id: string;
@@ -32,11 +33,20 @@ interface Poll {
   options?: Array<{ id: string; text: string }>;
 }
 
+interface SubItem {
+  id: string;
+  title: string;
+  description: string | null;
+  content: string | null;
+  is_active: boolean;
+}
+
 const SessionDisplay = () => {
   const [activeSession, setActiveSession] = useState<SessionItem | null>(null);
   const [timer, setTimer] = useState<TimerSession | null>(null);
   const [poll, setPoll] = useState<Poll | null>(null);
   const [pollResults, setPollResults] = useState<Record<string, number>>({});
+  const [subItems, setSubItems] = useState<SubItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchPollResults = async (pollId: string) => {
@@ -86,6 +96,10 @@ const SessionDisplay = () => {
           // This ensures polls show up when toggled from inactive to active
           fetchActiveSession();
         }
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'session_sub_items' },
+        () => fetchActiveSession()
       )
       .subscribe();
 
@@ -145,10 +159,22 @@ const SessionDisplay = () => {
           setPoll(null);
           setPollResults({});
         }
+
+        // Fetch sub-items for this session
+        const { data: subItemsData, error: subItemsError } = await supabase
+          .from('session_sub_items')
+          .select('*')
+          .eq('parent_session_id', (sessionData as any).id)
+          .order('sort_order', { ascending: true });
+
+        if (!subItemsError && subItemsData) {
+          setSubItems(subItemsData as SubItem[]);
+        }
       } else {
         setActiveSession(null);
         setTimer(null);
         setPoll(null);
+        setSubItems([]);
       }
 
       setLoading(false);
@@ -245,6 +271,11 @@ const SessionDisplay = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Sub-Items Carousel */}
+        {subItems.length > 0 && (
+          <SubItemCarousel subItems={subItems} />
+        )}
 
         {/* Timer Display */}
         {timer && (

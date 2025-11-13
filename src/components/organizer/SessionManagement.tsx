@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Calendar, Plus, GripVertical, Play, Pause, Square, CheckCircle, BarChart, Clock, ExternalLink, Eye, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { SessionSubItems } from "./SessionSubItems";
 import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -601,11 +602,12 @@ export const SessionManagement = () => {
     const linkedPoll = availablePolls.find(p => p.id === item.poll_id);
 
     return (
-      <Card
-        ref={setNodeRef}
-        style={style}
-        className={`${item.is_active ? 'border-primary shadow-md' : ''} ${isDragging ? 'shadow-lg' : ''}`}
-      >
+      <>
+        <Card
+          ref={setNodeRef}
+          style={style}
+          className={`${item.is_active ? 'border-primary shadow-md' : ''} ${isDragging ? 'shadow-lg' : ''}`}
+        >
         <CardContent className="p-4">
           <div className="flex items-start gap-4">
             <button
@@ -752,6 +754,8 @@ export const SessionManagement = () => {
           </div>
         </CardContent>
       </Card>
+      <SessionSubItems sessionId={item.id} isSessionActive={item.is_active} />
+      </>
     );
   };
 
