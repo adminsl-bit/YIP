@@ -83,18 +83,20 @@ export const TimerControl = () => {
       const { data, error } = await supabase
         .from('timer_sessions')
         .select('*')
-        .in('status', ['running', 'paused', 'stopped'])
-        .order('created_at', { ascending: false })
-        .limit(1);
+        .eq('is_active', true)
+        .single();
 
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        setCurrentTimer(data[0] as TimerSession);
-        setTitle(data[0].title);
-        setDurationFromSeconds(data[0].duration_seconds);
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No active timer found
+          setCurrentTimer(null);
+        } else {
+          throw error;
+        }
       } else {
-        setCurrentTimer(null);
+        setCurrentTimer(data as TimerSession);
+        setTitle(data.title);
+        setDurationFromSeconds(data.duration_seconds);
       }
     } catch (error) {
       console.error('Error fetching timer:', error);
