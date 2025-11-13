@@ -573,6 +573,7 @@ export type Database = {
           created_by: string
           duration_seconds: number
           id: string
+          is_active: boolean
           remaining_seconds: number
           started_at: string | null
           status: string
@@ -585,6 +586,7 @@ export type Database = {
           created_by: string
           duration_seconds?: number
           id?: string
+          is_active?: boolean
           remaining_seconds: number
           started_at?: string | null
           status?: string
@@ -597,6 +599,7 @@ export type Database = {
           created_by?: string
           duration_seconds?: number
           id?: string
+          is_active?: boolean
           remaining_seconds?: number
           started_at?: string | null
           status?: string

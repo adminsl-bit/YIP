@@ -18,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { FeatureToggles } from "@/components/organizer/FeatureToggles";
-import { TimerControl } from "@/components/organizer/TimerControl";
+import { TimerManagement } from "@/components/organizer/TimerManagement";
 import { PollManagement } from "@/components/organizer/PollManagement";
 import { SecurityLogsManager } from "@/components/organizer/SecurityLogsManager";
 import { OrganizerStats } from "@/components/organizer/OrganizerStats";
@@ -329,7 +329,7 @@ const OrganizerDashboard = () => {
 
             <TabsContent value="timer" className="space-y-6">
               <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
-                <TimerControl />
+                <TimerManagement />
               </div>
             </TabsContent>
 
