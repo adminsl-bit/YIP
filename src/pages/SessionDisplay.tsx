@@ -395,12 +395,7 @@ const SessionDisplay = () => {
           </CardContent>
         </Card>
 
-        {/* Sub-Items Carousel */}
-        {subItems.length > 0 && (
-          <SubItemCarousel subItems={subItems} />
-        )}
-
-        {/* Poll Display */}
+        {/* Poll Display - Shows when any sub-item or parent has an active poll */}
         {poll && (
           <Card className="border-2 shadow-xl">
             <CardContent className="p-8">
@@ -450,6 +445,11 @@ const SessionDisplay = () => {
               )}
             </CardContent>
           </Card>
+        )}
+
+        {/* Sub-Items Carousel */}
+        {subItems.length > 0 && (
+          <SubItemCarousel subItems={subItems} />
         )}
       </div>
     </div>
