@@ -80,7 +80,8 @@ const SessionDisplay = () => {
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'polls' },
-        () => {
+        (payload) => {
+          console.log('Poll change detected:', payload);
           // Refetch the entire active session to pick up any poll changes
           // This ensures polls show up when toggled from inactive to active
           fetchActiveSession();
@@ -130,12 +131,15 @@ const SessionDisplay = () => {
             .single();
 
           if (!pollError && pollData) {
+            console.log('Poll data fetched for display:', pollData);
             setPoll(pollData as Poll);
             
             // Fetch poll results if public results are enabled
             if (pollData.show_results_publicly) {
               await fetchPollResults(pollData.id);
             }
+          } else if (pollError) {
+            console.error('Error fetching poll:', pollError);
           }
         } else {
           setPoll(null);
