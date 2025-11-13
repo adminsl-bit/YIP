@@ -55,8 +55,67 @@ serve(async (req) => {
       }
     );
 
-    const { students } = await req.json();
+    const { students, mode = 'full' } = await req.json();
     const results = { success: 0, failed: 0, errors: [] as string[] };
+
+    console.log(`Import mode: ${mode}`);
+
+    // Handle scores-only import mode
+    if (mode === 'scores-only') {
+      for (const student of students as StudentData[]) {
+        try {
+          // Validate required fields for scores-only mode
+          if (!student.serialNumber) {
+            results.errors.push(`Row skipped: Missing serial number`);
+            results.failed++;
+            continue;
+          }
+
+          // Find existing profile by serial number
+          const { data: existingProfile, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('user_id, name')
+            .eq('serial_number', student.serialNumber)
+            .single();
+
+          if (profileError || !existingProfile) {
+            results.errors.push(`Serial ${student.serialNumber}: Student not found`);
+            results.failed++;
+            continue;
+          }
+
+          // Update only pre-event scores
+          const { error: updateError } = await supabaseAdmin
+            .from('profiles')
+            .update({ 
+              preevent_scores: student.preeventScores ?? null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('user_id', existingProfile.user_id);
+
+          if (updateError) {
+            results.errors.push(`${existingProfile.name}: Failed to update scores - ${updateError.message}`);
+            results.failed++;
+            continue;
+          }
+
+          console.log(`Updated scores for: ${existingProfile.name} (Serial: ${student.serialNumber})`);
+          results.success++;
+
+        } catch (error) {
+          console.error('Error processing student:', error);
+          results.errors.push(`Serial ${student.serialNumber}: ${error.message}`);
+          results.failed++;
+        }
+      }
+
+      return new Response(JSON.stringify(results), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      });
+    }
+
+    // Full import mode (existing logic)
 
     for (const student of students as StudentData[]) {
       try {

@@ -30,6 +30,7 @@ export const StudentBulkImport = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [importMode, setImportMode] = useState<'full' | 'scores-only'>('full');
   const [results, setResults] = useState<{
     success: number;
     failed: number;
@@ -136,7 +137,7 @@ export const StudentBulkImport = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ students }),
+        body: JSON.stringify({ students, mode: importMode }),
       });
 
       if (!response.ok) {
@@ -283,16 +284,62 @@ export const StudentBulkImport = () => {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* Import Mode Selection */}
+          <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
+            <label className="text-sm font-semibold">Import Mode:</label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                type="button"
+                variant={importMode === 'full' ? 'default' : 'outline'}
+                onClick={() => setImportMode('full')}
+                className="flex-1"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Full Import (Override All Data)
+              </Button>
+              <Button
+                type="button"
+                variant={importMode === 'scores-only' ? 'default' : 'outline'}
+                onClick={() => setImportMode('scores-only')}
+                className="flex-1"
+              >
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Pre-Event Scores Only
+              </Button>
+            </div>
+            {importMode === 'scores-only' && (
+              <Alert>
+                <Info className="w-4 h-4" />
+                <AlertDescription className="text-xs">
+                  In this mode, only <strong>Serial Number</strong> and <strong>Preevent Scores</strong> columns are required. 
+                  All other student data will remain unchanged.
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+
           <Alert>
             <Info className="w-4 h-4" />
             <AlertDescription>
-              <strong>Required columns:</strong> Serial no, Name, seat role, Login, password
-              <br />
-              <strong>Optional columns:</strong> Alliance, Party, Party Name, Committee, constituency, state, home city, Preevent scores
-              <br />
-              <strong>Role Assignment:</strong> "Administrator" → Admin access, "Journalist" → Publishing access, Others → Student access
-              <br />
-              <strong>Re-upload support:</strong> Existing students will be updated with new data
+              {importMode === 'full' ? (
+                <>
+                  <strong>Required columns:</strong> Serial no, Name, seat role, Login, password
+                  <br />
+                  <strong>Optional columns:</strong> Alliance, Party, Party Name, Committee, constituency, state, home city, Preevent scores
+                  <br />
+                  <strong>Role Assignment:</strong> "Administrator" → Admin access, "Journalist" → Publishing access, Others → Student access
+                  <br />
+                  <strong>Re-upload support:</strong> Existing students will be updated with new data
+                </>
+              ) : (
+                <>
+                  <strong>Required columns:</strong> Serial no, Preevent scores
+                  <br />
+                  <strong>Mode:</strong> Updates pre-event scores only. All other data remains unchanged.
+                  <br />
+                  <strong>Note:</strong> Students must already exist in the system (use Full Import first)
+                </>
+              )}
             </AlertDescription>
           </Alert>
 
