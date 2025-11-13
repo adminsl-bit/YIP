@@ -108,6 +108,39 @@ export const SessionManagement = () => {
     };
   }, []);
 
+  // Timer countdown logic
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      const runningTimers = availableTimers.filter(t => t.status === 'running');
+      
+      for (const timer of runningTimers) {
+        if (timer.remaining_seconds > 0) {
+          const newRemaining = timer.remaining_seconds - 1;
+          
+          await supabase
+            .from('timer_sessions')
+            .update({ remaining_seconds: newRemaining })
+            .eq('id', timer.id);
+          
+          // Auto-stop when timer reaches zero
+          if (newRemaining === 0) {
+            await supabase
+              .from('timer_sessions')
+              .update({ status: 'stopped' })
+              .eq('id', timer.id);
+          }
+        }
+      }
+      
+      // Refresh timer list after updates
+      if (runningTimers.length > 0) {
+        fetchAvailableTimers();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [availableTimers]);
+
   const fetchSessionItems = async () => {
     try {
       const { data, error } = await supabase
