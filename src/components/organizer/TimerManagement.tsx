@@ -98,43 +98,9 @@ export const TimerManagement = () => {
     };
   }, []);
 
-  // Single source of truth: Drive the countdown from TimerManagement (organizer console)
-  // Stage display is passive and only listens to DB updates via real-time subscription
-  useEffect(() => {
-    const active = timerSessions.find((t) => t.is_active && t.status === 'running');
-    if (!active) return;
-
-    const intervalId = window.setInterval(async () => {
-      const currentRemaining = active.remaining_seconds;
-      const nextRemaining = Math.max(0, currentRemaining - 1);
-      
-      try {
-        if (nextRemaining === 0) {
-          // Timer completed
-          await supabase
-            .from('timer_sessions')
-            .update({ 
-              remaining_seconds: 0, 
-              status: 'completed', 
-              completed_at: new Date().toISOString() 
-            })
-            .eq('id', active.id);
-        } else {
-          // Regular countdown tick
-          await supabase
-            .from('timer_sessions')
-            .update({ remaining_seconds: nextRemaining })
-            .eq('id', active.id);
-        }
-      } catch (e) {
-        console.error('Timer update error:', e);
-      }
-    }, 1000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [timerSessions]);
+  // Countdown handled by headless TimerTicker mounted at dashboard level
+  // This component listens and controls timers but does not tick them to avoid duplicates
+  // useEffect(() => { /* moved */ }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor),

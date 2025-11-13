@@ -33,6 +33,7 @@ import { AwardManagement } from "@/components/organizer/AwardManagement";
 import { AdminSpeechTracker } from "@/components/organizer/AdminSpeechTracker";
 import { BreakingNewsPublisher } from "@/components/journalist/BreakingNewsPublisher";
 import { ManualScoring } from "@/components/organizer/ManualScoring";
+import { TimerTicker } from "@/components/organizer/TimerTicker";
 
 const OrganizerDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -105,6 +106,7 @@ const OrganizerDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 relative overflow-hidden">
+      <TimerTicker />
       {/* Enhanced animated background matching student dashboard */}
       <div className="absolute inset-0">
         {/* Enhanced dot pattern */}
