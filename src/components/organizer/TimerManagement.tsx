@@ -69,6 +69,36 @@ export const TimerManagement = () => {
     };
   }, []);
 
+  // Drive the countdown from an authenticated organizer context so DB updates propagate to displays
+  useEffect(() => {
+    const active = timerSessions.find((t) => t.is_active);
+    if (!active || active.status !== 'running') return;
+
+    let intervalId: number | undefined;
+    intervalId = window.setInterval(async () => {
+      const next = Math.max(0, (active.remaining_seconds ?? 0) - 1);
+      try {
+        if (next === 0) {
+          await supabase
+            .from('timer_sessions')
+            .update({ remaining_seconds: 0, status: 'completed', completed_at: new Date().toISOString() })
+            .eq('id', active.id);
+        } else {
+          await supabase
+            .from('timer_sessions')
+            .update({ remaining_seconds: next })
+            .eq('id', active.id);
+        }
+      } catch (e) {
+        console.error('Timer tick update failed', e);
+      }
+    }, 1000);
+
+    return () => {
+      if (intervalId) window.clearInterval(intervalId);
+    };
+  }, [timerSessions]);
+
   const fetchTimerSessions = async () => {
     try {
       const { data, error } = await supabase
