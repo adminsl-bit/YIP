@@ -441,6 +441,14 @@ const SessionDisplay = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-8">
       <BreakingNewsTicker />
+      {!canManagePolls && (
+        <div className="max-w-6xl mx-auto mt-6">
+          <div className="rounded-md border border-border bg-muted/30 text-muted-foreground px-4 py-2 text-sm">
+            Poll controls are disabled on this device. Sign in as Organizer/Admin to manage polls.
+          </div>
+        </div>
+      )}
+      
       
       <div className="max-w-6xl mx-auto space-y-8 mt-12">
         {/* Session Header with Timer */}
@@ -527,7 +535,7 @@ const SessionDisplay = () => {
                         </Badge>
                         {canManagePolls && (
                           <div className="flex items-center gap-3">
-                            <Button size="sm" onClick={() => togglePollActiveById(p.id, p.is_active)}>
+                            <Button size="sm" onClick={() => togglePollActiveById(p.id, p.is_active)} disabled={!canManagePolls} title={canManagePolls ? '' : 'Sign in as Organizer/Admin to control polls'}>
                               {p.is_active ? 'Close Voting' : 'Open Voting'}
                             </Button>
                             <div className="flex items-center gap-2">
@@ -535,6 +543,7 @@ const SessionDisplay = () => {
                                 id={`show-results-switch-${p.id}`}
                                 checked={p.show_results_publicly}
                                 onCheckedChange={() => toggleShowResultsById(p.id, p.show_results_publicly)}
+                                disabled={!canManagePolls}
                               />
                               <label htmlFor={`show-results-switch-${p.id}`} className="text-sm">Show Results</label>
                             </div>
