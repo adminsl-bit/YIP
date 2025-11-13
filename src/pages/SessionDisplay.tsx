@@ -61,6 +61,9 @@ const SessionDisplay = () => {
   const { toast } = useToast();
   const canManagePolls = (profile?.user_type === 'organizer') || hasRole('admin_student');
 
+  // Active sub-item polls to display (may be multiple)
+  const [activeSubItemPolls, setActiveSubItemPolls] = useState<Array<{ poll: Poll; results: Record<string, number> }>>([]);
+
   const fetchPollResults = async (pollId: string) => {
     try {
       const { data: votes, error } = await supabase
@@ -82,6 +85,38 @@ const SessionDisplay = () => {
     }
   };
 
+  const fetchPollWithResults = async (pollId: string): Promise<{ poll: Poll | null; results: Record<string, number> }> => {
+    try {
+      const { data: pollData, error: pollError } = await supabase
+        .from('polls')
+        .select('id, title, is_active, show_results_publicly, options')
+        .eq('id', pollId)
+        .single();
+
+      if (pollError || !pollData) return { poll: null, results: {} };
+
+      let results: Record<string, number> = {};
+      if (pollData.show_results_publicly) {
+        await fetchPollResults(pollData.id);
+        // Re-run here to get latest state set by fetchPollResults is not accessible.
+        // So fetch directly for this poll
+        const { data: votes, error } = await supabase
+          .from('poll_votes')
+          .select('option_id')
+          .eq('poll_id', pollData.id);
+        if (!error && votes) {
+          votes.forEach((v) => {
+            results[v.option_id] = (results[v.option_id] || 0) + 1;
+          });
+        }
+      }
+
+      return { poll: pollData as Poll, results };
+    } catch (e) {
+      console.error('Error fetching poll with results:', e);
+      return { poll: null, results: {} };
+    }
+  };
   useEffect(() => {
     document.title = "Young Indian Parliament - Session Display";
     fetchActiveSession();
@@ -170,46 +205,50 @@ const SessionDisplay = () => {
           setSubItems(subItemsData as any);
         }
 
-        // Check for polls - prioritize active sub-item polls, then parent session poll
-        let pollIdToFetch = null;
-        
-        // First check if any sub-item has an active poll
+        // Check for polls to display
+        // 1) If any sub-items are active and have polls, display ALL of them
+        // 2) Otherwise, fall back to the parent session poll (if any)
+        let subItemPollIds: string[] = [];
         if (subItemsData) {
-          const activeSubItemWithPoll = (subItemsData as any[]).find(
-            (subItem: any) => subItem.is_active && subItem.poll_id
-          );
-          if (activeSubItemWithPoll) {
-            pollIdToFetch = activeSubItemWithPoll.poll_id;
-          }
-        }
-        
-        // If no active sub-item poll, check parent session poll
-        if (!pollIdToFetch && (sessionData as any).poll_id) {
-          pollIdToFetch = (sessionData as any).poll_id;
+          subItemPollIds = (subItemsData as any[])
+            .filter((subItem: any) => subItem.is_active && subItem.poll_id)
+            .map((subItem: any) => subItem.poll_id);
         }
 
-        // Fetch the poll if we found one
-        if (pollIdToFetch) {
+        if (subItemPollIds.length > 0) {
+          // Fetch all active sub-item polls and their results (if public)
+          const fetched = await Promise.all(subItemPollIds.map((id) => fetchPollWithResults(id)));
+          const valid = fetched.filter((f) => !!f.poll) as Array<{ poll: Poll; results: Record<string, number> }>;
+          setActiveSubItemPolls(valid);
+          // Clear parent poll fallback
+          setPoll(null);
+          setPollResults({});
+        } else if ((sessionData as any).poll_id) {
+          // Parent-level poll fallback
           const { data: pollData, error: pollError } = await supabase
             .from('polls')
             .select('id, title, is_active, show_results_publicly, options')
-            .eq('id', pollIdToFetch)
+            .eq('id', (sessionData as any).poll_id)
             .single();
 
           if (!pollError && pollData) {
-            console.log('Poll data fetched for display:', pollData);
             setPoll(pollData as Poll);
-            
-            // Fetch poll results if public results are enabled
+            setActiveSubItemPolls([]);
             if (pollData.show_results_publicly) {
               await fetchPollResults(pollData.id);
+            } else {
+              setPollResults({});
             }
-          } else if (pollError) {
-            console.error('Error fetching poll:', pollError);
+          } else {
+            setPoll(null);
+            setPollResults({});
+            setActiveSubItemPolls([]);
           }
         } else {
+          // No polls to display
           setPoll(null);
           setPollResults({});
+          setActiveSubItemPolls([]);
         }
       } else {
         setActiveSession(null);
@@ -311,9 +350,8 @@ const SessionDisplay = () => {
     return 'bg-primary';
   };
 
-  // Stage controls: open/close voting and show/hide results
-  const togglePollActive = async () => {
-    if (!poll) return;
+  // Stage controls: open/close voting and show/hide results for a specific poll
+  const togglePollActiveById = async (pollId: string, currentActive: boolean) => {
     if (!canManagePolls) {
       toast({ title: 'Not allowed', description: 'You do not have permission to manage polls.', variant: 'destructive' });
       return;
@@ -321,35 +359,49 @@ const SessionDisplay = () => {
     try {
       const { error } = await supabase
         .from('polls')
-        .update({ is_active: !poll.is_active })
-        .eq('id', poll.id);
+        .update({ is_active: !currentActive })
+        .eq('id', pollId);
       if (error) throw error;
-      setPoll({ ...poll, is_active: !poll.is_active });
-      toast({ title: poll.is_active ? 'Voting closed' : 'Voting opened' });
+      // Update local state
+      setPoll((prev) => (prev && prev.id === pollId ? { ...prev, is_active: !currentActive } : prev));
+      setActiveSubItemPolls((prev) => prev.map((p) => p.poll.id === pollId ? { ...p, poll: { ...p.poll, is_active: !currentActive } } : p));
+      toast({ title: currentActive ? 'Voting closed' : 'Voting opened' });
     } catch (err) {
       console.error('Error toggling poll active:', err);
       toast({ title: 'Failed to update poll', description: 'Please try again.', variant: 'destructive' });
     }
   };
 
-  const toggleShowResults = async (checked?: boolean) => {
-    if (!poll) return;
+  const toggleShowResultsById = async (pollId: string, currentValue: boolean) => {
     if (!canManagePolls) {
       toast({ title: 'Not allowed', description: 'You do not have permission to manage poll visibility.', variant: 'destructive' });
       return;
     }
-    const next = typeof checked === 'boolean' ? checked : !poll.show_results_publicly;
+    const next = !currentValue;
     try {
       const { error } = await supabase
         .from('polls')
         .update({ show_results_publicly: next })
-        .eq('id', poll.id);
+        .eq('id', pollId);
       if (error) throw error;
-      setPoll({ ...poll, show_results_publicly: next });
+      // Update local state
+      setPoll((prev) => (prev && prev.id === pollId ? { ...prev, show_results_publicly: next } : prev));
+      setActiveSubItemPolls((prev) => prev.map((p) => p.poll.id === pollId ? { ...p, poll: { ...p.poll, show_results_publicly: next } } : p));
       if (next) {
-        await fetchPollResults(poll.id);
+        // Fetch fresh results for this poll
+        const { data: votes, error: voteErr } = await supabase
+          .from('poll_votes')
+          .select('option_id')
+          .eq('poll_id', pollId);
+        if (!voteErr && votes) {
+          const results: Record<string, number> = {};
+          votes.forEach((v) => { results[v.option_id] = (results[v.option_id] || 0) + 1; });
+          setPollResults((prev) => (poll && poll.id === pollId ? results : prev));
+          setActiveSubItemPolls((prev) => prev.map((p) => p.poll.id === pollId ? { ...p, results } : p));
+        }
       } else {
-        setPollResults({});
+        setPollResults((prev) => (poll && poll.id === pollId ? {} : prev));
+        setActiveSubItemPolls((prev) => prev.map((p) => p.poll.id === pollId ? { ...p, results: {} } : p));
       }
       toast({ title: next ? 'Results shown' : 'Results hidden' });
     } catch (err) {
@@ -453,8 +505,82 @@ const SessionDisplay = () => {
           </CardContent>
         </Card>
 
-        {/* Poll Display - Shows when any sub-item or parent has an active poll */}
-        {poll && (
+        {/* Poll Display - Sub-item polls (one card per active sub-item) */}
+        {activeSubItemPolls.length > 0 && (
+          <div className="space-y-6">
+            {activeSubItemPolls.map(({ poll: p, results }) => {
+              const totalVotes = Object.values(results).reduce((sum, c) => sum + c, 0);
+              return (
+                <Card key={p.id} className="border-2 shadow-xl">
+                  <CardContent className="p-8">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-3">
+                        <BarChart className="h-6 w-6 text-primary" />
+                        <h2 className="text-2xl font-semibold">{p.title}</h2>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Badge 
+                          variant={p.is_active ? 'default' : 'secondary'}
+                          className="text-lg px-4 py-2"
+                        >
+                          {p.is_active ? 'Voting Open' : 'Voting Closed'}
+                        </Badge>
+                        {canManagePolls && (
+                          <div className="flex items-center gap-3">
+                            <Button size="sm" onClick={() => togglePollActiveById(p.id, p.is_active)}>
+                              {p.is_active ? 'Close Voting' : 'Open Voting'}
+                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                id={`show-results-switch-${p.id}`}
+                                checked={p.show_results_publicly}
+                                onCheckedChange={() => toggleShowResultsById(p.id, p.show_results_publicly)}
+                              />
+                              <label htmlFor={`show-results-switch-${p.id}`} className="text-sm">Show Results</label>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {p.is_active && !p.show_results_publicly && (
+                      <p className="text-xl text-center mt-6 text-muted-foreground">
+                        Please cast your votes now
+                      </p>
+                    )}
+
+                    {p.show_results_publicly && p.options && (
+                      <div className="space-y-4 mt-6">
+                        <h3 className="text-xl font-semibold mb-4">Results:</h3>
+                        {p.options.map((option: any) => {
+                          const voteCount = results[option.id] || 0;
+                          const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+                          return (
+                            <div key={option.id} className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-lg font-medium">{option.text}</span>
+                                <span className="text-lg font-semibold">
+                                  {voteCount} vote{voteCount !== 1 ? 's' : ''} ({percentage}%)
+                                </span>
+                              </div>
+                              <Progress value={percentage} className="h-3" />
+                            </div>
+                          );
+                        })}
+                        <div className="text-center text-muted-foreground mt-4">
+                          Total Votes: {totalVotes}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Poll Display - Parent-level fallback */}
+        {activeSubItemPolls.length === 0 && poll && (
           <Card className="border-2 shadow-xl">
             <CardContent className="p-8">
               <div className="flex items-center justify-between mb-6">
@@ -471,16 +597,16 @@ const SessionDisplay = () => {
                   </Badge>
                   {canManagePolls && (
                     <div className="flex items-center gap-3">
-                      <Button size="sm" onClick={togglePollActive}>
+                      <Button size="sm" onClick={() => togglePollActiveById(poll.id, poll.is_active)}>
                         {poll.is_active ? 'Close Voting' : 'Open Voting'}
                       </Button>
                       <div className="flex items-center gap-2">
                         <Switch
-                          id="show-results-switch"
+                          id={`show-results-switch-${poll.id}`}
                           checked={poll.show_results_publicly}
-                          onCheckedChange={toggleShowResults}
+                          onCheckedChange={() => toggleShowResultsById(poll.id, poll.show_results_publicly)}
                         />
-                        <label htmlFor="show-results-switch" className="text-sm">Show Results</label>
+                        <label htmlFor={`show-results-switch-${poll.id}`} className="text-sm">Show Results</label>
                       </div>
                     </div>
                   )}
