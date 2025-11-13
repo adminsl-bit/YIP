@@ -47,13 +47,13 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
   const fetchSubItems = async () => {
     try {
       const { data, error } = await supabase
-        .from('session_sub_items')
+        .from('session_sub_items' as any)
         .select('*')
         .eq('parent_session_id', sessionId)
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      setSubItems(data || []);
+      setSubItems((data as any) || []);
     } catch (error) {
       console.error('Error fetching sub-items:', error);
     }
@@ -73,14 +73,14 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
     try {
       // Deactivate all other sub-items
       await supabase
-        .from('session_sub_items')
+        .from('session_sub_items' as any)
         .update({ is_active: false })
         .eq('parent_session_id', sessionId)
         .neq('id', subItemId);
 
       // Toggle this sub-item
       const { error } = await supabase
-        .from('session_sub_items')
+        .from('session_sub_items' as any)
         .update({ is_active: !currentActive })
         .eq('id', subItemId);
 
@@ -108,7 +108,7 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
     setLoading(true);
     try {
       const { error } = await supabase
-        .from('session_sub_items')
+        .from('session_sub_items' as any)
         .delete()
         .eq('id', subItemId);
 
@@ -152,8 +152,8 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
     try {
       for (let i = 0; i < items.length; i++) {
         await supabase
-          .from('session_sub_items')
-          .update({ sort_order: i })
+          .from('session_sub_items' as any)
+          .update({ sort_order: i } as any)
           .eq('id', items[i].id);
       }
     } catch (error) {

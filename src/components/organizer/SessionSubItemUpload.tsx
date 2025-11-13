@@ -97,7 +97,7 @@ export const SessionSubItemUpload = ({ sessionId, onUploadComplete }: SessionSub
 
       // Insert items into database
       const { error } = await supabase
-        .from('session_sub_items')
+        .from('session_sub_items' as any)
         .insert(items);
 
       if (error) throw error;
