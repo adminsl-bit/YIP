@@ -82,15 +82,32 @@ const TimerDisplay = () => {
 
   const fetchActiveTimer = async () => {
     try {
-      const { data, error } = await supabase
+      // Prefer the currently running active timer
+      const { data: running, error: runningError } = await supabase
         .from('timer_sessions')
         .select('*')
         .eq('is_active', true)
+        .eq('status', 'running')
+        .order('updated_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
-      if (error) throw error;
-      
-      setTimer(data as TimerSession | null);
+      if (!runningError && running) {
+        setTimer(running as TimerSession);
+        return;
+      }
+
+      // Fallback: latest active timer (paused/stopped/completed)
+      const { data: activeAny, error: activeError } = await supabase
+        .from('timer_sessions')
+        .select('*')
+        .eq('is_active', true)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (activeError) throw activeError;
+      setTimer(activeAny as TimerSession | null);
     } catch (error) {
       console.error('Error fetching timer:', error);
       setTimer(null);
