@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -584,7 +584,7 @@ export const SessionManagement = () => {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const SortableSessionItem = ({ item }: { item: SessionItem }) => {
+  const SortableSessionItem = React.memo(({ item }: { item: SessionItem }) => {
     const {
       attributes,
       listeners,
@@ -777,7 +777,20 @@ export const SessionManagement = () => {
     </Accordion>
   </Card>
     );
-  };
+  }, (prevProps, nextProps) => {
+    // Only re-render if the item itself changed, or if its linked timer/poll changed
+    const prevTimer = availableTimers.find(t => t.id === prevProps.item.timer_id);
+    const nextTimer = availableTimers.find(t => t.id === nextProps.item.timer_id);
+    const prevPoll = availablePolls.find(p => p.id === prevProps.item.poll_id);
+    const nextPoll = availablePolls.find(p => p.id === nextProps.item.poll_id);
+    
+    return (
+      JSON.stringify(prevProps.item) === JSON.stringify(nextProps.item) &&
+      JSON.stringify(prevTimer) === JSON.stringify(nextTimer) &&
+      JSON.stringify(prevPoll) === JSON.stringify(nextPoll) &&
+      expandedAccordions[prevProps.item.id] === expandedAccordions[nextProps.item.id]
+    );
+  });
 
   return (
     <div className="space-y-6">
