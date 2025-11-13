@@ -6,6 +6,9 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
+// Use Vite worker plugin to bundle pdf.js worker locally
+// @ts-ignore - Vite worker import type
+import PDFWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?worker&inline';
 
 interface SessionSubItemUploadProps {
   sessionId: string;
@@ -35,6 +38,19 @@ export const SessionSubItemUpload = ({ sessionId, onUploadComplete }: SessionSub
       reader.readAsBinaryString(file);
     });
   };
+  // Initialize pdf.js worker once
+  const ensurePdfWorker = () => {
+    const g: any = pdfjsLib as any;
+    if (g.GlobalWorkerOptions && !g.GlobalWorkerOptions.workerPort) {
+      try {
+        // @ts-ignore create worker instance
+        const workerInstance: Worker = new (PDFWorker as any)();
+        g.GlobalWorkerOptions.workerPort = workerInstance as any;
+      } catch (e) {
+        console.warn('Failed to init pdf.js worker, falling back to no-worker mode', e);
+      }
+    }
+  };
 
   const parsePDF = async (file: File): Promise<string[]> => {
     // Set worker source to use unpkg CDN which works better in sandboxed environments
@@ -44,12 +60,12 @@ export const SessionSubItemUpload = ({ sessionId, onUploadComplete }: SessionSub
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
+          ensurePdfWorker();
           const typedArray = new Uint8Array(e.target?.result as ArrayBuffer);
-          const pdf = await pdfjsLib.getDocument({
+          const pdf = await (pdfjsLib as any).getDocument({
             data: typedArray,
             useWorkerFetch: false,
-            isEvalSupported: false,
-            useSystemFonts: true
+            isEvalSupported: false
           }).promise;
           const textItems: string[] = [];
           
@@ -65,7 +81,23 @@ export const SessionSubItemUpload = ({ sessionId, onUploadComplete }: SessionSub
           resolve(textItems);
         } catch (error) {
           console.error('PDF parsing error:', error);
-          reject(error);
+          // Fallback: try without worker
+          try {
+            const typedArray = new Uint8Array(e.target?.result as ArrayBuffer);
+            const pdf = await (pdfjsLib as any).getDocument({ data: typedArray, isEvalSupported: false }).promise;
+            const textItems: string[] = [];
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              const pageText = textContent.items
+                .map((item: any) => item.str)
+                .filter((str: string) => str.trim().length > 0);
+              textItems.push(...pageText);
+            }
+            resolve(textItems);
+          } catch (err2) {
+            reject(err2);
+          }
         }
       };
       reader.onerror = reject;
