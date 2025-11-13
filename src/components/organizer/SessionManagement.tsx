@@ -622,7 +622,7 @@ export const SessionManagement = () => {
 
                 <div className="flex-1 space-y-3">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <AccordionTrigger className="hover:no-underline py-0 flex-none">
+                    <AccordionTrigger className="hover:no-underline py-0 flex-none [&[data-state=open]>svg]:rotate-180">
                       <h3 className="font-semibold text-lg">{item.title}</h3>
                     </AccordionTrigger>
                     {getBillTypeBadge(item.bill_type)}
@@ -758,7 +758,7 @@ export const SessionManagement = () => {
           </div>
         </CardContent>
 
-        <AccordionContent className="px-4 pb-4 pt-0">
+        <AccordionContent className="px-4 pb-4 pt-0 data-[state=open]:animate-none data-[state=closed]:animate-none">
           <SessionSubItems sessionId={item.id} isSessionActive={item.is_active} />
         </AccordionContent>
       </AccordionItem>
