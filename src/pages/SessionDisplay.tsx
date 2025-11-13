@@ -28,13 +28,37 @@ interface Poll {
   id: string;
   title: string;
   is_active: boolean;
+  show_results_publicly: boolean;
+  options?: Array<{ id: string; text: string }>;
 }
 
 const SessionDisplay = () => {
   const [activeSession, setActiveSession] = useState<SessionItem | null>(null);
   const [timer, setTimer] = useState<TimerSession | null>(null);
   const [poll, setPoll] = useState<Poll | null>(null);
+  const [pollResults, setPollResults] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+
+  const fetchPollResults = async (pollId: string) => {
+    try {
+      const { data: votes, error } = await supabase
+        .from('poll_votes')
+        .select('option_id')
+        .eq('poll_id', pollId);
+
+      if (error) throw error;
+
+      // Count votes per option
+      const results: Record<string, number> = {};
+      votes?.forEach((vote) => {
+        results[vote.option_id] = (results[vote.option_id] || 0) + 1;
+      });
+
+      setPollResults(results);
+    } catch (error) {
+      console.error('Error fetching poll results:', error);
+    }
+  };
 
   useEffect(() => {
     document.title = "Young Indian Parliament - Session Display";
@@ -58,7 +82,15 @@ const SessionDisplay = () => {
         { event: '*', schema: 'public', table: 'polls' },
         (payload) => {
           if (poll && payload.new && (payload.new as any).id === poll.id) {
-            setPoll(payload.new as Poll);
+            const updatedPoll = payload.new as Poll;
+            setPoll(updatedPoll);
+            
+            // Refresh poll results if they're now public
+            if (updatedPoll.show_results_publicly) {
+              fetchPollResults(updatedPoll.id);
+            } else {
+              setPollResults({});
+            }
           }
         }
       )
@@ -101,15 +133,21 @@ const SessionDisplay = () => {
         if ((sessionData as any).poll_id) {
           const { data: pollData, error: pollError } = await supabase
             .from('polls')
-            .select('id, title, is_active')
+            .select('id, title, is_active, show_results_publicly, options')
             .eq('id', (sessionData as any).poll_id)
             .single();
 
           if (!pollError && pollData) {
             setPoll(pollData as Poll);
+            
+            // Fetch poll results if public results are enabled
+            if (pollData.show_results_publicly) {
+              await fetchPollResults(pollData.id);
+            }
           }
         } else {
           setPoll(null);
+          setPollResults({});
         }
       } else {
         setActiveSession(null);
@@ -258,7 +296,7 @@ const SessionDisplay = () => {
         {poll && (
           <Card className="border-2 shadow-xl">
             <CardContent className="p-8">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <BarChart className="h-6 w-6 text-primary" />
                   <h2 className="text-2xl font-semibold">{poll.title}</h2>
@@ -270,10 +308,37 @@ const SessionDisplay = () => {
                   {poll.is_active ? 'Voting Open' : 'Voting Closed'}
                 </Badge>
               </div>
-              {poll.is_active && (
+
+              {poll.is_active && !poll.show_results_publicly && (
                 <p className="text-xl text-center mt-6 text-muted-foreground">
                   Please cast your votes now
                 </p>
+              )}
+
+              {poll.show_results_publicly && poll.options && (
+                <div className="space-y-4 mt-6">
+                  <h3 className="text-xl font-semibold mb-4">Results:</h3>
+                  {poll.options.map((option: any) => {
+                    const voteCount = pollResults[option.id] || 0;
+                    const totalVotes = Object.values(pollResults).reduce((sum, count) => sum + count, 0);
+                    const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+
+                    return (
+                      <div key={option.id} className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-lg font-medium">{option.text}</span>
+                          <span className="text-lg font-semibold">
+                            {voteCount} vote{voteCount !== 1 ? 's' : ''} ({percentage}%)
+                          </span>
+                        </div>
+                        <Progress value={percentage} className="h-3" />
+                      </div>
+                    );
+                  })}
+                  <div className="text-center text-muted-foreground mt-4">
+                    Total Votes: {Object.values(pollResults).reduce((sum, count) => sum + count, 0)}
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
