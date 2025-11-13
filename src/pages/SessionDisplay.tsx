@@ -98,7 +98,7 @@ const SessionDisplay = () => {
         }
       )
       .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'session_sub_items' },
+        { event: '*', schema: 'public', table: 'session_sub_items' as any },
         () => fetchActiveSession()
       )
       .subscribe();
@@ -162,13 +162,13 @@ const SessionDisplay = () => {
 
         // Fetch sub-items for this session
         const { data: subItemsData, error: subItemsError } = await supabase
-          .from('session_sub_items')
+          .from('session_sub_items' as any)
           .select('*')
           .eq('parent_session_id', (sessionData as any).id)
           .order('sort_order', { ascending: true });
 
         if (!subItemsError && subItemsData) {
-          setSubItems(subItemsData as SubItem[]);
+          setSubItems(subItemsData as any);
         }
       } else {
         setActiveSession(null);
