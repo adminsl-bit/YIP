@@ -220,10 +220,39 @@ const SessionDisplay = () => {
           const fetched = await Promise.all(subItemPollIds.map((id) => fetchPollWithResults(id)));
           const valid = (fetched.filter((f) => !!f.poll) as Array<{ poll: Poll; results: Record<string, number> }>)
             .filter(({ poll }) => poll.is_active || poll.show_results_publicly);
-          setActiveSubItemPolls(valid);
-          // Clear parent poll fallback
-          setPoll(null);
-          setPollResults({});
+
+          if (valid.length > 0) {
+            setActiveSubItemPolls(valid);
+            // Clear parent poll fallback
+            setPoll(null);
+            setPollResults({});
+          } else if ((sessionData as any).poll_id) {
+            // No visible sub-item polls - fallback to parent session poll
+            const { data: pollData, error: pollError } = await supabase
+              .from('polls')
+              .select('id, title, is_active, show_results_publicly, options')
+              .eq('id', (sessionData as any).poll_id)
+              .single();
+
+            if (!pollError && pollData && (pollData.is_active || pollData.show_results_publicly)) {
+              setPoll(pollData as Poll);
+              setActiveSubItemPolls([]);
+              if (pollData.show_results_publicly) {
+                await fetchPollResults(pollData.id);
+              } else {
+                setPollResults({});
+              }
+            } else {
+              setPoll(null);
+              setPollResults({});
+              setActiveSubItemPolls([]);
+            }
+          } else {
+            // No visible sub-item polls and no parent poll
+            setActiveSubItemPolls([]);
+            setPoll(null);
+            setPollResults({});
+          }
         } else if ((sessionData as any).poll_id) {
           // Parent-level poll fallback
           const { data: pollData, error: pollError } = await supabase
@@ -473,13 +502,6 @@ const SessionDisplay = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-8">
       <BreakingNewsTicker />
-      {!canManagePolls && (
-        <div className="max-w-6xl mx-auto mt-6">
-          <div className="rounded-md border border-border bg-muted/30 text-muted-foreground px-4 py-2 text-sm">
-            Poll controls are disabled on this device. Sign in as Organizer/Admin to manage polls.
-          </div>
-        </div>
-      )}
       
       
       <div className="max-w-6xl mx-auto space-y-8 mt-12">
