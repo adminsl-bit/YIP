@@ -584,7 +584,7 @@ export const SessionManagement = () => {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const SortableSessionItem = React.memo(({ item }: { item: SessionItem }) => {
+  const SortableSessionItem = ({ item }: { item: SessionItem }) => {
     const {
       attributes,
       listeners,
@@ -770,27 +770,14 @@ export const SessionManagement = () => {
           </div>
         </CardContent>
 
-        <AccordionContent className="px-4 pb-4 pt-0 data-[state=open]:animate-none data-[state=closed]:animate-none">
+        <AccordionContent forceMount className="px-4 pb-4 pt-0 data-[state=open]:animate-none data-[state=closed]:animate-none">
           <SessionSubItems sessionId={item.id} isSessionActive={item.is_active} />
         </AccordionContent>
       </AccordionItem>
-    </Accordion>
-  </Card>
-    );
-  }, (prevProps, nextProps) => {
-    // Only re-render if the item itself changed, or if its linked timer/poll changed
-    const prevTimer = availableTimers.find(t => t.id === prevProps.item.timer_id);
-    const nextTimer = availableTimers.find(t => t.id === nextProps.item.timer_id);
-    const prevPoll = availablePolls.find(p => p.id === prevProps.item.poll_id);
-    const nextPoll = availablePolls.find(p => p.id === nextProps.item.poll_id);
-    
-    return (
-      JSON.stringify(prevProps.item) === JSON.stringify(nextProps.item) &&
-      JSON.stringify(prevTimer) === JSON.stringify(nextTimer) &&
-      JSON.stringify(prevPoll) === JSON.stringify(nextPoll) &&
-      expandedAccordions[prevProps.item.id] === expandedAccordions[nextProps.item.id]
-    );
-  });
+      </Accordion>
+    </Card>
+  );
+  };
 
   return (
     <div className="space-y-6">
