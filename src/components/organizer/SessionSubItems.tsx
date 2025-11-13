@@ -229,6 +229,10 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
 
       if (error) throw error;
 
+      // Explicitly refetch to update UI
+      await fetchSubItems();
+      await checkGlobalVisibility();
+
       toast({
         title: "Success",
         description: "Sub-item added",
