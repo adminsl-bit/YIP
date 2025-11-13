@@ -218,7 +218,8 @@ const SessionDisplay = () => {
         if (subItemPollIds.length > 0) {
           // Fetch all active sub-item polls and their results (if public)
           const fetched = await Promise.all(subItemPollIds.map((id) => fetchPollWithResults(id)));
-          const valid = fetched.filter((f) => !!f.poll) as Array<{ poll: Poll; results: Record<string, number> }>;
+          const valid = (fetched.filter((f) => !!f.poll) as Array<{ poll: Poll; results: Record<string, number> }>)
+            .filter(({ poll }) => poll.is_active || poll.show_results_publicly);
           setActiveSubItemPolls(valid);
           // Clear parent poll fallback
           setPoll(null);
@@ -232,12 +233,18 @@ const SessionDisplay = () => {
             .single();
 
           if (!pollError && pollData) {
-            setPoll(pollData as Poll);
-            setActiveSubItemPolls([]);
-            if (pollData.show_results_publicly) {
-              await fetchPollResults(pollData.id);
+            if (pollData.is_active || pollData.show_results_publicly) {
+              setPoll(pollData as Poll);
+              setActiveSubItemPolls([]);
+              if (pollData.show_results_publicly) {
+                await fetchPollResults(pollData.id);
+              } else {
+                setPollResults({});
+              }
             } else {
+              setPoll(null);
               setPollResults({});
+              setActiveSubItemPolls([]);
             }
           } else {
             setPoll(null);
@@ -362,9 +369,18 @@ const SessionDisplay = () => {
         .update({ is_active: !currentActive })
         .eq('id', pollId);
       if (error) throw error;
-      // Update local state
-      setPoll((prev) => (prev && prev.id === pollId ? { ...prev, is_active: !currentActive } : prev));
-      setActiveSubItemPolls((prev) => prev.map((p) => p.poll.id === pollId ? { ...p, poll: { ...p.poll, is_active: !currentActive } } : p));
+      // Update local state and hide card if both flags are false
+      setPoll((prev) => {
+        if (prev && prev.id === pollId) {
+          const updated = { ...prev, is_active: !currentActive };
+          return (updated.is_active || updated.show_results_publicly) ? updated : null;
+        }
+        return prev;
+      });
+      setActiveSubItemPolls((prev) => {
+        const updated = prev.map((p) => p.poll.id === pollId ? { ...p, poll: { ...p.poll, is_active: !currentActive } } : p);
+        return updated.filter((p) => p.poll.is_active || p.poll.show_results_publicly);
+      });
       toast({ title: currentActive ? 'Voting closed' : 'Voting opened' });
     } catch (err) {
       console.error('Error toggling poll active:', err);
@@ -384,9 +400,25 @@ const SessionDisplay = () => {
         .update({ show_results_publicly: next })
         .eq('id', pollId);
       if (error) throw error;
-      // Update local state
-      setPoll((prev) => (prev && prev.id === pollId ? { ...prev, show_results_publicly: next } : prev));
-      setActiveSubItemPolls((prev) => prev.map((p) => p.poll.id === pollId ? { ...p, poll: { ...p.poll, show_results_publicly: next } } : p));
+      // Update local state and hide card if both flags are false
+      setPoll((prev) => {
+        if (prev && prev.id === pollId) {
+          const updated = { ...prev, show_results_publicly: next };
+          return (updated.is_active || updated.show_results_publicly) ? updated : null;
+        }
+        return prev;
+      });
+      setActiveSubItemPolls((prev) => {
+        // Update visibility flag
+        let updated = prev.map((p) => p.poll.id === pollId ? { ...p, poll: { ...p.poll, show_results_publicly: next } } : p);
+        if (next) {
+          // Fetch fresh results for this poll
+          // Note: We do not await here because we still filter below. We'll compute results separately.
+        }
+        // Filter out polls that are neither active nor showing results
+        updated = updated.filter((p) => p.poll.is_active || p.poll.show_results_publicly);
+        return updated;
+      });
       if (next) {
         // Fetch fresh results for this poll
         const { data: votes, error: voteErr } = await supabase
