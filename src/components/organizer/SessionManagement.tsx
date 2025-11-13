@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Calendar, Plus, GripVertical, Play, Pause, Square, CheckCircle, BarChart, Clock, ExternalLink, Eye } from "lucide-react";
+import { Calendar, Plus, GripVertical, Play, Pause, Square, CheckCircle, BarChart, Clock, ExternalLink, Eye, Pencil, Trash2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -74,6 +74,7 @@ export const SessionManagement = () => {
   const [availablePolls, setAvailablePolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -161,28 +162,51 @@ export const SessionManagement = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('session_items' as any)
-        .insert([{
-          title,
-          bill_type: billType as any,
-          description: description || null,
-          timer_id: linkedTimerId || null,
-          poll_id: linkedPollId || null,
-          sort_order: sessionItems.length,
-          status: 'pending',
-          is_active: false,
-          created_by: user.id,
-        } as any]);
+      if (editingSessionId) {
+        // Update existing session
+        const { error } = await supabase
+          .from('session_items' as any)
+          .update({
+            title,
+            bill_type: billType as any,
+            description: description || null,
+            timer_id: linkedTimerId || null,
+            poll_id: linkedPollId || null,
+          })
+          .eq('id', editingSessionId);
 
-      if (error) throw error;
+        if (error) throw error;
 
-      toast({
-        title: "Success",
-        description: "Session item created successfully",
-      });
+        toast({
+          title: "Success",
+          description: "Session item updated successfully",
+        });
+      } else {
+        // Create new session
+        const { error } = await supabase
+          .from('session_items' as any)
+          .insert([{
+            title,
+            bill_type: billType as any,
+            description: description || null,
+            timer_id: linkedTimerId || null,
+            poll_id: linkedPollId || null,
+            sort_order: sessionItems.length,
+            status: 'pending',
+            is_active: false,
+            created_by: user.id,
+          } as any]);
+
+        if (error) throw error;
+
+        toast({
+          title: "Success",
+          description: "Session item created successfully",
+        });
+      }
 
       setShowCreateDialog(false);
+      setEditingSessionId(null);
       setTitle("");
       setBillType("government_bill");
       setDescription("");
@@ -190,10 +214,10 @@ export const SessionManagement = () => {
       setLinkedPollId("");
       fetchSessionItems();
     } catch (error) {
-      console.error('Error creating session:', error);
+      console.error('Error saving session:', error);
       toast({
         title: "Error",
-        description: "Failed to create session item",
+        description: `Failed to ${editingSessionId ? 'update' : 'create'} session item`,
         variant: "destructive",
       });
     } finally {
@@ -337,6 +361,46 @@ export const SessionManagement = () => {
       toast({
         title: "Error",
         description: "Failed to toggle poll results visibility",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditSession = (session: SessionItem) => {
+    setEditingSessionId(session.id);
+    setTitle(session.title);
+    setBillType(session.bill_type);
+    setDescription(session.description || '');
+    setLinkedTimerId(session.timer_id || '');
+    setLinkedPollId(session.poll_id || '');
+    setShowCreateDialog(true);
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    if (!confirm('Are you sure you want to delete this session item?')) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('session_items' as any)
+        .delete()
+        .eq('id', sessionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Session item deleted successfully",
+      });
+
+      fetchSessionItems();
+    } catch (error) {
+      console.error('Error deleting session:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete session item",
         variant: "destructive",
       });
     } finally {
@@ -552,6 +616,25 @@ export const SessionManagement = () => {
             </div>
 
             <div className="flex flex-col gap-2">
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleEditSession(item)}
+                  disabled={loading}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => handleDeleteSession(item.id)}
+                  disabled={loading}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+              
               <Button
                 size="sm"
                 variant={item.is_active ? "default" : "outline"}
@@ -596,7 +679,17 @@ export const SessionManagement = () => {
               <ExternalLink className="h-4 w-4 mr-2" />
               Open Display
             </Button>
-            <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+            <Dialog open={showCreateDialog} onOpenChange={(open) => {
+              setShowCreateDialog(open);
+              if (!open) {
+                setEditingSessionId(null);
+                setTitle("");
+                setBillType("government_bill");
+                setDescription("");
+                setLinkedTimerId("");
+                setLinkedPollId("");
+              }
+            }}>
               <DialogTrigger asChild>
                 <Button size="sm">
                   <Plus className="h-4 w-4 mr-2" />
@@ -605,9 +698,9 @@ export const SessionManagement = () => {
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
-                  <DialogTitle>Create Session Item</DialogTitle>
+                  <DialogTitle>{editingSessionId ? 'Edit' : 'Create'} Session Item</DialogTitle>
                   <DialogDescription>
-                    Add a new agenda item with optional timer and poll
+                    {editingSessionId ? 'Update the' : 'Add a new'} agenda item with optional timer and poll
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -689,7 +782,7 @@ export const SessionManagement = () => {
                     Cancel
                   </Button>
                   <Button onClick={handleCreateSession} disabled={loading}>
-                    Create Session Item
+                    {editingSessionId ? 'Update' : 'Create'} Session Item
                   </Button>
                 </DialogFooter>
               </DialogContent>
