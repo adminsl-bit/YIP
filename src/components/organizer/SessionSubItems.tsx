@@ -60,7 +60,10 @@ interface SessionSubItemsProps {
 
 export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsProps) => {
   const [subItems, setSubItems] = useState<SubItem[]>([]);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem(`subitems_expanded_${sessionId}`) === '1';
+  });
   const [loading, setLoading] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [newItemTitle, setNewItemTitle] = useState("");
@@ -99,6 +102,14 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
       subscription.unsubscribe();
     };
   }, [sessionId]);
+
+  useEffect(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`subitems_expanded_${sessionId}`, expanded ? '1' : '0');
+      }
+    } catch {}
+  }, [expanded, sessionId]);
 
   const checkGlobalVisibility = async () => {
     try {
