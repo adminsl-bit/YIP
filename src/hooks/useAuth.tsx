@@ -276,7 +276,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // Always show success and navigate
       toast.success('Signed out successfully');
-      navigate('/');
+      navigate('/login');
       
     } catch (error) {
       // If any error occurs, ensure we still clear state and navigate
