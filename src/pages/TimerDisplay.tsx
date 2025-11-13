@@ -48,8 +48,30 @@ const TimerDisplay = () => {
     };
   }, []);
 
-  // Stage display is a passive viewer - it only listens to database updates
-  // The organizer console (TimerManagement) drives the countdown to prevent conflicts
+  // Local countdown for smooth display - syncs with database updates
+  useEffect(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (!timer || timer.status !== 'running') return;
+
+    // Update display every second for smooth countdown
+    intervalRef.current = setInterval(() => {
+      setTimer(prev => {
+        if (!prev || prev.status !== 'running') return prev;
+        const newRemaining = Math.max(0, prev.remaining_seconds - 1);
+        return { ...prev, remaining_seconds: newRemaining };
+      });
+    }, 1000);
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [timer?.id, timer?.status]);
 
   // Bell sound effect when timer reaches 0
   useEffect(() => {
