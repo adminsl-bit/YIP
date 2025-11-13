@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -107,12 +107,36 @@ const SessionDisplay = () => {
     };
   }, []);
 
+  // Smooth local tick for the stage timer display
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+
+    if (!timer || timer.status !== 'running') return;
+
+    intervalRef.current = setInterval(() => {
+      setTimer(prev => {
+        if (!prev || prev.status !== 'running') return prev;
+        const newRemaining = Math.max(0, prev.remaining_seconds - 1);
+        return { ...prev, remaining_seconds: newRemaining } as TimerSession;
+      });
+    }, 1000);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [timer?.id, timer?.status]);
   const fetchActiveSession = async () => {
     try {
       const { data: sessionData, error: sessionError } = await supabase
         .from('session_items' as any)
         .select('*')
         .eq('is_active', true)
+        .order('updated_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (sessionError) throw sessionError;
