@@ -23,7 +23,7 @@ const TimerDisplay = () => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    document.title = "Young Indian Parliament";
+    document.title = "Young Indian Parliament - Timer Display";
     fetchActiveTimer();
 
     // Initialize audio
@@ -47,6 +47,56 @@ const TimerDisplay = () => {
       }
     };
   }, []);
+
+  // Client-side countdown when timer is running
+  useEffect(() => {
+    if (timer?.status === 'running') {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+
+      intervalRef.current = setInterval(() => {
+        setTimer(prev => {
+          if (!prev || prev.status !== 'running') return prev;
+          
+          const newRemaining = Math.max(0, prev.remaining_seconds - 1);
+          
+          // Update database every second
+          if (newRemaining >= 0) {
+            supabase
+              .from('timer_sessions')
+              .update({ remaining_seconds: newRemaining })
+              .eq('id', prev.id)
+              .then();
+          }
+          
+          if (newRemaining === 0) {
+            supabase
+              .from('timer_sessions')
+              .update({ 
+                remaining_seconds: 0, 
+                status: 'completed',
+                completed_at: new Date().toISOString()
+              })
+              .eq('id', prev.id)
+              .then();
+          }
+
+          return { ...prev, remaining_seconds: newRemaining };
+        });
+      }, 1000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [timer?.status, timer?.id]);
 
   // Display component should not run its own countdown - rely on TimerControl component for time management
   // This prevents conflicts between multiple timer instances
@@ -86,18 +136,11 @@ const TimerDisplay = () => {
         .from('timer_sessions')
         .select('*')
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
-      if (error) {
-        if (error.code === 'PGRST116') {
-          // No active timer found
-          setTimer(null);
-        } else {
-          throw error;
-        }
-      } else {
-        setTimer(data as TimerSession);
-      }
+      if (error) throw error;
+      
+      setTimer(data as TimerSession | null);
     } catch (error) {
       console.error('Error fetching timer:', error);
       setTimer(null);
