@@ -40,8 +40,6 @@ export const TimerControl = () => {
   const [seconds, setSeconds] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Helper function to convert H:M:S to total seconds
   const getDurationInSeconds = () => {
@@ -60,8 +58,6 @@ export const TimerControl = () => {
 
   useEffect(() => {
     fetchActiveTimer();
-    // Create audio element for alarm
-    audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhFjiX2+m9m1MfO0sj');
     
     // Set up real-time subscription to detect timer changes
     const subscription = supabase
@@ -74,19 +70,12 @@ export const TimerControl = () => {
 
     return () => {
       subscription.unsubscribe();
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
     };
   }, []);
 
-  useEffect(() => {
-    if (currentTimer?.status === 'running') {
-      startInterval();
-    } else {
-      stopInterval();
-    }
-  }, [currentTimer?.status]);
+  // TimerControl is now just a control interface
+  // The countdown is driven by TimerManagement (organizer console)
+  // This component only sends start/stop/pause commands
 
   const fetchActiveTimer = async () => {
     try {
@@ -111,49 +100,6 @@ export const TimerControl = () => {
     } catch (error) {
       console.error('Error fetching timer:', error);
       setCurrentTimer(null);
-    }
-  };
-
-  const startInterval = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
-
-    intervalRef.current = setInterval(() => {
-      setCurrentTimer(prev => {
-        if (!prev || prev.status !== 'running') return prev;
-
-        const newRemaining = Math.max(0, prev.remaining_seconds - 1);
-        
-        if (newRemaining === 0) {
-          // Timer completed
-          playAlarm();
-          updateTimerInDB(prev.id, {
-            remaining_seconds: 0,
-            status: 'completed',
-            completed_at: new Date().toISOString()
-          });
-          return { ...prev, remaining_seconds: 0, status: 'completed' as const };
-        }
-
-        // Update in database every second to keep stage view in sync
-        updateTimerInDB(prev.id, { remaining_seconds: newRemaining });
-
-        return { ...prev, remaining_seconds: newRemaining };
-      });
-    }, 1000);
-  };
-
-  const stopInterval = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  };
-
-  const playAlarm = () => {
-    if (audioRef.current) {
-      audioRef.current.play().catch(console.error);
     }
   };
 
