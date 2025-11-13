@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Trash2, ChevronUp, ChevronDown, Plus, Eye, EyeOff } from "lucide-react";
+import { Trash2, ChevronUp, ChevronDown, Plus, Eye, EyeOff, Vote, Link2, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { SessionSubItemUpload } from "./SessionSubItemUpload";
 import {
@@ -28,6 +28,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SubItem {
   id: string;
@@ -37,6 +44,12 @@ interface SubItem {
   content: string | null;
   sort_order: number;
   poll_id: string | null;
+  is_active: boolean;
+}
+
+interface Poll {
+  id: string;
+  title: string;
   is_active: boolean;
 }
 
@@ -54,10 +67,16 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
   const [newItemDescription, setNewItemDescription] = useState("");
   const [newItemContent, setNewItemContent] = useState("");
   const [globalVisibility, setGlobalVisibility] = useState(false);
+  const [availablePolls, setAvailablePolls] = useState<Poll[]>([]);
+  const [showPollDialog, setShowPollDialog] = useState(false);
+  const [selectedSubItemId, setSelectedSubItemId] = useState<string | null>(null);
+  const [newPollTitle, setNewPollTitle] = useState("");
+  const [pollOptions, setPollOptions] = useState<string[]>(["Yes", "No", "Abstain"]);
 
   useEffect(() => {
     fetchSubItems();
     checkGlobalVisibility();
+    fetchAvailablePolls();
 
     const subscription = supabase
       .channel(`session_sub_items_${sessionId}`)
@@ -66,6 +85,12 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
         () => {
           fetchSubItems();
           checkGlobalVisibility();
+        }
+      )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'polls' },
+        () => {
+          fetchAvailablePolls();
         }
       )
       .subscribe();
@@ -285,6 +310,149 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
     }
   };
 
+  const fetchAvailablePolls = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('polls')
+        .select('id, title, is_active')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAvailablePolls(data || []);
+    } catch (error) {
+      console.error('Error fetching polls:', error);
+    }
+  };
+
+  const handleLinkExistingPoll = async (pollId: string) => {
+    if (!selectedSubItemId) return;
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('session_sub_items' as any)
+        .update({ poll_id: pollId } as any)
+        .eq('id', selectedSubItemId);
+
+      if (error) throw error;
+
+      await fetchSubItems();
+      toast({
+        title: "Success",
+        description: "Poll linked to sub-item",
+      });
+      setShowPollDialog(false);
+      setSelectedSubItemId(null);
+    } catch (error) {
+      console.error('Error linking poll:', error);
+      toast({
+        title: "Error",
+        description: "Failed to link poll",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateAndLinkPoll = async () => {
+    if (!selectedSubItemId || !newPollTitle.trim()) {
+      toast({
+        title: "Error",
+        description: "Poll title is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Create the poll
+      const { data: newPoll, error: pollError } = await supabase
+        .from('polls')
+        .insert({
+          title: newPollTitle.trim(),
+          options: pollOptions.map((opt, index) => ({
+            id: `option_${index + 1}`,
+            text: opt.trim()
+          })),
+          is_active: false,
+          show_results_publicly: false,
+          created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (pollError) throw pollError;
+
+      // Link the poll to the sub-item
+      const { error: linkError } = await supabase
+        .from('session_sub_items' as any)
+        .update({ poll_id: newPoll.id } as any)
+        .eq('id', selectedSubItemId);
+
+      if (linkError) throw linkError;
+
+      await fetchSubItems();
+      await fetchAvailablePolls();
+      
+      toast({
+        title: "Success",
+        description: "Poll created and linked to sub-item",
+      });
+      
+      setShowPollDialog(false);
+      setSelectedSubItemId(null);
+      setNewPollTitle("");
+      setPollOptions(["Yes", "No", "Abstain"]);
+    } catch (error) {
+      console.error('Error creating poll:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create poll",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnlinkPoll = async (subItemId: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('session_sub_items' as any)
+        .update({ poll_id: null } as any)
+        .eq('id', subItemId);
+
+      if (error) throw error;
+
+      await fetchSubItems();
+      toast({
+        title: "Success",
+        description: "Poll unlinked from sub-item",
+      });
+    } catch (error) {
+      console.error('Error unlinking poll:', error);
+      toast({
+        title: "Error",
+        description: "Failed to unlink poll",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getPollTitle = (pollId: string | null) => {
+    if (!pollId) return null;
+    const poll = availablePolls.find(p => p.id === pollId);
+    return poll?.title || "Unknown Poll";
+  };
+
   if (subItems.length === 0) {
     return (
       <div className="mt-2 space-y-2">
@@ -453,13 +621,52 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
               <CardContent className="p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
-                    <span className="text-sm font-medium">{item.title}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{item.title}</span>
+                      {item.poll_id && (
+                        <Badge variant="secondary" className="text-xs">
+                          <Vote className="h-3 w-3 mr-1" />
+                          Poll Linked
+                        </Badge>
+                      )}
+                    </div>
                     {item.description && (
                       <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
+                    )}
+                    {item.poll_id && (
+                      <p className="text-xs text-primary mt-1">Poll: {getPollTitle(item.poll_id)}</p>
                     )}
                   </div>
 
                   <div className="flex items-center gap-1">
+                    {item.poll_id ? (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleUnlinkPoll(item.id)}
+                        disabled={loading}
+                        className="h-7 px-2"
+                        title="Unlink poll"
+                      >
+                        <X className="h-3 w-3 mr-1" />
+                        <span className="text-xs">Unlink</span>
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedSubItemId(item.id);
+                          setShowPollDialog(true);
+                        }}
+                        disabled={loading}
+                        className="h-7 px-2"
+                        title="Link/Create poll"
+                      >
+                        <Link2 className="h-3 w-3 mr-1" />
+                        <span className="text-xs">Poll</span>
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="ghost"
@@ -509,6 +716,111 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
           ))}
         </div>
       )}
+
+      {/* Poll Management Dialog */}
+      <Dialog open={showPollDialog} onOpenChange={setShowPollDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Link or Create Poll</DialogTitle>
+            <DialogDescription>
+              Link an existing poll or create a new one for this sub-item
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {/* Link Existing Poll */}
+            <div className="space-y-3">
+              <h3 className="text-sm font-semibold">Link Existing Poll</h3>
+              <Select onValueChange={handleLinkExistingPoll} disabled={loading}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a poll to link" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availablePolls.map((poll) => (
+                    <SelectItem key={poll.id} value={poll.id}>
+                      {poll.title} {poll.is_active && "(Active)"}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">Or</span>
+              </div>
+            </div>
+
+            {/* Create New Poll */}
+            <div className="space-y-4">
+              <h3 className="text-sm font-semibold">Create New Poll</h3>
+              <div>
+                <label className="text-sm font-medium">Poll Question *</label>
+                <Input
+                  value={newPollTitle}
+                  onChange={(e) => setNewPollTitle(e.target.value)}
+                  placeholder="Enter poll question"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Poll Options</label>
+                <div className="space-y-2">
+                  {pollOptions.map((option, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <Input
+                        value={option}
+                        onChange={(e) => {
+                          const newOptions = [...pollOptions];
+                          newOptions[idx] = e.target.value;
+                          setPollOptions(newOptions);
+                        }}
+                        placeholder={`Option ${idx + 1}`}
+                      />
+                      {pollOptions.length > 2 && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setPollOptions(pollOptions.filter((_, i) => i !== idx));
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPollOptions([...pollOptions, ""])}
+                    disabled={pollOptions.length >= 6}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Option
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowPollDialog(false);
+              setSelectedSubItemId(null);
+              setNewPollTitle("");
+              setPollOptions(["Yes", "No", "Abstain"]);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreateAndLinkPoll} disabled={loading || !newPollTitle.trim()}>
+              Create & Link Poll
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
