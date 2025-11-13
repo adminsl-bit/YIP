@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Trash2, ChevronUp, ChevronDown, Plus, Eye, EyeOff, Vote, Link2, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { SessionSubItemUpload } from "./SessionSubItemUpload";
@@ -51,7 +52,115 @@ interface Poll {
   id: string;
   title: string;
   is_active: boolean;
+  show_results_publicly?: boolean;
 }
+
+// Helper component for inline poll controls
+const PollControls = ({ pollId }: { pollId: string }) => {
+  const [poll, setPoll] = useState<Poll | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchPoll();
+    
+    const subscription = supabase
+      .channel(`poll_${pollId}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'polls', filter: `id=eq.${pollId}` },
+        () => fetchPoll()
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [pollId]);
+
+  const fetchPoll = async () => {
+    const { data } = await supabase
+      .from('polls')
+      .select('id, title, is_active, show_results_publicly')
+      .eq('id', pollId)
+      .single();
+    
+    if (data) setPoll(data as Poll);
+  };
+
+  const handleToggleVoting = async () => {
+    if (!poll) return;
+    setLoading(true);
+    
+    const { error } = await supabase
+      .from('polls')
+      .update({ is_active: !poll.is_active })
+      .eq('id', pollId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to toggle poll voting",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: poll.is_active ? "Voting closed" : "Voting opened",
+      });
+    }
+    
+    setLoading(false);
+  };
+
+  const handleToggleResults = async () => {
+    if (!poll) return;
+    setLoading(true);
+    
+    const { error } = await supabase
+      .from('polls')
+      .update({ show_results_publicly: !poll.show_results_publicly })
+      .eq('id', pollId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to toggle results visibility",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: poll.show_results_publicly ? "Results hidden" : "Results visible",
+      });
+    }
+    
+    setLoading(false);
+  };
+
+  if (!poll) return null;
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      <Button
+        size="sm"
+        variant={poll.is_active ? "default" : "outline"}
+        onClick={handleToggleVoting}
+        disabled={loading}
+        className="h-6 text-xs"
+      >
+        {poll.is_active ? 'Close Voting' : 'Open Voting'}
+      </Button>
+      <div className="flex items-center gap-1.5">
+        <span className="text-xs text-muted-foreground">Show Results</span>
+        <Switch
+          checked={poll.show_results_publicly || false}
+          onCheckedChange={handleToggleResults}
+          disabled={loading}
+          className="scale-75"
+        />
+      </div>
+    </div>
+  );
+};
 
 interface SessionSubItemsProps {
   sessionId: string;
@@ -632,8 +741,13 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
               <CardContent className="p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium">{item.title}</span>
+                      {item.is_active && (
+                        <Badge variant="default" className="text-xs">
+                          Active on Display
+                        </Badge>
+                      )}
                       {item.poll_id && (
                         <Badge variant="secondary" className="text-xs">
                           <Vote className="h-3 w-3 mr-1" />
@@ -645,7 +759,10 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
                       <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
                     )}
                     {item.poll_id && (
-                      <p className="text-xs text-primary mt-1">Poll: {getPollTitle(item.poll_id)}</p>
+                      <div className="mt-2 space-y-1">
+                        <p className="text-xs text-primary">Poll: {getPollTitle(item.poll_id)}</p>
+                        <PollControls pollId={item.poll_id} />
+                      </div>
                     )}
                   </div>
 
