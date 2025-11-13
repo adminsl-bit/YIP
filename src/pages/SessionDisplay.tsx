@@ -48,6 +48,10 @@ const SessionDisplay = () => {
   const [pollResults, setPollResults] = useState<Record<string, number>>({});
   const [subItems, setSubItems] = useState<SubItem[]>([]);
   const [loading, setLoading] = useState(true);
+  // Display-only countdown that mirrors DB remaining_seconds
+  const [displaySeconds, setDisplaySeconds] = useState<number | null>(null);
+  const localTickRef = useRef<NodeJS.Timeout | null>(null);
+  const timerChannelRef = useRef<any>(null);
 
   const fetchPollResults = async (pollId: string) => {
     try {
@@ -135,9 +139,11 @@ const SessionDisplay = () => {
 
           if (!timerError && timerData) {
             setTimer(timerData as TimerSession);
+            setDisplaySeconds((timerData as TimerSession).remaining_seconds);
           }
         } else {
           setTimer(null);
+          setDisplaySeconds(null);
         }
 
         // Fetch linked poll if exists
@@ -188,6 +194,84 @@ const SessionDisplay = () => {
     }
   };
 
+  // Fetch a single timer row reliably and refresh local display seconds
+  const fetchTimerById = async (id: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('timer_sessions')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (!error && data) {
+        setTimer(data as unknown as TimerSession);
+        setDisplaySeconds((data as any).remaining_seconds);
+      }
+    } catch (e) {
+      console.error('Error fetching timer by id:', e);
+    }
+  };
+
+  // Subscribe to just the active timer row for precise updates
+  useEffect(() => {
+    if (timerChannelRef.current) {
+      supabase.removeChannel(timerChannelRef.current);
+      timerChannelRef.current = null;
+    }
+
+    if (!timer?.id) return;
+
+    const ch = supabase
+      .channel(`session_timer_${timer.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'timer_sessions', filter: `id=eq.${timer.id}` },
+        () => {
+          console.log('[SessionDisplay] timer row changed, refetching single timer...');
+          fetchTimerById(timer.id!);
+        }
+      )
+      .subscribe();
+
+    timerChannelRef.current = ch;
+
+    return () => {
+      if (timerChannelRef.current) {
+        supabase.removeChannel(timerChannelRef.current);
+        timerChannelRef.current = null;
+      }
+    };
+  }, [timer?.id]);
+
+  // Local, display-only smooth countdown mirroring DB seconds
+  useEffect(() => {
+    if (localTickRef.current) {
+      clearInterval(localTickRef.current);
+      localTickRef.current = null;
+    }
+
+    if (!timer || timer.status !== 'running') return;
+
+    if (displaySeconds === null) {
+      setDisplaySeconds(timer.remaining_seconds);
+    }
+
+    localTickRef.current = setInterval(() => {
+      setDisplaySeconds(prev => (prev === null ? prev : Math.max(0, prev - 1)));
+    }, 1000);
+
+    return () => {
+      if (localTickRef.current) clearInterval(localTickRef.current);
+    };
+  }, [timer?.id, timer?.status]);
+
+  // Fallback poll in case a realtime event is missed
+  useEffect(() => {
+    if (!timer?.id || timer.status !== 'running') return;
+    const id = setInterval(() => fetchTimerById(timer.id!), 5000);
+    return () => clearInterval(id);
+  }, [timer?.id, timer?.status]);
+
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -208,12 +292,14 @@ const SessionDisplay = () => {
 
   const getProgressValue = () => {
     if (!timer || timer.duration_seconds === 0) return 0;
-    return ((timer.duration_seconds - timer.remaining_seconds) / timer.duration_seconds) * 100;
+    const remaining = displaySeconds ?? timer.remaining_seconds;
+    return ((timer.duration_seconds - remaining) / timer.duration_seconds) * 100;
   };
 
   const getTimerColor = () => {
     if (!timer) return 'bg-primary';
-    const percentage = (timer.remaining_seconds / timer.duration_seconds) * 100;
+    const remaining = displaySeconds ?? timer.remaining_seconds;
+    const percentage = (remaining / timer.duration_seconds) * 100;
     if (percentage <= 10) return 'bg-destructive';
     if (percentage <= 25) return 'bg-orange-500';
     return 'bg-primary';
@@ -305,9 +391,9 @@ const SessionDisplay = () => {
 
                 <div className="text-center py-8">
                   <div className={`text-8xl font-mono font-bold ${
-                    timer.remaining_seconds <= timer.duration_seconds * 0.1 ? 'text-destructive animate-pulse' : ''
+                    (displaySeconds ?? timer.remaining_seconds) <= timer.duration_seconds * 0.1 ? 'text-destructive animate-pulse' : ''
                   }`}>
-                    {formatTime(timer.remaining_seconds)}
+                    {formatTime(displaySeconds ?? timer.remaining_seconds)}
                   </div>
                   <p className="text-lg text-muted-foreground mt-4">
                     of {formatTime(timer.duration_seconds)}
