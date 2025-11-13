@@ -2,3 +2,21 @@ project_id = "ybxktwmpxdnpkfeewrpe"
 
 [functions.seed-demo-users]
 verify_jwt = false
+
+[functions.bulk-import-students]
+verify_jwt = true
+
+[functions.create-jury-users]
+verify_jwt = true
+
+[functions.create-admin-users]
+verify_jwt = true
+
+[functions.create-role-users]
+verify_jwt = true
+
+[functions.delete-all-students]
+verify_jwt = true
+
+[functions.migrate-photos]
+verify_jwt = true

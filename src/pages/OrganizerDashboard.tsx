@@ -24,8 +24,7 @@ import { SecurityLogsManager } from "@/components/organizer/SecurityLogsManager"
 import { OrganizerStats } from "@/components/organizer/OrganizerStats";
 import { OrganizerStudentList } from "@/components/organizer/OrganizerStudentList";
 import { StudentBulkImport } from "@/components/organizer/StudentBulkImport";
-import { CreateJuryUsers } from "@/components/organizer/CreateJuryUsers";
-import { CreateAdminUsers } from "@/components/organizer/CreateAdminUsers";
+import { DynamicRoleCreator } from "@/components/organizer/DynamicRoleCreator";
 import PhotoUploadManager from "@/components/organizer/PhotoUploadManager";
 import PhotoMigration from "@/components/organizer/PhotoMigration";
 import { OrganizerLeaderboard } from "@/components/organizer/OrganizerLeaderboard";
@@ -389,12 +388,7 @@ const OrganizerDashboard = () => {
                     <AccordionContent className="pt-6">
                       <StudentBulkImport />
                       <div className="mt-6 pt-6 border-t border-white/20">
-                        <h4 className="text-lg font-bold text-slate-800 mb-3">Jury Management</h4>
-                        <CreateJuryUsers />
-                      </div>
-                      <div className="mt-6 pt-6 border-t border-white/20">
-                        <h4 className="text-lg font-bold text-slate-800 mb-3">Admin Management</h4>
-                        <CreateAdminUsers />
+                        <DynamicRoleCreator />
                       </div>
                     </AccordionContent>
                   </AccordionItem>
