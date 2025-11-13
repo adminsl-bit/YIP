@@ -12,6 +12,7 @@ import JuryDashboard from "./pages/JuryDashboard";
 import JournalistDashboard from "./pages/JournalistDashboard";
 import OrganizerDashboard from "./pages/OrganizerDashboard";
 import TimerDisplay from "./pages/TimerDisplay";
+import SessionDisplay from "./pages/SessionDisplay";
 import PollDisplay from "./pages/PollDisplay";
 import LeaderboardDisplay from "./pages/LeaderboardDisplay";
 import NotFound from "./pages/NotFound";
@@ -57,6 +58,7 @@ const App = () => (
               </AuthenticatedRoute>
             } />
             <Route path="/display/timer" element={<TimerDisplay />} />
+            <Route path="/display/session" element={<SessionDisplay />} />
             <Route path="/display/polls" element={<PollDisplay />} />
             <Route path="/display/leaderboard" element={<LeaderboardDisplay />} />
             <Route path="/display/awards" element={<AwardShowcase />} />
