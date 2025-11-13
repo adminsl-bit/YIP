@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Calendar, Plus, GripVertical, Play, Pause, Square, CheckCircle, BarChart, Clock, ExternalLink, Eye, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { SessionSubItems } from "./SessionSubItems";
 import { toast } from "@/hooks/use-toast";
@@ -602,37 +603,40 @@ export const SessionManagement = () => {
     const linkedPoll = availablePolls.find(p => p.id === item.poll_id);
 
     return (
-      <>
-        <Card
-          ref={setNodeRef}
-          style={style}
-          className={`${item.is_active ? 'border-primary shadow-md' : ''} ${isDragging ? 'shadow-lg' : ''}`}
-        >
-        <CardContent className="p-4">
-          <div className="flex items-start gap-4">
-            <button
-              className="cursor-grab active:cursor-grabbing p-2 hover:bg-muted rounded-md transition-colors mt-1"
-              {...attributes}
-              {...listeners}
-            >
-              <GripVertical className="h-5 w-5 text-muted-foreground" />
-            </button>
+      <Card
+        ref={setNodeRef}
+        style={style}
+        className={`${item.is_active ? 'border-primary shadow-md' : ''} ${isDragging ? 'shadow-lg' : ''}`}
+      >
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="session-details" className="border-none">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-4">
+                <button
+                  className="cursor-grab active:cursor-grabbing p-2 hover:bg-muted rounded-md transition-colors mt-1"
+                  {...attributes}
+                  {...listeners}
+                >
+                  <GripVertical className="h-5 w-5 text-muted-foreground" />
+                </button>
 
-            <div className="flex-1 space-y-3">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-semibold text-lg">{item.title}</h3>
-                {getBillTypeBadge(item.bill_type)}
-                {getStatusBadge(item.status)}
-                {item.is_active && (
-                  <Badge className="bg-primary">
-                    Live on Display
-                  </Badge>
-                )}
-              </div>
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <AccordionTrigger className="hover:no-underline py-0 flex-none">
+                      <h3 className="font-semibold text-lg">{item.title}</h3>
+                    </AccordionTrigger>
+                    {getBillTypeBadge(item.bill_type)}
+                    {getStatusBadge(item.status)}
+                    {item.is_active && (
+                      <Badge className="bg-primary">
+                        Live on Display
+                      </Badge>
+                    )}
+                  </div>
 
-              {item.description && (
-                <p className="text-sm text-muted-foreground">{item.description}</p>
-              )}
+                  {item.description && (
+                    <p className="text-sm text-muted-foreground">{item.description}</p>
+                  )}
 
               <div className="flex items-center gap-4 flex-wrap">
                 {linkedTimer && (
@@ -753,9 +757,13 @@ export const SessionManagement = () => {
             </div>
           </div>
         </CardContent>
-      </Card>
-      <SessionSubItems sessionId={item.id} isSessionActive={item.is_active} />
-      </>
+
+        <AccordionContent className="px-4 pb-4 pt-0">
+          <SessionSubItems sessionId={item.id} isSessionActive={item.is_active} />
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
+  </Card>
     );
   };
 
