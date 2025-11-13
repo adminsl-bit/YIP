@@ -77,6 +77,7 @@ export const SessionManagement = () => {
   const [loading, setLoading] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [expandedAccordions, setExpandedAccordions] = useState<Record<string, string>>({});
 
   // Form state
   const [title, setTitle] = useState("");
@@ -608,7 +609,18 @@ export const SessionManagement = () => {
         style={style}
         className={`${item.is_active ? 'border-primary shadow-md' : ''} ${isDragging ? 'shadow-lg' : ''}`}
       >
-        <Accordion type="single" collapsible className="w-full">
+        <Accordion 
+          type="single" 
+          collapsible 
+          className="w-full"
+          value={expandedAccordions[item.id] || ""}
+          onValueChange={(value) => {
+            setExpandedAccordions(prev => ({
+              ...prev,
+              [item.id]: value
+            }));
+          }}
+        >
           <AccordionItem value="session-details" className="border-none">
             <CardContent className="p-4">
               <div className="flex items-start gap-4">
