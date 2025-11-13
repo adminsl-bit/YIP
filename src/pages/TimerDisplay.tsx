@@ -23,6 +23,7 @@ const TimerDisplay = () => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    document.title = "Young Indian Parliament";
     fetchActiveTimer();
 
     // Initialize audio

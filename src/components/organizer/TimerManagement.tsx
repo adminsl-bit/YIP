@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Clock, Play, Pause, Square, RotateCcw, Trash2, Plus, ExternalLink } from "lucide-react";
+import { Clock, Play, Pause, Square, RotateCcw, Trash2, Plus, ExternalLink, Pencil } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   AlertDialog,
@@ -45,6 +45,8 @@ export const TimerManagement = () => {
   const [timerSessions, setTimerSessions] = useState<TimerSession[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingTimer, setEditingTimer] = useState<TimerSession | null>(null);
   const [newTimerTitle, setNewTimerTitle] = useState("");
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(5);
@@ -221,6 +223,75 @@ export const TimerManagement = () => {
       toast({
         title: "Error",
         description: "Failed to control timer",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditTimer = (timer: TimerSession) => {
+    setEditingTimer(timer);
+    setNewTimerTitle(timer.title);
+    const hrs = Math.floor(timer.duration_seconds / 3600);
+    const mins = Math.floor((timer.duration_seconds % 3600) / 60);
+    const secs = timer.duration_seconds % 60;
+    setHours(hrs);
+    setMinutes(mins);
+    setSeconds(secs);
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateTimer = async () => {
+    if (!editingTimer || !newTimerTitle.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a title for the timer",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+    if (totalSeconds === 0) {
+      toast({
+        title: "Error",
+        description: "Please set a duration for the timer",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('timer_sessions')
+        .update({
+          title: newTimerTitle,
+          duration_seconds: totalSeconds,
+          remaining_seconds: totalSeconds,
+        })
+        .eq('id', editingTimer.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Timer session updated successfully",
+      });
+
+      setShowEditDialog(false);
+      setEditingTimer(null);
+      setNewTimerTitle("");
+      setHours(0);
+      setMinutes(5);
+      setSeconds(0);
+      fetchTimerSessions();
+    } catch (error) {
+      console.error('Error updating timer:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update timer session",
         variant: "destructive",
       });
     } finally {
@@ -451,6 +522,15 @@ export const TimerManagement = () => {
                             </Button>
                           </>
                         )}
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditTimer(timer)}
+                          disabled={loading}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         
                         <AlertDialog>
                           <AlertDialogTrigger asChild>

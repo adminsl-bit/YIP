@@ -63,7 +63,17 @@ export const TimerControl = () => {
     // Create audio element for alarm
     audioRef.current = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhFjiX2+m9m1MfO0sj');
     
+    // Set up real-time subscription to detect timer changes
+    const subscription = supabase
+      .channel('timer_control_changes')
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'timer_sessions' },
+        () => fetchActiveTimer()
+      )
+      .subscribe();
+
     return () => {
+      subscription.unsubscribe();
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
