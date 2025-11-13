@@ -12,6 +12,7 @@ import { Switch } from "@/components/ui/switch";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Calendar, Plus, GripVertical, Play, Pause, Square, CheckCircle, BarChart, Clock, ExternalLink, Eye, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { SessionSubItems } from "./SessionSubItems";
+import { SortableSessionItem } from "./SortableSessionItem";
 import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -584,199 +585,11 @@ export const SessionManagement = () => {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const SortableSessionItem = ({ item }: { item: SessionItem }) => {
-    const {
-      attributes,
-      listeners,
-      setNodeRef,
-      transform,
-      transition,
-      isDragging,
-    } = useSortable({ id: item.id });
-
-    const style = {
-      transform: CSS.Transform.toString(transform),
-      transition,
-      opacity: isDragging ? 0.5 : 1,
-    };
-
-    const linkedTimer = availableTimers.find(t => t.id === item.timer_id);
-    const linkedPoll = availablePolls.find(p => p.id === item.poll_id);
-
-    return (
-      <Card
-        ref={setNodeRef}
-        style={style}
-        className={`${item.is_active ? 'border-primary shadow-md' : ''} ${isDragging ? 'shadow-lg' : ''}`}
-      >
-        <Accordion 
-          type="single" 
-          collapsible 
-          className="w-full"
-          value={expandedAccordions[item.id] || ""}
-          onValueChange={(value) => {
-            setExpandedAccordions(prev => ({
-              ...prev,
-              [item.id]: value
-            }));
-          }}
-        >
-          <AccordionItem value="session-details" className="border-none">
-            <CardContent className="p-4">
-              <div className="flex items-start gap-4">
-                <button
-                  className="cursor-grab active:cursor-grabbing p-2 hover:bg-muted rounded-md transition-colors mt-1"
-                  {...attributes}
-                  {...listeners}
-                >
-                  <GripVertical className="h-5 w-5 text-muted-foreground" />
-                </button>
-
-                <div className="flex-1 space-y-3">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <AccordionTrigger className="hover:no-underline py-0 flex-none [&[data-state=open]>svg]:rotate-180">
-                      <h3 className="font-semibold text-lg">{item.title}</h3>
-                    </AccordionTrigger>
-                    {getBillTypeBadge(item.bill_type)}
-                    {getStatusBadge(item.status)}
-                    {item.is_active && (
-                      <Badge className="bg-primary">
-                        Live on Display
-                      </Badge>
-                    )}
-                  </div>
-
-                  {item.description && (
-                    <p className="text-sm text-muted-foreground">{item.description}</p>
-                  )}
-
-              <div className="flex items-center gap-4 flex-wrap">
-                {linkedTimer && (
-                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
-                    <Clock className="h-4 w-4" />
-                    <span className="text-sm font-mono">{formatTime(linkedTimer.remaining_seconds)}</span>
-                    <div className="flex gap-1">
-                      {linkedTimer.status === 'running' ? (
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          onClick={() => handleTimerControl(item.timer_id, 'pause')} 
-                          title="Pause"
-                          className="transition-all duration-200 hover:scale-105"
-                        >
-                          <Pause className="h-3 w-3" />
-                        </Button>
-                      ) : (
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          onClick={() => handleTimerControl(item.timer_id, 'start')} 
-                          title="Play"
-                          className="transition-all duration-200 hover:scale-105"
-                        >
-                          <Play className="h-3 w-3" />
-                        </Button>
-                      )}
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={() => handleTimerControl(item.timer_id, 'stop')} 
-                        title="Stop"
-                        className="transition-all duration-200 hover:scale-105"
-                      >
-                        <Square className="h-3 w-3" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        onClick={() => handleTimerControl(item.timer_id, 'reset')} 
-                        title="Reset"
-                        className="transition-all duration-200 hover:scale-105"
-                      >
-                        <RotateCcw className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {linkedPoll && (
-                  <div className="flex items-center gap-2 p-2 bg-muted rounded-md flex-wrap">
-                    <BarChart className="h-4 w-4" />
-                    <span className="text-sm">{linkedPoll.title}</span>
-                    <Button 
-                      size="sm" 
-                      variant={linkedPoll.is_active ? "default" : "outline"}
-                      onClick={() => handlePollToggle(item.poll_id, linkedPoll.is_active)}
-                      className="transition-all duration-200"
-                    >
-                      {linkedPoll.is_active ? 'Close' : 'Open'} Voting
-                    </Button>
-                    <div className="flex items-center gap-2 ml-2 pl-2 border-l">
-                      <Eye className="h-3 w-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">Public Results</span>
-                      <Switch
-                        checked={linkedPoll.show_results_publicly}
-                        onCheckedChange={() => handlePollResultsToggle(item.poll_id, linkedPoll.show_results_publicly)}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleEditSession(item)}
-                disabled={loading}
-                className="h-8 w-8 p-0"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => handleDeleteSession(item.id)}
-                disabled={loading}
-                className="h-8 w-8 p-0"
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-              
-              <div className="h-6 w-px bg-border mx-1" />
-              
-              <Button
-                size="sm"
-                variant={item.is_active ? "default" : "outline"}
-                onClick={() => handleActivateItem(item.id, item.is_active)}
-                disabled={loading}
-              >
-                {item.is_active ? 'Deactivate' : 'Activate'}
-              </Button>
-
-              {item.status !== 'completed' && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleCompleteItem(item.id)}
-                  disabled={loading}
-                >
-                  <CheckCircle className="h-4 w-4 mr-1" />
-                  Complete
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-
-        <AccordionContent forceMount className="px-4 pb-4 pt-0 data-[state=open]:animate-none data-[state=closed]:animate-none">
-          <SessionSubItems sessionId={item.id} isSessionActive={item.is_active} />
-        </AccordionContent>
-      </AccordionItem>
-      </Accordion>
-    </Card>
-  );
+  const handleExpandChange = (itemId: string, value: string) => {
+    setExpandedAccordions(prev => ({
+      ...prev,
+      [itemId]: value
+    }));
   };
 
   return (
@@ -929,7 +742,25 @@ export const SessionManagement = () => {
               >
                 <div className="space-y-4">
                   {sessionItems.map((item) => (
-                    <SortableSessionItem key={item.id} item={item} />
+                    <SortableSessionItem 
+                      key={item.id} 
+                      item={item}
+                      availableTimers={availableTimers}
+                      availablePolls={availablePolls}
+                      loading={loading}
+                      expandedAccordions={expandedAccordions}
+                      onExpandChange={handleExpandChange}
+                      onTimerControl={handleTimerControl}
+                      onPollToggle={handlePollToggle}
+                      onPollResultsToggle={handlePollResultsToggle}
+                      onEditSession={handleEditSession}
+                      onDeleteSession={handleDeleteSession}
+                      onActivateItem={handleActivateItem}
+                      onCompleteItem={handleCompleteItem}
+                      getBillTypeBadge={getBillTypeBadge}
+                      getStatusBadge={getStatusBadge}
+                      formatTime={formatTime}
+                    />
                   ))}
                 </div>
               </SortableContext>
