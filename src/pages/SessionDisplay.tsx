@@ -3,9 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { Calendar, Clock, BarChart, Play, Pause } from "lucide-react";
 import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
 import { SubItemCarousel } from "@/components/display/SubItemCarousel";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useToast } from "@/components/ui/use-toast";
 
 interface SessionItem {
   id: string;
@@ -49,6 +54,12 @@ const SessionDisplay = () => {
   const [subItems, setSubItems] = useState<SubItem[]>([]);
   const [loading, setLoading] = useState(true);
   const timerChannelRef = useRef<any>(null);
+
+  // Auth and permissions for managing polls from stage view
+  const { user, profile } = useAuth();
+  const { hasRole } = useUserRole(user?.id);
+  const { toast } = useToast();
+  const canManagePolls = (profile?.user_type === 'organizer') || hasRole('admin_student');
 
   const fetchPollResults = async (pollId: string) => {
     try {
@@ -300,6 +311,53 @@ const SessionDisplay = () => {
     return 'bg-primary';
   };
 
+  // Stage controls: open/close voting and show/hide results
+  const togglePollActive = async () => {
+    if (!poll) return;
+    if (!canManagePolls) {
+      toast({ title: 'Not allowed', description: 'You do not have permission to manage polls.', variant: 'destructive' });
+      return;
+    }
+    try {
+      const { error } = await supabase
+        .from('polls')
+        .update({ is_active: !poll.is_active })
+        .eq('id', poll.id);
+      if (error) throw error;
+      setPoll({ ...poll, is_active: !poll.is_active });
+      toast({ title: poll.is_active ? 'Voting closed' : 'Voting opened' });
+    } catch (err) {
+      console.error('Error toggling poll active:', err);
+      toast({ title: 'Failed to update poll', description: 'Please try again.', variant: 'destructive' });
+    }
+  };
+
+  const toggleShowResults = async (checked?: boolean) => {
+    if (!poll) return;
+    if (!canManagePolls) {
+      toast({ title: 'Not allowed', description: 'You do not have permission to manage poll visibility.', variant: 'destructive' });
+      return;
+    }
+    const next = typeof checked === 'boolean' ? checked : !poll.show_results_publicly;
+    try {
+      const { error } = await supabase
+        .from('polls')
+        .update({ show_results_publicly: next })
+        .eq('id', poll.id);
+      if (error) throw error;
+      setPoll({ ...poll, show_results_publicly: next });
+      if (next) {
+        await fetchPollResults(poll.id);
+      } else {
+        setPollResults({});
+      }
+      toast({ title: next ? 'Results shown' : 'Results hidden' });
+    } catch (err) {
+      console.error('Error toggling results visibility:', err);
+      toast({ title: 'Failed to update visibility', description: 'Please try again.', variant: 'destructive' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
@@ -404,12 +462,29 @@ const SessionDisplay = () => {
                   <BarChart className="h-6 w-6 text-primary" />
                   <h2 className="text-2xl font-semibold">{poll.title}</h2>
                 </div>
-                <Badge 
-                  variant={poll.is_active ? 'default' : 'secondary'}
-                  className="text-lg px-4 py-2"
-                >
-                  {poll.is_active ? 'Voting Open' : 'Voting Closed'}
-                </Badge>
+                <div className="flex items-center gap-3">
+                  <Badge 
+                    variant={poll.is_active ? 'default' : 'secondary'}
+                    className="text-lg px-4 py-2"
+                  >
+                    {poll.is_active ? 'Voting Open' : 'Voting Closed'}
+                  </Badge>
+                  {canManagePolls && (
+                    <div className="flex items-center gap-3">
+                      <Button size="sm" onClick={togglePollActive}>
+                        {poll.is_active ? 'Close Voting' : 'Open Voting'}
+                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          id="show-results-switch"
+                          checked={poll.show_results_publicly}
+                          onCheckedChange={toggleShowResults}
+                        />
+                        <label htmlFor="show-results-switch" className="text-sm">Show Results</label>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {poll.is_active && !poll.show_results_publicly && (
