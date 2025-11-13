@@ -372,6 +372,8 @@ export const SessionManagement = () => {
   const handlePollToggle = async (pollId: string | null, currentActive: boolean) => {
     if (!pollId) return;
 
+    console.log('Poll toggle called - Poll ID:', pollId, 'Current Active:', currentActive, 'Will set to:', !currentActive);
+
     // Don't use global loading state to prevent flickering
     try {
       const { error } = await supabase
@@ -381,12 +383,15 @@ export const SessionManagement = () => {
 
       if (error) throw error;
 
+      console.log('Poll updated successfully to is_active:', !currentActive);
+
       toast({
         title: "Success",
         description: currentActive ? "Poll closed" : "Poll opened for voting",
       });
 
-      fetchAvailablePolls();
+      // Don't refetch - rely on realtime updates to prevent race conditions
+      // fetchAvailablePolls();
     } catch (error) {
       console.error('Error toggling poll:', error);
       toast({
@@ -414,7 +419,8 @@ export const SessionManagement = () => {
         description: currentStatus ? "Results hidden from public" : "Results now visible publicly",
       });
 
-      fetchAvailablePolls();
+      // Don't refetch - rely on realtime updates
+      // fetchAvailablePolls();
     } catch (error) {
       console.error('Error toggling poll results:', error);
       toast({
