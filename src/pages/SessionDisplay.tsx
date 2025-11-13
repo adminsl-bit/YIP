@@ -308,7 +308,7 @@ const SessionDisplay = () => {
       <BreakingNewsTicker />
       
       <div className="max-w-6xl mx-auto space-y-8 mt-12">
-        {/* Session Header */}
+        {/* Session Header with Timer */}
         <Card className="border-2 border-primary shadow-xl">
           <CardContent className="p-8">
             <div className="flex items-start justify-between gap-4 mb-6">
@@ -329,19 +329,10 @@ const SessionDisplay = () => {
                 )}
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Sub-Items Carousel */}
-        {subItems.length > 0 && (
-          <SubItemCarousel subItems={subItems} />
-        )}
-
-        {/* Timer Display */}
-        {timer && (
-          <Card className="border-2 shadow-xl">
-            <CardContent className="p-8">
-              <div className="space-y-6">
+            {/* Timer Display */}
+            {timer && (
+              <div className="mt-8 pt-8 border-t space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <Clock className="h-6 w-6 text-primary" />
@@ -375,8 +366,13 @@ const SessionDisplay = () => {
                   className={`h-4 ${getTimerColor()}`}
                 />
               </div>
-            </CardContent>
-          </Card>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Sub-Items Carousel */}
+        {subItems.length > 0 && (
+          <SubItemCarousel subItems={subItems} />
         )}
 
         {/* Poll Display */}
