@@ -37,15 +37,20 @@ export const SessionSubItemUpload = ({ sessionId, onUploadComplete }: SessionSub
   };
 
   const parsePDF = async (file: File): Promise<string[]> => {
-    // Set worker source
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    // Set worker source to use unpkg CDN which works better in sandboxed environments
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
     
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async (e) => {
         try {
           const typedArray = new Uint8Array(e.target?.result as ArrayBuffer);
-          const pdf = await pdfjsLib.getDocument(typedArray).promise;
+          const pdf = await pdfjsLib.getDocument({
+            data: typedArray,
+            useWorkerFetch: false,
+            isEvalSupported: false,
+            useSystemFonts: true
+          }).promise;
           const textItems: string[] = [];
           
           for (let i = 1; i <= pdf.numPages; i++) {
@@ -59,6 +64,7 @@ export const SessionSubItemUpload = ({ sessionId, onUploadComplete }: SessionSub
           
           resolve(textItems);
         } catch (error) {
+          console.error('PDF parsing error:', error);
           reject(error);
         }
       };
