@@ -289,6 +289,44 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
     }
   };
 
+  const handleToggleSubItemActive = async (subItemId: string, currentActive: boolean) => {
+    if (!isSessionActive) {
+      toast({
+        title: "Session not active",
+        description: "Please activate the parent session first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('session_sub_items' as any)
+        .update({ is_active: !currentActive })
+        .eq('id', subItemId);
+
+      if (error) throw error;
+
+      await fetchSubItems();
+      await checkGlobalVisibility();
+
+      toast({
+        title: "Success",
+        description: currentActive ? "Sub-item hidden from display" : "Sub-item now visible on display",
+      });
+    } catch (error) {
+      console.error('Error toggling sub-item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to toggle sub-item",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDelete = async (subItemId: string) => {
     setLoading(true);
     try {
@@ -767,6 +805,17 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
                   </div>
 
                   <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant={item.is_active ? "default" : "outline"}
+                      onClick={() => handleToggleSubItemActive(item.id, item.is_active)}
+                      disabled={loading || !isSessionActive}
+                      className="h-7 px-2"
+                      title={item.is_active ? "Deactivate on display" : "Activate on display"}
+                    >
+                      {item.is_active ? <Eye className="h-3 w-3 mr-1" /> : <EyeOff className="h-3 w-3 mr-1" />}
+                      <span className="text-xs">{item.is_active ? 'Active' : 'Activate'}</span>
+                    </Button>
                     {item.poll_id ? (
                       <Button
                         size="sm"
