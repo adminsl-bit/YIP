@@ -3,9 +3,31 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Pencil, Trash2, Eye, EyeOff, ChevronUp, ChevronDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Trash2, ChevronUp, ChevronDown, Plus, Eye, EyeOff } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { SessionSubItemUpload } from "./SessionSubItemUpload";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface SubItem {
   id: string;
@@ -27,15 +49,24 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
   const [subItems, setSubItems] = useState<SubItem[]>([]);
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newItemTitle, setNewItemTitle] = useState("");
+  const [newItemDescription, setNewItemDescription] = useState("");
+  const [newItemContent, setNewItemContent] = useState("");
+  const [globalVisibility, setGlobalVisibility] = useState(false);
 
   useEffect(() => {
     fetchSubItems();
+    checkGlobalVisibility();
 
     const subscription = supabase
       .channel(`session_sub_items_${sessionId}`)
       .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'session_sub_items', filter: `parent_session_id=eq.${sessionId}` },
-        () => fetchSubItems()
+        { event: '*', schema: 'public', table: 'session_sub_items' as any, filter: `parent_session_id=eq.${sessionId}` },
+        () => {
+          fetchSubItems();
+          checkGlobalVisibility();
+        }
       )
       .subscribe();
 
@@ -43,6 +74,21 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
       subscription.unsubscribe();
     };
   }, [sessionId]);
+
+  const checkGlobalVisibility = async () => {
+    try {
+      const { data } = await supabase
+        .from('session_sub_items' as any)
+        .select('is_active')
+        .eq('parent_session_id', sessionId)
+        .limit(1)
+        .maybeSingle();
+      
+      setGlobalVisibility((data as any)?.is_active || false);
+    } catch (error) {
+      console.error('Error checking visibility:', error);
+    }
+  };
 
   const fetchSubItems = async () => {
     try {
@@ -59,7 +105,7 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
     }
   };
 
-  const handleToggleActive = async (subItemId: string, currentActive: boolean) => {
+  const handleToggleGlobalVisibility = async () => {
     if (!isSessionActive) {
       toast({
         title: "Session not active",
@@ -71,30 +117,26 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
 
     setLoading(true);
     try {
-      // Deactivate all other sub-items
-      await supabase
-        .from('session_sub_items' as any)
-        .update({ is_active: false })
-        .eq('parent_session_id', sessionId)
-        .neq('id', subItemId);
-
-      // Toggle this sub-item
+      const newVisibility = !globalVisibility;
+      
+      // Update all sub-items visibility at once
       const { error } = await supabase
         .from('session_sub_items' as any)
-        .update({ is_active: !currentActive })
-        .eq('id', subItemId);
+        .update({ is_active: newVisibility })
+        .eq('parent_session_id', sessionId);
 
       if (error) throw error;
 
+      setGlobalVisibility(newVisibility);
       toast({
         title: "Success",
-        description: currentActive ? "Sub-item deactivated" : "Sub-item activated on display",
+        description: newVisibility ? "All sub-items visible on display" : "All sub-items hidden from display",
       });
     } catch (error) {
-      console.error('Error toggling sub-item:', error);
+      console.error('Error toggling visibility:', error);
       toast({
         title: "Error",
-        description: "Failed to toggle sub-item",
+        description: "Failed to toggle visibility",
         variant: "destructive",
       });
     } finally {
@@ -103,8 +145,6 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
   };
 
   const handleDelete = async (subItemId: string) => {
-    if (!confirm('Delete this sub-item?')) return;
-
     setLoading(true);
     try {
       const { error } = await supabase
@@ -123,6 +163,78 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
       toast({
         title: "Error",
         description: "Failed to delete sub-item",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('session_sub_items' as any)
+        .delete()
+        .eq('parent_session_id', sessionId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "All sub-items deleted",
+      });
+    } catch (error) {
+      console.error('Error deleting all sub-items:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete all sub-items",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddManual = async () => {
+    if (!newItemTitle.trim()) {
+      toast({
+        title: "Error",
+        description: "Title is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('session_sub_items' as any)
+        .insert({
+          parent_session_id: sessionId,
+          title: newItemTitle.trim(),
+          description: newItemDescription.trim() || null,
+          content: newItemContent.trim() || null,
+          sort_order: subItems.length,
+          is_active: false,
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Sub-item added",
+      });
+
+      setNewItemTitle("");
+      setNewItemDescription("");
+      setNewItemContent("");
+      setShowAddDialog(false);
+    } catch (error) {
+      console.error('Error adding sub-item:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add sub-item",
         variant: "destructive",
       });
     } finally {
@@ -163,16 +275,70 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
 
   if (subItems.length === 0) {
     return (
-      <div className="ml-12 mt-2">
-        <SessionSubItemUpload sessionId={sessionId} onUploadComplete={fetchSubItems} />
-        <p className="text-sm text-muted-foreground mt-2">No sub-items yet. Upload questions or bills above.</p>
+      <div className="ml-12 mt-2 space-y-2">
+        <div className="flex items-center gap-2">
+          <SessionSubItemUpload sessionId={sessionId} onUploadComplete={fetchSubItems} />
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Manually
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Sub-item</DialogTitle>
+                <DialogDescription>
+                  Add a new question, bill, or agenda item manually
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Title *</label>
+                  <Input
+                    value={newItemTitle}
+                    onChange={(e) => setNewItemTitle(e.target.value)}
+                    placeholder="Enter title"
+                    maxLength={200}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Description</label>
+                  <Input
+                    value={newItemDescription}
+                    onChange={(e) => setNewItemDescription(e.target.value)}
+                    placeholder="Short description (optional)"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Content</label>
+                  <Textarea
+                    value={newItemContent}
+                    onChange={(e) => setNewItemContent(e.target.value)}
+                    placeholder="Detailed content (optional)"
+                    rows={4}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddManual} disabled={loading}>
+                  Add Sub-item
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+        <p className="text-sm text-muted-foreground">No sub-items yet. Upload or add manually above.</p>
       </div>
     );
   }
 
   return (
     <div className="ml-12 mt-3 space-y-2">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <Button
           variant="ghost"
           size="sm"
@@ -182,20 +348,100 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
           {expanded ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
           {subItems.length} Sub-items
         </Button>
-        <SessionSubItemUpload sessionId={sessionId} onUploadComplete={fetchSubItems} />
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleToggleGlobalVisibility}
+            disabled={loading || !isSessionActive}
+          >
+            {globalVisibility ? <Eye className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
+            {globalVisibility ? "Visible" : "Hidden"}
+          </Button>
+          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Add
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Add Sub-item</DialogTitle>
+                <DialogDescription>
+                  Add a new question, bill, or agenda item manually
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Title *</label>
+                  <Input
+                    value={newItemTitle}
+                    onChange={(e) => setNewItemTitle(e.target.value)}
+                    placeholder="Enter title"
+                    maxLength={200}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Description</label>
+                  <Input
+                    value={newItemDescription}
+                    onChange={(e) => setNewItemDescription(e.target.value)}
+                    placeholder="Short description (optional)"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Content</label>
+                  <Textarea
+                    value={newItemContent}
+                    onChange={(e) => setNewItemContent(e.target.value)}
+                    placeholder="Detailed content (optional)"
+                    rows={4}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddManual} disabled={loading}>
+                  Add Sub-item
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <SessionSubItemUpload sessionId={sessionId} onUploadComplete={fetchSubItems} />
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" size="sm" disabled={loading}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete All
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete all sub-items?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete all {subItems.length} sub-items. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDeleteAll}>Delete All</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
 
       {expanded && (
         <div className="space-y-2 pl-4 border-l-2 border-muted">
           {subItems.map((item, index) => (
-            <Card key={item.id} className={item.is_active ? 'border-primary' : ''}>
+            <Card key={item.id}>
               <CardContent className="p-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">{item.title}</span>
-                      {item.is_active && <Badge variant="default" className="text-xs">Active</Badge>}
-                    </div>
+                    <span className="text-sm font-medium">{item.title}</span>
                     {item.description && (
                       <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
                     )}
@@ -220,24 +466,30 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
                     >
                       <ChevronDown className="h-3 w-3" />
                     </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleToggleActive(item.id, item.is_active)}
-                      disabled={loading}
-                      className="h-7 w-7 p-0"
-                    >
-                      {item.is_active ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDelete(item.id)}
-                      disabled={loading}
-                      className="h-7 w-7 p-0 text-destructive"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={loading}
+                          className="h-7 w-7 p-0 text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete this sub-item?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => handleDelete(item.id)}>Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </CardContent>
