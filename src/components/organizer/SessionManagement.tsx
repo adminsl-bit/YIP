@@ -275,7 +275,7 @@ export const SessionManagement = () => {
   const handleTimerControl = async (timerId: string | null, action: 'start' | 'pause' | 'stop' | 'reset') => {
     if (!timerId) return;
 
-    setLoading(true);
+    // Don't use global loading state to prevent flickering
     try {
       let updates: any = {};
 
@@ -335,15 +335,13 @@ export const SessionManagement = () => {
         description: "Failed to control timer",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handlePollToggle = async (pollId: string | null, currentActive: boolean) => {
     if (!pollId) return;
 
-    setLoading(true);
+    // Don't use global loading state to prevent flickering
     try {
       const { error } = await supabase
         .from('polls')
@@ -365,15 +363,13 @@ export const SessionManagement = () => {
         description: "Failed to toggle poll",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handlePollResultsToggle = async (pollId: string | null, currentStatus: boolean) => {
     if (!pollId) return;
 
-    setLoading(true);
+    // Don't use global loading state to prevent flickering
     try {
       const { error } = await supabase
         .from('polls')
@@ -395,8 +391,6 @@ export const SessionManagement = () => {
         description: "Failed to toggle poll results visibility",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -608,18 +602,42 @@ export const SessionManagement = () => {
                     <span className="text-sm font-mono">{formatTime(linkedTimer.remaining_seconds)}</span>
                     <div className="flex gap-1">
                       {linkedTimer.status === 'running' ? (
-                        <Button size="sm" variant="ghost" onClick={() => handleTimerControl(item.timer_id, 'pause')} title="Pause">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => handleTimerControl(item.timer_id, 'pause')} 
+                          title="Pause"
+                          className="transition-all duration-200 hover:scale-105"
+                        >
                           <Pause className="h-3 w-3" />
                         </Button>
                       ) : (
-                        <Button size="sm" variant="ghost" onClick={() => handleTimerControl(item.timer_id, 'start')} title="Play">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          onClick={() => handleTimerControl(item.timer_id, 'start')} 
+                          title="Play"
+                          className="transition-all duration-200 hover:scale-105"
+                        >
                           <Play className="h-3 w-3" />
                         </Button>
                       )}
-                      <Button size="sm" variant="ghost" onClick={() => handleTimerControl(item.timer_id, 'stop')} title="Stop">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => handleTimerControl(item.timer_id, 'stop')} 
+                        title="Stop"
+                        className="transition-all duration-200 hover:scale-105"
+                      >
                         <Square className="h-3 w-3" />
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => handleTimerControl(item.timer_id, 'reset')} title="Reset">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        onClick={() => handleTimerControl(item.timer_id, 'reset')} 
+                        title="Reset"
+                        className="transition-all duration-200 hover:scale-105"
+                      >
                         <RotateCcw className="h-3 w-3" />
                       </Button>
                     </div>
@@ -634,6 +652,7 @@ export const SessionManagement = () => {
                       size="sm" 
                       variant={linkedPoll.is_active ? "default" : "outline"}
                       onClick={() => handlePollToggle(item.poll_id, linkedPoll.is_active)}
+                      className="transition-all duration-200"
                     >
                       {linkedPoll.is_active ? 'Close' : 'Open'} Voting
                     </Button>
