@@ -287,7 +287,7 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
 
   if (subItems.length === 0) {
     return (
-      <div className="ml-12 mt-2 space-y-2">
+      <div className="mt-2 space-y-2">
         <div className="flex items-center gap-2">
           <SessionSubItemUpload sessionId={sessionId} onUploadComplete={fetchSubItems} />
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
@@ -349,7 +349,7 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
   }
 
   return (
-    <div className="ml-12 mt-3 space-y-2">
+    <div className="mt-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
         <Button
           variant="ghost"
@@ -447,7 +447,7 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
       </div>
 
       {expanded && (
-        <div className="space-y-2 pl-4 border-l-2 border-muted">
+        <div className="space-y-2 pl-2 border-l-2 border-muted">
           {subItems.map((item, index) => (
             <Card key={item.id}>
               <CardContent className="p-3">
