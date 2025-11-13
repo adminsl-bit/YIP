@@ -48,58 +48,8 @@ const TimerDisplay = () => {
     };
   }, []);
 
-  // Client-side countdown when timer is running
-  useEffect(() => {
-    if (timer?.status === 'running') {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-
-      intervalRef.current = setInterval(() => {
-        setTimer(prev => {
-          if (!prev || prev.status !== 'running') return prev;
-          
-          const newRemaining = Math.max(0, prev.remaining_seconds - 1);
-          
-          // Update database every second
-          if (newRemaining >= 0) {
-            supabase
-              .from('timer_sessions')
-              .update({ remaining_seconds: newRemaining })
-              .eq('id', prev.id)
-              .then();
-          }
-          
-          if (newRemaining === 0) {
-            supabase
-              .from('timer_sessions')
-              .update({ 
-                remaining_seconds: 0, 
-                status: 'completed',
-                completed_at: new Date().toISOString()
-              })
-              .eq('id', prev.id)
-              .then();
-          }
-
-          return { ...prev, remaining_seconds: newRemaining };
-        });
-      }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [timer?.status, timer?.id]);
-
-  // Display component should not run its own countdown - rely on TimerControl component for time management
-  // This prevents conflicts between multiple timer instances
+  // Stage display is a passive viewer - it only listens to database updates
+  // The organizer console (TimerManagement) drives the countdown to prevent conflicts
 
   // Bell sound effect when timer reaches 0
   useEffect(() => {
