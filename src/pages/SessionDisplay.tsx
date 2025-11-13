@@ -105,6 +105,13 @@ const SessionDisplay = () => {
           fetchActiveSession();
         }
       )
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'poll_votes' },
+        () => {
+          console.log('[SessionDisplay] poll_votes changed, refetching...');
+          fetchActiveSession();
+        }
+      )
       .subscribe();
 
     return () => {
@@ -141,12 +148,41 @@ const SessionDisplay = () => {
           setTimer(null);
         }
 
-        // Fetch linked poll if exists
-        if ((sessionData as any).poll_id) {
+        // Fetch sub-items for this session
+        const { data: subItemsData, error: subItemsError } = await supabase
+          .from('session_sub_items' as any)
+          .select('*')
+          .eq('parent_session_id', (sessionData as any).id)
+          .order('sort_order', { ascending: true });
+
+        if (!subItemsError && subItemsData) {
+          setSubItems(subItemsData as any);
+        }
+
+        // Check for polls - prioritize active sub-item polls, then parent session poll
+        let pollIdToFetch = null;
+        
+        // First check if any sub-item has an active poll
+        if (subItemsData) {
+          const activeSubItemWithPoll = (subItemsData as any[]).find(
+            (subItem: any) => subItem.is_active && subItem.poll_id
+          );
+          if (activeSubItemWithPoll) {
+            pollIdToFetch = activeSubItemWithPoll.poll_id;
+          }
+        }
+        
+        // If no active sub-item poll, check parent session poll
+        if (!pollIdToFetch && (sessionData as any).poll_id) {
+          pollIdToFetch = (sessionData as any).poll_id;
+        }
+
+        // Fetch the poll if we found one
+        if (pollIdToFetch) {
           const { data: pollData, error: pollError } = await supabase
             .from('polls')
             .select('id, title, is_active, show_results_publicly, options')
-            .eq('id', (sessionData as any).poll_id)
+            .eq('id', pollIdToFetch)
             .single();
 
           if (!pollError && pollData) {
@@ -163,17 +199,6 @@ const SessionDisplay = () => {
         } else {
           setPoll(null);
           setPollResults({});
-        }
-
-        // Fetch sub-items for this session
-        const { data: subItemsData, error: subItemsError } = await supabase
-          .from('session_sub_items' as any)
-          .select('*')
-          .eq('parent_session_id', (sessionData as any).id)
-          .order('sort_order', { ascending: true });
-
-        if (!subItemsError && subItemsData) {
-          setSubItems(subItemsData as any);
         }
       } else {
         setActiveSession(null);
