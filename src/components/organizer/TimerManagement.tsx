@@ -7,8 +7,25 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Clock, Play, Pause, Square, RotateCcw, Trash2, Plus, ExternalLink, Pencil } from "lucide-react";
+import { Clock, Play, Pause, Square, RotateCcw, Trash2, Plus, ExternalLink, Pencil, GripVertical } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +55,18 @@ interface TimerSession {
   status: 'stopped' | 'running' | 'paused' | 'completed';
   is_active: boolean;
   created_at: string;
+  sort_order: number;
+}
+
+interface SortableTimerProps {
+  timer: TimerSession;
+  onToggleActive: (id: string, isActive: boolean) => void;
+  onTimerControl: (id: string, action: 'start' | 'pause' | 'stop' | 'reset') => void;
+  onEdit: (timer: TimerSession) => void;
+  onDelete: (id: string) => void;
+  formatTime: (seconds: number) => string;
+  getStatusBadge: (status: string) => JSX.Element;
+  loading: boolean;
 }
 
 export const TimerManagement = () => {
@@ -107,12 +136,19 @@ export const TimerManagement = () => {
     };
   }, [timerSessions]);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const fetchTimerSessions = async () => {
     try {
       const { data, error } = await supabase
         .from('timer_sessions')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('sort_order', { ascending: true });
 
       if (error) throw error;
       setTimerSessions(data as TimerSession[]);
@@ -157,6 +193,7 @@ export const TimerManagement = () => {
           status: 'stopped',
           is_active: false,
           created_by: user.id,
+          sort_order: timerSessions.length, // Place at end of list
         });
 
       if (error) throw error;
@@ -384,6 +421,188 @@ export const TimerManagement = () => {
     return <Badge variant={config.variant}>{config.label}</Badge>;
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = timerSessions.findIndex((t) => t.id === active.id);
+    const newIndex = timerSessions.findIndex((t) => t.id === over.id);
+
+    const reordered = arrayMove(timerSessions, oldIndex, newIndex);
+    setTimerSessions(reordered);
+
+    // Update sort_order in database
+    try {
+      const updates = reordered.map((timer, index) => ({
+        id: timer.id,
+        sort_order: index,
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from('timer_sessions')
+          .update({ sort_order: update.sort_order })
+          .eq('id', update.id);
+      }
+
+      toast({
+        title: "Success",
+        description: "Timer order updated",
+      });
+    } catch (error) {
+      console.error('Error updating timer order:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update timer order",
+        variant: "destructive",
+      });
+      fetchTimerSessions(); // Revert on error
+    }
+  };
+
+  const SortableTimer = ({ timer }: { timer: TimerSession }) => {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+      isDragging,
+    } = useSortable({ id: timer.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+      opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+      <Card
+        ref={setNodeRef}
+        style={style}
+        className={`${timer.is_active ? 'border-primary' : ''} ${isDragging ? 'shadow-lg' : ''}`}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between gap-4">
+            <button
+              className="cursor-grab active:cursor-grabbing p-2 hover:bg-muted rounded-md transition-colors"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </button>
+
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold">{timer.title}</h3>
+                {timer.is_active && (
+                  <Badge variant="default" className="text-xs">
+                    Active on Display
+                  </Badge>
+                )}
+                {getStatusBadge(timer.status)}
+              </div>
+              <div className="text-2xl font-mono">
+                {formatTime(timer.remaining_seconds)}
+                <span className="text-sm text-muted-foreground ml-2">
+                  / {formatTime(timer.duration_seconds)}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md">
+                <Label htmlFor={`active-${timer.id}`} className="text-sm cursor-pointer">
+                  {timer.is_active ? 'Active' : 'Inactive'}
+                </Label>
+                <Switch
+                  id={`active-${timer.id}`}
+                  checked={timer.is_active}
+                  onCheckedChange={() => handleToggleActive(timer.id, timer.is_active)}
+                  disabled={loading}
+                />
+              </div>
+
+              {timer.is_active && (
+                <>
+                  {timer.status === 'running' ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleTimerControl(timer.id, 'pause')}
+                      disabled={loading}
+                    >
+                      <Pause className="h-4 w-4" />
+                    </Button>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleTimerControl(timer.id, 'start')}
+                      disabled={loading}
+                    >
+                      <Play className="h-4 w-4" />
+                    </Button>
+                  )}
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleTimerControl(timer.id, 'stop')}
+                    disabled={loading}
+                  >
+                    <Square className="h-4 w-4" />
+                  </Button>
+
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleTimerControl(timer.id, 'reset')}
+                    disabled={loading}
+                  >
+                    <RotateCcw className="h-4 w-4" />
+                  </Button>
+                </>
+              )}
+
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleEditTimer(timer)}
+                disabled={loading}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="outline" disabled={loading}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Timer Session</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{timer.title}"? This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => handleDeleteTimer(timer.id)}>
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -553,128 +772,22 @@ export const TimerManagement = () => {
               <p>No timer sessions yet. Create one to get started!</p>
             </div>
           ) : (
-            <div className="space-y-4">
-              {timerSessions.map((timer) => (
-                <Card key={timer.id} className={timer.is_active ? "border-primary" : ""}>
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{timer.title}</h3>
-                          {timer.is_active && (
-                            <Badge variant="default" className="text-xs">
-                              Active on Display
-                            </Badge>
-                          )}
-                          {getStatusBadge(timer.status)}
-                        </div>
-                        <div className="text-2xl font-mono">
-                          {formatTime(timer.remaining_seconds)}
-                          <span className="text-sm text-muted-foreground ml-2">
-                            / {formatTime(timer.duration_seconds)}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-2 px-3 py-2 bg-muted rounded-md">
-                          <Label htmlFor={`active-${timer.id}`} className="text-sm cursor-pointer">
-                            {timer.is_active ? "Active" : "Inactive"}
-                          </Label>
-                          <Switch
-                            id={`active-${timer.id}`}
-                            checked={timer.is_active}
-                            onCheckedChange={() => handleToggleActive(timer.id, timer.is_active)}
-                            disabled={loading}
-                          />
-                        </div>
-                        
-                        {timer.is_active && (
-                          <>
-                            {timer.status === 'running' ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleTimerControl(timer.id, 'pause')}
-                                disabled={loading}
-                              >
-                                <Pause className="h-4 w-4" />
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleTimerControl(timer.id, 'start')}
-                                disabled={loading}
-                              >
-                                <Play className="h-4 w-4" />
-                              </Button>
-                            )}
-                            
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleTimerControl(timer.id, 'stop')}
-                              disabled={loading}
-                            >
-                              <Square className="h-4 w-4" />
-                            </Button>
-                            
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleTimerControl(timer.id, 'reset')}
-                              disabled={loading}
-                            >
-                              <RotateCcw className="h-4 w-4" />
-                            </Button>
-                          </>
-                        )}
-                        
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleEditTimer(timer)}
-                          disabled={loading}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              disabled={loading}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Timer Session</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete "{timer.title}"? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDeleteTimer(timer.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={timerSessions.map((t) => t.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-4">
+                  {timerSessions.map((timer) => (
+                    <SortableTimer key={timer.id} timer={timer} />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
         </CardContent>
       </Card>
