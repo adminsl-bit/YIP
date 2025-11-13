@@ -82,10 +82,9 @@ const SessionDisplay = () => {
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'timer_sessions' },
-        (payload) => {
-          if (timer && payload.new && (payload.new as any).id === timer.id) {
-            setTimer(payload.new as TimerSession);
-          }
+        () => {
+          // Always refetch the active session to ensure the linked timer stays in sync
+          fetchActiveSession();
         }
       )
       .on('postgres_changes',
