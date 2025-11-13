@@ -80,18 +80,10 @@ const SessionDisplay = () => {
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'polls' },
-        (payload) => {
-          if (poll && payload.new && (payload.new as any).id === poll.id) {
-            const updatedPoll = payload.new as Poll;
-            setPoll(updatedPoll);
-            
-            // Refresh poll results if they're now public
-            if (updatedPoll.show_results_publicly) {
-              fetchPollResults(updatedPoll.id);
-            } else {
-              setPollResults({});
-            }
-          }
+        () => {
+          // Refetch the entire active session to pick up any poll changes
+          // This ensures polls show up when toggled from inactive to active
+          fetchActiveSession();
         }
       )
       .subscribe();
@@ -99,7 +91,7 @@ const SessionDisplay = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [timer?.id, poll?.id]);
+  }, []);
 
   const fetchActiveSession = async () => {
     try {
