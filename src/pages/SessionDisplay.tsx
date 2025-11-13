@@ -48,9 +48,6 @@ const SessionDisplay = () => {
   const [pollResults, setPollResults] = useState<Record<string, number>>({});
   const [subItems, setSubItems] = useState<SubItem[]>([]);
   const [loading, setLoading] = useState(true);
-  // Display-only countdown that mirrors DB remaining_seconds
-  const [displaySeconds, setDisplaySeconds] = useState<number | null>(null);
-  const localTickRef = useRef<NodeJS.Timeout | null>(null);
   const timerChannelRef = useRef<any>(null);
 
   const fetchPollResults = async (pollId: string) => {
@@ -139,11 +136,9 @@ const SessionDisplay = () => {
 
           if (!timerError && timerData) {
             setTimer(timerData as TimerSession);
-            setDisplaySeconds((timerData as TimerSession).remaining_seconds);
           }
         } else {
           setTimer(null);
-          setDisplaySeconds(null);
         }
 
         // Fetch linked poll if exists
@@ -194,7 +189,7 @@ const SessionDisplay = () => {
     }
   };
 
-  // Fetch a single timer row reliably and refresh local display seconds
+  // Fetch a single timer row reliably
   const fetchTimerById = async (id: string) => {
     try {
       const { data, error } = await supabase
@@ -205,7 +200,6 @@ const SessionDisplay = () => {
 
       if (!error && data) {
         setTimer(data as unknown as TimerSession);
-        setDisplaySeconds((data as any).remaining_seconds);
       }
     } catch (e) {
       console.error('Error fetching timer by id:', e);
@@ -243,28 +237,6 @@ const SessionDisplay = () => {
     };
   }, [timer?.id]);
 
-  // Local, display-only smooth countdown mirroring DB seconds
-  useEffect(() => {
-    if (localTickRef.current) {
-      clearInterval(localTickRef.current);
-      localTickRef.current = null;
-    }
-
-    if (!timer || timer.status !== 'running') return;
-
-    if (displaySeconds === null) {
-      setDisplaySeconds(timer.remaining_seconds);
-    }
-
-    localTickRef.current = setInterval(() => {
-      setDisplaySeconds(prev => (prev === null ? prev : Math.max(0, prev - 1)));
-    }, 1000);
-
-    return () => {
-      if (localTickRef.current) clearInterval(localTickRef.current);
-    };
-  }, [timer?.id, timer?.status]);
-
   // Fallback poll in case a realtime event is missed
   useEffect(() => {
     if (!timer?.id || timer.status !== 'running') return;
@@ -292,14 +264,12 @@ const SessionDisplay = () => {
 
   const getProgressValue = () => {
     if (!timer || timer.duration_seconds === 0) return 0;
-    const remaining = displaySeconds ?? timer.remaining_seconds;
-    return ((timer.duration_seconds - remaining) / timer.duration_seconds) * 100;
+    return ((timer.duration_seconds - timer.remaining_seconds) / timer.duration_seconds) * 100;
   };
 
   const getTimerColor = () => {
     if (!timer) return 'bg-primary';
-    const remaining = displaySeconds ?? timer.remaining_seconds;
-    const percentage = (remaining / timer.duration_seconds) * 100;
+    const percentage = (timer.remaining_seconds / timer.duration_seconds) * 100;
     if (percentage <= 10) return 'bg-destructive';
     if (percentage <= 25) return 'bg-orange-500';
     return 'bg-primary';
@@ -391,9 +361,9 @@ const SessionDisplay = () => {
 
                 <div className="text-center py-8">
                   <div className={`text-8xl font-mono font-bold ${
-                    (displaySeconds ?? timer.remaining_seconds) <= timer.duration_seconds * 0.1 ? 'text-destructive animate-pulse' : ''
+                    timer.remaining_seconds <= timer.duration_seconds * 0.1 ? 'text-destructive animate-pulse' : ''
                   }`}>
-                    {formatTime(displaySeconds ?? timer.remaining_seconds)}
+                    {formatTime(timer.remaining_seconds)}
                   </div>
                   <p className="text-lg text-muted-foreground mt-4">
                     of {formatTime(timer.duration_seconds)}
