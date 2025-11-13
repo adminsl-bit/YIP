@@ -103,7 +103,37 @@ export const SessionManagement = () => {
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'timer_sessions' },
-        () => fetchAvailableTimers()
+        (payload) => {
+          const newRow: any = (payload as any).new;
+          const oldRow: any = (payload as any).old;
+          setAvailableTimers((prev) => {
+            if (!prev) return prev as any;
+            const eventType = (payload as any).eventType;
+            if (eventType === 'UPDATE' && newRow) {
+              return prev.map(t => t.id === newRow.id ? {
+                id: newRow.id,
+                title: newRow.title,
+                status: newRow.status,
+                remaining_seconds: newRow.remaining_seconds,
+                duration_seconds: newRow.duration_seconds
+              } : t);
+            }
+            if (eventType === 'INSERT' && newRow) {
+              const inserted = {
+                id: newRow.id,
+                title: newRow.title,
+                status: newRow.status,
+                remaining_seconds: newRow.remaining_seconds,
+                duration_seconds: newRow.duration_seconds
+              } as any;
+              return [inserted, ...prev.filter(t => t.id !== newRow.id)];
+            }
+            if (eventType === 'DELETE' && oldRow) {
+              return prev.filter(t => t.id !== oldRow.id);
+            }
+            return prev;
+          });
+        }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'polls' },
@@ -327,7 +357,8 @@ export const SessionManagement = () => {
         description: action === 'reset' ? 'Timer reset' : `Timer ${action}ed`,
       });
 
-      fetchAvailableTimers();
+      // Optimistic UI will be synced by realtime updates
+      // fetchAvailableTimers();
     } catch (error) {
       console.error('Error controlling timer:', error);
       toast({
