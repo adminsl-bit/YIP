@@ -57,7 +57,7 @@ const App = () => (
                 <OrganizerDashboard />
               </AuthenticatedRoute>
             } />
-            <Route path="/display/timer" element={<TimerDisplay />} />
+            <Route path="/display/timer" element={<SessionDisplay />} />
             <Route path="/display/session" element={<SessionDisplay />} />
             <Route path="/display/polls" element={<PollDisplay />} />
             <Route path="/display/leaderboard" element={<LeaderboardDisplay />} />
