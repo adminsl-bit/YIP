@@ -52,23 +52,30 @@ export const TimerTicker = () => {
 
     if (!active || active.status !== 'running') return;
 
+    // Store the active timer data in a ref to avoid stale closures
+    const timerRef = { current: active };
+    
     tickRef.current = window.setInterval(async () => {
-      // Use local countdown to avoid extra reads
-      const nextRemaining = Math.max(0, (active.remaining_seconds ?? 0) - 1);
+      // Read from the latest state
+      const currentTimer = timerRef.current;
+      if (!currentTimer) return;
+      
+      const nextRemaining = Math.max(0, (currentTimer.remaining_seconds ?? 0) - 1);
 
       try {
         if (nextRemaining === 0) {
           await supabase
             .from('timer_sessions')
             .update({ remaining_seconds: 0, status: 'completed' })
-            .eq('id', active.id);
+            .eq('id', currentTimer.id);
           setActive(null);
         } else {
           await supabase
             .from('timer_sessions')
             .update({ remaining_seconds: nextRemaining })
-            .eq('id', active.id);
-          // Optimistically update local state so UI feels live
+            .eq('id', currentTimer.id);
+          // Update both the ref and state
+          timerRef.current = { ...currentTimer, remaining_seconds: nextRemaining };
           setActive(prev => (prev ? { ...prev, remaining_seconds: nextRemaining } : prev));
         }
       } catch (e) {
@@ -79,7 +86,7 @@ export const TimerTicker = () => {
     return () => {
       if (tickRef.current) window.clearInterval(tickRef.current);
     };
-  }, [active?.id, active?.status, active?.remaining_seconds]);
+  }, [active?.id, active?.status]);
 
   return null;
 };
