@@ -78,27 +78,31 @@ const SessionDisplay = () => {
       .channel('session_display_changes')
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'session_items' },
-        () => fetchActiveSession()
+        () => {
+          console.log('[SessionDisplay] session_items changed, refetching...');
+          fetchActiveSession();
+        }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'timer_sessions' },
         () => {
-          // Always refetch the active session to ensure the linked timer stays in sync
+          console.log('[SessionDisplay] timer_sessions changed, refetching...');
           fetchActiveSession();
         }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'polls' },
-        (payload) => {
-          console.log('Poll change detected:', payload);
-          // Refetch the entire active session to pick up any poll changes
-          // This ensures polls show up when toggled from inactive to active
+        () => {
+          console.log('[SessionDisplay] polls changed, refetching...');
           fetchActiveSession();
         }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'session_sub_items' as any },
-        () => fetchActiveSession()
+        () => {
+          console.log('[SessionDisplay] session_sub_items changed, refetching...');
+          fetchActiveSession();
+        }
       )
       .subscribe();
 
@@ -106,29 +110,6 @@ const SessionDisplay = () => {
       subscription.unsubscribe();
     };
   }, []);
-
-  // Smooth local tick for the stage timer display
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  useEffect(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
-    if (!timer || timer.status !== 'running') return;
-
-    intervalRef.current = setInterval(() => {
-      setTimer(prev => {
-        if (!prev || prev.status !== 'running') return prev;
-        const newRemaining = Math.max(0, prev.remaining_seconds - 1);
-        return { ...prev, remaining_seconds: newRemaining } as TimerSession;
-      });
-    }, 1000);
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [timer?.id, timer?.status]);
   const fetchActiveSession = async () => {
     try {
       const { data: sessionData, error: sessionError } = await supabase
