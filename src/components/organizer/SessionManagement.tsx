@@ -805,7 +805,7 @@ export const SessionManagement = () => {
                 <DialogHeader>
                   <DialogTitle>{editingSessionId ? 'Edit' : 'Create'} Session Item</DialogTitle>
                   <DialogDescription>
-                    {editingSessionId ? 'Update the' : 'Add a new'} agenda item with optional timer and poll
+                    {editingSessionId ? 'Update the' : 'Add a new'} agenda item with optional timer. Polls can be linked here or individually to sub-items later.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
@@ -879,6 +879,9 @@ export const SessionManagement = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Tip: Select "No Poll" for parent sessions. Link individual polls to sub-items after creation.
+                      </p>
                     </div>
                   </div>
                 </div>
