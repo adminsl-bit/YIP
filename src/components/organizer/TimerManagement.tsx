@@ -358,7 +358,7 @@ export const TimerManagement = () => {
             <Button 
               variant="outline" 
               size="sm"
-              onClick={() => window.open('/timer-display', '_blank')}
+              onClick={() => window.open('/display/timer', '_blank')}
             >
               <ExternalLink className="h-4 w-4 mr-2" />
               Open Display
@@ -438,6 +438,76 @@ export const TimerManagement = () => {
             </Dialog>
           </div>
         </CardHeader>
+
+        {/* Edit Timer Dialog */}
+        <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Timer Session</DialogTitle>
+              <DialogDescription>
+                Update the timer session details
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-title">Session Title</Label>
+                <Input
+                  id="edit-title"
+                  placeholder="e.g., Parliament Session, Lunch Break"
+                  value={newTimerTitle}
+                  onChange={(e) => setNewTimerTitle(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Duration</Label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Label htmlFor="edit-hours" className="text-xs text-muted-foreground">Hours</Label>
+                    <Input
+                      id="edit-hours"
+                      type="number"
+                      min="0"
+                      max="23"
+                      value={hours}
+                      onChange={(e) => setHours(Math.max(0, parseInt(e.target.value) || 0))}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label htmlFor="edit-minutes" className="text-xs text-muted-foreground">Minutes</Label>
+                    <Input
+                      id="edit-minutes"
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={minutes}
+                      onChange={(e) => setMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label htmlFor="edit-seconds" className="text-xs text-muted-foreground">Seconds</Label>
+                    <Input
+                      id="edit-seconds"
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={seconds}
+                      onChange={(e) => setSeconds(Math.max(0, parseInt(e.target.value) || 0))}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateTimer} disabled={loading}>
+                Update Timer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         <CardContent>
           {timerSessions.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
