@@ -398,18 +398,10 @@ const SessionDisplay = () => {
         .update({ is_active: !currentActive })
         .eq('id', pollId);
       if (error) throw error;
-      // Update local state and hide card if both flags are false
-      setPoll((prev) => {
-        if (prev && prev.id === pollId) {
-          const updated = { ...prev, is_active: !currentActive };
-          return (updated.is_active || updated.show_results_publicly) ? updated : null;
-        }
-        return prev;
-      });
-      setActiveSubItemPolls((prev) => {
-        const updated = prev.map((p) => p.poll.id === pollId ? { ...p, poll: { ...p.poll, is_active: !currentActive } } : p);
-        return updated.filter((p) => p.poll.is_active || p.poll.show_results_publicly);
-      });
+      
+      // Refetch entire session to ensure consistency
+      await fetchActiveSession();
+      
       toast({ title: currentActive ? 'Voting closed' : 'Voting opened' });
     } catch (err) {
       console.error('Error toggling poll active:', err);
@@ -429,45 +421,14 @@ const SessionDisplay = () => {
         .update({ show_results_publicly: next })
         .eq('id', pollId);
       if (error) throw error;
-      // Update local state and hide card if both flags are false
-      setPoll((prev) => {
-        if (prev && prev.id === pollId) {
-          const updated = { ...prev, show_results_publicly: next };
-          return (updated.is_active || updated.show_results_publicly) ? updated : null;
-        }
-        return prev;
-      });
-      setActiveSubItemPolls((prev) => {
-        // Update visibility flag
-        let updated = prev.map((p) => p.poll.id === pollId ? { ...p, poll: { ...p.poll, show_results_publicly: next } } : p);
-        if (next) {
-          // Fetch fresh results for this poll
-          // Note: We do not await here because we still filter below. We'll compute results separately.
-        }
-        // Filter out polls that are neither active nor showing results
-        updated = updated.filter((p) => p.poll.is_active || p.poll.show_results_publicly);
-        return updated;
-      });
-      if (next) {
-        // Fetch fresh results for this poll
-        const { data: votes, error: voteErr } = await supabase
-          .from('poll_votes')
-          .select('option_id')
-          .eq('poll_id', pollId);
-        if (!voteErr && votes) {
-          const results: Record<string, number> = {};
-          votes.forEach((v) => { results[v.option_id] = (results[v.option_id] || 0) + 1; });
-          setPollResults((prev) => (poll && poll.id === pollId ? results : prev));
-          setActiveSubItemPolls((prev) => prev.map((p) => p.poll.id === pollId ? { ...p, results } : p));
-        }
-      } else {
-        setPollResults((prev) => (poll && poll.id === pollId ? {} : prev));
-        setActiveSubItemPolls((prev) => prev.map((p) => p.poll.id === pollId ? { ...p, results: {} } : p));
-      }
+      
+      // Refetch entire session to ensure consistency
+      await fetchActiveSession();
+      
       toast({ title: next ? 'Results shown' : 'Results hidden' });
     } catch (err) {
-      console.error('Error toggling results visibility:', err);
-      toast({ title: 'Failed to update visibility', description: 'Please try again.', variant: 'destructive' });
+      console.error('Error toggling show results:', err);
+      toast({ title: 'Failed to update poll', description: 'Please try again.', variant: 'destructive' });
     }
   };
 
