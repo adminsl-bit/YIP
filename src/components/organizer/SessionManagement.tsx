@@ -615,34 +615,33 @@ export const SessionManagement = () => {
               </div>
             </div>
 
-            <div className="flex flex-col gap-2 min-w-[140px]">
-              <div className="flex gap-1 justify-end">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleEditSession(item)}
-                  disabled={loading}
-                  className="h-8 w-8 p-0"
-                >
-                  <Pencil className="h-4 w-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => handleDeleteSession(item.id)}
-                  disabled={loading}
-                  className="h-8 w-8 p-0"
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleEditSession(item)}
+                disabled={loading}
+                className="h-8 w-8 p-0"
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => handleDeleteSession(item.id)}
+                disabled={loading}
+                className="h-8 w-8 p-0"
+              >
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+              
+              <div className="h-6 w-px bg-border mx-1" />
               
               <Button
                 size="sm"
                 variant={item.is_active ? "default" : "outline"}
                 onClick={() => handleActivateItem(item.id, item.is_active)}
                 disabled={loading}
-                className="w-full"
               >
                 {item.is_active ? 'Deactivate' : 'Activate'}
               </Button>
@@ -653,7 +652,6 @@ export const SessionManagement = () => {
                   variant="ghost"
                   onClick={() => handleCompleteItem(item.id)}
                   disabled={loading}
-                  className="w-full"
                 >
                   <CheckCircle className="h-4 w-4 mr-1" />
                   Complete
