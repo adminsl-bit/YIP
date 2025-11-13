@@ -151,7 +151,7 @@ export const TimerManagement = () => {
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      setTimerSessions(data as TimerSession[]);
+      setTimerSessions(data as any as TimerSession[]);
     } catch (error) {
       console.error('Error fetching timer sessions:', error);
       toast({
@@ -194,7 +194,7 @@ export const TimerManagement = () => {
           is_active: false,
           created_by: user.id,
           sort_order: timerSessions.length, // Place at end of list
-        });
+        } as any);
 
       if (error) throw error;
 
@@ -442,7 +442,7 @@ export const TimerManagement = () => {
       for (const update of updates) {
         await supabase
           .from('timer_sessions')
-          .update({ sort_order: update.sort_order })
+          .update({ sort_order: update.sort_order } as any)
           .eq('id', update.id);
       }
 
