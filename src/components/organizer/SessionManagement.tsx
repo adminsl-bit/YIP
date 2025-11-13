@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Calendar, Plus, GripVertical, Play, Pause, Square, CheckCircle, BarChart, Clock, ExternalLink, Eye, Pencil, Trash2 } from "lucide-react";
+import { Calendar, Plus, GripVertical, Play, Pause, Square, CheckCircle, BarChart, Clock, ExternalLink, Eye, Pencil, Trash2, RotateCcw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
   Dialog,
@@ -272,7 +272,7 @@ export const SessionManagement = () => {
     }
   };
 
-  const handleTimerControl = async (timerId: string | null, action: 'start' | 'pause' | 'stop') => {
+  const handleTimerControl = async (timerId: string | null, action: 'start' | 'pause' | 'stop' | 'reset') => {
     if (!timerId) return;
 
     setLoading(true);
@@ -281,13 +281,37 @@ export const SessionManagement = () => {
 
       switch (action) {
         case 'start':
-          updates = { status: 'running', started_at: new Date().toISOString() };
+          // Deactivate all other timers first
+          await supabase
+            .from('timer_sessions')
+            .update({ is_active: false })
+            .neq('id', timerId);
+          
+          updates = { 
+            status: 'running', 
+            is_active: true,
+            started_at: new Date().toISOString() 
+          };
           break;
         case 'pause':
           updates = { status: 'paused' };
           break;
         case 'stop':
-          updates = { status: 'stopped' };
+          updates = { status: 'stopped', is_active: false };
+          break;
+        case 'reset':
+          // Get the original duration to reset remaining_seconds
+          const { data: timerData } = await supabase
+            .from('timer_sessions')
+            .select('duration_seconds')
+            .eq('id', timerId)
+            .single();
+          
+          updates = { 
+            status: 'stopped',
+            is_active: false,
+            remaining_seconds: timerData?.duration_seconds || 0
+          };
           break;
       }
 
@@ -300,7 +324,7 @@ export const SessionManagement = () => {
 
       toast({
         title: "Success",
-        description: `Timer ${action}ed`,
+        description: action === 'reset' ? 'Timer reset' : `Timer ${action}ed`,
       });
 
       fetchAvailableTimers();
@@ -584,16 +608,19 @@ export const SessionManagement = () => {
                     <span className="text-sm font-mono">{formatTime(linkedTimer.remaining_seconds)}</span>
                     <div className="flex gap-1">
                       {linkedTimer.status === 'running' ? (
-                        <Button size="sm" variant="ghost" onClick={() => handleTimerControl(item.timer_id, 'pause')}>
+                        <Button size="sm" variant="ghost" onClick={() => handleTimerControl(item.timer_id, 'pause')} title="Pause">
                           <Pause className="h-3 w-3" />
                         </Button>
                       ) : (
-                        <Button size="sm" variant="ghost" onClick={() => handleTimerControl(item.timer_id, 'start')}>
+                        <Button size="sm" variant="ghost" onClick={() => handleTimerControl(item.timer_id, 'start')} title="Play">
                           <Play className="h-3 w-3" />
                         </Button>
                       )}
-                      <Button size="sm" variant="ghost" onClick={() => handleTimerControl(item.timer_id, 'stop')}>
+                      <Button size="sm" variant="ghost" onClick={() => handleTimerControl(item.timer_id, 'stop')} title="Stop">
                         <Square className="h-3 w-3" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => handleTimerControl(item.timer_id, 'reset')} title="Reset">
+                        <RotateCcw className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
