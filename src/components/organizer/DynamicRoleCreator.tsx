@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { UserPlus, Shield, Newspaper } from "lucide-react";
+import { UserPlus, Shield, Newspaper, Trash2, RefreshCw } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,6 +24,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 type RoleType = 'jury' | 'admin' | 'journalist';
 
@@ -78,6 +80,14 @@ const roleConfigs: Record<RoleType, RoleConfig> = {
   },
 };
 
+interface ExistingUser {
+  user_id: string;
+  name: string;
+  email: string;
+  serial_number: number;
+  user_type: string;
+}
+
 export const DynamicRoleCreator = () => {
   const { toast } = useToast();
   const [selectedRole, setSelectedRole] = useState<RoleType>('jury');
@@ -85,9 +95,110 @@ export const DynamicRoleCreator = () => {
   const [password, setPassword] = useState<string>('');
   const [isCreating, setIsCreating] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [existingUsers, setExistingUsers] = useState<{
+    jury: ExistingUser[];
+    admin: ExistingUser[];
+    journalist: ExistingUser[];
+  }>({ jury: [], admin: [], journalist: [] });
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
   const config = roleConfigs[selectedRole];
   const Icon = config.icon;
+
+  const fetchExistingUsers = async () => {
+    setIsLoadingUsers(true);
+    try {
+      // Fetch jury users
+      const { data: juryData } = await supabase
+        .from('profiles')
+        .select('user_id, name, email, serial_number, user_type')
+        .eq('user_type', 'jury')
+        .order('serial_number');
+
+      // Fetch admin and journalist students
+      const { data: rolesData } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      const { data: studentData } = await supabase
+        .from('profiles')
+        .select('user_id, name, email, serial_number, user_type')
+        .eq('user_type', 'student')
+        .in('user_id', rolesData?.map(r => r.user_id) || [])
+        .order('serial_number');
+
+      // Categorize students by their role
+      const adminUsers: ExistingUser[] = [];
+      const journalistUsers: ExistingUser[] = [];
+
+      studentData?.forEach(student => {
+        const userRole = rolesData?.find(r => r.user_id === student.user_id);
+        if (userRole?.role === 'admin_student') {
+          adminUsers.push(student);
+        } else if (userRole?.role === 'journalist') {
+          journalistUsers.push(student);
+        }
+      });
+
+      setExistingUsers({
+        jury: juryData || [],
+        admin: adminUsers,
+        journalist: journalistUsers,
+      });
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchExistingUsers();
+  }, []);
+
+  const handleDeleteUser = async (userId: string, userName: string) => {
+    setDeletingUserId(userId);
+    try {
+      // Delete user profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (profileError) throw profileError;
+
+      // Delete auth user (service role required - will fail gracefully if not authorized)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        await fetch(`https://ybxktwmpxdnpkfeewrpe.supabase.co/functions/v1/delete-user`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ userId }),
+        });
+      }
+
+      toast({
+        title: "User Deleted",
+        description: `${userName} has been deleted successfully.`,
+      });
+
+      // Refresh the list
+      fetchExistingUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete user. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingUserId(null);
+    }
+  };
 
   const handleCreateUsers = async () => {
     if (count < 1 || count > 50) {
@@ -124,6 +235,9 @@ export const DynamicRoleCreator = () => {
       setIsDialogOpen(false);
       setPassword('');
       setCount(1);
+      
+      // Refresh the user list
+      fetchExistingUsers();
     } catch (error) {
       console.error('Error creating users:', error);
       toast({
@@ -241,6 +355,196 @@ export const DynamicRoleCreator = () => {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        <Separator className="my-6" />
+
+        {/* Existing Users List */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">Existing Users</h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={fetchExistingUsers}
+              disabled={isLoadingUsers}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoadingUsers ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+          </div>
+
+          {isLoadingUsers ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <RefreshCw className="h-6 w-6 animate-spin mx-auto mb-2" />
+              Loading users...
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {/* Jury Users */}
+              {existingUsers.jury.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="h-4 w-4 text-blue-600" />
+                    <h4 className="font-semibold text-sm">Jury Members ({existingUsers.jury.length})</h4>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {existingUsers.jury.map(user => (
+                      <div
+                        key={user.user_id}
+                        className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2 h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              disabled={deletingUserId === user.user_id}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete {user.name}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete this jury account and all associated data. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user.user_id, user.name)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Admin Users */}
+              {existingUsers.admin.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-purple-600" />
+                    <h4 className="font-semibold text-sm">Admin Students ({existingUsers.admin.length})</h4>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {existingUsers.admin.map(user => (
+                      <div
+                        key={user.user_id}
+                        className="flex items-center justify-between p-3 bg-purple-50 rounded-lg border border-purple-200"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2 h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              disabled={deletingUserId === user.user_id}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete {user.name}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete this admin account and all associated data. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user.user_id, user.name)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Journalist Users */}
+              {existingUsers.journalist.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Newspaper className="h-4 w-4 text-green-600" />
+                    <h4 className="font-semibold text-sm">Journalists ({existingUsers.journalist.length})</h4>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {existingUsers.journalist.map(user => (
+                      <div
+                        key={user.user_id}
+                        className="flex items-center justify-between p-3 bg-green-50 rounded-lg border border-green-200"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2 h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              disabled={deletingUserId === user.user_id}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete {user.name}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete this journalist account and all associated data. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user.user_id, user.name)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {existingUsers.jury.length === 0 && existingUsers.admin.length === 0 && existingUsers.journalist.length === 0 && (
+                <div className="text-center py-8 text-muted-foreground">
+                  No users found. Create some users to get started.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
