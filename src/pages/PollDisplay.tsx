@@ -219,10 +219,10 @@ const PollDisplay = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-700">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-purple-700 px-4">
         <div className="text-center text-white">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-xl">Loading Poll Display...</p>
+          <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-base sm:text-xl">Loading Poll Display...</p>
         </div>
       </div>
     );
@@ -230,15 +230,15 @@ const PollDisplay = () => {
 
   if (!polls.length) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-600 to-gray-800">
-        <div className="max-w-2xl w-full mx-auto p-8">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-600 to-gray-800 px-4">
+        <div className="max-w-2xl w-full mx-auto p-4 sm:p-8">
           <Card className="bg-black/20 backdrop-blur-md border-white/20">
-            <CardContent className="p-12 text-center text-white">
-              <Vote className="w-24 h-24 mx-auto opacity-50 mb-8" />
-              <h1 className="text-4xl md:text-6xl font-bold mb-4">
+            <CardContent className="p-6 sm:p-8 lg:p-12 text-center text-white">
+              <Vote className="w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 mx-auto opacity-50 mb-4 sm:mb-6 lg:mb-8" />
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-bold mb-3 sm:mb-4">
                 No Active Polls
               </h1>
-              <p className="text-xl opacity-75">
+              <p className="text-base sm:text-lg lg:text-xl opacity-75">
                 Waiting for organizer to activate a poll
               </p>
             </CardContent>
@@ -255,27 +255,27 @@ const PollDisplay = () => {
   const maxVotes = getMaxVotes(activePoll.id);
 
   return (
-    <div className="h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col p-4 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex flex-col p-2 sm:p-4 overflow-hidden">
       <BreakingNewsTicker />
-      <div className="max-w-6xl w-full mx-auto flex flex-col h-full">
+      <div className="max-w-6xl w-full mx-auto flex flex-col h-full px-2 sm:px-0">
         {/* Compact Header */}
-        <div className="text-center mb-4 flex-shrink-0">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
-              <BarChart3 className="w-6 h-6 text-white" />
+        <div className="text-center mb-3 sm:mb-4 flex-shrink-0">
+          <div className="flex items-center justify-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg">
+              <BarChart3 className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-800">
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800">
               {activePoll.title}
             </h1>
           </div>
           
           {activePoll.description && (
-            <p className="text-lg text-slate-600 mb-3">{activePoll.description}</p>
+            <p className="text-sm sm:text-base lg:text-lg text-slate-600 mb-2 sm:mb-3 px-2">{activePoll.description}</p>
           )}
           
-          <div className="flex justify-center items-center gap-3">
-            <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-3 py-1">
-              <Users className="w-4 h-4 mr-1" />
+          <div className="flex justify-center items-center gap-2 sm:gap-3">
+            <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white px-2 sm:px-3 py-1 text-xs sm:text-sm">
+              <Users className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
               {totalVotes} votes
             </Badge>
             <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-3 py-1">

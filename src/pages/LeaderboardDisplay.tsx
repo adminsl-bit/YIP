@@ -182,10 +182,10 @@ const LeaderboardDisplay = () => {
 
   if (!isLeaderboardVisible) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center px-4">
         <div className="text-center space-y-4">
-          <div className="text-6xl font-bold text-muted-foreground">Leaderboard Hidden</div>
-          <p className="text-2xl text-muted-foreground">The leaderboard is currently disabled by the organizer.</p>
+          <div className="text-3xl sm:text-4xl md:text-6xl font-bold text-muted-foreground">Leaderboard Hidden</div>
+          <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground">The leaderboard is currently disabled by the organizer.</p>
         </div>
       </div>
     );
@@ -193,31 +193,31 @@ const LeaderboardDisplay = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center">
-        <div className="text-6xl font-bold text-primary animate-pulse">Loading Leaderboard...</div>
+      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center px-4">
+        <div className="text-3xl sm:text-4xl md:text-6xl font-bold text-primary animate-pulse text-center">Loading Leaderboard...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-8">
+    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4 sm:p-6 lg:p-8">
       <BreakingNewsTicker />
       <div className="max-w-7xl mx-auto">
-        <h1 className="text-8xl font-bold text-center mb-12 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold text-center mb-6 sm:mb-8 lg:mb-12 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
           Live Leaderboard
         </h1>
 
         <Tabs defaultValue="scoring" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-16 text-2xl">
-            <TabsTrigger value="scoring" className="text-2xl">Scoring Leaders</TabsTrigger>
-            <TabsTrigger value="voting" className="text-2xl">Voting Results</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 h-12 sm:h-14 lg:h-16 text-sm sm:text-lg lg:text-2xl">
+            <TabsTrigger value="scoring" className="text-sm sm:text-lg lg:text-2xl">Scoring Leaders</TabsTrigger>
+            <TabsTrigger value="voting" className="text-sm sm:text-lg lg:text-2xl">Voting Results</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="scoring" className="mt-8">
-            <div className="grid gap-6">
+          <TabsContent value="scoring" className="mt-4 sm:mt-6 lg:mt-8">
+            <div className="grid gap-4 sm:gap-6">
               {scoringLeaders.map((leader, index) => (
-                <Card key={leader.student_id} className="p-6 bg-card/80 backdrop-blur-sm border-2">
-                  <div className="flex items-center gap-8">
+                <Card key={leader.student_id} className="p-4 sm:p-6 bg-card/80 backdrop-blur-sm border-2">
+                  <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
                     {getRankIcon(index)}
                     <div className="flex-1">
                       <div className="flex items-center gap-4 mb-2">

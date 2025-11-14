@@ -151,61 +151,61 @@ const TimerDisplay = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="min-h-screen flex items-center justify-center bg-white px-4">
         <div className="text-center text-slate-800">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-xl">Loading Timer Display...</p>
+          <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-base sm:text-xl">Loading Timer Display...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-6 lg:p-8">
       <BreakingNewsTicker />
       
-      <div className="max-w-6xl mx-auto mt-12">
+      <div className="max-w-6xl mx-auto mt-6 sm:mt-8 lg:mt-12">
         {/* Timer Header Card */}
         <Card className="border-2 border-primary shadow-xl">
-          <CardContent className="p-8">
+          <CardContent className="p-4 sm:p-6 lg:p-8">
             {timer ? (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-8 w-8 text-primary" />
-                    <h1 className="text-4xl font-bold">{timer.title}</h1>
+              <div className="space-y-4 sm:space-y-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center sm:text-left">{timer.title}</h1>
                   </div>
                   <div className="flex items-center gap-2">
                     {timer.status === 'running' ? (
-                      <Play className="h-6 w-6 text-green-500 fill-green-500" />
+                      <Play className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 fill-green-500" />
                     ) : timer.status === 'paused' ? (
-                      <Pause className="h-6 w-6 text-yellow-500" />
+                      <Pause className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500" />
                     ) : (
-                      <Square className="h-6 w-6 text-muted-foreground" />
+                      <Square className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
                     )}
                     <Badge 
                       variant={timer.status === 'running' ? 'default' : 'secondary'}
-                      className="text-lg px-4 py-2"
+                      className="text-sm sm:text-base lg:text-lg px-3 sm:px-4 py-1 sm:py-2"
                     >
                       {timer.status}
                     </Badge>
                   </div>
                 </div>
 
-                <div className="text-center py-12">
-                  <div className={`text-9xl font-mono font-bold transition-colors duration-300 ${
+                <div className="text-center py-6 sm:py-8 lg:py-12">
+                  <div className={`text-5xl sm:text-7xl lg:text-9xl font-mono font-bold transition-colors duration-300 ${
                     timer.remaining_seconds <= timer.duration_seconds * 0.1 ? 'text-destructive animate-pulse' : ''
                   }`}>
                     {formatTime(timer.remaining_seconds)}
                   </div>
-                  <p className="text-2xl text-muted-foreground mt-6">
+                  <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground mt-3 sm:mt-4 lg:mt-6">
                     of {formatTime(timer.duration_seconds)}
                   </p>
                 </div>
 
                 <Progress 
                   value={getProgressValue()} 
-                  className={`h-6 transition-all duration-300 ${
+                  className={`h-4 sm:h-5 lg:h-6 transition-all duration-300 ${
                     timer.remaining_seconds <= timer.duration_seconds * 0.1 ? 'bg-destructive' :
                     timer.remaining_seconds <= timer.duration_seconds * 0.25 ? 'bg-orange-500' :
                     'bg-primary'
