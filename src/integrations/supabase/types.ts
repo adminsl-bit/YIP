@@ -881,6 +881,7 @@ export type Database = {
           award_ids: string[] | null
           city: string | null
           constituency: string | null
+          jury_count_submitted: number | null
           name: string | null
           party_number: number | null
           photo_url: string | null
