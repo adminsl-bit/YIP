@@ -4,12 +4,11 @@ import { StudentProfile } from '@/components/student/StudentProfile';
 import InteractiveParliamentTree from '@/components/student/InteractiveParliamentTree';
 import { StudentVotingTab } from '@/components/student/StudentVotingTab';
 import { ParliamentAgenda } from '@/components/student/ParliamentAgenda';
-import { TimerControl } from '@/components/organizer/TimerControl';
-import { PollManagement } from '@/components/organizer/PollManagement';
 import { AdminSpeechTracker } from '@/components/organizer/AdminSpeechTracker';
+import { SessionManagement } from '@/components/organizer/SessionManagement';
 import { BreakingNewsTicker } from '@/components/display/BreakingNewsTicker';
 import { Button } from "@/components/ui/button";
-import { LogOut, User, Users, Calendar, Clock, BarChart, Mic } from "lucide-react";
+import { LogOut, User, Users, Calendar, Mic, ListOrdered } from "lucide-react";
 
 export const AdminStudentDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -60,7 +59,7 @@ export const AdminStudentDashboard = () => {
           </div>
 
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-6 gap-2 mb-6">
+            <TabsList className="grid w-full grid-cols-5 gap-2 mb-6">
               <TabsTrigger value="profile" className="gap-2">
                 <User className="h-4 w-4" />
                 <span className="hidden sm:inline">My Profile</span>
@@ -73,17 +72,13 @@ export const AdminStudentDashboard = () => {
                 <Calendar className="h-4 w-4" />
                 <span className="hidden sm:inline">Schedule</span>
               </TabsTrigger>
+              <TabsTrigger value="sessions" className="gap-2">
+                <ListOrdered className="h-4 w-4" />
+                <span className="hidden sm:inline">Sessions</span>
+              </TabsTrigger>
               <TabsTrigger value="tracking" className="gap-2">
                 <Mic className="h-4 w-4" />
                 <span className="hidden sm:inline">Speech Tracking</span>
-              </TabsTrigger>
-              <TabsTrigger value="timer" className="gap-2">
-                <Clock className="h-4 w-4" />
-                <span className="hidden sm:inline">Timer</span>
-              </TabsTrigger>
-              <TabsTrigger value="polls" className="gap-2">
-                <BarChart className="h-4 w-4" />
-                <span className="hidden sm:inline">Polls</span>
               </TabsTrigger>
             </TabsList>
 
@@ -99,16 +94,12 @@ export const AdminStudentDashboard = () => {
               <ParliamentAgenda />
             </TabsContent>
 
+            <TabsContent value="sessions">
+              <SessionManagement />
+            </TabsContent>
+
             <TabsContent value="tracking">
               <AdminSpeechTracker />
-            </TabsContent>
-
-            <TabsContent value="timer">
-              <TimerControl />
-            </TabsContent>
-
-            <TabsContent value="polls">
-              <PollManagement />
             </TabsContent>
           </Tabs>
         </div>
