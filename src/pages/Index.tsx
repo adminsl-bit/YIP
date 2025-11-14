@@ -46,10 +46,11 @@ const Index = () => {
         <Link to="/login">
           <Button 
             variant="outline" 
-            className="bg-white/20 backdrop-blur-lg border-white/30 text-slate-800 hover:bg-white/35 hover:scale-105 transition-all duration-300 shadow-lg px-6 py-3 text-lg font-semibold rounded-2xl"
+            className="bg-white/20 backdrop-blur-lg border-white/30 text-slate-800 hover:bg-white/35 hover:scale-105 transition-all duration-300 shadow-lg px-3 sm:px-6 py-2 sm:py-3 text-sm sm:text-lg font-semibold rounded-xl sm:rounded-2xl"
           >
-            <User className="w-5 h-5 mr-2" />
-            Parliament Login
+            <User className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Parliament Login</span>
+            <span className="sm:hidden">Login</span>
           </Button>
         </Link>
       </div>

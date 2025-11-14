@@ -25,15 +25,15 @@ export const BreakingNewsTicker = () => {
 
   return (
     <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-red-600 via-orange-600 to-red-600 text-white shadow-2xl">
-      <div className="flex items-center gap-4 py-3 px-6 overflow-hidden">
-        <div className="flex items-center gap-2 bg-white/20 px-4 py-2 rounded-full flex-shrink-0">
-          <Newspaper className="w-5 h-5 animate-pulse" />
-          <span className="font-black text-sm uppercase tracking-wider">Breaking News</span>
+      <div className="flex items-center gap-2 sm:gap-4 py-2 sm:py-3 px-3 sm:px-6 overflow-hidden">
+        <div className="flex items-center gap-1 sm:gap-2 bg-white/20 px-2 sm:px-4 py-1 sm:py-2 rounded-full flex-shrink-0">
+          <Newspaper className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
+          <span className="font-black text-xs sm:text-sm uppercase tracking-wider">Breaking News</span>
         </div>
         <div className="flex-1 overflow-hidden">
           <div className="animate-marquee whitespace-nowrap inline-block">
             {activeNews.map((news, index) => (
-              <span key={news.id} className="inline-block mx-8 text-base font-medium">
+              <span key={news.id} className="inline-block mx-4 sm:mx-8 text-sm sm:text-base font-medium">
                 <span className="font-bold">{news.journalist_name}:</span> {news.headline}
                 {index < activeNews.length - 1 && (
                   <span className="mx-4 text-white/60">•</span>
