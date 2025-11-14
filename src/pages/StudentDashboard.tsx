@@ -1,16 +1,22 @@
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, User, Users, Vote, Calendar, Award, GraduationCap, Settings } from "lucide-react";
+import { LogOut, User, Users, Vote, Calendar, Award, GraduationCap, Settings, Mic } from "lucide-react";
 import { StudentProfile } from "@/components/student/StudentProfile";
 import InteractiveParliamentTree from "@/components/student/InteractiveParliamentTree";
 import { StudentVotingTab } from "@/components/student/StudentVotingTab";
 import { ParliamentAgenda } from "@/components/student/ParliamentAgenda";
 import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
+import { SpeechTrackingView } from "@/components/student/SpeechTrackingView";
 import { getPartyLetter } from "@/lib/utils";
 
 const StudentDashboard = () => {
   const { profile, signOut } = useAuth();
+  
+  // Check if user has Speaker or Deputy Speaker position
+  const canViewSpeechTracking = 
+    profile?.position?.toLowerCase().includes('speaker') || 
+    profile?.position?.toLowerCase().includes('deputy speaker');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 relative overflow-hidden">
@@ -87,7 +93,7 @@ const StudentDashboard = () => {
           </div>
 
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 gap-2 mb-8 sm:mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-2 sm:p-3 rounded-2xl sm:rounded-3xl shadow-xl h-auto">
+            <TabsList className={`grid w-full ${canViewSpeechTracking ? 'grid-cols-2 lg:grid-cols-5' : 'grid-cols-2 lg:grid-cols-4'} gap-2 mb-8 sm:mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-2 sm:p-3 rounded-2xl sm:rounded-3xl shadow-xl h-auto`}>
               <TabsTrigger 
                 value="profile" 
                 className="flex flex-col items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-4 sm:py-6 rounded-xl sm:rounded-2xl text-xs sm:text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[60px] sm:min-h-[80px] touch-target"
@@ -124,6 +130,18 @@ const StudentDashboard = () => {
                 </div>
                 <span className="text-center">Schedule</span>
               </TabsTrigger>
+              
+              {canViewSpeechTracking && (
+                <TabsTrigger 
+                  value="speeches" 
+                  className="flex flex-col items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-4 sm:py-6 rounded-xl sm:rounded-2xl text-xs sm:text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[60px] sm:min-h-[80px] touch-target"
+                >
+                  <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                    <Mic className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                  </div>
+                  <span className="text-center">Speech Tracking</span>
+                </TabsTrigger>
+              )}
             </TabsList>
 
             <TabsContent value="profile" className="space-y-6">
@@ -145,6 +163,12 @@ const StudentDashboard = () => {
             <TabsContent value="schedule">
               <ParliamentAgenda />
             </TabsContent>
+
+            {canViewSpeechTracking && (
+              <TabsContent value="speeches">
+                <SpeechTrackingView />
+              </TabsContent>
+            )}
 
           </Tabs>
         </div>
