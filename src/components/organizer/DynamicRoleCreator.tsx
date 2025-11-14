@@ -100,10 +100,10 @@ export const DynamicRoleCreator = () => {
     admin: ExistingUser[];
     journalist: ExistingUser[];
     students: ExistingUser[];
-  }>({ jury: [], admin: [], journalist: [], students: [] });
+    organizers: ExistingUser[];
+  }>({ jury: [], admin: [], journalist: [], students: [], organizers: [] });
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
-  const [isCreatingTestUsers, setIsCreatingTestUsers] = useState(false);
 
   const config = roleConfigs[selectedRole];
   const Icon = config.icon;
@@ -118,6 +118,13 @@ export const DynamicRoleCreator = () => {
         .eq('user_type', 'jury')
         .order('serial_number');
 
+      // Fetch organizer users
+      const { data: organizerData } = await supabase
+        .from('profiles')
+        .select('user_id, name, email, serial_number, user_type')
+        .eq('user_type', 'organizer')
+        .order('serial_number');
+
       // Fetch admin and journalist students
       const { data: rolesData } = await supabase
         .from('user_roles')
@@ -127,7 +134,6 @@ export const DynamicRoleCreator = () => {
         .from('profiles')
         .select('user_id, name, email, serial_number, user_type')
         .eq('user_type', 'student')
-        .in('user_id', rolesData?.map(r => r.user_id) || [])
         .order('serial_number');
 
       // Categorize students by their role
@@ -152,6 +158,7 @@ export const DynamicRoleCreator = () => {
         admin: adminUsers,
         journalist: journalistUsers,
         students: regularStudents,
+        organizers: organizerData || [],
       });
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -163,32 +170,6 @@ export const DynamicRoleCreator = () => {
   useEffect(() => {
     fetchExistingUsers();
   }, []);
-
-  const handleCreateTestUsers = async () => {
-    setIsCreatingTestUsers(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('seed-demo-users');
-      
-      if (error) throw error;
-
-      toast({
-        title: "Test Users Created",
-        description: "Successfully created test users for all roles. Check your email list for credentials.",
-      });
-
-      // Refresh the user lists
-      await fetchExistingUsers();
-    } catch (error) {
-      console.error('Error creating test users:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create test users",
-        variant: "destructive",
-      });
-    } finally {
-      setIsCreatingTestUsers(false);
-    }
-  };
 
   const handleDeleteUser = async (userId: string, userName: string) => {
     setDeletingUserId(userId);
@@ -387,58 +368,6 @@ export const DynamicRoleCreator = () => {
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleCreateUsers} disabled={isCreating}>
                   {isCreating ? "Creating..." : "Create Users"}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button 
-                variant="outline"
-                disabled={isCreatingTestUsers}
-                className="flex-1 gap-2"
-              >
-                <UserPlus className="h-4 w-4" />
-                {isCreatingTestUsers ? "Creating..." : "Create Test Users"}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="max-h-[80vh] overflow-y-auto">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Create Test Users?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will create pre-configured test accounts for all roles (password: 1234):
-                  <ul className="mt-4 space-y-2">
-                    <li className="flex items-center gap-2">
-                      <Badge variant="secondary">Student</Badge>
-                      <span className="font-mono text-sm">demo@student.yip</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Badge variant="secondary">Admin</Badge>
-                      <span className="font-mono text-sm">demo@admin.yip</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Badge variant="secondary">Jury</Badge>
-                      <span className="font-mono text-sm">demo@jury.yip</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Badge variant="secondary">Organizer</Badge>
-                      <span className="font-mono text-sm">demo@organizer.yip</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Badge variant="secondary">Journalist</Badge>
-                      <span className="font-mono text-sm">demo@journalist.yip</span>
-                    </li>
-                  </ul>
-                  <p className="mt-4 text-sm text-muted-foreground">
-                    These test users will appear in the existing users list below and can be deleted individually.
-                  </p>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleCreateTestUsers} disabled={isCreatingTestUsers}>
-                  {isCreatingTestUsers ? "Creating..." : "Create Test Users"}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -678,7 +607,59 @@ export const DynamicRoleCreator = () => {
                 </div>
               )}
 
-              {existingUsers.jury.length === 0 && existingUsers.admin.length === 0 && existingUsers.journalist.length === 0 && existingUsers.students.length === 0 && (
+              {/* Organizers */}
+              {existingUsers.organizers.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-orange-600" />
+                    <h4 className="font-semibold text-sm">Organizers ({existingUsers.organizers.length})</h4>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {existingUsers.organizers.map(user => (
+                      <div
+                        key={user.user_id}
+                        className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2 h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              disabled={deletingUserId === user.user_id}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete {user.name}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete this organizer account and all associated data. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user.user_id, user.name)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {existingUsers.jury.length === 0 && existingUsers.admin.length === 0 && existingUsers.journalist.length === 0 && existingUsers.students.length === 0 && existingUsers.organizers.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   No users found. Create some users to get started.
                 </div>
