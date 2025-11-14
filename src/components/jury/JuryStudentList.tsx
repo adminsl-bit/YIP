@@ -598,7 +598,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
           {selectedStudent && selectedSession && (
             <div className="mt-4">
               <AssessmentForm
-                key={selectedStudent.user_id} // Force re-render when student changes
+                key={`${selectedStudent.user_id}-${selectedSession}`} // Force re-render when student OR session changes
                 student={selectedStudent}
                 sessionId={selectedSession}
                 sessionTitle={sessions.find(s => s.id === selectedSession)?.title || ''}
