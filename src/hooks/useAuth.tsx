@@ -79,20 +79,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logUserLogin = async (userId: string) => {
     try {
       const sessionId = crypto.randomUUID();
-      const { data, error } = await supabase.rpc('log_user_login', {
+      const { data, error } = await supabase.rpc('enforce_single_session_login', {
         p_user_id: userId,
-        p_session_id: sessionId,
+        p_new_session_id: sessionId,
         p_ip_address: null, // Could be enhanced to get real IP
         p_user_agent: navigator.userAgent
       });
 
       if (error) {
-        console.error('Error logging user login:', error);
+        console.error('Error enforcing single session login:', error);
         return;
       }
 
-      if (data && typeof data === 'object' && 'is_duplicate_session' in data && data.is_duplicate_session) {
-        toast.warning('Another session detected. Previous session has been terminated.');
+      if (data && typeof data === 'object' && !Array.isArray(data)) {
+        const sessionData = data as { previous_session_terminated?: boolean };
+        if (sessionData.previous_session_terminated) {
+          toast.warning('Your previous session has been terminated. You can only be logged in from one device at a time.');
+        }
+        
+        // Store the current session ID in localStorage for validation
+        localStorage.setItem('current_session_id', sessionId);
       }
     } catch (error) {
       console.error('Error in logUserLogin:', error);
@@ -133,6 +139,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           }, 0);
         } else {
           setProfile(null);
+          // Clear session ID from localStorage on logout
+          localStorage.removeItem('current_session_id');
         }
         
         setLoading(false);
@@ -164,6 +172,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       window.clearTimeout(loadingTimeout);
     };
   }, []);
+
+  // Real-time session validation - detect when session is terminated from another device
+  useEffect(() => {
+    if (!user) return;
+
+    const currentSessionId = localStorage.getItem('current_session_id');
+    if (!currentSessionId) return;
+
+    // Subscribe to profile changes to detect session termination
+    const channel = supabase
+      .channel('session-validation')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          const newSessionId = payload.new.session_id;
+          
+          // If session ID changed and doesn't match current session, we've been logged out
+          if (newSessionId && newSessionId !== currentSessionId) {
+            toast.error('You have been logged out because you logged in from another device.');
+            setTimeout(() => {
+              signOut();
+            }, 2000);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [user]);
 
   const signIn = async (loginId: string, password: string) => {
     try {
@@ -253,17 +298,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(null);
       setProfile(null);
       
-      // Clear session in database if it's a student and we have user data
-      if (profile?.user_type === 'student' && user?.id) {
+      // Clear session in database for students, journalists, and admin students
+      if (user?.id) {
         try {
-          await supabase
-            .from('profiles')
-            .update({ session_id: null })
+          // Check if user should have session cleared (student, journalist, or admin_student)
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
             .eq('user_id', user.id);
+          
+          const roles = roleData?.map(r => r.role) || [];
+          const isJournalist = roles.includes('journalist');
+          const isAdminStudent = roles.includes('admin_student');
+          const isStudent = profile?.user_type === 'student';
+          
+          // Clear session if user type requires single-session enforcement
+          if (isStudent || isJournalist || isAdminStudent) {
+            await supabase
+              .from('profiles')
+              .update({ session_id: null })
+              .eq('user_id', user.id);
+          }
         } catch (dbError) {
           console.log('Database cleanup failed, continuing with logout:', dbError);
         }
       }
+      
+      // Clear local session ID
+      localStorage.removeItem('current_session_id');
+      
       
       // Attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
