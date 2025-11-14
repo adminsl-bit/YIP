@@ -54,10 +54,22 @@ export function ParliamentSignIn() {
     e.preventDefault();
     setIsLoading(true);
     
-    // Auto-append @yip.parliament if only a number/username is provided
+    // Auto-append correct domain based on alias pattern
     let loginEmail = credentials.loginId;
     if (!loginEmail.includes('@')) {
-      loginEmail = `${loginEmail}@yip.parliament`;
+      const lowerLoginId = loginEmail.toLowerCase();
+      
+      // Detect role type and append appropriate domain
+      if (lowerLoginId.startsWith('jury')) {
+        loginEmail = `${loginEmail}@yip.com`;
+      } else if (lowerLoginId.startsWith('admin')) {
+        loginEmail = `${loginEmail}@yip.admin`;
+      } else if (lowerLoginId.startsWith('journalist')) {
+        loginEmail = `${loginEmail}@yip.journalism`;
+      } else {
+        // Default to student domain for numeric IDs
+        loginEmail = `${loginEmail}@yip.parliament`;
+      }
     }
     
     await signIn(loginEmail, credentials.password);
