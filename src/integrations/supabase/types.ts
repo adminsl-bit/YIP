@@ -1036,6 +1036,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      enforce_single_session_login: {
+        Args: {
+          p_ip_address?: string
+          p_new_session_id: string
+          p_user_agent?: string
+          p_user_id: string
+        }
+        Returns: Json
+      }
       get_current_user_type: {
         Args: never
         Returns: Database["public"]["Enums"]["user_type"]
