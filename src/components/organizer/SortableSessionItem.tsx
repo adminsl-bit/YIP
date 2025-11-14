@@ -55,6 +55,7 @@ interface SortableSessionItemProps {
   getBillTypeBadge: (type: string) => JSX.Element;
   getStatusBadge: (status: string) => JSX.Element;
   formatTime: (seconds: number) => string;
+  isAdminStudent?: boolean;
 }
 
 export const SortableSessionItem = React.memo(({
@@ -74,6 +75,7 @@ export const SortableSessionItem = React.memo(({
   getBillTypeBadge,
   getStatusBadge,
   formatTime,
+  isAdminStudent = false,
 }: SortableSessionItemProps) => {
   const {
     attributes,
@@ -210,26 +212,30 @@ export const SortableSessionItem = React.memo(({
           </div>
 
           <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onEditSession(item)}
-              disabled={loading}
-              className="h-8 w-8 p-0"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => onDeleteSession(item.id)}
-              disabled={loading}
-              className="h-8 w-8 p-0"
-            >
-              <Trash2 className="h-4 w-4 text-destructive" />
-            </Button>
-            
-            <div className="h-6 w-px bg-border mx-1" />
+            {!isAdminStudent && (
+              <>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onEditSession(item)}
+                  disabled={loading}
+                  className="h-8 w-8 p-0"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => onDeleteSession(item.id)}
+                  disabled={loading}
+                  className="h-8 w-8 p-0"
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+                
+                <div className="h-6 w-px bg-border mx-1" />
+              </>
+            )}
             
             <Button
               size="sm"

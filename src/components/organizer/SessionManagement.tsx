@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,6 +73,7 @@ interface Poll {
 
 export const SessionManagement = () => {
   const { user } = useAuth();
+  const { hasRole } = useUserRole(user?.id);
   const [sessionItems, setSessionItems] = useState<SessionItem[]>([]);
   const [availableTimers, setAvailableTimers] = useState<TimerSession[]>([]);
   const [availablePolls, setAvailablePolls] = useState<Poll[]>([]);
@@ -742,8 +744,8 @@ export const SessionManagement = () => {
               >
                 <div className="space-y-4">
                   {sessionItems.map((item) => (
-                    <SortableSessionItem 
-                      key={item.id} 
+                    <SortableSessionItem
+                      key={item.id}
                       item={item}
                       availableTimers={availableTimers}
                       availablePolls={availablePolls}
@@ -760,6 +762,7 @@ export const SessionManagement = () => {
                       getBillTypeBadge={getBillTypeBadge}
                       getStatusBadge={getStatusBadge}
                       formatTime={formatTime}
+                      isAdminStudent={hasRole('admin_student')}
                     />
                   ))}
                 </div>
