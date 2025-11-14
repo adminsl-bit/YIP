@@ -31,6 +31,8 @@ interface StudentProfile {
 
 interface AssessmentFormProps {
   student: StudentProfile;
+  sessionId: string;
+  sessionTitle: string;
   onSubmit: (scores: Record<string, any>, notes: string, status: 'draft' | 'submitted') => void;
   initialScores?: Record<string, any>;
   initialNotes?: string;
@@ -218,7 +220,9 @@ const getSubcriteriaLabel = (criteriaKey: string, subKey: string): string => {
 };
 
 export const AssessmentForm = ({ 
-  student, 
+  student,
+  sessionId,
+  sessionTitle,
   onSubmit, 
   initialScores = {}, 
   initialNotes = "", 
@@ -409,6 +413,14 @@ export const AssessmentForm = ({
 
   return (
     <div className="space-y-8">
+      {/* Session Info Badge */}
+      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="bg-white">Session Assessment</Badge>
+          <span className="text-sm font-medium text-blue-900">{sessionTitle}</span>
+        </div>
+      </div>
+
       {/* Assessment Rubric Section - Clean separation */}
       <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
         <div className="flex items-center justify-between mb-8">

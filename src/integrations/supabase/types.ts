@@ -49,6 +49,7 @@ export type Database = {
           notes: string | null
           scores: Json
           seat_role: string
+          session_id: string | null
           status: string
           student_id: string
           submitted_at: string | null
@@ -62,6 +63,7 @@ export type Database = {
           notes?: string | null
           scores?: Json
           seat_role: string
+          session_id?: string | null
           status?: string
           student_id: string
           submitted_at?: string | null
@@ -75,13 +77,22 @@ export type Database = {
           notes?: string | null
           scores?: Json
           seat_role?: string
+          session_id?: string | null
           status?: string
           student_id?: string
           submitted_at?: string | null
           total_score?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "assessments_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "session_items"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       audit_logs: {
         Row: {
@@ -400,6 +411,140 @@ export type Database = {
         }
         Relationships: []
       }
+      session_items: {
+        Row: {
+          bill_type: Database["public"]["Enums"]["bill_type"]
+          completed_at: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean
+          poll_id: string | null
+          session_date: string | null
+          sort_order: number | null
+          status: string
+          timer_id: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          bill_type: Database["public"]["Enums"]["bill_type"]
+          completed_at?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          poll_id?: string | null
+          session_date?: string | null
+          sort_order?: number | null
+          status?: string
+          timer_id?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          bill_type?: Database["public"]["Enums"]["bill_type"]
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          poll_id?: string | null
+          session_date?: string | null
+          sort_order?: number | null
+          status?: string
+          timer_id?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_items_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_items_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "public_polls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_items_timer_id_fkey"
+            columns: ["timer_id"]
+            isOneToOne: false
+            referencedRelation: "timer_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_sub_items: {
+        Row: {
+          content: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          parent_session_id: string
+          poll_id: string | null
+          sort_order: number | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          parent_session_id: string
+          poll_id?: string | null
+          sort_order?: number | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          parent_session_id?: string
+          poll_id?: string | null
+          sort_order?: number | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_sub_items_parent_session_id_fkey"
+            columns: ["parent_session_id"]
+            isOneToOne: false
+            referencedRelation: "session_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_sub_items_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "polls"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_sub_items_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "public_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       student_awards: {
         Row: {
           assigned_at: string
@@ -575,6 +720,7 @@ export type Database = {
           id: string
           is_active: boolean
           remaining_seconds: number
+          sort_order: number | null
           started_at: string | null
           status: string
           title: string
@@ -588,6 +734,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           remaining_seconds: number
+          sort_order?: number | null
           started_at?: string | null
           status?: string
           title: string
@@ -601,6 +748,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           remaining_seconds?: number
+          sort_order?: number | null
           started_at?: string | null
           status?: string
           title?: string
@@ -935,6 +1083,12 @@ export type Database = {
     }
     Enums: {
       app_role: "admin_student" | "journalist"
+      bill_type:
+        | "private_member_bill"
+        | "government_bill"
+        | "committee_report"
+        | "question_hour"
+        | "general_discussion"
       user_type: "student" | "jury" | "organizer"
     }
     CompositeTypes: {
@@ -1064,6 +1218,13 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin_student", "journalist"],
+      bill_type: [
+        "private_member_bill",
+        "government_bill",
+        "committee_report",
+        "question_hour",
+        "general_discussion",
+      ],
       user_type: ["student", "jury", "organizer"],
     },
   },
