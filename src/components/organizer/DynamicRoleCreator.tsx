@@ -102,6 +102,7 @@ export const DynamicRoleCreator = () => {
   }>({ jury: [], admin: [], journalist: [] });
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+  const [isCreatingTestUsers, setIsCreatingTestUsers] = useState(false);
 
   const config = roleConfigs[selectedRole];
   const Icon = config.icon;
@@ -156,6 +157,32 @@ export const DynamicRoleCreator = () => {
   useEffect(() => {
     fetchExistingUsers();
   }, []);
+
+  const handleCreateTestUsers = async () => {
+    setIsCreatingTestUsers(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('seed-demo-users');
+      
+      if (error) throw error;
+
+      toast({
+        title: "Test Users Created",
+        description: "Successfully created test users for all roles. Check your email list for credentials.",
+      });
+
+      // Refresh the user lists
+      await fetchExistingUsers();
+    } catch (error) {
+      console.error('Error creating test users:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to create test users",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingTestUsers(false);
+    }
+  };
 
   const handleDeleteUser = async (userId: string, userName: string) => {
     setDeletingUserId(userId);
@@ -265,13 +292,65 @@ export const DynamicRoleCreator = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <UserPlus className="h-5 w-5" />
-          Dynamic Role Creator
-        </CardTitle>
-        <CardDescription>
-          Create multiple user accounts for any role with customizable count and password
-        </CardDescription>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Dynamic Role Creator
+            </CardTitle>
+            <CardDescription>
+              Create multiple user accounts for any role with customizable count and password
+            </CardDescription>
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm"
+                disabled={isCreatingTestUsers}
+                className="whitespace-nowrap"
+              >
+                {isCreatingTestUsers ? "Creating..." : "Create Test Users"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Create Test Users?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will create the following test accounts (password: 1234 for all):
+                  <ul className="mt-4 space-y-2 text-sm">
+                    <li className="flex items-center gap-2">
+                      <Badge variant="secondary">Student</Badge>
+                      demo@student.yip
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Badge variant="secondary">Admin</Badge>
+                      demo@admin.yip
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Badge variant="secondary">Jury</Badge>
+                      demo@jury.yip
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Badge variant="secondary">Organizer</Badge>
+                      demo@organizer.yip
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Badge variant="secondary">Journalist</Badge>
+                      demo@journalist.yip (if feature enabled)
+                    </li>
+                  </ul>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleCreateTestUsers}>
+                  Create Test Users
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

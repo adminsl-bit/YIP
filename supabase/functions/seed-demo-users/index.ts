@@ -82,6 +82,21 @@ Deno.serve(async (req) => {
           city: null
         },
         roles: []
+      },
+      {
+        email: 'demo@journalist.yip',
+        password: '1234',
+        user_type: 'student',
+        profile: {
+          serial_number: 9995,
+          name: 'Demo Journalist',
+          position: 'Journalist',
+          party_number: 0,
+          constituency: null,
+          state: null,
+          city: null
+        },
+        roles: ['journalist']
       }
     ]
 
