@@ -53,7 +53,14 @@ export function ParliamentSignIn() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    await signIn(credentials.loginId, credentials.password);
+    
+    // Auto-append @yip.parliament if only a number/username is provided
+    let loginEmail = credentials.loginId;
+    if (!loginEmail.includes('@')) {
+      loginEmail = `${loginEmail}@yip.parliament`;
+    }
+    
+    await signIn(loginEmail, credentials.password);
     setIsLoading(false);
   };
 
