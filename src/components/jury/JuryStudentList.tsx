@@ -240,7 +240,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     if (pos.includes('administrator') || pos.includes('admin')) return 'administrator';
     if (pos.includes('journalist')) return 'journalist';
     // Normalize all minister roles to mp for assessment purposes
-    if (pos.includes('minister') || pos.includes('shadow minister')) return 'minister';
+    if (pos.includes('minister') || pos.includes('shadow minister')) return 'mp';
     return 'mp';
   };
   // Party badge styling consistent with other components
