@@ -388,8 +388,39 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
 
   return (
     <div className="space-y-6">
+      {/* Session Selection - MUST SELECT FIRST */}
+      <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 backdrop-blur-lg rounded-3xl p-6 border-2 border-blue-300/50 shadow-xl">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+            <Users className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h3 className="text-xl font-black text-slate-800">Select Session to Assess</h3>
+            <p className="text-sm text-slate-600 font-medium">Choose which session you want to evaluate students for</p>
+          </div>
+        </div>
+        <Select value={selectedSession} onValueChange={setSelectedSession}>
+          <SelectTrigger className="h-14 bg-white/50 backdrop-blur-sm border-2 border-blue-300/50 rounded-2xl text-lg font-semibold">
+            <SelectValue placeholder="Select a session to begin assessment..." />
+          </SelectTrigger>
+          <SelectContent className="bg-white/95 backdrop-blur-lg border-white/40">
+            {sessions.length === 0 ? (
+              <SelectItem value="no-sessions" disabled>No sessions available</SelectItem>
+            ) : (
+              sessions.map((session) => (
+                <SelectItem key={session.id} value={session.id} className="text-base font-medium py-3">
+                  {session.title}
+                  {session.session_date && ` - ${new Date(session.session_date).toLocaleDateString()}`}
+                </SelectItem>
+              ))
+            )}
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Search and Filters */}
-      <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
+      {selectedSession && (
+        <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
             <Search className="w-6 h-6 text-white" />
@@ -469,7 +500,23 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
           </div>
         </div>
       </div>
+      )}
 
+      {/* Students Grid */}
+      {!selectedSession ? (
+        <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-12 border border-white/25 shadow-xl text-center">
+          <Users className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+          <h3 className="text-2xl font-bold text-slate-800 mb-2">Select a Session First</h3>
+          <p className="text-slate-600">Please select a session from the dropdown above to view and assess students for that session.</p>
+        </div>
+      ) : filteredStudents.length === 0 ? (
+        <div className="text-center py-12">
+          <Users className="w-16 h-16 mx-auto mb-4 text-slate-400" />
+          <h3 className="text-xl font-semibold mb-2">No Students Found</h3>
+          <p className="text-slate-600">Try adjusting your filters or search term.</p>
+        </div>
+      ) : (
+      <div>
       {/* Student List */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredStudents.map((student) => {
@@ -539,13 +586,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
           );
         })}
       </div>
-
-      {filteredStudents.length === 0 && (
-        <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-12 border border-white/25 shadow-xl text-center">
-          <Users className="w-16 h-16 mx-auto mb-4 text-slate-400" />
-          <h3 className="text-xl font-black text-slate-800 mb-2">No Students Found</h3>
-          <p className="text-slate-600">No students found matching your criteria. Try adjusting your filters.</p>
-        </div>
+      </div>
       )}
 
       {/* Assessment Dialog */}
