@@ -7,6 +7,7 @@ import { ProfilePhotoUploader } from "./ProfilePhotoUploader";
 import { Hash, MapPin, Building, Users, Crown, Trophy, Award } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
 
 interface Profile {
   id: string;
@@ -263,6 +264,13 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
                   <div className="flex items-center justify-center py-4">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
+                </div>
+              )}
+
+              {/* Change Password Button - Only for own profile */}
+              {isOwnProfile && (
+                <div className="pt-4 mt-4 border-t-2 border-primary/20">
+                  <ChangePasswordDialog />
                 </div>
               )}
             </div>
