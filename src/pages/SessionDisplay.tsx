@@ -434,10 +434,10 @@ const SessionDisplay = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex items-center justify-center px-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading session...</p>
+          <p className="text-sm sm:text-base text-muted-foreground">Loading session...</p>
         </div>
       </div>
     );
@@ -447,7 +447,7 @@ const SessionDisplay = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
         <BreakingNewsTicker />
-        <div className="flex items-center justify-center h-[calc(100vh-48px)]">
+        <div className="flex items-center justify-center h-[calc(100vh-48px)] px-4">
           <div className="text-center px-8">
             <Calendar className="h-24 w-24 mx-auto mb-6 text-primary/20" />
             <h2 className="text-4xl font-bold mb-4">No Active Session</h2>
@@ -461,27 +461,27 @@ const SessionDisplay = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-6 lg:p-8">
       <BreakingNewsTicker />
       
       
-      <div className="max-w-6xl mx-auto space-y-8 mt-12">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8 mt-6 sm:mt-8 lg:mt-12">
         {/* Session Header with Timer */}
         <Card className="border-2 border-primary shadow-xl">
-          <CardContent className="p-8">
-            <div className="flex items-start justify-between gap-4 mb-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-3">
-                  <Calendar className="h-8 w-8 text-primary" />
-                  <Badge className="text-lg px-4 py-1">
+          <CardContent className="p-4 sm:p-6 lg:p-8">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-4 sm:mb-6">
+              <div className="flex-1 w-full">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                  <Calendar className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+                  <Badge className="text-sm sm:text-base lg:text-lg px-3 sm:px-4 py-1">
                     {getBillTypeLabel(activeSession.bill_type)}
                   </Badge>
                 </div>
-                <h1 className="text-5xl font-bold mb-4 leading-tight">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 leading-tight">
                   {activeSession.title}
                 </h1>
                 {activeSession.description && (
-                  <p className="text-xl text-muted-foreground leading-relaxed">
+                  <p className="text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed">
                     {activeSession.description}
                   </p>
                 )}
@@ -490,31 +490,31 @@ const SessionDisplay = () => {
 
             {/* Timer Display */}
             {timer && (
-              <div className="mt-8 pt-8 border-t space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-6 w-6 text-primary" />
-                    <h2 className="text-2xl font-semibold">{timer.title}</h2>
+              <div className="mt-4 sm:mt-6 lg:mt-8 pt-4 sm:pt-6 lg:pt-8 border-t space-y-4 sm:space-y-6">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+                    <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold">{timer.title}</h2>
                   </div>
                   <div className="flex items-center gap-2">
                     {timer.status === 'running' ? (
-                      <Play className="h-5 w-5 text-green-500 fill-green-500" />
+                      <Play className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 fill-green-500" />
                     ) : (
-                      <Pause className="h-5 w-5 text-yellow-500" />
+                      <Pause className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
                     )}
-                    <Badge variant={timer.status === 'running' ? 'default' : 'secondary'}>
+                    <Badge variant={timer.status === 'running' ? 'default' : 'secondary'} className="text-sm sm:text-base">
                       {timer.status}
                     </Badge>
                   </div>
                 </div>
 
-                <div className="text-center py-8">
-                  <div className={`text-8xl font-mono font-bold ${
+                <div className="text-center py-4 sm:py-6 lg:py-8">
+                  <div className={`text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-mono font-bold ${
                     timer.remaining_seconds <= timer.duration_seconds * 0.1 ? 'text-destructive animate-pulse' : ''
                   }`}>
                     {formatTime(timer.remaining_seconds)}
                   </div>
-                  <p className="text-lg text-muted-foreground mt-4">
+                  <p className="text-sm sm:text-base lg:text-lg text-muted-foreground mt-2 sm:mt-3 lg:mt-4">
                     of {formatTime(timer.duration_seconds)}
                   </p>
                 </div>

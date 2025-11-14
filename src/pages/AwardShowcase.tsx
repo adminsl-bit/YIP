@@ -245,10 +245,10 @@ export const AwardShowcase = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center px-4">
         <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-muted-foreground text-xl">Loading award showcase...</p>
+          <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="text-base sm:text-xl text-muted-foreground">Loading award showcase...</p>
         </div>
       </div>
     );
@@ -256,12 +256,12 @@ export const AwardShowcase = () => {
 
   if (awardees.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center">
-        <Card className="bg-white/80 backdrop-blur-lg border border-white/25 shadow-xl p-12 text-center max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center px-4">
+        <Card className="bg-white/80 backdrop-blur-lg border border-white/25 shadow-xl p-6 sm:p-8 lg:p-12 text-center max-w-md">
           <CardContent className="space-y-4">
-            <Trophy className="w-16 h-16 text-yellow-500 mx-auto" />
-            <h2 className="text-2xl font-bold text-slate-800">No Awards Yet</h2>
-            <p className="text-slate-600">No awards have been assigned yet. Check back later!</p>
+            <Trophy className="w-12 h-12 sm:w-16 sm:h-16 text-yellow-500 mx-auto" />
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-800">No Awards Yet</h2>
+            <p className="text-sm sm:text-base text-slate-600">No awards have been assigned yet. Check back later!</p>
             <Button onClick={() => navigate('/organizer')} className="mt-4">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard
@@ -275,62 +275,62 @@ export const AwardShowcase = () => {
   const currentAwardee = awardees[currentIndex];
 
   return (
-    <div className="h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 relative overflow-hidden flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 relative overflow-hidden flex flex-col">
       <BreakingNewsTicker />
       {/* Animated background */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,_rgba(59,130,246,0.15)_1px,_transparent_0)] bg-[length:40px_40px] animate-pulse"></div>
-        <div className="absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full mix-blend-multiply filter blur-xl animate-bounce"></div>
-        <div className="absolute top-10 right-10 w-72 h-72 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full mix-blend-multiply filter blur-xl animate-bounce delay-1000"></div>
-        <div className="absolute bottom-10 left-1/2 w-72 h-72 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-full mix-blend-multiply filter blur-xl animate-bounce delay-500"></div>
+        <div className="absolute top-10 left-10 w-48 h-48 sm:w-72 sm:h-72 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full mix-blend-multiply filter blur-xl animate-bounce"></div>
+        <div className="absolute top-10 right-10 w-48 h-48 sm:w-72 sm:h-72 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full mix-blend-multiply filter blur-xl animate-bounce delay-1000"></div>
+        <div className="absolute bottom-10 left-1/2 w-48 h-48 sm:w-72 sm:h-72 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-full mix-blend-multiply filter blur-xl animate-bounce delay-500"></div>
       </div>
 
       {/* Header */}
-      <div className="relative z-10 p-4 flex-shrink-0">
-        <div className="flex items-center justify-between mb-4">
+      <div className="relative z-10 p-3 sm:p-4 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
           <Button 
             onClick={() => navigate('/organizer')}
             variant="outline"
-            className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35"
+            className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 w-full sm:w-auto"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Button>
           
-          <div className="text-center">
-            <h1 className="text-2xl md:text-3xl font-black text-transparent bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text">
+          <div className="text-center flex-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-transparent bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text">
               🏆 Award Showcase
             </h1>
-            <p className="text-slate-600 font-medium mt-1 text-sm">
+            <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1">
               Recognizing Excellence in Young Indians Parliament
             </p>
           </div>
 
-          <div className="text-right">
+          <div className="text-center sm:text-right w-full sm:w-auto">
             <Button
               onClick={downloadPDF}
               variant="outline"
-              className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 mb-2"
+              className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 mb-2 w-full sm:w-auto"
             >
               <Download className="w-4 h-4 mr-2" />
               Download PDF
             </Button>
             <div>
-              <p className="text-lg font-bold text-slate-800">
+              <p className="text-base sm:text-lg font-bold text-slate-800">
                 {currentIndex + 1} of {awardees.length}
               </p>
-              <p className="text-sm text-slate-600">Awardees</p>
+              <p className="text-xs sm:text-sm text-slate-600">Awardees</p>
             </div>
           </div>
         </div>
 
         {/* Navigation dots */}
-        <div className="flex justify-center space-x-2 mb-4">
+        <div className="flex justify-center space-x-1.5 sm:space-x-2 mb-3 sm:mb-4 overflow-x-auto py-2">
           {awardees.map((_, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
-              className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all duration-300 flex-shrink-0 ${
                 index === currentIndex 
                   ? 'bg-yellow-500 scale-125 shadow-lg' 
                   : 'bg-white/50 hover:bg-white/75'

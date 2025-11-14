@@ -162,11 +162,11 @@ const OrganizerDashboard = () => {
       </nav>
 
       {/* Dashboard Content */}
-      <div className="relative z-10 p-8">
+      <div className="relative z-10 responsive-padding">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8 sm:mb-12">
-            <div className="relative inline-block mb-6 sm:mb-8">
-              <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-transparent bg-gradient-to-r from-emerald-600 via-slate-800 to-teal-600 bg-clip-text tracking-tight drop-shadow-lg">
+          <div className="text-center mb-6 sm:mb-8 lg:mb-12">
+            <div className="relative inline-block mb-4 sm:mb-6 lg:mb-8">
+              <h2 className="responsive-text-3xl font-black text-transparent bg-gradient-to-r from-emerald-600 via-slate-800 to-teal-600 bg-clip-text tracking-tight drop-shadow-lg">
                 Parliament Control Center
               </h2>
               <div className="absolute -top-2 right-8 w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-emerald-400/30 to-teal-400/20 rounded-full animate-bounce shadow-lg"></div>
