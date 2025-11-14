@@ -5,7 +5,6 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight, Crown, Users, Shield, ArrowLeft, I
 import { Link } from 'react-router-dom';
 import { cn } from "@/lib/utils"
 import { useAuth } from '@/hooks/useAuth';
-import { ForgotPasswordDialog } from '@/components/auth/ForgotPasswordDialog';
 
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
@@ -332,11 +331,6 @@ export function ParliamentSignIn() {
                       </AnimatePresence>
                     </div>
                   </motion.button>
-
-                  {/* Forgot Password Link */}
-                  <div className="mt-4 text-center">
-                    <ForgotPasswordDialog />
-                  </div>
 
                 </form>
               </div>
