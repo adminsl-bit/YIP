@@ -899,6 +899,7 @@ export type Database = {
           final_total_score: number | null
           jury_average_score: number | null
           jury_converted_score: number | null
+          jury_count_submitted: number | null
           name: string | null
           party_name: string | null
           party_number: number | null

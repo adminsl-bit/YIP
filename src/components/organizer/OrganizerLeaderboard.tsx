@@ -27,6 +27,7 @@ interface LeaderboardEntry {
   jury_converted_score: number;
   final_total_score: number;
   assessment_count: number;
+  jury_count_submitted: number;
   award_ids: string[];
   serial_number: number;
   original_rank: number;
@@ -305,6 +306,7 @@ export const OrganizerLeaderboard = () => {
       'Final Total (100)': entry.final_total_score?.toFixed(2) || '0.00',
       'Jury Average (100 scale)': entry.jury_average_score?.toFixed(2) || '0.00',
       'Assessment Count': entry.assessment_count,
+      'Juries Submitted': `${entry.jury_count_submitted || 0} / ${juryMembers.length}`,
       Constituency: entry.constituency || '',
       State: entry.state || '',
       'Home City': entry.city || '',
@@ -642,24 +644,47 @@ export const OrganizerLeaderboard = () => {
                           {/* Only show Assessments count for regular students */}
                           {!entry.position.toLowerCase().includes('administrator') && 
                            !entry.position.toLowerCase().includes('journalist') && (
-                            <div className="space-y-1">
-                              <div className="text-xs font-medium text-muted-foreground">Assessments</div>
-                              <div className="text-sm font-bold text-foreground">{entry.assessment_count}</div>
-                            </div>
+                            <>
+                              <div className="space-y-1">
+                                <div className="text-xs font-medium text-muted-foreground">Assessments</div>
+                                <div className="text-sm font-bold text-foreground">{entry.assessment_count}</div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                                  <Users className="w-3 h-3" />
+                                  Juries Submitted
+                                </div>
+                                <div className="text-sm font-bold text-foreground">
+                                  {entry.jury_count_submitted || 0} / {juryMembers.length}
+                                </div>
+                              </div>
+                            </>
                           )}
                           {/* Show Scoring Type for administrators and journalists */}
                           {(entry.position.toLowerCase().includes('administrator') || 
                             entry.position.toLowerCase().includes('journalist')) && (
-                            <div className="space-y-1">
-                              <div className="text-xs font-medium text-muted-foreground">Scoring Type</div>
-                              <div className="text-sm font-bold text-foreground">Organizer Manual</div>
-                            </div>
+                            <>
+                              <div className="space-y-1">
+                                <div className="text-xs font-medium text-muted-foreground">Scoring Type</div>
+                                <div className="text-sm font-bold text-foreground">Organizer Manual</div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="text-xs font-medium text-muted-foreground">Constituency</div>
+                                <div className="text-sm text-foreground truncate">{entry.constituency || '—'}</div>
+                              </div>
+                            </>
                           )}
-                          <div className="space-y-1">
-                            <div className="text-xs font-medium text-muted-foreground">Constituency</div>
-                            <div className="text-sm text-foreground truncate">{entry.constituency || '—'}</div>
-                          </div>
                         </div>
+                        {/* Location info moved to separate section for regular students */}
+                        {!entry.position.toLowerCase().includes('administrator') && 
+                         !entry.position.toLowerCase().includes('journalist') && (
+                          <div className="p-3 bg-muted/30 rounded-xl">
+                            <div className="space-y-1">
+                              <div className="text-xs font-medium text-muted-foreground">Constituency</div>
+                              <div className="text-sm text-foreground truncate">{entry.constituency || '—'}</div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                        {/* Assessment Status Section - Only for regular students */}
