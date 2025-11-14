@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, UserX, UserCheck, Shield, AlertTriangle, Edit, BarChart3, TrendingUp } from "lucide-react";
+import { Search, Users, UserX, UserCheck, Shield, AlertTriangle, Edit, BarChart3, TrendingUp, KeyRound, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { StudentEditDialog } from "./StudentEditDialog";
 import { AssessmentChart } from "./AssessmentChart";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 interface Student {
   id: string;
@@ -56,6 +58,12 @@ export const OrganizerStudentList = () => {
   const [juryAssessments, setJuryAssessments] = useState<JuryAssessment[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+  const [passwordResetStudent, setPasswordResetStudent] = useState<Student | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [showCharts, setShowCharts] = useState(false);
   const [filters, setFilters] = useState({
@@ -344,6 +352,74 @@ export const OrganizerStudentList = () => {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!passwordResetStudent) return;
+
+    if (!newPassword || !confirmPassword) {
+      toast({
+        title: "Password Required",
+        description: "Please fill in both password fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Passwords Don't Match",
+        description: "New password and confirmation must match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      toast({
+        title: "Password Too Short",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsResettingPassword(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-student-password', {
+        body: {
+          userId: passwordResetStudent.user_id,
+          newPassword: newPassword
+        }
+      });
+
+      if (error) throw error;
+
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to reset password');
+      }
+
+      toast({
+        title: "Password Reset",
+        description: `Password has been reset for ${passwordResetStudent.name}.`,
+      });
+      
+      setPasswordResetStudent(null);
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to reset password. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResettingPassword(false);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'assessed':
@@ -609,45 +685,58 @@ export const OrganizerStudentList = () => {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="mt-auto flex gap-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setEditingStudent(student)}
-                        className="flex-1 h-10 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
-                      >
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => toggleStudentStatus(student.user_id, student.is_active || false)}
-                        className={`flex-1 h-10 ${student.is_active ? 'hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30' : 'hover:bg-green-50 hover:text-green-700 hover:border-green-300'}`}
-                      >
-                        {student.is_active ? (
-                          <>
-                            <UserX className="w-4 h-4 mr-2" />
-                            Deactivate
-                          </>
-                        ) : (
-                          <>
-                            <UserCheck className="w-4 h-4 mr-2" />
-                            Activate
-                          </>
-                        )}
-                      </Button>
-                      {student.session_id && (
+                    <div className="mt-auto flex flex-col gap-2">
+                      <div className="flex gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => forceLogout(student.user_id, student.name)}
-                          className="flex-1 h-10 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
+                          onClick={() => setEditingStudent(student)}
+                          className="flex-1 h-10 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
                         >
-                          <Shield className="w-4 h-4 mr-2" />
-                          Force Logout
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
                         </Button>
-                      )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setPasswordResetStudent(student)}
+                          className="flex-1 h-10 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300"
+                        >
+                          <KeyRound className="w-4 h-4 mr-2" />
+                          Password
+                        </Button>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => toggleStudentStatus(student.user_id, student.is_active || false)}
+                          className={`flex-1 h-10 ${student.is_active ? 'hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30' : 'hover:bg-green-50 hover:text-green-700 hover:border-green-300'}`}
+                        >
+                          {student.is_active ? (
+                            <>
+                              <UserX className="w-4 h-4 mr-2" />
+                              Deactivate
+                            </>
+                          ) : (
+                            <>
+                              <UserCheck className="w-4 h-4 mr-2" />
+                              Activate
+                            </>
+                          )}
+                        </Button>
+                        {student.session_id && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => forceLogout(student.user_id, student.name)}
+                            className="flex-1 h-10 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
+                          >
+                            <Shield className="w-4 h-4 mr-2" />
+                            Force Logout
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -675,6 +764,106 @@ export const OrganizerStudentList = () => {
           fetchJuryAssessments();
         }}
       />
+
+      {/* Password Reset Dialog */}
+      <Dialog open={!!passwordResetStudent} onOpenChange={(open) => {
+        if (!open) {
+          setPasswordResetStudent(null);
+          setNewPassword('');
+          setConfirmPassword('');
+          setShowNewPassword(false);
+          setShowConfirmPassword(false);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-5 h-5 text-primary" />
+              Reset Password
+            </DialogTitle>
+            <DialogDescription>
+              Reset password for {passwordResetStudent?.name} (#{passwordResetStudent?.serial_number})
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleResetPassword} className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New Password</Label>
+              <div className="relative">
+                <Input
+                  id="new-password"
+                  type={showNewPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter new password"
+                  className="pr-10"
+                  disabled={isResettingPassword}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  disabled={isResettingPassword}
+                >
+                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirm-password"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Confirm new password"
+                  className="pr-10"
+                  disabled={isResettingPassword}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  disabled={isResettingPassword}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </Button>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setPasswordResetStudent(null);
+                  setNewPassword('');
+                  setConfirmPassword('');
+                }}
+                disabled={isResettingPassword}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isResettingPassword}>
+                {isResettingPassword ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Resetting...
+                  </>
+                ) : (
+                  <>
+                    <KeyRound className="w-4 h-4 mr-2" />
+                    Reset Password
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
