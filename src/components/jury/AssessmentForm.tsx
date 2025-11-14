@@ -261,26 +261,28 @@ export const AssessmentForm = ({
   const seatRole = getUIRubricRole(student?.position || '');
   const rubric = RUBRICS[seatRole] || RUBRICS.mp;
 
-  // Initialize scores with zero values
+  // Initialize scores with zero values - reset when student or session changes
   useEffect(() => {
     if (!student || !rubric) return;
     
-    if (!scores || Object.keys(scores || {}).length === 0) {
-      const initialScoreState: Record<string, any> = {};
-      Object.keys(rubric).forEach(criteriaKey => {
-        const criteria = rubric[criteriaKey];
-        if (criteria.subcriteria) {
-          initialScoreState[criteriaKey] = {};
-          Object.keys(criteria.subcriteria).forEach(subKey => {
-            initialScoreState[criteriaKey][subKey] = 0;
-          });
-        } else {
-          initialScoreState[criteriaKey] = 0;
-        }
-      });
-      setScores(initialScoreState);
-    }
-  }, [rubric, scores, student]);
+    // Always reset to zeros when student or session changes
+    const initialScoreState: Record<string, any> = {};
+    Object.keys(rubric).forEach(criteriaKey => {
+      const criteria = rubric[criteriaKey];
+      if (criteria.subcriteria) {
+        initialScoreState[criteriaKey] = {};
+        Object.keys(criteria.subcriteria).forEach(subKey => {
+          initialScoreState[criteriaKey][subKey] = 0;
+        });
+      } else {
+        initialScoreState[criteriaKey] = 0;
+      }
+    });
+    
+    // Only use initialScores if they exist for this specific student/session combo
+    setScores(Object.keys(initialScores || {}).length > 0 ? initialScores : initialScoreState);
+    setNotes(initialNotes || '');
+  }, [rubric, student, sessionId]); // Reset when session changes too
 
   // Check assessment lock setting
   useEffect(() => {
