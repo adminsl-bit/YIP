@@ -34,6 +34,14 @@ interface Assessment {
   status: 'draft' | 'submitted' | 'locked';
   notes?: string;
   updated_at: string;
+  session_id?: string;
+}
+
+interface Session {
+  id: string;
+  title: string;
+  description?: string;
+  session_date?: string;
 }
 
 interface JuryStudentListProps {
@@ -42,6 +50,8 @@ interface JuryStudentListProps {
 
 export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
   const [students, setStudents] = useState<Student[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selectedSession, setSelectedSession] = useState<string>("");
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
@@ -56,7 +66,10 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
 
   useEffect(() => {
     fetchStudents();
-    fetchAssessments();
+    fetchSessions();
+    if (selectedSession) {
+      fetchAssessments();
+    }
     
     // Set up real-time subscription for assessments
     const assessmentChannel = supabase
@@ -101,7 +114,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       supabase.removeChannel(assessmentChannel);
       supabase.removeChannel(profileChannel);
     };
-  }, [juryId]);
+  }, [juryId, selectedSession]);
 
   useEffect(() => {
     applyFilters();
@@ -134,12 +147,35 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     }
   };
 
+  const fetchSessions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('session_items')
+        .select('id, title, description, session_date')
+        .order('session_date', { ascending: true })
+        .order('sort_order', { ascending: true });
+
+      if (error) throw error;
+      
+      setSessions(data || []);
+      // Auto-select first session if available
+      if (data && data.length > 0 && !selectedSession) {
+        setSelectedSession(data[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching sessions:', error);
+    }
+  };
+
   const fetchAssessments = async () => {
+    if (!selectedSession) return;
+    
     try {
       const { data, error } = await supabase
         .from('assessments')
         .select('*')
-        .eq('jury_id', juryId);
+        .eq('jury_id', juryId)
+        .eq('session_id', selectedSession);
 
       if (error) throw error;
       setAssessments((data || []) as Assessment[]);
@@ -236,6 +272,15 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     notes: string,
     status: 'draft' | 'submitted'
   ) => {
+    if (!selectedSession) {
+      toast({
+        title: "Error",
+        description: "Please select a session first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // Calculate total score
       const totalScore = calculateTotalFromScores(scores);
@@ -246,6 +291,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       const assessmentData = {
         jury_id: juryId,
         student_id: studentUserId, // Use user_id instead of profile id
+        session_id: selectedSession,
         seat_role: dbSeatRole,
         scores,
         total_score: totalScore,
@@ -254,11 +300,11 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
         submitted_at: status === 'submitted' ? new Date().toISOString() : null
       };
 
-      // Always use upsert to prevent duplicates
+      // Use upsert with the new unique constraint including session_id
       const { error } = await supabase
         .from('assessments')
         .upsert(assessmentData, {
-          onConflict: 'jury_id,student_id'
+          onConflict: 'jury_id,student_id,session_id'
         });
       
       if (error) throw error;
@@ -508,11 +554,13 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
           <DialogHeader>
             <DialogTitle>Assess Student: {selectedStudent?.name}</DialogTitle>
           </DialogHeader>
-          {selectedStudent && (
+          {selectedStudent && selectedSession && (
             <div className="mt-4">
               <AssessmentForm
                 key={selectedStudent.user_id} // Force re-render when student changes
                 student={selectedStudent}
+                sessionId={selectedSession}
+                sessionTitle={sessions.find(s => s.id === selectedSession)?.title || ''}
                 onSubmit={(scores, notes, status) => 
                   handleAssessmentSubmit(selectedStudent.user_id, scores, notes, status)
                 }

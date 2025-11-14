@@ -220,7 +220,7 @@ const JuryDashboard = () => {
           </div>
 
           <Tabs defaultValue="assess" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
+            <TabsList className="grid w-full grid-cols-3 gap-2 mb-12 bg-white/15 backdrop-blur-lg border border-white/25 p-3 rounded-3xl shadow-xl h-auto">
               <TabsTrigger 
                 value="assess" 
                 className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
@@ -238,15 +238,6 @@ const JuryDashboard = () => {
                   <BarChart3 className="w-4 h-4 text-white" />
                 </div>
                 <span className="text-center">Dashboard</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="leaderboard" 
-                className="flex flex-col items-center justify-center gap-2 px-4 py-6 rounded-2xl text-sm lg:text-base font-semibold transition-all duration-300 data-[state=active]:bg-white/30 data-[state=active]:shadow-lg hover:scale-105 min-h-[80px]"
-              >
-                <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
-                  <Trophy className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-center">Leaderboard</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="profile" 
