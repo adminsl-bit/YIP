@@ -292,64 +292,14 @@ export const DynamicRoleCreator = () => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5" />
-              Dynamic Role Creator
-            </CardTitle>
-            <CardDescription>
-              Create multiple user accounts for any role with customizable count and password
-            </CardDescription>
-          </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button 
-                variant="outline" 
-                size="sm"
-                disabled={isCreatingTestUsers}
-                className="whitespace-nowrap"
-              >
-                {isCreatingTestUsers ? "Creating..." : "Create Test Users"}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Create Test Users?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will create the following test accounts (password: 1234 for all):
-                  <ul className="mt-4 space-y-2 text-sm">
-                    <li className="flex items-center gap-2">
-                      <Badge variant="secondary">Student</Badge>
-                      demo@student.yip
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Badge variant="secondary">Admin</Badge>
-                      demo@admin.yip
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Badge variant="secondary">Jury</Badge>
-                      demo@jury.yip
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Badge variant="secondary">Organizer</Badge>
-                      demo@organizer.yip
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Badge variant="secondary">Journalist</Badge>
-                      demo@journalist.yip (if feature enabled)
-                    </li>
-                  </ul>
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleCreateTestUsers}>
-                  Create Test Users
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+        <div className="flex flex-col gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5" />
+            Dynamic Role Creator
+          </CardTitle>
+          <CardDescription>
+            Create multiple user accounts for any role with customizable count and password
+          </CardDescription>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -406,34 +356,88 @@ export const DynamicRoleCreator = () => {
           </div>
         </div>
 
-        <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <AlertDialogTrigger asChild>
-            <Button className="w-full gap-2">
-              <Icon className={`h-4 w-4 ${config.color}`} />
-              Create {count} {config.label} {count > 1 ? 'Users' : 'User'}
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent className="max-h-[80vh] overflow-y-auto">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Create {config.label} Users?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will create {count} {config.label} account{count > 1 ? 's' : ''}:
-                <ul className="mt-2 space-y-1 list-disc list-inside max-h-60 overflow-y-auto">
-                  {getUserList()}
-                </ul>
-                <p className="mt-4 text-sm text-muted-foreground">
-                  Existing users will be updated with the new password and settings.
-                </p>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleCreateUsers} disabled={isCreating}>
-                {isCreating ? "Creating..." : "Create Users"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <AlertDialogTrigger asChild>
+              <Button className="flex-1 gap-2">
+                <Icon className={`h-4 w-4 ${config.color}`} />
+                Create {count} {config.label} {count > 1 ? 'Users' : 'User'}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="max-h-[80vh] overflow-y-auto">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Create {config.label} Users?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will create {count} {config.label} account{count > 1 ? 's' : ''}:
+                  <ul className="mt-2 space-y-1 list-disc list-inside max-h-60 overflow-y-auto">
+                    {getUserList()}
+                  </ul>
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    Existing users will be updated with the new password and settings.
+                  </p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleCreateUsers} disabled={isCreating}>
+                  {isCreating ? "Creating..." : "Create Users"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button 
+                variant="outline"
+                disabled={isCreatingTestUsers}
+                className="flex-1 gap-2"
+              >
+                <UserPlus className="h-4 w-4" />
+                {isCreatingTestUsers ? "Creating..." : "Create Test Users"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="max-h-[80vh] overflow-y-auto">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Create Test Users?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will create pre-configured test accounts for all roles (password: 1234):
+                  <ul className="mt-4 space-y-2">
+                    <li className="flex items-center gap-2">
+                      <Badge variant="secondary">Student</Badge>
+                      <span className="font-mono text-sm">demo@student.yip</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Badge variant="secondary">Admin</Badge>
+                      <span className="font-mono text-sm">demo@admin.yip</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Badge variant="secondary">Jury</Badge>
+                      <span className="font-mono text-sm">demo@jury.yip</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Badge variant="secondary">Organizer</Badge>
+                      <span className="font-mono text-sm">demo@organizer.yip</span>
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <Badge variant="secondary">Journalist</Badge>
+                      <span className="font-mono text-sm">demo@journalist.yip</span>
+                    </li>
+                  </ul>
+                  <p className="mt-4 text-sm text-muted-foreground">
+                    These test users will appear in the existing users list below and can be deleted individually.
+                  </p>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleCreateTestUsers} disabled={isCreatingTestUsers}>
+                  {isCreatingTestUsers ? "Creating..." : "Create Test Users"}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
 
         <Separator className="my-6" />
 
