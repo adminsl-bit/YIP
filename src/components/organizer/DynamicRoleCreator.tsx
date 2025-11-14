@@ -99,7 +99,8 @@ export const DynamicRoleCreator = () => {
     jury: ExistingUser[];
     admin: ExistingUser[];
     journalist: ExistingUser[];
-  }>({ jury: [], admin: [], journalist: [] });
+    students: ExistingUser[];
+  }>({ jury: [], admin: [], journalist: [], students: [] });
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
   const [isCreatingTestUsers, setIsCreatingTestUsers] = useState(false);
@@ -132,6 +133,7 @@ export const DynamicRoleCreator = () => {
       // Categorize students by their role
       const adminUsers: ExistingUser[] = [];
       const journalistUsers: ExistingUser[] = [];
+      const regularStudents: ExistingUser[] = [];
 
       studentData?.forEach(student => {
         const userRole = rolesData?.find(r => r.user_id === student.user_id);
@@ -139,6 +141,9 @@ export const DynamicRoleCreator = () => {
           adminUsers.push(student);
         } else if (userRole?.role === 'journalist') {
           journalistUsers.push(student);
+        } else if (!userRole) {
+          // Regular students without special roles (like demo@student.yip)
+          regularStudents.push(student);
         }
       });
 
@@ -146,6 +151,7 @@ export const DynamicRoleCreator = () => {
         jury: juryData || [],
         admin: adminUsers,
         journalist: journalistUsers,
+        students: regularStudents,
       });
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -620,7 +626,59 @@ export const DynamicRoleCreator = () => {
                 </div>
               )}
 
-              {existingUsers.jury.length === 0 && existingUsers.admin.length === 0 && existingUsers.journalist.length === 0 && (
+              {/* Regular Students */}
+              {existingUsers.students.length > 0 && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <UserPlus className="h-4 w-4 text-gray-600" />
+                    <h4 className="font-semibold text-sm">Regular Students ({existingUsers.students.length})</h4>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {existingUsers.students.map(user => (
+                      <div
+                        key={user.user_id}
+                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="ml-2 h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              disabled={deletingUserId === user.user_id}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete {user.name}?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This will permanently delete this student account and all associated data. This action cannot be undone.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user.user_id, user.name)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {existingUsers.jury.length === 0 && existingUsers.admin.length === 0 && existingUsers.journalist.length === 0 && existingUsers.students.length === 0 && (
                 <div className="text-center py-8 text-muted-foreground">
                   No users found. Create some users to get started.
                 </div>
