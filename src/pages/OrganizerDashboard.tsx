@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { LogOut, Settings, Clock, BarChart3, Users, ShieldCheck, FileText, Eye, GraduationCap, Activity, Zap, Image as ImageIcon, AlertTriangle, Trophy, Award, Presentation, Mic, Newspaper, FileEdit, Calendar } from "lucide-react";
+import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -150,14 +151,17 @@ const OrganizerDashboard = () => {
               <p className="text-xs sm:text-sm text-slate-600 font-medium">{profile.position}</p>
             </div>
           )}
-          <Button 
-            onClick={signOut}
-            variant="outline"
-            className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 hover:scale-105 transition-all duration-300 shadow-lg px-4 sm:px-6 py-2 sm:py-3 text-base sm:text-lg font-semibold order-1 sm:order-2"
-          >
-            <LogOut className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            <ChangePasswordDialog />
+            <Button 
+              onClick={signOut}
+              variant="outline"
+              className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 hover:scale-105 transition-all duration-300 shadow-lg px-4 sm:px-6 py-2 sm:py-3 text-base sm:text-lg font-semibold order-1 sm:order-2"
+            >
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </nav>
 
