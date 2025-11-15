@@ -337,8 +337,8 @@ const PollDisplay = () => {
                   showResultsPublicly={activePoll.show_results_publicly}
                 />
 
-                {/* Post-Voting Analysis (shown only after organizer presses Stop) */}
-                {activePoll.show_post_analysis && (
+                {/* Post-Voting Analysis (shown only after poll is closed AND post-analysis is enabled) */}
+                {!activePoll.is_active && activePoll.show_post_analysis && (
                   <div className="mt-4">
                     <PostVotingAnalysis pollId={activePoll.id} pollTitle={activePoll.title} />
                   </div>
