@@ -262,7 +262,7 @@ export const SortableSessionItem = React.memo(({
       </CardContent>
 
       <AccordionContent forceMount className="px-4 pb-4 pt-0 data-[state=open]:animate-none data-[state=closed]:animate-none">
-        <SessionSubItems sessionId={item.id} isSessionActive={item.is_active} />
+        <SessionSubItems sessionId={item.id} isSessionActive={item.is_active} isAdminStudent={isAdminStudent} />
       </AccordionContent>
     </AccordionItem>
     </Accordion>
