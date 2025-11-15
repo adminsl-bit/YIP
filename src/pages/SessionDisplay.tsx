@@ -578,11 +578,11 @@ useEffect(() => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-6 lg:p-8 pb-32">
       <BreakingNewsTicker />
       
       
-      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8 mt-6 sm:mt-8 lg:mt-12">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8 mt-4 sm:mt-6 lg:mt-8">
         {/* Session Header with Timer */}
         <Card className="border-2 border-primary shadow-xl">
           <CardContent className="p-4 sm:p-6 lg:p-8">
@@ -605,28 +605,28 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Timer Display */}
+            {/* Timer Display - Compact */}
             {timer && (
-              <div className="mt-4 sm:mt-6 lg:mt-8 pt-4 sm:pt-6 lg:pt-8 border-t space-y-4 sm:space-y-6">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                    <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold">{timer.title}</h2>
+              <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t space-y-2 sm:space-y-3">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                    <h2 className="text-base sm:text-lg font-semibold">{timer.title}</h2>
                   </div>
                   <div className="flex items-center gap-2">
                     {timer.status === 'running' ? (
-                      <Play className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 fill-green-500" />
+                      <Play className="h-3 w-3 sm:h-4 sm:w-4 text-green-500 fill-green-500" />
                     ) : (
-                      <Pause className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-500" />
+                      <Pause className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
                     )}
-                    <Badge variant={timer.status === 'running' ? 'default' : 'secondary'} className="text-sm sm:text-base">
+                    <Badge variant={timer.status === 'running' ? 'default' : 'secondary'} className="text-xs sm:text-sm">
                       {timer.status}
                     </Badge>
                   </div>
                 </div>
 
-                <div className="text-center py-4 sm:py-6 lg:py-8">
-                  <div className={`text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-mono font-bold ${
+                <div className="text-center py-2 sm:py-3">
+                  <div className={`text-3xl sm:text-4xl md:text-5xl font-mono font-bold ${
                     timer.remaining_seconds <= timer.duration_seconds * 0.1 ? 'text-destructive animate-pulse' : ''
                   }`}>
                     {formatTime(timer.remaining_seconds)}
@@ -645,23 +645,23 @@ useEffect(() => {
           </CardContent>
         </Card>
 
-        {/* Poll Display - Sub-item polls (one card per active sub-item) */}
+        {/* Poll Display - Sub-item polls (one card per active sub-item) - Enhanced */}
         {activeSubItemPolls.length > 0 && (
           <div className="space-y-6">
             {activeSubItemPolls.map(({ poll: p, results }) => {
               const totalVotes = Object.values(results).reduce((sum, c) => sum + c, 0);
               return (
-                <Card key={p.id} className="border-2 shadow-xl">
-                  <CardContent className="p-8">
-                    <div className="flex items-center justify-between mb-6">
+                <Card key={p.id} className="border-2 shadow-xl bg-card/95 backdrop-blur">
+                  <CardContent className="p-6 sm:p-8 lg:p-10">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                       <div className="flex items-center gap-3">
-                        <BarChart className="h-6 w-6 text-primary" />
-                        <h2 className="text-2xl font-semibold">{p.title}</h2>
+                        <BarChart className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
+                        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold">{p.title}</h2>
                       </div>
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center gap-3">
                         <Badge 
                           variant={p.is_active ? 'default' : 'secondary'}
-                          className="text-lg px-4 py-2"
+                          className="text-base sm:text-lg lg:text-xl px-4 py-2"
                         >
                           {p.is_active ? 'Voting Open' : 'Voting Closed'}
                         </Badge>
@@ -685,30 +685,30 @@ useEffect(() => {
                     </div>
 
                     {p.is_active && !p.show_results_publicly && (
-                      <p className="text-xl text-center mt-6 text-muted-foreground">
+                      <p className="text-xl sm:text-2xl lg:text-3xl text-center mt-8 text-muted-foreground font-medium">
                         Please cast your votes now
                       </p>
                     )}
 
                     {p.show_results_publicly && p.options && (
-                      <div className="space-y-4 mt-6">
-                        <h3 className="text-xl font-semibold mb-4">Results:</h3>
+                      <div className="space-y-5 mt-8">
+                        <h3 className="text-2xl sm:text-3xl font-semibold mb-6">Results:</h3>
                         {p.options.map((option: any) => {
                           const voteCount = results[option.id] || 0;
                           const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
                           return (
-                            <div key={option.id} className="space-y-2">
-                              <div className="flex justify-between items-center">
-                                <span className="text-lg font-medium">{option.text}</span>
-                                <span className="text-lg font-semibold">
+                            <div key={option.id} className="space-y-3">
+                              <div className="flex justify-between items-center gap-4">
+                                <span className="text-xl sm:text-2xl lg:text-3xl font-medium">{option.text}</span>
+                                <span className="text-xl sm:text-2xl lg:text-3xl font-semibold whitespace-nowrap">
                                   {voteCount} vote{voteCount !== 1 ? 's' : ''} ({percentage}%)
                                 </span>
                               </div>
-                              <Progress value={percentage} className="h-3" />
+                              <Progress value={percentage} className="h-4 sm:h-5" />
                             </div>
                           );
                         })}
-                        <div className="text-center text-muted-foreground mt-4">
+                        <div className="text-center text-muted-foreground text-xl sm:text-2xl mt-6 font-medium">
                           Total Votes: {totalVotes}
                         </div>
                       </div>
@@ -720,19 +720,19 @@ useEffect(() => {
           </div>
         )}
 
-        {/* Poll Display - Parent-level fallback */}
+        {/* Poll Display - Parent-level fallback - Enhanced */}
         {activeSubItemPolls.length === 0 && poll && (
-          <Card className="border-2 shadow-xl">
-            <CardContent className="p-8">
-              <div className="flex items-center justify-between mb-6">
+          <Card className="border-2 shadow-xl bg-card/95 backdrop-blur">
+            <CardContent className="p-6 sm:p-8 lg:p-10">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <div className="flex items-center gap-3">
-                  <BarChart className="h-6 w-6 text-primary" />
-                  <h2 className="text-2xl font-semibold">{poll.title}</h2>
+                  <BarChart className="h-7 w-7 sm:h-8 sm:w-8 text-primary" />
+                  <h2 className="text-2xl sm:text-3xl lg:text-4xl font-semibold">{poll.title}</h2>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <Badge 
                     variant={poll.is_active ? 'default' : 'secondary'}
-                    className="text-lg px-4 py-2"
+                    className="text-base sm:text-lg lg:text-xl px-4 py-2"
                   >
                     {poll.is_active ? 'Voting Open' : 'Voting Closed'}
                   </Badge>
@@ -755,32 +755,32 @@ useEffect(() => {
               </div>
 
               {poll.is_active && !poll.show_results_publicly && (
-                <p className="text-xl text-center mt-6 text-muted-foreground">
+                <p className="text-xl sm:text-2xl lg:text-3xl text-center mt-8 text-muted-foreground font-medium">
                   Please cast your votes now
                 </p>
               )}
 
               {poll.show_results_publicly && poll.options && (
-                <div className="space-y-4 mt-6">
-                  <h3 className="text-xl font-semibold mb-4">Results:</h3>
+                <div className="space-y-5 mt-8">
+                  <h3 className="text-2xl sm:text-3xl font-semibold mb-6">Results:</h3>
                   {poll.options.map((option: any) => {
                     const voteCount = pollResults[option.id] || 0;
                     const totalVotes = Object.values(pollResults).reduce((sum, count) => sum + count, 0);
                     const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
 
                     return (
-                      <div key={option.id} className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-lg font-medium">{option.text}</span>
-                          <span className="text-lg font-semibold">
+                      <div key={option.id} className="space-y-3">
+                        <div className="flex justify-between items-center gap-4">
+                          <span className="text-xl sm:text-2xl lg:text-3xl font-medium">{option.text}</span>
+                          <span className="text-xl sm:text-2xl lg:text-3xl font-semibold whitespace-nowrap">
                             {voteCount} vote{voteCount !== 1 ? 's' : ''} ({percentage}%)
                           </span>
                         </div>
-                        <Progress value={percentage} className="h-3" />
+                        <Progress value={percentage} className="h-4 sm:h-5" />
                       </div>
                     );
                   })}
-                  <div className="text-center text-muted-foreground mt-4">
+                  <div className="text-center text-muted-foreground text-xl sm:text-2xl mt-6 font-medium">
                     Total Votes: {Object.values(pollResults).reduce((sum, count) => sum + count, 0)}
                   </div>
                 </div>
