@@ -42,6 +42,7 @@ interface Session {
   title: string;
   description?: string;
   session_date?: string;
+  status?: string;
 }
 
 interface JuryStudentListProps {
@@ -67,6 +68,9 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
   useEffect(() => {
     fetchStudents();
     fetchSessions();
+  }, [juryId]);
+
+  useEffect(() => {
     if (selectedSession) {
       fetchAssessments();
     }
@@ -151,19 +155,25 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     try {
       const { data, error } = await supabase
         .from('session_items')
-        .select('id, title, description, session_date')
+        .select('id, title, description, session_date, status')
         .order('session_date', { ascending: true })
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
       
       setSessions(data || []);
-      // Auto-select first session if available
+      // Auto-select first active session, or first session if no active ones
       if (data && data.length > 0 && !selectedSession) {
-        setSelectedSession(data[0].id);
+        const activeSession = data.find(s => s.status === 'active');
+        setSelectedSession(activeSession?.id || data[0].id);
       }
     } catch (error) {
       console.error('Error fetching sessions:', error);
+      toast({
+        title: "Error Loading Sessions",
+        description: "Failed to load sessions. Please refresh the page.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -274,8 +284,8 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
   ) => {
     if (!selectedSession) {
       toast({
-        title: "Error",
-        description: "Please select a session first.",
+        title: "Session Required",
+        description: "Please select a session from the dropdown at the top before submitting assessments.",
         variant: "destructive",
       });
       return;
