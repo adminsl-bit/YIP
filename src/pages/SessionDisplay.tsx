@@ -107,19 +107,51 @@ const clockOffsetRef = useRef<number>(0);
     try {
       // Update parent poll results if exists
       if (poll?.id) {
-        const results = await fetchPollResults(poll.id);
-        setPollResults(results);
+        // Re-check if poll is still active or showing results publicly
+        const { data: currentPoll } = await supabase
+          .from('polls')
+          .select('is_active, show_results_publicly')
+          .eq('id', poll.id)
+          .single();
+        
+        if (currentPoll && (currentPoll.is_active || currentPoll.show_results_publicly)) {
+          const results = await fetchPollResults(poll.id);
+          setPollResults(results);
+        } else {
+          // Poll no longer active - clear it
+          setPoll(null);
+          setPollResults({});
+        }
       }
 
       // Update sub-item poll results if exist
       if (activeSubItemPolls.length > 0) {
         const updatedPolls = await Promise.all(
           activeSubItemPolls.map(async ({ poll }) => {
-            const results = await fetchPollResults(poll.id);
-            return { poll, results };
+            // Re-check if poll is still active or showing results publicly
+            const { data: currentPoll } = await supabase
+              .from('polls')
+              .select('is_active, show_results_publicly')
+              .eq('id', poll.id)
+              .single();
+            
+            if (currentPoll && (currentPoll.is_active || currentPoll.show_results_publicly)) {
+              const results = await fetchPollResults(poll.id);
+              return { poll, results };
+            }
+            return null;
           })
         );
-        setActiveSubItemPolls(updatedPolls);
+        
+        // Filter out null values (inactive polls)
+        const validPolls = updatedPolls.filter((p): p is { poll: Poll; results: Record<string, number> } => p !== null);
+        setActiveSubItemPolls(validPolls);
+        
+        // If all sub-item polls became inactive, clear parent poll too
+        if (validPolls.length === 0) {
+          setPoll(null);
+          setPollResults({});
+        }
       }
     } catch (error) {
       console.error('Error updating poll results:', error);
