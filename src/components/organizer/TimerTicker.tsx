@@ -5,9 +5,10 @@ interface TimerSession {
   id: string;
   title: string;
   duration_seconds: number;
-  remaining_seconds: number;
+  remaining_seconds: number; // remaining at start/resume
   status: 'stopped' | 'running' | 'paused' | 'completed';
   is_active: boolean;
+  started_at: string | null;
 }
 
 // Headless ticker that runs while OrganizerDashboard is mounted
@@ -50,42 +51,32 @@ export const TimerTicker = () => {
       tickRef.current = null;
     }
 
-    if (!active || active.status !== 'running') return;
+    if (!active || active.status !== 'running' || !active.started_at) return;
 
-    // Use a ref that gets updated with fresh data
-    const timerRef = { current: active };
-    let tickCount = 0;
-    
+    // Only watch for completion; do NOT write remaining_seconds periodically
+    const startedAtMs = Date.parse(active.started_at);
+    const wroteCompleteRef = { current: false };
+
     tickRef.current = window.setInterval(async () => {
-      const currentTimer = timerRef.current;
-      if (!currentTimer) return;
-      
-      const nextRemaining = Math.max(0, (currentTimer.remaining_seconds ?? 0) - 1);
-      tickCount++;
+      const now = Date.now();
+      const elapsed = Math.max(0, Math.floor((now - startedAtMs) / 1000));
+      const remaining = Math.max(0, (active.remaining_seconds ?? 0) - elapsed);
 
-      try {
-        if (nextRemaining === 0) {
-          // Always update DB when timer completes
+      if (remaining === 0 && !wroteCompleteRef.current) {
+        wroteCompleteRef.current = true;
+        try {
           await supabase
             .from('timer_sessions')
-            .update({ remaining_seconds: 0, status: 'completed' })
-            .eq('id', currentTimer.id);
+            .update({ remaining_seconds: 0, status: 'completed', started_at: null, completed_at: new Date().toISOString() })
+            .eq('id', active.id)
+            .eq('status', 'running');
+        } catch (e) {
+          console.error('TimerTicker completion update error', e);
+        } finally {
           setActive(null);
-        } else {
-          // Only update DB every 5 seconds to reduce load and prevent conflicts
-          if (tickCount % 5 === 0) {
-            await supabase
-              .from('timer_sessions')
-              .update({ remaining_seconds: nextRemaining })
-              .eq('id', currentTimer.id);
-          }
-          timerRef.current = { ...currentTimer, remaining_seconds: nextRemaining };
-          setActive(prev => (prev ? { ...prev, remaining_seconds: nextRemaining } : prev));
         }
-      } catch (e) {
-        console.error('TimerTicker update error', e);
       }
-    }, 1000);
+    }, 500);
 
     return () => {
       if (tickRef.current) window.clearInterval(tickRef.current);
