@@ -156,22 +156,30 @@ const PollDisplay = () => {
       // Fetch results for each poll with similar fallback approach
       const resultsMap: Record<string, PollResult[]> = {};
       
+      // Get excluded user IDs (journalists and admin_students)
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('role', ['journalist', 'admin_student']);
+      
+      const excludedUserIds = new Set(roleData?.map(r => r.user_id) || []);
+      
       for (const poll of effectivePollsList) {
         let votesData, votesError;
         
         try {
           // Try authenticated query first with cache busting
           const result = await supabase
-            .from('public_poll_votes')
-            .select('option_id')
+            .from('poll_votes')
+            .select('option_id, voter_id')
             .eq('poll_id', poll.id)
           votesData = result.data;
           votesError = result.error;
         } catch (authError) {
-          // Fall back to public view
+          // Fall back to public view - need to get voter_id somehow for filtering
           const result = await supabase
-            .from('public_poll_votes')
-            .select('option_id')
+            .from('poll_votes')
+            .select('option_id, voter_id')
             .eq('poll_id', poll.id)
           votesData = result.data;
           votesError = result.error;
@@ -179,9 +187,12 @@ const PollDisplay = () => {
 
         if (votesError) throw votesError;
 
+        // Filter out excluded users
+        const filteredVotes = votesData?.filter(vote => !excludedUserIds.has(vote.voter_id)) || [];
+
         // Count votes for each option
         const voteCounts: Record<string, number> = {};
-        const totalVotes = votesData?.length || 0;
+        const totalVotes = filteredVotes.length;
 
         // Initialize all options with 0 votes
         poll.options.forEach((option: any) => {
@@ -190,7 +201,7 @@ const PollDisplay = () => {
         });
 
         // Count actual votes
-        votesData?.forEach(vote => {
+        filteredVotes.forEach(vote => {
           const option = vote.option_id as string;
           if (voteCounts.hasOwnProperty(option)) {
             voteCounts[option]++;

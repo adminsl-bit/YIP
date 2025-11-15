@@ -111,16 +111,29 @@ export const PollManagement = () => {
 
   const fetchPollResults = async (pollId: string) => {
     try {
+      // Fetch votes excluding journalists and admin_students
       const { data, error } = await supabase
         .from('poll_votes')
-        .select('option_id')
+        .select(`
+          option_id,
+          voter_id
+        `)
         .eq('poll_id', pollId);
 
       if (error) throw error;
 
+      // Filter out votes from users with journalist or admin_student roles
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('role', ['journalist', 'admin_student']);
+
+      const excludedUserIds = new Set(roleData?.map(r => r.user_id) || []);
+      const filteredVotes = data?.filter(vote => !excludedUserIds.has(vote.voter_id)) || [];
+
       // Count votes for each option
       const voteCounts: Record<string, number> = {};
-      data?.forEach(vote => {
+      filteredVotes.forEach(vote => {
         voteCounts[vote.option_id] = (voteCounts[vote.option_id] || 0) + 1;
       });
 
