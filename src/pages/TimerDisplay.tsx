@@ -20,11 +20,12 @@ interface TimerSession {
 const TimerDisplay = () => {
   const [timer, setTimer] = useState<TimerSession | null>(null);
   const [loading, setLoading] = useState(true);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const previousRemainingRef = useRef<number | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const baselineRef = useRef<{ remaining: number; clientNow: number } | null>(null);
-  const clockOffsetRef = useRef<number>(0);
+const audioRef = useRef<HTMLAudioElement | null>(null);
+const previousRemainingRef = useRef<number | null>(null);
+const rafRef = useRef<number | null>(null);
+const recalibRef = useRef<number | null>(null);
+const baselineRef = useRef<{ remainingAtStart: number; startedAtMs: number } | null>(null);
+const clockOffsetRef = useRef<number>(0);
 
 
 useEffect(() => {
@@ -184,9 +185,6 @@ if (activeAny) {
 } else {
   setTimer(null);
 }
-      } else {
-        setTimer(null);
-      }
     } catch (error) {
       console.error('Error fetching timer:', error);
       setTimer(null);
