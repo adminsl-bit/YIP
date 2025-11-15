@@ -29,6 +29,7 @@ interface TimerSession {
   remaining_seconds: number;
   status: string;
   updated_at: string;
+  started_at: string | null;
 }
 
 interface Poll {
@@ -55,9 +56,10 @@ const SessionDisplay = () => {
   const [subItems, setSubItems] = useState<SubItem[]>([]);
   const [loading, setLoading] = useState(true);
   const timerChannelRef = useRef<any>(null);
-  const countdownRef = useRef<NodeJS.Timeout | null>(null);
-  const baselineRef = useRef<{ remaining: number; updatedAt: number } | null>(null);
-  const clockOffsetRef = useRef<number>(0);
+const rafRef = useRef<number | null>(null);
+const recalibRef = useRef<number | null>(null);
+const baselineRef = useRef<{ remainingAtStart: number; startedAtMs: number } | null>(null);
+const clockOffsetRef = useRef<number>(0);
 
   // Auth and permissions for managing polls from stage view
   const { user, profile } = useAuth();
@@ -123,76 +125,79 @@ const SessionDisplay = () => {
       return { poll: null, results: {} };
     }
   };
-  useEffect(() => {
-    document.title = "Young Indian Parliament - Session Display";
-    
-    // Calibrate clock offset with server
-    const calibrateClock = async () => {
-      const clientBefore = Date.now();
-      const { data } = await supabase.rpc('get_server_time');
-      const clientAfter = Date.now();
-      if (data) {
-        const serverTime = Date.parse(data);
-        const clientMid = (clientBefore + clientAfter) / 2;
-        clockOffsetRef.current = serverTime - clientMid;
-        console.log('[SessionDisplay] Clock offset calibrated:', clockOffsetRef.current, 'ms');
+useEffect(() => {
+  document.title = "Young Indian Parliament - Session Display";
+  
+  // Calibrate clock offset with server
+  const calibrateClock = async () => {
+    const clientBefore = Date.now();
+    const { data } = await supabase.rpc('get_server_time');
+    const clientAfter = Date.now();
+    if (data) {
+      const serverTime = Date.parse(data);
+      const clientMid = (clientBefore + clientAfter) / 2;
+      clockOffsetRef.current = serverTime - clientMid;
+      console.log('[SessionDisplay] Clock offset calibrated:', clockOffsetRef.current, 'ms');
+    }
+  };
+  
+  calibrateClock();
+  recalibRef.current = window.setInterval(calibrateClock, 30000);
+  fetchActiveSession();
+
+  // Use unique channel name with timestamp to avoid conflicts
+  const channelName = `session_display_${Date.now()}`;
+  console.log('[SessionDisplay] Setting up real-time subscription:', channelName);
+
+  const subscription = supabase
+    .channel(channelName)
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'session_items' },
+      (payload) => {
+        console.log('[SessionDisplay] session_items changed:', payload.eventType);
+        fetchActiveSession();
       }
-    };
-    
-    calibrateClock();
-    fetchActiveSession();
+    )
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'timer_sessions' },
+      (payload) => {
+        console.log('[SessionDisplay] timer_sessions changed:', payload.eventType);
+        fetchActiveSession();
+      }
+    )
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'polls' },
+      (payload) => {
+        console.log('[SessionDisplay] polls changed:', payload.eventType, 'refetching immediately');
+        fetchActiveSession();
+      }
+    )
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'session_sub_items' as any },
+      (payload) => {
+        console.log('[SessionDisplay] session_sub_items changed:', payload.eventType);
+        fetchActiveSession();
+      }
+    )
+    .on('postgres_changes',
+      { event: '*', schema: 'public', table: 'poll_votes' },
+      async (payload) => {
+        console.log('[SessionDisplay] poll_votes changed:', payload.eventType, payload);
+        // Immediately refetch the entire session to get fresh poll results
+        await fetchActiveSession();
+      }
+    )
+    .subscribe((status) => {
+      console.log('[SessionDisplay] Subscription status:', status);
+    });
 
-    // Use unique channel name with timestamp to avoid conflicts
-    const channelName = `session_display_${Date.now()}`;
-    console.log('[SessionDisplay] Setting up real-time subscription:', channelName);
-
-    const subscription = supabase
-      .channel(channelName)
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'session_items' },
-        (payload) => {
-          console.log('[SessionDisplay] session_items changed:', payload.eventType);
-          fetchActiveSession();
-        }
-      )
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'timer_sessions' },
-        (payload) => {
-          console.log('[SessionDisplay] timer_sessions changed:', payload.eventType);
-          fetchActiveSession();
-        }
-      )
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'polls' },
-        (payload) => {
-          console.log('[SessionDisplay] polls changed:', payload.eventType, 'refetching immediately');
-          fetchActiveSession();
-        }
-      )
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'session_sub_items' as any },
-        (payload) => {
-          console.log('[SessionDisplay] session_sub_items changed:', payload.eventType);
-          fetchActiveSession();
-        }
-      )
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'poll_votes' },
-        async (payload) => {
-          console.log('[SessionDisplay] poll_votes changed:', payload.eventType, payload);
-          // Immediately refetch the entire session to get fresh poll results
-          await fetchActiveSession();
-        }
-      )
-      .subscribe((status) => {
-        console.log('[SessionDisplay] Subscription status:', status);
-      });
-
-    return () => {
-      console.log('[SessionDisplay] Cleaning up subscription');
-      supabase.removeChannel(subscription);
-    };
-  }, []);
+  return () => {
+    console.log('[SessionDisplay] Cleaning up subscription');
+    if (recalibRef.current) window.clearInterval(recalibRef.current);
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    supabase.removeChannel(subscription);
+  };
+}, []);
   const fetchActiveSession = async () => {
     try {
       const { data: sessionData, error: sessionError } = await supabase
@@ -217,17 +222,20 @@ const SessionDisplay = () => {
             .single();
 
           if (!timerError && timerData) {
-            const now = Date.now() + clockOffsetRef.current;
-            const serverUpdatedAt = Date.parse((timerData as any).updated_at);
-            const adjustedRemaining = Math.max(
-              0,
-              (timerData as any).remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000)
-            );
-            baselineRef.current = { remaining: adjustedRemaining, updatedAt: now };
-            setTimer(prev => prev 
-              ? ({ ...(timerData as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
-              : ({ ...(timerData as any), remaining_seconds: adjustedRemaining } as TimerSession)
-            );
+const nowAdj = Date.now() + clockOffsetRef.current;
+const startedAtStr: string | null = (timerData as any).started_at ?? null;
+let adjustedRemaining = (timerData as any).remaining_seconds;
+if ((timerData as any).status === 'running' && startedAtStr) {
+  const startedAtMs = Date.parse(startedAtStr);
+  adjustedRemaining = Math.max(0, (timerData as any).remaining_seconds - Math.floor((nowAdj - startedAtMs) / 1000));
+  baselineRef.current = { remainingAtStart: (timerData as any).remaining_seconds, startedAtMs };
+} else {
+  baselineRef.current = null;
+}
+setTimer(prev => prev 
+  ? ({ ...(timerData as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
+  : ({ ...(timerData as any), remaining_seconds: adjustedRemaining } as TimerSession)
+);
           }
         } else {
           setTimer(null);
@@ -351,17 +359,20 @@ const SessionDisplay = () => {
         .single();
 
       if (!error && data) {
-        const now = Date.now() + clockOffsetRef.current;
-        const serverUpdatedAt = Date.parse((data as any).updated_at);
-        const adjustedRemaining = Math.max(
-          0,
-          (data as any).remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000)
-        );
-        baselineRef.current = { remaining: adjustedRemaining, updatedAt: now };
-        setTimer(prev => prev 
-          ? ({ ...(data as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
-          : ({ ...(data as any), remaining_seconds: adjustedRemaining } as TimerSession)
-        );
+const nowAdj = Date.now() + clockOffsetRef.current;
+const startedAtStr: string | null = (data as any).started_at ?? null;
+let adjustedRemaining = (data as any).remaining_seconds;
+if ((data as any).status === 'running' && startedAtStr) {
+  const startedAtMs = Date.parse(startedAtStr);
+  adjustedRemaining = Math.max(0, (data as any).remaining_seconds - Math.floor((nowAdj - startedAtMs) / 1000));
+  baselineRef.current = { remainingAtStart: (data as any).remaining_seconds, startedAtMs };
+} else {
+  baselineRef.current = null;
+}
+setTimer(prev => prev 
+  ? ({ ...(data as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
+  : ({ ...(data as any), remaining_seconds: adjustedRemaining } as TimerSession)
+);
       }
     } catch (e) {
       console.error('Error fetching timer by id:', e);
@@ -389,14 +400,20 @@ const SessionDisplay = () => {
             fetchTimerById(timer.id!);
             return;
           }
-          const now = Date.now() + clockOffsetRef.current;
-          const serverUpdatedAt = Date.parse(row.updated_at);
-          const adjustedRemaining = Math.max(0, row.remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000));
-          baselineRef.current = { remaining: adjustedRemaining, updatedAt: now };
-          setTimer(prev => prev 
-            ? ({ ...(row as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
-            : ({ ...(row as any), remaining_seconds: adjustedRemaining } as TimerSession)
-          );
+const nowAdj = Date.now() + clockOffsetRef.current;
+const startedAtStr: string | null = row.started_at ?? null;
+let adjustedRemaining = row.remaining_seconds;
+if (row.status === 'running' && startedAtStr) {
+  const startedAtMs = Date.parse(startedAtStr);
+  adjustedRemaining = Math.max(0, row.remaining_seconds - Math.floor((nowAdj - startedAtMs) / 1000));
+  baselineRef.current = { remainingAtStart: row.remaining_seconds, startedAtMs };
+} else {
+  baselineRef.current = null;
+}
+setTimer(prev => prev 
+  ? ({ ...(row as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
+  : ({ ...(row as any), remaining_seconds: adjustedRemaining } as TimerSession)
+);
         }
       )
       .subscribe();
@@ -411,37 +428,30 @@ const SessionDisplay = () => {
     };
   }, [timer?.id]);
 
-  // Local smooth countdown derived from server baseline
-  useEffect(() => {
-    if (countdownRef.current) {
-      clearInterval(countdownRef.current);
-      countdownRef.current = null;
-    }
-    if (!timer?.id || timer.status !== 'running') return;
+// Local high-frequency countdown using requestAnimationFrame derived from started_at
+useEffect(() => {
+  if (rafRef.current) {
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+  }
+  if (!timer?.id || timer.status !== 'running' || !(timer as any).started_at) return;
 
-    // Ensure baseline exists. If updated_at present, adjust for age with clock offset.
-    const now = Date.now() + clockOffsetRef.current;
-    const updatedAt = (timer as any).updated_at ? Date.parse((timer as any).updated_at) : now;
-    const adjustedRemaining = Math.max(0, timer.remaining_seconds - Math.floor((now - updatedAt) / 1000));
-    baselineRef.current = { remaining: adjustedRemaining, updatedAt: now };
-    setTimer(prev => (prev ? { ...prev, remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } : { ...prev as any, remaining_seconds: adjustedRemaining }));
+  const render = () => {
+    const base = baselineRef.current;
+    if (!base) return;
+    const nowAdj = Date.now() + clockOffsetRef.current;
+    const elapsed = Math.floor((nowAdj - base.startedAtMs) / 1000);
+    const computed = Math.max(0, base.remainingAtStart - elapsed);
+    setTimer(prev => (prev ? { ...prev, remaining_seconds: computed } : prev));
+    rafRef.current = requestAnimationFrame(render);
+  };
 
-    const tick = () => {
-      const base: any = baselineRef.current;
-      if (!base) return;
-      const now = Date.now() + clockOffsetRef.current;
-      const elapsed = Math.floor((now - base.updatedAt) / 1000);
-      const computed = Math.max(0, base.remaining - elapsed);
-      setTimer(prev => (prev ? { ...prev, remaining_seconds: Math.min(prev.remaining_seconds, computed) } : prev));
-    };
+  render();
 
-    tick();
-    countdownRef.current = setInterval(tick, 100);
-
-    return () => {
-      if (countdownRef.current) clearInterval(countdownRef.current);
-    };
-  }, [timer?.id, timer?.status, (timer as any)?.updated_at]);
+  return () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+  };
+}, [timer?.id, timer?.status, (timer as any)?.started_at]);
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
