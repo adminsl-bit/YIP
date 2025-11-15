@@ -31,6 +31,17 @@ const PollDisplay = () => {
   const [results, setResults] = useState<Record<string, PollResult[]>>({});
   const [showDetailedResults, setShowDetailedResults] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [specificPollId, setSpecificPollId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Check if a specific poll ID is requested via URL parameter
+    const params = new URLSearchParams(window.location.search);
+    const pollId = params.get('pollId');
+    if (pollId) {
+      setSpecificPollId(pollId);
+      console.log('PollDisplay: Displaying specific poll:', pollId);
+    }
+  }, []);
 
   useEffect(() => {
     console.log('PollDisplay: Setting up real-time subscriptions');
@@ -89,7 +100,7 @@ const PollDisplay = () => {
       supabase.removeChannel(pollsChannel);
       supabase.removeChannel(votesChannel);
     };
-  }, []);
+  }, [specificPollId]);
 
   const fetchActivePolls = async () => {
     try {
@@ -98,20 +109,34 @@ const PollDisplay = () => {
       
       try {
         // Try authenticated query first
-        const result = await supabase
+        let query = supabase
           .from('polls')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
+          .select('*');
+        
+        // If specific poll ID is requested, filter by it
+        if (specificPollId) {
+          query = query.eq('id', specificPollId);
+        } else {
+          query = query.eq('is_active', true);
+        }
+        
+        const result = await query.order('created_at', { ascending: false });
         pollsData = result.data;
         pollsError = result.error;
       } catch (authError) {
         // Fall back to public view if authentication fails
-        const result = await supabase
+        let query = supabase
           .from('public_polls')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
+          .select('*');
+        
+        // If specific poll ID is requested, filter by it
+        if (specificPollId) {
+          query = query.eq('id', specificPollId);
+        } else {
+          query = query.eq('is_active', true);
+        }
+        
+        const result = await query.order('created_at', { ascending: false });
         pollsData = result.data;
         pollsError = result.error;
       }
@@ -121,8 +146,8 @@ const PollDisplay = () => {
       const pollsList = (pollsData || []) as Poll[];
       let effectivePollsList = pollsList;
 
-      // If no active polls, show the most recent poll marked for post-analysis
-      if (effectivePollsList.length === 0) {
+      // If no active polls and no specific poll requested, show the most recent poll marked for post-analysis
+      if (effectivePollsList.length === 0 && !specificPollId) {
         let postData, postError;
         
         try {
