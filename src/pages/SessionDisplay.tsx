@@ -159,27 +159,8 @@ const SessionDisplay = () => {
         { event: '*', schema: 'public', table: 'poll_votes' },
         async (payload) => {
           console.log('[SessionDisplay] poll_votes changed:', payload.eventType, payload);
-          // Immediately refetch poll results for real-time updates
-          if (poll?.id) {
-            await fetchPollResults(poll.id);
-          }
-          // Also refresh active sub-item polls
-          if (activeSubItemPolls.length > 0) {
-            const updatedPolls = await Promise.all(
-              activeSubItemPolls.map(async ({ poll: p }) => {
-                const { data: votes } = await supabase
-                  .from('poll_votes')
-                  .select('option_id')
-                  .eq('poll_id', p.id);
-                const results: Record<string, number> = {};
-                votes?.forEach((v) => {
-                  results[v.option_id] = (results[v.option_id] || 0) + 1;
-                });
-                return { poll: p, results };
-              })
-            );
-            setActiveSubItemPolls(updatedPolls);
-          }
+          // Immediately refetch the entire session to get fresh poll results
+          await fetchActiveSession();
         }
       )
       .subscribe((status) => {
