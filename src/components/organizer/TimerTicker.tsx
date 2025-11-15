@@ -54,25 +54,31 @@ export const TimerTicker = () => {
 
     // Use a ref that gets updated with fresh data
     const timerRef = { current: active };
+    let tickCount = 0;
     
     tickRef.current = window.setInterval(async () => {
       const currentTimer = timerRef.current;
       if (!currentTimer) return;
       
       const nextRemaining = Math.max(0, (currentTimer.remaining_seconds ?? 0) - 1);
+      tickCount++;
 
       try {
         if (nextRemaining === 0) {
+          // Always update DB when timer completes
           await supabase
             .from('timer_sessions')
             .update({ remaining_seconds: 0, status: 'completed' })
             .eq('id', currentTimer.id);
           setActive(null);
         } else {
-          await supabase
-            .from('timer_sessions')
-            .update({ remaining_seconds: nextRemaining })
-            .eq('id', currentTimer.id);
+          // Only update DB every 5 seconds to reduce load and prevent conflicts
+          if (tickCount % 5 === 0) {
+            await supabase
+              .from('timer_sessions')
+              .update({ remaining_seconds: nextRemaining })
+              .eq('id', currentTimer.id);
+          }
           timerRef.current = { ...currentTimer, remaining_seconds: nextRemaining };
           setActive(prev => (prev ? { ...prev, remaining_seconds: nextRemaining } : prev));
         }
