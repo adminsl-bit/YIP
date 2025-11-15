@@ -663,12 +663,12 @@ useEffect(() => {
                 </div>
 
                 <div className="text-center py-2 sm:py-3">
-                  <div className={`text-3xl sm:text-4xl md:text-5xl font-mono font-bold ${
+                  <div className={`text-xl sm:text-2xl md:text-3xl font-mono font-bold ${
                     timer.remaining_seconds <= timer.duration_seconds * 0.1 ? 'text-destructive animate-pulse' : ''
                   }`}>
                     {formatTime(timer.remaining_seconds)}
                   </div>
-                  <p className="text-sm sm:text-base lg:text-lg text-muted-foreground mt-2 sm:mt-3 lg:mt-4">
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">
                     of {formatTime(timer.duration_seconds)}
                   </p>
                 </div>
@@ -729,23 +729,23 @@ useEffect(() => {
 
                     {p.show_results_publicly && p.options && (
                       <div className="space-y-5 mt-8">
-                        <h3 className="text-2xl sm:text-3xl font-semibold mb-6">Results:</h3>
+                        <h3 className="text-3xl sm:text-4xl font-semibold mb-6">Results:</h3>
                         {p.options.map((option: any) => {
                           const voteCount = results[option.id] || 0;
                           const percentage = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
                           return (
                             <div key={option.id} className="space-y-3">
                               <div className="flex justify-between items-center gap-4">
-                                <span className="text-xl sm:text-2xl lg:text-3xl font-medium">{option.text}</span>
-                                <span className="text-xl sm:text-2xl lg:text-3xl font-semibold whitespace-nowrap">
+                                <span className="text-2xl sm:text-3xl lg:text-4xl font-medium">{option.text}</span>
+                                <span className="text-2xl sm:text-3xl lg:text-4xl font-semibold whitespace-nowrap">
                                   {voteCount} vote{voteCount !== 1 ? 's' : ''} ({percentage}%)
                                 </span>
                               </div>
-                              <Progress value={percentage} className="h-4 sm:h-5" />
+                              <Progress value={percentage} className="h-5 sm:h-6" />
                             </div>
                           );
                         })}
-                        <div className="text-center text-muted-foreground text-xl sm:text-2xl mt-6 font-medium">
+                        <div className="text-center text-muted-foreground text-2xl sm:text-3xl mt-6 font-medium">
                           Total Votes: {totalVotes}
                         </div>
                       </div>
@@ -799,7 +799,7 @@ useEffect(() => {
 
               {poll.show_results_publicly && poll.options && (
                 <div className="space-y-5 mt-8">
-                  <h3 className="text-2xl sm:text-3xl font-semibold mb-6">Results:</h3>
+                  <h3 className="text-3xl sm:text-4xl font-semibold mb-6">Results:</h3>
                   {poll.options.map((option: any) => {
                     const voteCount = pollResults[option.id] || 0;
                     const totalVotes = Object.values(pollResults).reduce((sum, count) => sum + count, 0);
@@ -808,16 +808,16 @@ useEffect(() => {
                     return (
                       <div key={option.id} className="space-y-3">
                         <div className="flex justify-between items-center gap-4">
-                          <span className="text-xl sm:text-2xl lg:text-3xl font-medium">{option.text}</span>
-                          <span className="text-xl sm:text-2xl lg:text-3xl font-semibold whitespace-nowrap">
+                          <span className="text-2xl sm:text-3xl lg:text-4xl font-medium">{option.text}</span>
+                          <span className="text-2xl sm:text-3xl lg:text-4xl font-semibold whitespace-nowrap">
                             {voteCount} vote{voteCount !== 1 ? 's' : ''} ({percentage}%)
                           </span>
                         </div>
-                        <Progress value={percentage} className="h-4 sm:h-5" />
+                        <Progress value={percentage} className="h-5 sm:h-6" />
                       </div>
                     );
                   })}
-                  <div className="text-center text-muted-foreground text-xl sm:text-2xl mt-6 font-medium">
+                  <div className="text-center text-muted-foreground text-2xl sm:text-3xl mt-6 font-medium">
                     Total Votes: {Object.values(pollResults).reduce((sum, count) => sum + count, 0)}
                   </div>
                 </div>
