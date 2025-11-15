@@ -23,9 +23,26 @@ const TimerDisplay = () => {
   const previousRemainingRef = useRef<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const baselineRef = useRef<{ remaining: number; clientNow: number } | null>(null);
+  const clockOffsetRef = useRef<number>(0);
+
 
   useEffect(() => {
     document.title = "Young Indian Parliament - Timer Display";
+    
+    // Calibrate clock offset with server
+    const calibrateClock = async () => {
+      const clientBefore = Date.now();
+      const { data } = await supabase.rpc('get_server_time');
+      const clientAfter = Date.now();
+      if (data) {
+        const serverTime = Date.parse(data);
+        const clientMid = (clientBefore + clientAfter) / 2;
+        clockOffsetRef.current = serverTime - clientMid;
+        console.log('[TimerDisplay] Clock offset calibrated:', clockOffsetRef.current, 'ms');
+      }
+    };
+    
+    calibrateClock();
     fetchActiveTimer();
 
     // Initialize audio
@@ -62,7 +79,8 @@ const TimerDisplay = () => {
     const tick = () => {
       const base = baselineRef.current;
       if (!base) return;
-      const elapsed = Math.floor((Date.now() - base.clientNow) / 1000);
+      const now = Date.now() + clockOffsetRef.current;
+      const elapsed = Math.floor((now - base.clientNow) / 1000);
       const computed = Math.max(0, base.remaining - elapsed);
       setTimer(prev => (prev ? { ...prev, remaining_seconds: computed } : prev));
     };
@@ -121,11 +139,13 @@ const TimerDisplay = () => {
 
       if (!runningError && running) {
         // Adjust for time elapsed since server updated this row
+        const now = Date.now() + clockOffsetRef.current;
+        const serverUpdatedAt = Date.parse((running as any).updated_at);
         const adjustedRemaining = Math.max(
           0,
-          (running as any).remaining_seconds - Math.floor((Date.now() - Date.parse((running as any).updated_at)) / 1000)
+          (running as any).remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000)
         );
-        baselineRef.current = { remaining: adjustedRemaining, clientNow: Date.now() };
+        baselineRef.current = { remaining: adjustedRemaining, clientNow: now };
         setTimer({ ...(running as any), remaining_seconds: adjustedRemaining } as TimerSession);
         return;
       }
@@ -141,11 +161,13 @@ const TimerDisplay = () => {
 
       if (activeError) throw activeError;
       if (activeAny) {
+        const now = Date.now() + clockOffsetRef.current;
+        const serverUpdatedAt = Date.parse((activeAny as any).updated_at);
         const adjustedRemaining = Math.max(
           0,
-          (activeAny as any).remaining_seconds - Math.floor((Date.now() - Date.parse((activeAny as any).updated_at)) / 1000)
+          (activeAny as any).remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000)
         );
-        baselineRef.current = { remaining: adjustedRemaining, clientNow: Date.now() };
+        baselineRef.current = { remaining: adjustedRemaining, clientNow: now };
         setTimer({ ...(activeAny as any), remaining_seconds: adjustedRemaining } as TimerSession);
       } else {
         setTimer(null);

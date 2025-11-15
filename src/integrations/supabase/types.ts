@@ -1058,6 +1058,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_server_time: { Args: never; Returns: string }
       get_total_active_students: { Args: never; Returns: number }
       has_role: {
         Args: {
