@@ -578,11 +578,11 @@ useEffect(() => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-6 lg:p-8 pb-32">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4 pb-32">
       <BreakingNewsTicker />
       
       
-      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8 mt-4 sm:mt-6 lg:mt-8">
+      <div className="max-w-6xl mx-auto space-y-3 mt-2">
         {/* Session Header with Timer */}
         <Card className="border-2 border-primary shadow-xl">
           <CardContent className="p-4 sm:p-6 lg:p-8">
