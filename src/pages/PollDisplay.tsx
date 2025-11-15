@@ -71,10 +71,11 @@ const PollDisplay = () => {
           schema: 'public', 
           table: 'poll_votes' 
         }, 
-        (payload) => {
-          console.log('PollDisplay: Real-time vote change detected:', payload.eventType);
-          console.log('PollDisplay: Refetching polls due to vote change');
-          fetchActivePolls();
+        async (payload) => {
+          console.log('PollDisplay: Real-time vote change detected:', payload.eventType, payload);
+          console.log('PollDisplay: Immediately refetching polls for real-time vote updates');
+          // Immediately fetch updated results
+          await fetchActivePolls();
         }
       )
       .subscribe((status) => {
