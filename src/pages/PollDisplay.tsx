@@ -165,7 +165,6 @@ const PollDisplay = () => {
             .from('public_poll_votes')
             .select('option_id')
             .eq('poll_id', poll.id)
-            .order('created_at', { ascending: false }); // Force fresh data
           votesData = result.data;
           votesError = result.error;
         } catch (authError) {
@@ -174,7 +173,6 @@ const PollDisplay = () => {
             .from('public_poll_votes')
             .select('option_id')
             .eq('poll_id', poll.id)
-            .order('created_at', { ascending: false }); // Force fresh data
           votesData = result.data;
           votesError = result.error;
         }

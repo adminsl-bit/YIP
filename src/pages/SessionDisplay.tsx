@@ -70,7 +70,6 @@ const SessionDisplay = () => {
         .from('public_poll_votes')
         .select('option_id')
         .eq('poll_id', pollId)
-        .order('created_at', { ascending: false }); // Force fresh data
 
       if (error) throw error;
 
@@ -103,10 +102,9 @@ const SessionDisplay = () => {
         // Re-run here to get latest state set by fetchPollResults is not accessible.
         // So fetch directly for this poll with cache busting
         const { data: votes, error } = await supabase
-          .from('poll_votes')
+          .from('public_poll_votes')
           .select('option_id')
           .eq('poll_id', pollData.id)
-          .order('created_at', { ascending: false }); // Force fresh data
         if (!error && votes) {
           votes.forEach((v) => {
             results[v.option_id] = (results[v.option_id] || 0) + 1;
