@@ -18,6 +18,7 @@ import LeaderboardDisplay from "./pages/LeaderboardDisplay";
 import NotFound from "./pages/NotFound";
 import { AwardShowcase } from "./pages/AwardShowcase";
 import { AuthenticatedRoute } from "./components/AuthenticatedRoute";
+import { RoleProtectedRoute } from "./components/RoleProtectedRoute";
 import SeedDemoUsers from "./pages/SeedDemoUsers";
 
 const queryClient = new QueryClient();
@@ -38,24 +39,24 @@ const App = () => (
               </AuthenticatedRoute>
             } />
             <Route path="/admin-student" element={
-              <AuthenticatedRoute>
+              <RoleProtectedRoute allowedUserType="student" allowedRole="admin_student">
                 <AdminStudentDashboard />
-              </AuthenticatedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/jury" element={
-              <AuthenticatedRoute>
+              <RoleProtectedRoute allowedUserType="jury">
                 <JuryDashboard />
-              </AuthenticatedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/journalist" element={
-              <AuthenticatedRoute>
+              <RoleProtectedRoute allowedUserType="student" allowedRole="journalist">
                 <JournalistDashboard />
-              </AuthenticatedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/organizer" element={
-              <AuthenticatedRoute>
+              <RoleProtectedRoute allowedUserType="organizer">
                 <OrganizerDashboard />
-              </AuthenticatedRoute>
+              </RoleProtectedRoute>
             } />
             <Route path="/display/timer" element={<SessionDisplay />} />
             <Route path="/display/session" element={<SessionDisplay />} />
