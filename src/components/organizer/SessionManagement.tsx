@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -62,6 +62,7 @@ interface TimerSession {
   status: string;
   remaining_seconds: number;
   duration_seconds: number;
+  updated_at: string;
 }
 
 interface Poll {
@@ -88,6 +89,33 @@ export const SessionManagement = () => {
   const [description, setDescription] = useState("");
   const [linkedTimerId, setLinkedTimerId] = useState<string>("");
   const [linkedPollId, setLinkedPollId] = useState<string>("");
+
+  // Server clock calibration for smooth timer display
+  const [nowTs, setNowTs] = useState<number>(Date.now());
+  const clockOffsetRef = useRef<number>(0);
+
+  useEffect(() => {
+    const calibrateClock = async () => {
+      try {
+        const clientBefore = Date.now();
+        const { data } = await supabase.rpc('get_server_time');
+        const clientAfter = Date.now();
+        if (data) {
+          const serverTime = Date.parse(data as unknown as string);
+          const clientMid = (clientBefore + clientAfter) / 2;
+          clockOffsetRef.current = serverTime - clientMid;
+          console.log('[SessionManagement] Clock offset calibrated:', clockOffsetRef.current, 'ms');
+        }
+      } catch (e) {
+        console.warn('[SessionManagement] Clock calibration failed', e);
+      }
+    };
+
+    calibrateClock();
+    const id = window.setInterval(() => setNowTs(Date.now()), 250);
+    return () => window.clearInterval(id);
+  }, []);
+
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -121,7 +149,8 @@ export const SessionManagement = () => {
                 title: newRow.title,
                 status: newRow.status,
                 remaining_seconds: newRow.remaining_seconds,
-                duration_seconds: newRow.duration_seconds
+                duration_seconds: newRow.duration_seconds,
+                updated_at: newRow.updated_at
               } : t);
             }
             if (eventType === 'INSERT' && newRow) {
@@ -130,7 +159,8 @@ export const SessionManagement = () => {
                 title: newRow.title,
                 status: newRow.status,
                 remaining_seconds: newRow.remaining_seconds,
-                duration_seconds: newRow.duration_seconds
+                duration_seconds: newRow.duration_seconds,
+                updated_at: newRow.updated_at
               } as any;
               return [inserted, ...prev.filter(t => t.id !== newRow.id)];
             }
@@ -170,7 +200,7 @@ export const SessionManagement = () => {
     try {
       const { data, error } = await supabase
         .from('timer_sessions')
-        .select('id, title, status, remaining_seconds, duration_seconds')
+        .select('id, title, status, remaining_seconds, duration_seconds, updated_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -178,6 +208,15 @@ export const SessionManagement = () => {
     } catch (error) {
       console.error('Error fetching timers:', error);
     }
+  };
+
+  // Compute display remaining using server-synced time
+  const getDisplayedRemaining = (timer: TimerSession | undefined) => {
+    if (!timer || timer.status !== 'running') return timer?.remaining_seconds || 0;
+    const serverNow = nowTs + clockOffsetRef.current;
+    const updatedAt = Date.parse(timer.updated_at);
+    const elapsed = Math.max(0, Math.floor((serverNow - updatedAt) / 1000));
+    return Math.max(0, timer.remaining_seconds - elapsed);
   };
 
   const fetchAvailablePolls = async () => {
@@ -763,6 +802,7 @@ export const SessionManagement = () => {
                       getStatusBadge={getStatusBadge}
                       formatTime={formatTime}
                       isAdminStudent={hasRole('admin_student')}
+                      getDisplayedRemaining={getDisplayedRemaining}
                     />
                   ))}
                 </div>
