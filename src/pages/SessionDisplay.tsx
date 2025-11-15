@@ -70,7 +70,7 @@ const clockOffsetRef = useRef<number>(0);
   // Active sub-item polls to display (may be multiple)
   const [activeSubItemPolls, setActiveSubItemPolls] = useState<Array<{ poll: Poll; results: Record<string, number> }>>([]);
 
-  const fetchPollResults = async (pollId: string) => {
+  const fetchPollResults = async (pollId: string): Promise<Record<string, number>> => {
     try {
       const { data: votes, error } = await supabase
         .from('poll_votes')
@@ -95,9 +95,34 @@ const clockOffsetRef = useRef<number>(0);
       });
 
       console.log('[SessionDisplay] Fetched poll results:', pollId, results);
-      setPollResults(results);
+      return results;
     } catch (error) {
       console.error('Error fetching poll results:', error);
+      return {};
+    }
+  };
+
+  // Update poll results only without refetching entire session (for live updates)
+  const updatePollResultsOnly = async () => {
+    try {
+      // Update parent poll results if exists
+      if (poll?.id) {
+        const results = await fetchPollResults(poll.id);
+        setPollResults(results);
+      }
+
+      // Update sub-item poll results if exist
+      if (activeSubItemPolls.length > 0) {
+        const updatedPolls = await Promise.all(
+          activeSubItemPolls.map(async ({ poll }) => {
+            const results = await fetchPollResults(poll.id);
+            return { poll, results };
+          })
+        );
+        setActiveSubItemPolls(updatedPolls);
+      }
+    } catch (error) {
+      console.error('Error updating poll results:', error);
     }
   };
 
@@ -113,28 +138,7 @@ const clockOffsetRef = useRef<number>(0);
 
       let results: Record<string, number> = {};
       if (pollData.show_results_publicly) {
-        await fetchPollResults(pollData.id);
-        // Re-run here to get latest state set by fetchPollResults is not accessible.
-        // So fetch directly for this poll with cache busting
-        const { data: votes, error } = await supabase
-          .from('poll_votes')
-          .select('option_id, voter_id')
-          .eq('poll_id', pollData.id)
-        
-        if (!error && votes) {
-          // Filter out journalists and admin_students
-          const { data: roleData } = await supabase
-            .from('user_roles')
-            .select('user_id, role')
-            .in('role', ['journalist', 'admin_student']);
-          
-          const excludedUserIds = new Set(roleData?.map(r => r.user_id) || []);
-          const filteredVotes = votes.filter(v => !excludedUserIds.has(v.voter_id));
-          
-          filteredVotes.forEach((v) => {
-            results[v.option_id] = (results[v.option_id] || 0) + 1;
-          });
-        }
+        results = await fetchPollResults(pollData.id);
         console.log('[SessionDisplay] Fetched poll with results:', pollData.id, results);
       }
 
@@ -202,8 +206,8 @@ useEffect(() => {
       { event: '*', schema: 'public', table: 'poll_votes' },
       async (payload) => {
         console.log('[SessionDisplay] poll_votes changed:', payload.eventType, payload);
-        // Immediately refetch the entire session to get fresh poll results
-        await fetchActiveSession();
+        // Update only poll results without refetching entire session (prevents screen refresh)
+        await updatePollResultsOnly();
       }
     )
     .subscribe((status) => {
@@ -306,7 +310,8 @@ setTimer(prev => prev
               setPoll(pollData as Poll);
               setActiveSubItemPolls([]);
               if (pollData.show_results_publicly) {
-                await fetchPollResults(pollData.id);
+                const results = await fetchPollResults(pollData.id);
+                setPollResults(results);
               } else {
                 setPollResults({});
               }
