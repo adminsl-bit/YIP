@@ -42,7 +42,7 @@ export const SubItemCarousel = ({ subItems }: SubItemCarouselProps) => {
   const currentItem = subItems[currentIndex];
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-4">
+    <div className="w-full max-w-7xl mx-auto space-y-4">
       {/* Navigation Controls */}
       <div className="flex items-center justify-between">
         <Button
