@@ -349,8 +349,8 @@ export const PollManagement = () => {
     return results.reduce((total, result) => total + result.count, 0);
   };
 
-  const openStageView = () => {
-    const stageUrl = '/display/polls';
+  const openStageView = (pollId: string) => {
+    const stageUrl = `/display/polls?pollId=${pollId}`;
     console.log('Opening poll stage view at:', stageUrl);
     const newWindow = window.open(stageUrl, '_blank', 'width=1200,height=800,fullscreen=yes');
     if (!newWindow) {
@@ -562,7 +562,7 @@ export const PollManagement = () => {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem onClick={openStageView}>
+                          <DropdownMenuItem onClick={() => openStageView(poll.id)}>
                             <ExternalLink className="w-4 h-4 mr-2" />
                             Open Stage Display
                           </DropdownMenuItem>
