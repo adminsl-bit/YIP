@@ -77,20 +77,20 @@ export const SubItemCarousel = ({ subItems }: SubItemCarouselProps) => {
 
       {/* Current Sub-Item Card */}
       <Card className="bg-gradient-to-br from-primary/5 to-secondary/5 border-2">
-        <CardContent className="p-8 space-y-4">
-          <h2 className="text-3xl font-bold text-center">
+        <CardContent className="p-8 space-y-6">
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-center">
             {currentItem?.title}
           </h2>
 
           {currentItem?.description && (
-            <p className="text-lg text-center text-muted-foreground">
+            <p className="text-2xl sm:text-3xl lg:text-4xl text-center text-muted-foreground leading-relaxed">
               {currentItem.description}
             </p>
           )}
 
           {currentItem?.content && (
-            <div className="mt-6 p-4 bg-background/50 rounded-lg border">
-              <p className="text-base whitespace-pre-wrap">
+            <div className="mt-6 p-6 bg-background/50 rounded-lg border">
+              <p className="text-xl sm:text-2xl lg:text-3xl whitespace-pre-wrap leading-relaxed">
                 {currentItem.content}
               </p>
             </div>
