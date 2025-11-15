@@ -192,11 +192,14 @@ export const AwardManagement = () => {
       setNewAward({ name: '', description: '', visibleToJury: true });
       setIsCreateDialogOpen(false);
       fetchData();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating award:', error);
+      const isDuplicate = error?.code === '23505';
       toast({
         title: "Error",
-        description: "Failed to create award",
+        description: isDuplicate 
+          ? "An award with this name already exists. Please use a different name."
+          : "Failed to create award",
         variant: "destructive",
       });
     }
