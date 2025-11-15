@@ -162,7 +162,7 @@ const PollDisplay = () => {
         try {
           // Try authenticated query first with cache busting
           const result = await supabase
-            .from('poll_votes')
+            .from('public_poll_votes')
             .select('option_id')
             .eq('poll_id', poll.id)
             .order('created_at', { ascending: false }); // Force fresh data
