@@ -73,15 +73,24 @@ const clockOffsetRef = useRef<number>(0);
   const fetchPollResults = async (pollId: string) => {
     try {
       const { data: votes, error } = await supabase
-        .from('public_poll_votes')
-        .select('option_id')
-        .eq('poll_id', pollId)
+        .from('poll_votes')
+        .select('option_id, voter_id')
+        .eq('poll_id', pollId);
 
       if (error) throw error;
 
+      // Filter out votes from users with journalist or admin_student roles
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('role', ['journalist', 'admin_student']);
+
+      const excludedUserIds = new Set(roleData?.map(r => r.user_id) || []);
+      const filteredVotes = votes?.filter(vote => !excludedUserIds.has(vote.voter_id)) || [];
+
       // Count votes per option
       const results: Record<string, number> = {};
-      votes?.forEach((vote) => {
+      filteredVotes.forEach((vote) => {
         results[vote.option_id] = (results[vote.option_id] || 0) + 1;
       });
 
@@ -108,11 +117,21 @@ const clockOffsetRef = useRef<number>(0);
         // Re-run here to get latest state set by fetchPollResults is not accessible.
         // So fetch directly for this poll with cache busting
         const { data: votes, error } = await supabase
-          .from('public_poll_votes')
-          .select('option_id')
+          .from('poll_votes')
+          .select('option_id, voter_id')
           .eq('poll_id', pollData.id)
+        
         if (!error && votes) {
-          votes.forEach((v) => {
+          // Filter out journalists and admin_students
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('user_id, role')
+            .in('role', ['journalist', 'admin_student']);
+          
+          const excludedUserIds = new Set(roleData?.map(r => r.user_id) || []);
+          const filteredVotes = votes.filter(v => !excludedUserIds.has(v.voter_id));
+          
+          filteredVotes.forEach((v) => {
             results[v.option_id] = (results[v.option_id] || 0) + 1;
           });
         }

@@ -60,17 +60,28 @@ export const PollResults = () => {
       // Fetch results for each poll
       const resultsMap: Record<string, PollResult[]> = {};
       
+      // Get excluded user IDs (journalists and admin_students)
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('role', ['journalist', 'admin_student']);
+      
+      const excludedUserIds = new Set(roleData?.map(r => r.user_id) || []);
+      
       for (const poll of pollsList) {
         const { data: votesData, error: votesError } = await supabase
           .from('poll_votes')
-          .select('option_id')
+          .select('option_id, voter_id')
           .eq('poll_id', poll.id);
 
         if (votesError) throw votesError;
 
+        // Filter out excluded users
+        const filteredVotes = votesData?.filter(vote => !excludedUserIds.has(vote.voter_id)) || [];
+
         // Count votes for each option
         const voteCounts: Record<string, number> = {};
-        const totalVotes = votesData?.length || 0;
+        const totalVotes = filteredVotes.length;
 
         // Initialize all options with 0 votes
         poll.options.forEach((option: any) => {
@@ -79,7 +90,7 @@ export const PollResults = () => {
         });
 
         // Count actual votes
-        votesData?.forEach(vote => {
+        filteredVotes.forEach(vote => {
           const option = vote.option_id as string;
           if (voteCounts.hasOwnProperty(option)) {
             voteCounts[option]++;
