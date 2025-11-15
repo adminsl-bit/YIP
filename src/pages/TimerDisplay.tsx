@@ -82,12 +82,12 @@ const TimerDisplay = () => {
       const now = Date.now() + clockOffsetRef.current;
       const elapsed = Math.floor((now - base.clientNow) / 1000);
       const computed = Math.max(0, base.remaining - elapsed);
-      setTimer(prev => (prev ? { ...prev, remaining_seconds: computed } : prev));
+      setTimer(prev => (prev ? { ...prev, remaining_seconds: Math.min(prev.remaining_seconds, computed) } : prev));
     };
 
     // Prime immediately and then tick frequently for tighter sync
     tick();
-    intervalRef.current = setInterval(tick, 250);
+    intervalRef.current = setInterval(tick, 100);
 
     return () => {
       if (intervalRef.current) {
@@ -146,7 +146,10 @@ const TimerDisplay = () => {
           (running as any).remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000)
         );
         baselineRef.current = { remaining: adjustedRemaining, clientNow: now };
-        setTimer({ ...(running as any), remaining_seconds: adjustedRemaining } as TimerSession);
+        setTimer(prev => prev 
+          ? ({ ...(running as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
+          : ({ ...(running as any), remaining_seconds: adjustedRemaining } as TimerSession)
+        );
         return;
       }
 
@@ -168,7 +171,10 @@ const TimerDisplay = () => {
           (activeAny as any).remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000)
         );
         baselineRef.current = { remaining: adjustedRemaining, clientNow: now };
-        setTimer({ ...(activeAny as any), remaining_seconds: adjustedRemaining } as TimerSession);
+        setTimer(prev => prev 
+          ? ({ ...(activeAny as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
+          : ({ ...(activeAny as any), remaining_seconds: adjustedRemaining } as TimerSession)
+        );
       } else {
         setTimer(null);
       }

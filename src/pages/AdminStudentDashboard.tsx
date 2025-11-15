@@ -9,14 +9,13 @@ import { SessionManagement } from '@/components/organizer/SessionManagement';
 import { BreakingNewsTicker } from '@/components/display/BreakingNewsTicker';
 import { Button } from "@/components/ui/button";
 import { LogOut, User, Users, Calendar, Mic, ListOrdered } from "lucide-react";
-import { TimerTicker } from "@/components/organizer/TimerTicker";
+
 
 export const AdminStudentDashboard = () => {
   const { profile, signOut } = useAuth();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10">
-      <TimerTicker />
       <BreakingNewsTicker />
       {/* Header */}
       <div className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">

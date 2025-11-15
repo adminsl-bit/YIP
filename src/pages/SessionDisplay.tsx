@@ -224,7 +224,10 @@ const SessionDisplay = () => {
               (timerData as any).remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000)
             );
             baselineRef.current = { remaining: adjustedRemaining, updatedAt: now };
-            setTimer({ ...(timerData as any), remaining_seconds: adjustedRemaining } as TimerSession);
+            setTimer(prev => prev 
+              ? ({ ...(timerData as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
+              : ({ ...(timerData as any), remaining_seconds: adjustedRemaining } as TimerSession)
+            );
           }
         } else {
           setTimer(null);
@@ -355,7 +358,10 @@ const SessionDisplay = () => {
           (data as any).remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000)
         );
         baselineRef.current = { remaining: adjustedRemaining, updatedAt: now };
-        setTimer({ ...(data as any), remaining_seconds: adjustedRemaining } as TimerSession);
+        setTimer(prev => prev 
+          ? ({ ...(data as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
+          : ({ ...(data as any), remaining_seconds: adjustedRemaining } as TimerSession)
+        );
       }
     } catch (e) {
       console.error('Error fetching timer by id:', e);
@@ -387,7 +393,10 @@ const SessionDisplay = () => {
           const serverUpdatedAt = Date.parse(row.updated_at);
           const adjustedRemaining = Math.max(0, row.remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000));
           baselineRef.current = { remaining: adjustedRemaining, updatedAt: now };
-          setTimer({ ...(row as any), remaining_seconds: adjustedRemaining } as TimerSession);
+          setTimer(prev => prev 
+            ? ({ ...(row as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
+            : ({ ...(row as any), remaining_seconds: adjustedRemaining } as TimerSession)
+          );
         }
       )
       .subscribe();
@@ -415,7 +424,7 @@ const SessionDisplay = () => {
     const updatedAt = (timer as any).updated_at ? Date.parse((timer as any).updated_at) : now;
     const adjustedRemaining = Math.max(0, timer.remaining_seconds - Math.floor((now - updatedAt) / 1000));
     baselineRef.current = { remaining: adjustedRemaining, updatedAt: now };
-    setTimer(prev => (prev ? { ...prev, remaining_seconds: adjustedRemaining } : prev));
+    setTimer(prev => (prev ? { ...prev, remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } : { ...prev as any, remaining_seconds: adjustedRemaining }));
 
     const tick = () => {
       const base: any = baselineRef.current;
@@ -423,11 +432,11 @@ const SessionDisplay = () => {
       const now = Date.now() + clockOffsetRef.current;
       const elapsed = Math.floor((now - base.updatedAt) / 1000);
       const computed = Math.max(0, base.remaining - elapsed);
-      setTimer(prev => (prev ? { ...prev, remaining_seconds: computed } : prev));
+      setTimer(prev => (prev ? { ...prev, remaining_seconds: Math.min(prev.remaining_seconds, computed) } : prev));
     };
 
     tick();
-    countdownRef.current = setInterval(tick, 250);
+    countdownRef.current = setInterval(tick, 100);
 
     return () => {
       if (countdownRef.current) clearInterval(countdownRef.current);
