@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -55,6 +55,7 @@ interface TimerSession {
   status: 'stopped' | 'running' | 'paused' | 'completed';
   is_active: boolean;
   created_at: string;
+  updated_at: string;
   sort_order: number;
 }
 
@@ -375,6 +376,15 @@ export const TimerManagement = () => {
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Compute display remaining using server-synced time without DB writes
+  const getDisplayedRemaining = (timer: TimerSession) => {
+    if (timer.status !== 'running') return timer.remaining_seconds;
+    const serverNow = nowTs + clockOffsetRef.current;
+    const updatedAt = Date.parse((timer as any).updated_at);
+    const elapsed = Math.max(0, Math.floor((serverNow - updatedAt) / 1000));
+    return Math.max(0, timer.remaining_seconds - elapsed);
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       running: { label: 'Running', variant: 'default' as const },
@@ -470,7 +480,7 @@ export const TimerManagement = () => {
                 {getStatusBadge(timer.status)}
               </div>
               <div className="text-2xl font-mono">
-                {formatTime(timer.remaining_seconds)}
+                {formatTime(getDisplayedRemaining(timer))}
                 <span className="text-sm text-muted-foreground ml-2">
                   / {formatTime(timer.duration_seconds)}
                 </span>
