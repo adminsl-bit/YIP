@@ -81,6 +81,32 @@ export const TimerManagement = () => {
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(5);
   const [seconds, setSeconds] = useState(0);
+  
+  // Server clock calibration + lightweight local tick for smooth display
+  const [nowTs, setNowTs] = useState<number>(Date.now());
+  const clockOffsetRef = useRef<number>(0);
+
+  useEffect(() => {
+    const calibrateClock = async () => {
+      try {
+        const clientBefore = Date.now();
+        const { data } = await supabase.rpc('get_server_time');
+        const clientAfter = Date.now();
+        if (data) {
+          const serverTime = Date.parse(data as unknown as string);
+          const clientMid = (clientBefore + clientAfter) / 2;
+          clockOffsetRef.current = serverTime - clientMid;
+          console.log('[TimerManagement] Clock offset calibrated:', clockOffsetRef.current, 'ms');
+        }
+      } catch (e) {
+        console.warn('[TimerManagement] Clock calibration failed', e);
+      }
+    };
+
+    calibrateClock();
+    const id = window.setInterval(() => setNowTs(Date.now()), 250);
+    return () => window.clearInterval(id);
+  }, []);
 
   useEffect(() => {
     fetchTimerSessions();
