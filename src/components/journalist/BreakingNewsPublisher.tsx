@@ -233,7 +233,7 @@ export const BreakingNewsPublisher = () => {
               placeholder="Example: The parliament is trying to pass the security bill, opposition minister is in a heated debate against it..."
               value={headline}
               onChange={(e) => handleTextChange(e.target.value)}
-              className="min-h-[150px] resize-none text-base"
+              className="min-h-[150px] resize-none text-2xl font-medium"
             />
             <div className="flex justify-between items-center">
               <span className={`text-sm font-medium ${wordCount > 1000 ? 'text-red-600' : 'text-slate-600'}`}>
