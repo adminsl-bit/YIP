@@ -52,11 +52,10 @@ export const TimerTicker = () => {
 
     if (!active || active.status !== 'running') return;
 
-    // Store the active timer data in a ref to avoid stale closures
+    // Use a ref that gets updated with fresh data
     const timerRef = { current: active };
     
     tickRef.current = window.setInterval(async () => {
-      // Read from the latest state
       const currentTimer = timerRef.current;
       if (!currentTimer) return;
       
@@ -74,7 +73,6 @@ export const TimerTicker = () => {
             .from('timer_sessions')
             .update({ remaining_seconds: nextRemaining })
             .eq('id', currentTimer.id);
-          // Update both the ref and state
           timerRef.current = { ...currentTimer, remaining_seconds: nextRemaining };
           setActive(prev => (prev ? { ...prev, remaining_seconds: nextRemaining } : prev));
         }
@@ -86,7 +84,7 @@ export const TimerTicker = () => {
     return () => {
       if (tickRef.current) window.clearInterval(tickRef.current);
     };
-  }, [active?.id, active?.status]);
+  }, [active]);
 
   return null;
 };
