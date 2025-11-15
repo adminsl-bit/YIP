@@ -13,6 +13,7 @@ interface TimerSession {
   duration_seconds: number;
   remaining_seconds: number;
   status: 'stopped' | 'running' | 'paused' | 'completed';
+  updated_at: string;
 }
 
 const TimerDisplay = () => {
@@ -21,6 +22,7 @@ const TimerDisplay = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const previousRemainingRef = useRef<number | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const baselineRef = useRef<{ remaining: number; clientNow: number } | null>(null);
 
   useEffect(() => {
     document.title = "Young Indian Parliament - Timer Display";
@@ -33,7 +35,7 @@ const TimerDisplay = () => {
     const subscription = supabase
       .channel('timer_changes')
       .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'timer_sessions' },
+        { event: 'UPDATE', schema: 'public', table: 'timer_sessions' },
         () => {
           fetchActiveTimer();
         }
@@ -48,7 +50,7 @@ const TimerDisplay = () => {
     };
   }, []);
 
-  // Local countdown for smooth display - syncs with database updates
+  // Local countdown for smooth display - computed from baseline at fetch time
   useEffect(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -57,21 +59,24 @@ const TimerDisplay = () => {
 
     if (!timer || timer.status !== 'running') return;
 
-    // Update display every second for smooth countdown
-    intervalRef.current = setInterval(() => {
-      setTimer(prev => {
-        if (!prev || prev.status !== 'running') return prev;
-        const newRemaining = Math.max(0, prev.remaining_seconds - 1);
-        return { ...prev, remaining_seconds: newRemaining };
-      });
-    }, 1000);
+    const tick = () => {
+      const base = baselineRef.current;
+      if (!base) return;
+      const elapsed = Math.floor((Date.now() - base.clientNow) / 1000);
+      const computed = Math.max(0, base.remaining - elapsed);
+      setTimer(prev => (prev ? { ...prev, remaining_seconds: computed } : prev));
+    };
+
+    // Prime immediately and then tick frequently for tighter sync
+    tick();
+    intervalRef.current = setInterval(tick, 250);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [timer?.id, timer?.status]);
+  }, [timer?.id, timer?.status, timer?.updated_at]);
 
   // Bell sound effect when timer reaches 0
   useEffect(() => {
@@ -115,7 +120,13 @@ const TimerDisplay = () => {
         .maybeSingle();
 
       if (!runningError && running) {
-        setTimer(running as TimerSession);
+        // Adjust for time elapsed since server updated this row
+        const adjustedRemaining = Math.max(
+          0,
+          (running as any).remaining_seconds - Math.floor((Date.now() - Date.parse((running as any).updated_at)) / 1000)
+        );
+        baselineRef.current = { remaining: adjustedRemaining, clientNow: Date.now() };
+        setTimer({ ...(running as any), remaining_seconds: adjustedRemaining } as TimerSession);
         return;
       }
 
@@ -129,7 +140,16 @@ const TimerDisplay = () => {
         .maybeSingle();
 
       if (activeError) throw activeError;
-      setTimer(activeAny as TimerSession | null);
+      if (activeAny) {
+        const adjustedRemaining = Math.max(
+          0,
+          (activeAny as any).remaining_seconds - Math.floor((Date.now() - Date.parse((activeAny as any).updated_at)) / 1000)
+        );
+        baselineRef.current = { remaining: adjustedRemaining, clientNow: Date.now() };
+        setTimer({ ...(activeAny as any), remaining_seconds: adjustedRemaining } as TimerSession);
+      } else {
+        setTimer(null);
+      }
     } catch (error) {
       console.error('Error fetching timer:', error);
       setTimer(null);

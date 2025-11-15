@@ -28,6 +28,7 @@ interface TimerSession {
   duration_seconds: number;
   remaining_seconds: number;
   status: string;
+  updated_at: string;
 }
 
 interface Poll {
@@ -54,6 +55,8 @@ const SessionDisplay = () => {
   const [subItems, setSubItems] = useState<SubItem[]>([]);
   const [loading, setLoading] = useState(true);
   const timerChannelRef = useRef<any>(null);
+  const countdownRef = useRef<NodeJS.Timeout | null>(null);
+  const baselineRef = useRef<{ remaining: number; updatedAt: number } | null>(null);
 
   // Auth and permissions for managing polls from stage view
   const { user, profile } = useAuth();
@@ -198,7 +201,12 @@ const SessionDisplay = () => {
             .single();
 
           if (!timerError && timerData) {
-            setTimer(timerData as TimerSession);
+            const adjustedRemaining = Math.max(
+              0,
+              (timerData as any).remaining_seconds - Math.floor((Date.now() - Date.parse((timerData as any).updated_at)) / 1000)
+            );
+            baselineRef.current = { remaining: adjustedRemaining, updatedAt: Date.now() } as any;
+            setTimer({ ...(timerData as any), remaining_seconds: adjustedRemaining } as TimerSession);
           }
         } else {
           setTimer(null);
@@ -322,7 +330,12 @@ const SessionDisplay = () => {
         .single();
 
       if (!error && data) {
-        setTimer(data as unknown as TimerSession);
+        const adjustedRemaining = Math.max(
+          0,
+          (data as any).remaining_seconds - Math.floor((Date.now() - Date.parse((data as any).updated_at)) / 1000)
+        );
+        baselineRef.current = { remaining: adjustedRemaining, updatedAt: Date.now() } as any;
+        setTimer({ ...(data as any), remaining_seconds: adjustedRemaining } as TimerSession);
       }
     } catch (e) {
       console.error('Error fetching timer by id:', e);
@@ -342,10 +355,17 @@ const SessionDisplay = () => {
       .channel(`session_timer_${timer.id}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'timer_sessions', filter: `id=eq.${timer.id}` },
-        () => {
-          console.log('[SessionDisplay] timer row changed, refetching single timer...');
-          fetchTimerById(timer.id!);
+        { event: 'UPDATE', schema: 'public', table: 'timer_sessions', filter: `id=eq.${timer.id}` },
+        (payload) => {
+          // Update baseline and state using latest server row
+          const row: any = payload.new;
+          if (!row) {
+            fetchTimerById(timer.id!);
+            return;
+          }
+          const adjustedRemaining = Math.max(0, row.remaining_seconds - Math.floor((Date.now() - Date.parse(row.updated_at)) / 1000));
+          baselineRef.current = { remaining: adjustedRemaining, updatedAt: Date.now() } as any;
+          setTimer({ ...(row as any), remaining_seconds: adjustedRemaining } as TimerSession);
         }
       )
       .subscribe();
@@ -360,12 +380,36 @@ const SessionDisplay = () => {
     };
   }, [timer?.id]);
 
-  // Fallback poll in case a realtime event is missed
+  // Local smooth countdown derived from server baseline
   useEffect(() => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
     if (!timer?.id || timer.status !== 'running') return;
-    const id = setInterval(() => fetchTimerById(timer.id!), 5000);
-    return () => clearInterval(id);
-  }, [timer?.id, timer?.status]);
+
+    // Ensure baseline exists. If updated_at present, adjust for age.
+    const now = Date.now();
+    const updatedAt = (timer as any).updated_at ? Date.parse((timer as any).updated_at) : now;
+    const adjustedRemaining = Math.max(0, timer.remaining_seconds - Math.floor((now - updatedAt) / 1000));
+    baselineRef.current = { remaining: adjustedRemaining, updatedAt: now } as any;
+    setTimer(prev => (prev ? { ...prev, remaining_seconds: adjustedRemaining } : prev));
+
+    const tick = () => {
+      const base: any = baselineRef.current;
+      if (!base) return;
+      const elapsed = Math.floor((Date.now() - base.updatedAt) / 1000);
+      const computed = Math.max(0, base.remaining - elapsed);
+      setTimer(prev => (prev ? { ...prev, remaining_seconds: computed } : prev));
+    };
+
+    tick();
+    countdownRef.current = setInterval(tick, 250);
+
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [timer?.id, timer?.status, (timer as any)?.updated_at]);
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
