@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Plus, Trash, Play, Pause, MoreVertical, ExternalLink, Eye } from "lucide-react";
+import { Plus, Trash, Play, Pause, MoreVertical, ExternalLink, Eye, RotateCcw } from "lucide-react";
 import { LiveVotingStats } from "@/components/student/LiveVotingStats";
 import { PostVotingAnalysis } from "@/components/student/PostVotingAnalysis";
 import { DetailedPollResults } from "@/components/student/DetailedPollResults";
@@ -45,6 +45,8 @@ export const PollManagement = () => {
   const [showDetailedResults, setShowDetailedResults] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [pollToDelete, setPollToDelete] = useState<Poll | null>(null);
+  const [pollToReset, setPollToReset] = useState<Poll | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -292,6 +294,43 @@ export const PollManagement = () => {
     }
   };
 
+  const resetPoll = async (poll: Poll) => {
+    setIsResetting(true);
+    try {
+      // Delete all votes for this poll
+      const { error } = await supabase
+        .from('poll_votes')
+        .delete()
+        .eq('poll_id', poll.id);
+
+      if (error) throw error;
+
+      await supabase.rpc('log_audit_event', {
+        p_user_id: user?.id,
+        p_action: 'poll_reset',
+        p_resource_type: 'poll',
+        p_resource_id: poll.id
+      });
+
+      toast({
+        title: "Poll Reset",
+        description: `All votes for "${poll.title}" have been cleared`
+      });
+
+      setPollToReset(null);
+      fetchPollResults(poll.id);
+    } catch (error) {
+      console.error('Error resetting poll:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reset poll",
+        variant: "destructive"
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   const getTotalVotes = (pollId: string) => {
     const results = pollResults[pollId] || [];
     return results.reduce((total, result) => total + result.count, 0);
@@ -516,6 +555,13 @@ export const PollManagement = () => {
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
+                            onClick={() => setPollToReset(poll)}
+                            disabled={getTotalVotes(poll.id) === 0}
+                          >
+                            <RotateCcw className="w-4 h-4 mr-2" />
+                            Reset Poll Votes
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
                             onClick={() => setPollToDelete(poll)}
                             className="text-destructive"
                           >
@@ -570,6 +616,36 @@ export const PollManagement = () => {
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset Poll Confirmation Dialog */}
+      <AlertDialog open={!!pollToReset} onOpenChange={() => setPollToReset(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Poll Votes?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all {getTotalVotes(pollToReset?.id || '')} votes for "{pollToReset?.title}". 
+              The poll itself will remain, but all voting data will be cleared. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isResetting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => pollToReset && resetPoll(pollToReset)}
+              disabled={isResetting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isResetting ? (
+                <>
+                  <RotateCcw className="w-4 h-4 mr-2 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                'Reset Poll'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
