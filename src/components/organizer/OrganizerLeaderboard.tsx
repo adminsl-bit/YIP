@@ -33,7 +33,7 @@ interface LeaderboardEntry {
   original_rank: number;
   missing_jury_assessments?: string[];
   organizer_manual_score?: number;
-  committee?: string;
+  session_names?: string[];
 }
 
 interface JuryMember {
@@ -83,20 +83,18 @@ export const OrganizerLeaderboard = () => {
 
       if (leaderboardError) throw leaderboardError;
       
-      // Fetch organizer_manual_score and committee for admin/journalist students
+      // Fetch organizer_manual_score for admin/journalist students
       const { data: manualScoreData, error: manualScoreError } = await supabase
         .from('profiles')
-        .select('user_id, organizer_manual_score, committee')
+        .select('user_id, organizer_manual_score')
         .in('user_id', leaderboardData?.map(entry => entry.user_id) || []);
       
       if (manualScoreError) throw manualScoreError;
       
-      // Create maps for user_id to organizer_manual_score and committee
+      // Create map for user_id to organizer_manual_score
       const manualScoreMap = new Map();
-      const committeeMap = new Map();
       manualScoreData?.forEach(profile => {
         manualScoreMap.set(profile.user_id, profile.organizer_manual_score);
-        committeeMap.set(profile.user_id, profile.committee);
       });
 
       // Fetch jury members
@@ -108,12 +106,39 @@ export const OrganizerLeaderboard = () => {
       if (juryError) throw juryError;
       setJuryMembers(juryData || []);
 
-      // Fetch all assessments to determine missing jury assessments
+      // Fetch all assessments to determine missing jury assessments and sessions
       const { data: assessmentsData, error: assessmentsError } = await supabase
         .from('assessments')
-        .select('student_id, jury_id, status');
+        .select('student_id, jury_id, status, session_id');
 
       if (assessmentsError) throw assessmentsError;
+
+      // Fetch session items to get session names
+      const { data: sessionsData, error: sessionsError } = await supabase
+        .from('session_items')
+        .select('id, title');
+
+      if (sessionsError) throw sessionsError;
+
+      // Create a map of session_id to session title
+      const sessionTitleMap = new Map<string, string>();
+      sessionsData?.forEach(session => {
+        sessionTitleMap.set(session.id, session.title);
+      });
+
+      // Create a map of student_id to their session names
+      const studentSessionsMap = new Map<string, Set<string>>();
+      assessmentsData?.forEach(assessment => {
+        if (assessment.session_id && assessment.status === 'submitted') {
+          const sessionName = sessionTitleMap.get(assessment.session_id);
+          if (sessionName) {
+            if (!studentSessionsMap.has(assessment.student_id)) {
+              studentSessionsMap.set(assessment.student_id, new Set<string>());
+            }
+            studentSessionsMap.get(assessment.student_id)!.add(sessionName);
+          }
+        }
+      });
 
       // Fetch serial numbers for all students in the leaderboard
       const userIds = leaderboardData?.map(entry => entry.user_id) || [];
@@ -152,7 +177,7 @@ export const OrganizerLeaderboard = () => {
           original_rank: index + 1,
           missing_jury_assessments: missingJuryAssessments,
           organizer_manual_score: manualScoreMap.get(entry.user_id) || 0,
-          committee: committeeMap.get(entry.user_id) || null
+          session_names: Array.from(studentSessionsMap.get(entry.user_id) || new Set<string>())
         };
       });
       setLeaderboard(processedLeaderboard);
@@ -272,7 +297,13 @@ export const OrganizerLeaderboard = () => {
   const uniqueCities = [...new Set(leaderboard.map(entry => entry.city).filter(Boolean))].sort();
   const uniqueParties = [...new Set(leaderboard.map(entry => entry.party_number))].sort((a, b) => a - b);
   const uniquePositions = [...new Set(leaderboard.map(entry => entry.position))].sort();
-  const uniqueCommittees = [...new Set(leaderboard.map(entry => entry.committee).filter(Boolean))].sort((a, b) => Number(a) - Number(b));
+  
+  // Get unique session names from all students
+  const allSessionNames = new Set<string>();
+  leaderboard.forEach(entry => {
+    entry.session_names?.forEach(session => allSessionNames.add(session));
+  });
+  const uniqueSessions = Array.from(allSessionNames).sort();
 
 
   const hasRealScores = leaderboard.some(e => (e.final_total_score ?? 0) > 0);
@@ -294,12 +325,13 @@ export const OrganizerLeaderboard = () => {
     const matchesCity = !cityFilter || cityFilter === 'all' || entry.city === cityFilter;
     const matchesParty = !partyFilter || partyFilter === 'all' || entry.party_number.toString() === partyFilter;
     const matchesPosition = !positionFilter || positionFilter === 'all' || entry.position === positionFilter;
-    const matchesCommittee = !sessionFilter || sessionFilter === 'all' || entry.committee === sessionFilter;
+    const matchesSession = !sessionFilter || sessionFilter === 'all' || 
+      (entry.session_names && entry.session_names.includes(sessionFilter));
     
     const matchesAssessmentStatus = !assessmentStatusFilter || assessmentStatusFilter === 'all' || 
       getAssessmentStatus(entry) === assessmentStatusFilter;
     
-    return matchesSearch && matchesCity && matchesParty && matchesPosition && matchesCommittee && matchesAssessmentStatus;
+    return matchesSearch && matchesCity && matchesParty && matchesPosition && matchesSession && matchesAssessmentStatus;
   });
 
   const exportToCSV = () => {
@@ -509,18 +541,18 @@ export const OrganizerLeaderboard = () => {
               </SelectContent>
             </Select>
 
-            {/* Committee/Session Filter */}
+            {/* Session Filter */}
             <Select value={sessionFilter} onValueChange={setSessionFilter}>
               <SelectTrigger>
                 <div className="flex items-center gap-2">
                   <Users2 className="w-4 h-4" />
-                  <SelectValue placeholder="Filter by committee" />
+                  <SelectValue placeholder="Filter by session" />
                 </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Committees</SelectItem>
-                {uniqueCommittees.map((committee) => (
-                  <SelectItem key={committee} value={committee}>Committee {committee}</SelectItem>
+                <SelectItem value="all">All Sessions</SelectItem>
+                {uniqueSessions.map((session) => (
+                  <SelectItem key={session} value={session}>{session}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
