@@ -14,6 +14,7 @@ interface TimerSession {
   remaining_seconds: number;
   status: 'stopped' | 'running' | 'paused' | 'completed';
   updated_at: string;
+  started_at: string | null;
 }
 
 const TimerDisplay = () => {
@@ -26,75 +27,73 @@ const TimerDisplay = () => {
   const clockOffsetRef = useRef<number>(0);
 
 
-  useEffect(() => {
-    document.title = "Young Indian Parliament - Timer Display";
-    
-    // Calibrate clock offset with server
-    const calibrateClock = async () => {
-      const clientBefore = Date.now();
-      const { data } = await supabase.rpc('get_server_time');
-      const clientAfter = Date.now();
-      if (data) {
-        const serverTime = Date.parse(data);
-        const clientMid = (clientBefore + clientAfter) / 2;
-        clockOffsetRef.current = serverTime - clientMid;
-        console.log('[TimerDisplay] Clock offset calibrated:', clockOffsetRef.current, 'ms');
-      }
-    };
-    
-    calibrateClock();
-    fetchActiveTimer();
-
-    // Initialize audio
-    audioRef.current = new Audio();
-
-    // Set up real-time subscription
-    const subscription = supabase
-      .channel('timer_changes')
-      .on('postgres_changes', 
-        { event: 'UPDATE', schema: 'public', table: 'timer_sessions' },
-        () => {
-          fetchActiveTimer();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
-
-  // Local countdown for smooth display - computed from baseline at fetch time
-  useEffect(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
+useEffect(() => {
+  document.title = "Young Indian Parliament - Timer Display";
+  
+  // Calibrate clock offset with server
+  const calibrateClock = async () => {
+    const clientBefore = Date.now();
+    const { data } = await supabase.rpc('get_server_time');
+    const clientAfter = Date.now();
+    if (data) {
+      const serverTime = Date.parse(data);
+      const clientMid = (clientBefore + clientAfter) / 2;
+      clockOffsetRef.current = serverTime - clientMid;
+      console.log('[TimerDisplay] Clock offset calibrated:', clockOffsetRef.current, 'ms');
     }
+  };
+  
+  calibrateClock();
+  // Periodic re-calibration every 30s
+  recalibRef.current = window.setInterval(calibrateClock, 30000);
+  fetchActiveTimer();
 
-    if (!timer || timer.status !== 'running') return;
+  // Initialize audio
+  audioRef.current = new Audio();
 
-    const tick = () => {
-      const base = baselineRef.current;
-      if (!base) return;
-      const now = Date.now() + clockOffsetRef.current;
-      const elapsed = Math.floor((now - base.clientNow) / 1000);
-      const computed = Math.max(0, base.remaining - elapsed);
-      setTimer(prev => (prev ? { ...prev, remaining_seconds: Math.min(prev.remaining_seconds, computed) } : prev));
-    };
-
-    // Prime immediately and then tick frequently for tighter sync
-    tick();
-    intervalRef.current = setInterval(tick, 100);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+  // Set up real-time subscription
+  const subscription = supabase
+    .channel('timer_changes')
+    .on('postgres_changes', 
+      { event: 'UPDATE', schema: 'public', table: 'timer_sessions' },
+      () => {
+        fetchActiveTimer();
       }
-    };
-  }, [timer?.id, timer?.status, timer?.updated_at]);
+    )
+    .subscribe();
+
+  return () => {
+    subscription.unsubscribe();
+    if (recalibRef.current) window.clearInterval(recalibRef.current);
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+  };
+}, []);
+
+// Local high-frequency countdown using requestAnimationFrame derived from started_at
+useEffect(() => {
+  if (rafRef.current) {
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+  }
+
+  if (!timer || timer.status !== 'running' || !(timer as any).started_at) return;
+
+  const render = () => {
+    const base = baselineRef.current;
+    if (!base) return;
+    const nowAdj = Date.now() + clockOffsetRef.current;
+    const elapsed = Math.floor((nowAdj - base.startedAtMs) / 1000);
+    const computed = Math.max(0, base.remainingAtStart - elapsed);
+    setTimer(prev => (prev ? { ...prev, remaining_seconds: computed } : prev));
+    rafRef.current = requestAnimationFrame(render);
+  };
+
+  render();
+
+  return () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+  };
+}, [timer?.id, timer?.status, (timer as any)?.started_at]);
 
   // Bell sound effect when timer reaches 0
   useEffect(() => {
@@ -137,21 +136,25 @@ const TimerDisplay = () => {
         .limit(1)
         .maybeSingle();
 
-      if (!runningError && running) {
-        // Adjust for time elapsed since server updated this row
-        const now = Date.now() + clockOffsetRef.current;
-        const serverUpdatedAt = Date.parse((running as any).updated_at);
-        const adjustedRemaining = Math.max(
-          0,
-          (running as any).remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000)
-        );
-        baselineRef.current = { remaining: adjustedRemaining, clientNow: now };
-        setTimer(prev => prev 
-          ? ({ ...(running as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
-          : ({ ...(running as any), remaining_seconds: adjustedRemaining } as TimerSession)
-        );
-        return;
-      }
+if (!runningError && running) {
+  const nowAdj = Date.now() + clockOffsetRef.current;
+  const startedAt: string | null = (running as any).started_at ?? null;
+  let adjustedRemaining = (running as any).remaining_seconds;
+  if (startedAt) {
+    const startedAtMs = Date.parse(startedAt);
+    adjustedRemaining = Math.max(0, (running as any).remaining_seconds - Math.floor((nowAdj - startedAtMs) / 1000));
+    baselineRef.current = { remainingAtStart: (running as any).remaining_seconds, startedAtMs };
+  } else {
+    const serverUpdatedAt = Date.parse((running as any).updated_at);
+    adjustedRemaining = Math.max(0, (running as any).remaining_seconds - Math.floor((nowAdj - serverUpdatedAt) / 1000));
+    baselineRef.current = { remainingAtStart: (running as any).remaining_seconds, startedAtMs: nowAdj };
+  }
+  setTimer(prev => prev 
+    ? ({ ...(running as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
+    : ({ ...(running as any), remaining_seconds: adjustedRemaining } as TimerSession)
+  );
+  return;
+}
 
       // Fallback: latest active timer (paused/stopped/completed)
       const { data: activeAny, error: activeError } = await supabase
@@ -162,19 +165,25 @@ const TimerDisplay = () => {
         .limit(1)
         .maybeSingle();
 
-      if (activeError) throw activeError;
-      if (activeAny) {
-        const now = Date.now() + clockOffsetRef.current;
-        const serverUpdatedAt = Date.parse((activeAny as any).updated_at);
-        const adjustedRemaining = Math.max(
-          0,
-          (activeAny as any).remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000)
-        );
-        baselineRef.current = { remaining: adjustedRemaining, clientNow: now };
-        setTimer(prev => prev 
-          ? ({ ...(activeAny as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
-          : ({ ...(activeAny as any), remaining_seconds: adjustedRemaining } as TimerSession)
-        );
+if (activeError) throw activeError;
+if (activeAny) {
+  const nowAdj = Date.now() + clockOffsetRef.current;
+  const startedAt: string | null = (activeAny as any).started_at ?? null;
+  let adjustedRemaining = (activeAny as any).remaining_seconds;
+  if ((activeAny as any).status === 'running' && startedAt) {
+    const startedAtMs = Date.parse(startedAt);
+    adjustedRemaining = Math.max(0, (activeAny as any).remaining_seconds - Math.floor((nowAdj - startedAtMs) / 1000));
+    baselineRef.current = { remainingAtStart: (activeAny as any).remaining_seconds, startedAtMs };
+  } else {
+    baselineRef.current = null;
+  }
+  setTimer(prev => prev 
+    ? ({ ...(activeAny as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
+    : ({ ...(activeAny as any), remaining_seconds: adjustedRemaining } as TimerSession)
+  );
+} else {
+  setTimer(null);
+}
       } else {
         setTimer(null);
       }
