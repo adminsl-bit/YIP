@@ -197,19 +197,19 @@ export const PollVoting = () => {
                         onValueChange={(val) => setSelectedOptions(prev => ({ ...prev, [poll.id]: val }))}
                         className="space-y-3"
                       >
-                        {(Array.isArray(poll.options) ? poll.options : []).map((opt: string, idx: number) => (
+                        {(Array.isArray(poll.options) ? poll.options : []).map((opt: any, idx: number) => (
                           <div key={idx} className="group">
                             <div className="flex items-center gap-4 p-5 rounded-2xl bg-white/40 hover:bg-white/60 transition-all duration-300 border border-white/30 hover:border-white/50 hover:shadow-md cursor-pointer">
                               <RadioGroupItem 
                                 id={`${poll.id}-${idx}`} 
-                                value={opt} 
+                                value={typeof opt === 'string' ? opt : opt.id} 
                                 className="border-2 border-slate-400 text-primary" 
                               />
                               <Label 
                                 htmlFor={`${poll.id}-${idx}`} 
                                 className="cursor-pointer font-semibold text-slate-800 flex-1 text-lg"
                               >
-                                {opt}
+                                {typeof opt === 'string' ? opt : opt.text}
                               </Label>
                             </div>
                           </div>

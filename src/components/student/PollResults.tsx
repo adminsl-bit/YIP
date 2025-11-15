@@ -73,24 +73,29 @@ export const PollResults = () => {
         const totalVotes = votesData?.length || 0;
 
         // Initialize all options with 0 votes
-        poll.options.forEach(option => {
-          voteCounts[option] = 0;
+        poll.options.forEach((option: any) => {
+          const optionKey = typeof option === 'string' ? option : option.id;
+          voteCounts[optionKey] = 0;
         });
 
         // Count actual votes
         votesData?.forEach(vote => {
           const option = vote.option_id as string;
-          if (poll.options.includes(option)) {
+          if (voteCounts.hasOwnProperty(option)) {
             voteCounts[option]++;
           }
         });
 
         // Convert to results with percentages
-        const pollResults: PollResult[] = poll.options.map(option => ({
-          option,
-          count: voteCounts[option],
-          percentage: totalVotes > 0 ? (voteCounts[option] / totalVotes) * 100 : 0
-        }));
+        const pollResults: PollResult[] = poll.options.map((option: any) => {
+          const optionKey = typeof option === 'string' ? option : option.id;
+          const optionText = typeof option === 'string' ? option : option.text;
+          return {
+            option: optionText,
+            count: voteCounts[optionKey] || 0,
+            percentage: totalVotes > 0 ? ((voteCounts[optionKey] || 0) / totalVotes) * 100 : 0
+          };
+        });
 
         resultsMap[poll.id] = pollResults;
       }

@@ -534,7 +534,9 @@ export const PollManagement = () => {
                         <DetailedPollResults 
                           pollId={poll.id} 
                           pollTitle={poll.title} 
-                          options={poll.options} 
+                          options={Array.isArray(poll.options) ? poll.options.map((opt: any) => 
+                            typeof opt === 'string' ? { id: opt, text: opt } : opt
+                          ) : []} 
                         />
                       </div>
                     </TableCell>
