@@ -169,8 +169,9 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
       const pollOptions = Array.isArray(pollData.options) ? pollData.options : [];
       
       // Initialize all options with 0 votes
-      pollOptions.forEach((option: string) => {
-        voteCounts[option] = 0;
+      pollOptions.forEach((option: any) => {
+        const optionKey = typeof option === 'string' ? option : option.id;
+        voteCounts[optionKey] = 0;
       });
 
       // Count actual votes
@@ -322,8 +323,10 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
           </h4>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            {poll && Array.isArray(poll.options) && poll.options.map((option: string, index: number) => {
-              const voteCount = stats.customOptions?.[option] || 0;
+            {poll && Array.isArray(poll.options) && poll.options.map((option: any, index: number) => {
+              const optionKey = typeof option === 'string' ? option : option.id;
+              const optionText = typeof option === 'string' ? option : option.text;
+              const voteCount = stats.customOptions?.[optionKey] || 0;
               const percentageOfTotal = stats.totalEligibleVoters > 0 ? (voteCount / stats.totalEligibleVoters) * 100 : 0;
               
               const colors = [
@@ -336,11 +339,11 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
               const color = colors[index % colors.length];
               
               return (
-                <div key={option} className={`${color.light} rounded-lg p-3 text-center`}>
+                <div key={optionKey} className={`${color.light} rounded-lg p-3 text-center`}>
                   <div className={`w-12 h-12 ${color.bg} rounded-full flex items-center justify-center mx-auto mb-2`}>
                     <span className="text-white font-bold text-lg">{voteCount}</span>
                   </div>
-                  <div className={`font-bold ${color.text} capitalize mb-1`}>{option}</div>
+                  <div className={`font-bold ${color.text} capitalize mb-1`}>{optionText}</div>
                   <div className="text-sm text-gray-600">
                     {percentageOfTotal.toFixed(1)}% of all students
                   </div>
@@ -359,8 +362,10 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
           
           <AnimatePresence>
             {/* Dynamic Options - Show vote count and percentage of total votes */}
-            {poll && Array.isArray(poll.options) && poll.options.map((option: string, index: number) => {
-              const voteCount = stats.customOptions?.[option] || 0;
+            {poll && Array.isArray(poll.options) && poll.options.map((option: any, index: number) => {
+              const optionKey = typeof option === 'string' ? option : option.id;
+              const optionText = typeof option === 'string' ? option : option.text;
+              const voteCount = stats.customOptions?.[optionKey] || 0;
               const percentageOfVotes = totalVoted > 0 ? (voteCount / totalVoted) * 100 : 0;
               const percentageOfTotal = stats.totalEligibleVoters > 0 ? (voteCount / stats.totalEligibleVoters) * 100 : 0;
               
@@ -387,7 +392,7 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
                       <div className={`w-8 h-8 ${colors.icon} rounded-lg flex items-center justify-center`}>
                         <CheckCircle className="w-4 h-4 text-white" />
                       </div>
-                      <span className={`font-bold ${colors.text}`}>{option}</span>
+                      <span className={`font-bold ${colors.text}`}>{optionText}</span>
                     </div>
                     <div className="text-right">
                       <div className={`text-2xl font-black ${colors.count}`}>{voteCount}</div>

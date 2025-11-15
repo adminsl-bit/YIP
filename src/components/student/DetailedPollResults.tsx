@@ -28,7 +28,7 @@ interface VoteWithStudent {
 interface DetailedPollResultsProps {
   pollId: string;
   pollTitle: string;
-  options: string[];
+  options: Array<{ id: string; text: string } | string>;
 }
 
 export const DetailedPollResults = ({ pollId, pollTitle, options }: DetailedPollResultsProps) => {
@@ -130,8 +130,15 @@ export const DetailedPollResults = ({ pollId, pollTitle, options }: DetailedPoll
     }
   };
 
-  const getVotesForOption = (option: string) => {
-    return votesWithStudents.filter(vote => vote.option_id === option);
+  const getVotesForOption = (optionId: string) => {
+    return votesWithStudents.filter(vote => vote.option_id === optionId);
+  };
+
+  const getOptionDisplay = (option: { id: string; text: string } | string): { id: string; text: string } => {
+    if (typeof option === 'string') {
+      return { id: option, text: option };
+    }
+    return option;
   };
 
   const getOptionIcon = (option: string) => {
@@ -208,12 +215,12 @@ export const DetailedPollResults = ({ pollId, pollTitle, options }: DetailedPoll
       yPosition += 20;
 
       // Results for each option
-      [...options, 'did_not_vote'].forEach((option) => {
-        const optionVotes = getVotesForOption(option);
-        const displayTitle = option === 'did_not_vote' ? 'Did Not Vote' : option;
+      [...options, { id: 'did_not_vote', text: 'Did Not Vote' }].forEach((option) => {
+        const optionDisplay = getOptionDisplay(option);
+        const optionVotes = getVotesForOption(optionDisplay.id);
         
         pdf.setFontSize(14);
-        pdf.text(`${displayTitle}: ${optionVotes.length} students`, margin, yPosition);
+        pdf.text(`${optionDisplay.text}: ${optionVotes.length} students`, margin, yPosition);
         yPosition += 15;
 
         // List students for this option
@@ -270,23 +277,23 @@ export const DetailedPollResults = ({ pollId, pollTitle, options }: DetailedPoll
         </div>
       </CardHeader>
       <CardContent className="space-y-6 max-h-96 overflow-y-auto">
-        {[...options, 'did_not_vote'].map((option, index) => {
-          const optionVotes = getVotesForOption(option);
+        {[...options, { id: 'did_not_vote', text: 'Did Not Vote' }].map((option, index) => {
+          const optionDisplay = getOptionDisplay(option);
+          const optionVotes = getVotesForOption(optionDisplay.id);
           const totalStudents = votesWithStudents.filter(v => v.option_id !== 'did_not_vote').length + votesWithStudents.filter(v => v.option_id === 'did_not_vote').length;
           const percentage = totalStudents > 0 
             ? ((optionVotes.length / totalStudents) * 100).toFixed(1)
             : 0;
 
-          const isNonVoteOption = option === 'did_not_vote';
-          const displayTitle = isNonVoteOption ? 'Did Not Vote' : option;
-          const colorClass = isNonVoteOption ? 'bg-gray-50 border-gray-200' : getOptionColor(option);
+          const isNonVoteOption = optionDisplay.id === 'did_not_vote';
+          const colorClass = isNonVoteOption ? 'bg-gray-50 border-gray-200' : getOptionColor(optionDisplay.text);
 
           return (
-            <div key={option} className={`rounded-lg border p-4 ${colorClass}`}>
+            <div key={optionDisplay.id} className={`rounded-lg border p-4 ${colorClass}`}>
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  {isNonVoteOption ? <Users className="w-4 h-4 text-gray-600" /> : getOptionIcon(option)}
-                  <h3 className="text-lg font-semibold capitalize">{displayTitle}</h3>
+                  {isNonVoteOption ? <Users className="w-4 h-4 text-gray-600" /> : getOptionIcon(optionDisplay.text)}
+                  <h3 className="text-lg font-semibold capitalize">{optionDisplay.text}</h3>
                 </div>
                 <Badge variant="secondary">
                   {optionVotes.length} students ({percentage}%)
