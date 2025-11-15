@@ -121,47 +121,54 @@ const SessionDisplay = () => {
     document.title = "Young Indian Parliament - Session Display";
     fetchActiveSession();
 
+    // Use unique channel name with timestamp to avoid conflicts
+    const channelName = `session_display_${Date.now()}`;
+    console.log('[SessionDisplay] Setting up real-time subscription:', channelName);
+
     const subscription = supabase
-      .channel('session_display_changes')
+      .channel(channelName)
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'session_items' },
-        () => {
-          console.log('[SessionDisplay] session_items changed, refetching...');
+        (payload) => {
+          console.log('[SessionDisplay] session_items changed:', payload.eventType);
           fetchActiveSession();
         }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'timer_sessions' },
-        () => {
-          console.log('[SessionDisplay] timer_sessions changed, refetching...');
+        (payload) => {
+          console.log('[SessionDisplay] timer_sessions changed:', payload.eventType);
           fetchActiveSession();
         }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'polls' },
-        () => {
-          console.log('[SessionDisplay] polls changed, refetching...');
+        (payload) => {
+          console.log('[SessionDisplay] polls changed:', payload.eventType, 'refetching immediately');
           fetchActiveSession();
         }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'session_sub_items' as any },
-        () => {
-          console.log('[SessionDisplay] session_sub_items changed, refetching...');
+        (payload) => {
+          console.log('[SessionDisplay] session_sub_items changed:', payload.eventType);
           fetchActiveSession();
         }
       )
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'poll_votes' },
-        () => {
-          console.log('[SessionDisplay] poll_votes changed, refetching...');
+        (payload) => {
+          console.log('[SessionDisplay] poll_votes changed:', payload.eventType);
           fetchActiveSession();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[SessionDisplay] Subscription status:', status);
+      });
 
     return () => {
-      subscription.unsubscribe();
+      console.log('[SessionDisplay] Cleaning up subscription');
+      supabase.removeChannel(subscription);
     };
   }, []);
   const fetchActiveSession = async () => {
@@ -218,6 +225,8 @@ const SessionDisplay = () => {
         if (subItemPollIds.length > 0) {
           // Fetch all active sub-item polls and their results (if public)
           const fetched = await Promise.all(subItemPollIds.map((id) => fetchPollWithResults(id)));
+          // Only show polls that are either active OR have results publicly visible
+          // But NEVER show both as false - that means the poll should be hidden
           const valid = (fetched.filter((f) => !!f.poll) as Array<{ poll: Poll; results: Record<string, number> }>)
             .filter(({ poll }) => poll.is_active || poll.show_results_publicly);
 

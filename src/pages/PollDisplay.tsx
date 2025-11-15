@@ -36,9 +36,15 @@ const PollDisplay = () => {
     console.log('PollDisplay: Setting up real-time subscriptions');
     fetchActivePolls();
     
-    // Real-time updates with more specific channels
+    // Real-time updates with unique channel names to avoid conflicts
+    const timestamp = Date.now();
+    const pollsChannelName = `polls_display_${timestamp}`;
+    const votesChannelName = `votes_display_${timestamp}`;
+    
+    console.log('PollDisplay: Creating channels:', pollsChannelName, votesChannelName);
+    
     const pollsChannel = supabase
-      .channel('polls_channel_display')
+      .channel(pollsChannelName)
       .on(
         'postgres_changes', 
         { 
@@ -47,8 +53,8 @@ const PollDisplay = () => {
           table: 'polls' 
         }, 
         (payload) => {
-          console.log('PollDisplay: Real-time poll change detected:', payload);
-          console.log('PollDisplay: Refetching polls due to change');
+          console.log('PollDisplay: Real-time poll change detected:', payload.eventType, payload);
+          console.log('PollDisplay: Refetching polls immediately');
           fetchActivePolls();
         }
       )
@@ -57,7 +63,7 @@ const PollDisplay = () => {
       });
 
     const votesChannel = supabase
-      .channel('votes_channel_display')
+      .channel(votesChannelName)
       .on(
         'postgres_changes', 
         { 
@@ -66,7 +72,7 @@ const PollDisplay = () => {
           table: 'poll_votes' 
         }, 
         (payload) => {
-          console.log('PollDisplay: Real-time vote change detected:', payload);
+          console.log('PollDisplay: Real-time vote change detected:', payload.eventType);
           console.log('PollDisplay: Refetching polls due to vote change');
           fetchActivePolls();
         }
