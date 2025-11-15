@@ -282,7 +282,16 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     notes: string,
     status: 'draft' | 'submitted'
   ) => {
+    console.log('=== Assessment Submission Started ===');
+    console.log('Selected Session:', selectedSession);
+    console.log('Student User ID:', studentUserId);
+    console.log('Jury ID:', juryId);
+    console.log('Status:', status);
+    console.log('Scores:', scores);
+    console.log('Notes:', notes);
+    
     if (!selectedSession) {
+      console.error('No session selected!');
       toast({
         title: "Session Required",
         description: "Please select a session from the dropdown at the top before submitting assessments.",
@@ -291,16 +300,27 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       return;
     }
 
+    if (!selectedStudent) {
+      console.error('No student selected!');
+      toast({
+        title: "Error",
+        description: "Student information is missing. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       // Calculate total score
       const totalScore = calculateTotalFromScores(scores);
-      const dbSeatRole = getSeatRole(selectedStudent!.position);
+      const dbSeatRole = getSeatRole(selectedStudent.position);
       
-      console.log('Saving assessment with seat_role:', dbSeatRole, 'for position:', selectedStudent!.position);
+      console.log('Calculated total score:', totalScore);
+      console.log('Seat role:', dbSeatRole, 'for position:', selectedStudent.position);
       
       const assessmentData = {
         jury_id: juryId,
-        student_id: studentUserId, // Use user_id instead of profile id
+        student_id: studentUserId,
         session_id: selectedSession,
         seat_role: dbSeatRole,
         scores,
@@ -310,36 +330,51 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
         submitted_at: status === 'submitted' ? new Date().toISOString() : null
       };
 
+      console.log('Assessment data to be saved:', assessmentData);
+
       // Use upsert with the new unique constraint including session_id
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('assessments')
         .upsert(assessmentData, {
           onConflict: 'jury_id,student_id,session_id'
-        });
+        })
+        .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        throw error;
+      }
+
+      console.log('Assessment saved successfully:', data);
 
       // Show success message
       if (status === 'submitted') {
         toast({
-          title: "Assessment Submitted",
-          description: "Your assessment has been submitted successfully.",
+          title: "✅ Assessment Submitted",
+          description: `Successfully submitted assessment for ${selectedStudent.name}`,
         });
       } else {
         toast({
-          title: "Assessment Saved",
-          description: "Your assessment has been saved as draft.",
+          title: "💾 Assessment Saved",
+          description: `Draft saved for ${selectedStudent.name}`,
         });
       }
 
       // Refresh assessments
+      console.log('Refreshing assessments list...');
       await fetchAssessments();
       setSelectedStudent(null);
-    } catch (error) {
-      console.error('Error saving assessment:', error);
+      console.log('=== Assessment Submission Complete ===');
+    } catch (error: any) {
+      console.error('=== Error saving assessment ===');
+      console.error('Error details:', error);
+      console.error('Error message:', error?.message);
+      console.error('Error code:', error?.code);
+      console.error('Error hint:', error?.hint);
+      
       toast({
-        title: "Error",
-        description: "Failed to save assessment. Please try again.",
+        title: "❌ Submission Failed",
+        description: error?.message || "Failed to save assessment. Please check the console and try again.",
         variant: "destructive",
       });
       throw error;
