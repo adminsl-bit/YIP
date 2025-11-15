@@ -378,17 +378,29 @@ export const AssessmentForm = ({
   };
 
   const handleSubmit = async (status: 'draft' | 'submitted') => {
+    console.log('=== AssessmentForm Submit Triggered ===');
+    console.log('Submit status:', status);
+    console.log('Scores:', scores);
+    console.log('Notes:', notes);
+    console.log('Total:', total);
+    console.log('Student:', student);
+    
     setIsSubmitting(true);
     try {
+      console.log('Calling onSubmit callback...');
       await onSubmit(scores, notes, status);
+      console.log('onSubmit callback completed successfully');
+      
       if (status === 'submitted') {
         localStorage.removeItem(`assessment_draft_${student.id}`);
+        console.log('Removed draft from localStorage');
       }
     } catch (error) {
-      // Error toast is now handled in JuryStudentList
-      console.error('Error submitting assessment:', error);
+      console.error('=== AssessmentForm Submit Error ===');
+      console.error('Error details:', error);
     } finally {
       setIsSubmitting(false);
+      console.log('=== AssessmentForm Submit Complete ===');
     }
   };
 
