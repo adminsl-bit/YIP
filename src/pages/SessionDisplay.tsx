@@ -57,6 +57,7 @@ const SessionDisplay = () => {
   const timerChannelRef = useRef<any>(null);
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const baselineRef = useRef<{ remaining: number; updatedAt: number } | null>(null);
+  const clockOffsetRef = useRef<number>(0);
 
   // Auth and permissions for managing polls from stage view
   const { user, profile } = useAuth();
@@ -124,6 +125,21 @@ const SessionDisplay = () => {
   };
   useEffect(() => {
     document.title = "Young Indian Parliament - Session Display";
+    
+    // Calibrate clock offset with server
+    const calibrateClock = async () => {
+      const clientBefore = Date.now();
+      const { data } = await supabase.rpc('get_server_time');
+      const clientAfter = Date.now();
+      if (data) {
+        const serverTime = Date.parse(data);
+        const clientMid = (clientBefore + clientAfter) / 2;
+        clockOffsetRef.current = serverTime - clientMid;
+        console.log('[SessionDisplay] Clock offset calibrated:', clockOffsetRef.current, 'ms');
+      }
+    };
+    
+    calibrateClock();
     fetchActiveSession();
 
     // Use unique channel name with timestamp to avoid conflicts
@@ -201,11 +217,13 @@ const SessionDisplay = () => {
             .single();
 
           if (!timerError && timerData) {
+            const now = Date.now() + clockOffsetRef.current;
+            const serverUpdatedAt = Date.parse((timerData as any).updated_at);
             const adjustedRemaining = Math.max(
               0,
-              (timerData as any).remaining_seconds - Math.floor((Date.now() - Date.parse((timerData as any).updated_at)) / 1000)
+              (timerData as any).remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000)
             );
-            baselineRef.current = { remaining: adjustedRemaining, updatedAt: Date.now() } as any;
+            baselineRef.current = { remaining: adjustedRemaining, updatedAt: now };
             setTimer({ ...(timerData as any), remaining_seconds: adjustedRemaining } as TimerSession);
           }
         } else {
@@ -330,11 +348,13 @@ const SessionDisplay = () => {
         .single();
 
       if (!error && data) {
+        const now = Date.now() + clockOffsetRef.current;
+        const serverUpdatedAt = Date.parse((data as any).updated_at);
         const adjustedRemaining = Math.max(
           0,
-          (data as any).remaining_seconds - Math.floor((Date.now() - Date.parse((data as any).updated_at)) / 1000)
+          (data as any).remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000)
         );
-        baselineRef.current = { remaining: adjustedRemaining, updatedAt: Date.now() } as any;
+        baselineRef.current = { remaining: adjustedRemaining, updatedAt: now };
         setTimer({ ...(data as any), remaining_seconds: adjustedRemaining } as TimerSession);
       }
     } catch (e) {
@@ -363,8 +383,10 @@ const SessionDisplay = () => {
             fetchTimerById(timer.id!);
             return;
           }
-          const adjustedRemaining = Math.max(0, row.remaining_seconds - Math.floor((Date.now() - Date.parse(row.updated_at)) / 1000));
-          baselineRef.current = { remaining: adjustedRemaining, updatedAt: Date.now() } as any;
+          const now = Date.now() + clockOffsetRef.current;
+          const serverUpdatedAt = Date.parse(row.updated_at);
+          const adjustedRemaining = Math.max(0, row.remaining_seconds - Math.floor((now - serverUpdatedAt) / 1000));
+          baselineRef.current = { remaining: adjustedRemaining, updatedAt: now };
           setTimer({ ...(row as any), remaining_seconds: adjustedRemaining } as TimerSession);
         }
       )
@@ -388,17 +410,18 @@ const SessionDisplay = () => {
     }
     if (!timer?.id || timer.status !== 'running') return;
 
-    // Ensure baseline exists. If updated_at present, adjust for age.
-    const now = Date.now();
+    // Ensure baseline exists. If updated_at present, adjust for age with clock offset.
+    const now = Date.now() + clockOffsetRef.current;
     const updatedAt = (timer as any).updated_at ? Date.parse((timer as any).updated_at) : now;
     const adjustedRemaining = Math.max(0, timer.remaining_seconds - Math.floor((now - updatedAt) / 1000));
-    baselineRef.current = { remaining: adjustedRemaining, updatedAt: now } as any;
+    baselineRef.current = { remaining: adjustedRemaining, updatedAt: now };
     setTimer(prev => (prev ? { ...prev, remaining_seconds: adjustedRemaining } : prev));
 
     const tick = () => {
       const base: any = baselineRef.current;
       if (!base) return;
-      const elapsed = Math.floor((Date.now() - base.updatedAt) / 1000);
+      const now = Date.now() + clockOffsetRef.current;
+      const elapsed = Math.floor((now - base.updatedAt) / 1000);
       const computed = Math.max(0, base.remaining - elapsed);
       setTimer(prev => (prev ? { ...prev, remaining_seconds: computed } : prev));
     };
