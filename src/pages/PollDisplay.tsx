@@ -160,11 +160,12 @@ const PollDisplay = () => {
         let votesData, votesError;
         
         try {
-          // Try authenticated query first
+          // Try authenticated query first with cache busting
           const result = await supabase
             .from('poll_votes')
             .select('option_id')
-            .eq('poll_id', poll.id);
+            .eq('poll_id', poll.id)
+            .order('created_at', { ascending: false }); // Force fresh data
           votesData = result.data;
           votesError = result.error;
         } catch (authError) {
@@ -172,7 +173,8 @@ const PollDisplay = () => {
           const result = await supabase
             .from('public_poll_votes')
             .select('option_id')
-            .eq('poll_id', poll.id);
+            .eq('poll_id', poll.id)
+            .order('created_at', { ascending: false }); // Force fresh data
           votesData = result.data;
           votesError = result.error;
         }
