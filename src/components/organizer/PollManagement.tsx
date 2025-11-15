@@ -455,9 +455,9 @@ export const PollManagement = () => {
                         <div className="text-sm text-muted-foreground mt-1">{poll.description}</div>
                       )}
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {(Array.isArray(poll.options) ? poll.options : []).map((option: string, index: number) => (
+                        {(Array.isArray(poll.options) ? poll.options : []).map((option: any, index: number) => (
                           <Badge key={index} variant="outline" className="text-xs">
-                            {option}
+                            {typeof option === 'string' ? option : option.text}
                           </Badge>
                         ))}
                       </div>
