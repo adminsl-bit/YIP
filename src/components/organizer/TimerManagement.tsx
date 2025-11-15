@@ -403,12 +403,23 @@ export const TimerManagement = () => {
   };
 
   // Compute display remaining using server-synced time without DB writes
+  const lastRenderRemainingRef = useRef<Record<string, number>>({});
   const getDisplayedRemaining = (timer: TimerSession) => {
-    if (timer.status !== 'running') return timer.remaining_seconds;
+    // When not running, reset monotonic clamp baseline and show exact value
+    if (timer.status !== 'running') {
+      lastRenderRemainingRef.current[timer.id] = timer.remaining_seconds;
+      return timer.remaining_seconds;
+    }
+
     const serverNow = nowTs + clockOffsetRef.current;
     const updatedAt = Date.parse((timer as any).updated_at);
     const elapsed = Math.max(0, Math.floor((serverNow - updatedAt) / 1000));
-    return Math.max(0, timer.remaining_seconds - elapsed);
+    const computed = Math.max(0, timer.remaining_seconds - elapsed);
+
+    const last = lastRenderRemainingRef.current[timer.id];
+    const monotonic = last === undefined ? computed : Math.min(last, computed);
+    lastRenderRemainingRef.current[timer.id] = monotonic;
+    return monotonic;
   };
 
   const getStatusBadge = (status: string) => {
