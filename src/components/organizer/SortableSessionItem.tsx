@@ -29,6 +29,7 @@ interface TimerSession {
   status: string;
   remaining_seconds: number;
   duration_seconds: number;
+  updated_at: string;
 }
 
 interface Poll {
@@ -56,6 +57,7 @@ interface SortableSessionItemProps {
   getStatusBadge: (status: string) => JSX.Element;
   formatTime: (seconds: number) => string;
   isAdminStudent?: boolean;
+  getDisplayedRemaining: (timer: TimerSession | undefined) => number;
 }
 
 export const SortableSessionItem = React.memo(({
@@ -76,6 +78,7 @@ export const SortableSessionItem = React.memo(({
   getStatusBadge,
   formatTime,
   isAdminStudent = false,
+  getDisplayedRemaining,
 }: SortableSessionItemProps) => {
   const {
     attributes,
@@ -141,7 +144,7 @@ export const SortableSessionItem = React.memo(({
               {linkedTimer && (
                 <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
                   <Clock className="h-4 w-4" />
-                  <span className="text-sm font-mono">{formatTime(linkedTimer.remaining_seconds)}</span>
+                  <span className="text-sm font-mono">{formatTime(getDisplayedRemaining(linkedTimer))}</span>
                   <div className="flex gap-1">
                     {linkedTimer.status === 'running' ? (
                       <Button 
