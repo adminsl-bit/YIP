@@ -350,9 +350,19 @@ export const PollManagement = () => {
   };
 
   const openStageView = (pollId: string) => {
-    const stageUrl = `/display/polls?pollId=${pollId}`;
-    console.log('Opening poll stage view at:', stageUrl);
-    const newWindow = window.open(stageUrl, '_blank', 'width=1200,height=800,fullscreen=yes');
+    // Use poll ID as window name to ensure each poll has its own window
+    // Add timestamp to force reload if window already exists
+    const stageUrl = `/display/polls?pollId=${pollId}&t=${Date.now()}`;
+    const windowName = `poll_stage_${pollId}`;
+    console.log('Opening poll stage view at:', stageUrl, 'with window name:', windowName);
+    
+    // Try to get existing window and close it to force fresh load
+    const existingWindow = window.open('', windowName);
+    if (existingWindow && !existingWindow.closed) {
+      existingWindow.close();
+    }
+    
+    const newWindow = window.open(stageUrl, windowName, 'width=1200,height=800,fullscreen=yes');
     if (!newWindow) {
       toast({
         title: "Popup Blocked",
