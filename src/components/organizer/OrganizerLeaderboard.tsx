@@ -33,6 +33,7 @@ interface LeaderboardEntry {
   original_rank: number;
   missing_jury_assessments?: string[];
   organizer_manual_score?: number;
+  session_id?: string;
 }
 
 interface JuryMember {
@@ -64,6 +65,7 @@ export const OrganizerLeaderboard = () => {
   const [partyFilter, setPartyFilter] = useState('');
   const [positionFilter, setPositionFilter] = useState('');
   const [assessmentStatusFilter, setAssessmentStatusFilter] = useState('');
+  const [sessionFilter, setSessionFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -81,18 +83,20 @@ export const OrganizerLeaderboard = () => {
 
       if (leaderboardError) throw leaderboardError;
       
-      // Fetch organizer_manual_score for admin/journalist students
+      // Fetch organizer_manual_score and session_id for admin/journalist students
       const { data: manualScoreData, error: manualScoreError } = await supabase
         .from('profiles')
-        .select('user_id, organizer_manual_score')
+        .select('user_id, organizer_manual_score, session_id')
         .in('user_id', leaderboardData?.map(entry => entry.user_id) || []);
       
       if (manualScoreError) throw manualScoreError;
       
-      // Create map of user_id to organizer_manual_score
+      // Create maps for user_id to organizer_manual_score and session_id
       const manualScoreMap = new Map();
+      const sessionIdMap = new Map();
       manualScoreData?.forEach(profile => {
         manualScoreMap.set(profile.user_id, profile.organizer_manual_score);
+        sessionIdMap.set(profile.user_id, profile.session_id);
       });
 
       // Fetch jury members
@@ -147,7 +151,8 @@ export const OrganizerLeaderboard = () => {
           ...entry,
           original_rank: index + 1,
           missing_jury_assessments: missingJuryAssessments,
-          organizer_manual_score: manualScoreMap.get(entry.user_id) || 0
+          organizer_manual_score: manualScoreMap.get(entry.user_id) || 0,
+          session_id: sessionIdMap.get(entry.user_id) || null
         };
       });
       setLeaderboard(processedLeaderboard);
@@ -267,6 +272,7 @@ export const OrganizerLeaderboard = () => {
   const uniqueCities = [...new Set(leaderboard.map(entry => entry.city).filter(Boolean))].sort();
   const uniqueParties = [...new Set(leaderboard.map(entry => entry.party_number))].sort((a, b) => a - b);
   const uniquePositions = [...new Set(leaderboard.map(entry => entry.position))].sort();
+  const uniqueSessions = [...new Set(leaderboard.map(entry => entry.session_id).filter(Boolean))].sort();
 
 
   const hasRealScores = leaderboard.some(e => (e.final_total_score ?? 0) > 0);
@@ -288,11 +294,12 @@ export const OrganizerLeaderboard = () => {
     const matchesCity = !cityFilter || cityFilter === 'all' || entry.city === cityFilter;
     const matchesParty = !partyFilter || partyFilter === 'all' || entry.party_number.toString() === partyFilter;
     const matchesPosition = !positionFilter || positionFilter === 'all' || entry.position === positionFilter;
+    const matchesSession = !sessionFilter || sessionFilter === 'all' || entry.session_id === sessionFilter;
     
     const matchesAssessmentStatus = !assessmentStatusFilter || assessmentStatusFilter === 'all' || 
       getAssessmentStatus(entry) === assessmentStatusFilter;
     
-    return matchesSearch && matchesCity && matchesParty && matchesPosition && matchesAssessmentStatus;
+    return matchesSearch && matchesCity && matchesParty && matchesPosition && matchesSession && matchesAssessmentStatus;
   });
 
   const exportToCSV = () => {
@@ -434,7 +441,7 @@ export const OrganizerLeaderboard = () => {
           </div>
 
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             {/* City Filter */}
             <Select value={cityFilter} onValueChange={setCityFilter}>
               <SelectTrigger>
@@ -499,6 +506,22 @@ export const OrganizerLeaderboard = () => {
                 <SelectItem value="not-assessed">Not Assessed</SelectItem>
                 <SelectItem value="partially-assessed">Partially Assessed</SelectItem>
                 <SelectItem value="fully-assessed">Fully Assessed</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Session Filter */}
+            <Select value={sessionFilter} onValueChange={setSessionFilter}>
+              <SelectTrigger>
+                <div className="flex items-center gap-2">
+                  <Users2 className="w-4 h-4" />
+                  <SelectValue placeholder="Filter by session" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Sessions</SelectItem>
+                {uniqueSessions.map((session) => (
+                  <SelectItem key={session} value={session}>{session}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
