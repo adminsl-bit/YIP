@@ -165,9 +165,10 @@ const PollControls = ({ pollId }: { pollId: string }) => {
 interface SessionSubItemsProps {
   sessionId: string;
   isSessionActive: boolean;
+  isAdminStudent?: boolean;
 }
 
-export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsProps) => {
+export const SessionSubItems = ({ sessionId, isSessionActive, isAdminStudent = false }: SessionSubItemsProps) => {
   const [subItems, setSubItems] = useState<SubItem[]>([]);
   const [expanded, setExpanded] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -614,15 +615,16 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
   if (subItems.length === 0) {
     return (
       <div className="mt-2 space-y-2">
-        <div className="flex items-center gap-2">
-          <SessionSubItemUpload sessionId={sessionId} onUploadComplete={fetchSubItems} />
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Manually
-              </Button>
-            </DialogTrigger>
+        {!isAdminStudent && (
+          <div className="flex items-center gap-2">
+            <SessionSubItemUpload sessionId={sessionId} onUploadComplete={fetchSubItems} />
+            <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Manually
+                </Button>
+              </DialogTrigger>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Add Sub-item</DialogTitle>
@@ -668,8 +670,11 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        </div>
-        <p className="text-sm text-muted-foreground">No sub-items yet. Upload or add manually above.</p>
+          </div>
+        )}
+        <p className="text-sm text-muted-foreground">
+          {isAdminStudent ? 'No sub-items yet.' : 'No sub-items yet. Upload or add manually above.'}
+        </p>
       </div>
     );
   }
@@ -696,59 +701,63 @@ export const SessionSubItems = ({ sessionId, isSessionActive }: SessionSubItemsP
             {globalVisibility ? <Eye className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
             {globalVisibility ? "Visible" : "Hidden"}
           </Button>
-          <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-            <DialogTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Sub-item</DialogTitle>
-                <DialogDescription>
-                  Add a new question, bill, or agenda item manually
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Title *</label>
-                  <Input
-                    value={newItemTitle}
-                    onChange={(e) => setNewItemTitle(e.target.value)}
-                    placeholder="Enter title"
-                    maxLength={200}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Description</label>
-                  <Input
-                    value={newItemDescription}
-                    onChange={(e) => setNewItemDescription(e.target.value)}
-                    placeholder="Short description (optional)"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Content</label>
-                  <Textarea
-                    value={newItemContent}
-                    onChange={(e) => setNewItemContent(e.target.value)}
-                    placeholder="Detailed content (optional)"
-                    rows={4}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddManual} disabled={loading}>
-                  Add Sub-item
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          <SessionSubItemUpload sessionId={sessionId} onUploadComplete={fetchSubItems} />
+          {!isAdminStudent && (
+            <>
+              <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Sub-item</DialogTitle>
+                    <DialogDescription>
+                      Add a new question, bill, or agenda item manually
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium">Title *</label>
+                      <Input
+                        value={newItemTitle}
+                        onChange={(e) => setNewItemTitle(e.target.value)}
+                        placeholder="Enter title"
+                        maxLength={200}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Description</label>
+                      <Input
+                        value={newItemDescription}
+                        onChange={(e) => setNewItemDescription(e.target.value)}
+                        placeholder="Short description (optional)"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Content</label>
+                      <Textarea
+                        value={newItemContent}
+                        onChange={(e) => setNewItemContent(e.target.value)}
+                        placeholder="Detailed content (optional)"
+                        rows={4}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={handleAddManual} disabled={loading}>
+                      Add Sub-item
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <SessionSubItemUpload sessionId={sessionId} onUploadComplete={fetchSubItems} />
+            </>
+          )}
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm" disabled={loading}>
