@@ -254,8 +254,11 @@ export const BreakingNewsPublisher = () => {
                   disabled={publishMutation.isPending || wordCount === 0 || wordCount > 1000}
                   className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
                 >
-                  <Send className="w-4 h-4 mr-2" />
-                  {editingId ? 'Update Headline' : 'Publish Breaking News'}
+                  <Send className={`w-4 h-4 mr-2 ${publishMutation.isPending ? 'animate-spin' : ''}`} />
+                  {publishMutation.isPending 
+                    ? (editingId ? 'Updating...' : 'Publishing...') 
+                    : (editingId ? 'Update Headline' : 'Publish Breaking News')
+                  }
                 </Button>
               </div>
             </div>
@@ -311,7 +314,7 @@ export const BreakingNewsPublisher = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => handleEdit(item)}
-                        disabled={deleteMutation.isPending}
+                        disabled={deleteMutation.isPending || toggleActiveMutation.isPending}
                       >
                         <Edit2 className="w-3 h-3" />
                       </Button>
@@ -321,7 +324,10 @@ export const BreakingNewsPublisher = () => {
                         onClick={() => toggleActiveMutation.mutate({ id: item.id, isActive: item.is_active })}
                         disabled={toggleActiveMutation.isPending}
                       >
-                        {item.is_active ? 'Deactivate' : 'Activate'}
+                        {toggleActiveMutation.isPending 
+                          ? 'Processing...' 
+                          : (item.is_active ? 'Deactivate' : 'Activate')
+                        }
                       </Button>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
