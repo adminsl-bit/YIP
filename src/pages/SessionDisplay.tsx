@@ -67,7 +67,7 @@ const SessionDisplay = () => {
   const fetchPollResults = async (pollId: string) => {
     try {
       const { data: votes, error } = await supabase
-        .from('poll_votes')
+        .from('public_poll_votes')
         .select('option_id')
         .eq('poll_id', pollId)
         .order('created_at', { ascending: false }); // Force fresh data
