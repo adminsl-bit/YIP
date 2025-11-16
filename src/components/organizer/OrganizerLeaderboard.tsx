@@ -122,6 +122,7 @@ export const OrganizerLeaderboard = () => {
       if (sessionsError) throw sessionsError;
       
       console.log('All session items fetched:', sessionsData?.map(s => s.title));
+      console.log('Total assessments fetched:', assessmentsData?.length);
 
       // Create a map of session_id to session title
       const sessionTitleMap = new Map<string, string>();
@@ -154,9 +155,9 @@ export const OrganizerLeaderboard = () => {
       const options = Array.from(sessionsWithSubmissions).sort();
       setSessionOptions(options);
       
-      console.log('Student sessions map size:', studentSessionsMap.size);
-      console.log('Sample student sessions:', Array.from(studentSessionsMap.entries()).slice(0, 3));
-      console.log('Session options (from assessments):', options);
+      console.log('🔍 SESSION DEBUG - All sessions from DB:', sessionsData?.map(s => s.title));
+      console.log('🔍 SESSION DEBUG - Sessions with submitted assessments:', options);
+      console.log('🔍 SESSION DEBUG - Total assessments checked:', assessmentsData?.length);
 
       // Fetch serial numbers for all students in the leaderboard
       const userIds = leaderboardData?.map(entry => entry.user_id) || [];
@@ -315,17 +316,6 @@ export const OrganizerLeaderboard = () => {
   const uniqueCities = [...new Set(leaderboard.map(entry => entry.city).filter(Boolean))].sort();
   const uniqueParties = [...new Set(leaderboard.map(entry => entry.party_number))].sort((a, b) => a - b);
   const uniquePositions = [...new Set(leaderboard.map(entry => entry.position))].sort();
-  
-  // Get unique session names from all students
-  const allSessionNames = new Set<string>();
-  leaderboard.forEach(entry => {
-    entry.session_names?.forEach(session => allSessionNames.add(session));
-  });
-  const uniqueSessions = Array.from(allSessionNames).sort();
-  
-  console.log('Unique sessions found:', uniqueSessions);
-  console.log('Total students with sessions:', leaderboard.filter(e => e.session_names && e.session_names.length > 0).length);
-
 
   const hasRealScores = leaderboard.some(e => (e.final_total_score ?? 0) > 0);
 
