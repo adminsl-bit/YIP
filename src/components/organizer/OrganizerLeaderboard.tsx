@@ -119,6 +119,8 @@ export const OrganizerLeaderboard = () => {
         .select('id, title');
 
       if (sessionsError) throw sessionsError;
+      
+      console.log('All session items fetched:', sessionsData?.map(s => s.title));
 
       // Create a map of session_id to session title
       const sessionTitleMap = new Map<string, string>();
@@ -139,6 +141,9 @@ export const OrganizerLeaderboard = () => {
           }
         }
       });
+      
+      console.log('Student sessions map size:', studentSessionsMap.size);
+      console.log('Sample student sessions:', Array.from(studentSessionsMap.entries()).slice(0, 3));
 
       // Fetch serial numbers for all students in the leaderboard
       const userIds = leaderboardData?.map(entry => entry.user_id) || [];
@@ -304,6 +309,9 @@ export const OrganizerLeaderboard = () => {
     entry.session_names?.forEach(session => allSessionNames.add(session));
   });
   const uniqueSessions = Array.from(allSessionNames).sort();
+  
+  console.log('Unique sessions found:', uniqueSessions);
+  console.log('Total students with sessions:', leaderboard.filter(e => e.session_names && e.session_names.length > 0).length);
 
 
   const hasRealScores = leaderboard.some(e => (e.final_total_score ?? 0) > 0);
