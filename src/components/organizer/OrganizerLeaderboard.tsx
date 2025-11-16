@@ -110,7 +110,8 @@ export const OrganizerLeaderboard = () => {
       // Fetch all assessments to determine missing jury assessments and sessions
       const { data: assessmentsData, error: assessmentsError } = await supabase
         .from('assessments')
-        .select('student_id, jury_id, status, session_id');
+        .select('student_id, jury_id, status, session_id')
+        .limit(10000); // Increase limit to ensure we get all assessments
 
       if (assessmentsError) throw assessmentsError;
 
@@ -120,9 +121,6 @@ export const OrganizerLeaderboard = () => {
         .select('id, title');
 
       if (sessionsError) throw sessionsError;
-      
-      console.log('All session items fetched:', sessionsData?.map(s => s.title));
-      console.log('Total assessments fetched:', assessmentsData?.length);
 
       // Create a map of session_id to session title
       const sessionTitleMap = new Map<string, string>();
@@ -154,10 +152,6 @@ export const OrganizerLeaderboard = () => {
       });
       const options = Array.from(sessionsWithSubmissions).sort();
       setSessionOptions(options);
-      
-      console.log('🔍 SESSION DEBUG - All sessions from DB:', sessionsData?.map(s => s.title));
-      console.log('🔍 SESSION DEBUG - Sessions with submitted assessments:', options);
-      console.log('🔍 SESSION DEBUG - Total assessments checked:', assessmentsData?.length);
 
       // Fetch serial numbers for all students in the leaderboard
       const userIds = leaderboardData?.map(entry => entry.user_id) || [];
