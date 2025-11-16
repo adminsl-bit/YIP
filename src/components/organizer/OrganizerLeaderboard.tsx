@@ -66,6 +66,7 @@ export const OrganizerLeaderboard = () => {
   const [positionFilter, setPositionFilter] = useState('');
   const [assessmentStatusFilter, setAssessmentStatusFilter] = useState('');
   const [sessionFilter, setSessionFilter] = useState('');
+  const [sessionOptions, setSessionOptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -142,8 +143,20 @@ export const OrganizerLeaderboard = () => {
         }
       });
       
+      // Build available session options from assessments (submitted only)
+      const sessionsWithSubmissions = new Set<string>();
+      assessmentsData?.forEach(a => {
+        if (a.session_id && a.status === 'submitted') {
+          const name = sessionTitleMap.get(a.session_id);
+          if (name) sessionsWithSubmissions.add(name);
+        }
+      });
+      const options = Array.from(sessionsWithSubmissions).sort();
+      setSessionOptions(options);
+      
       console.log('Student sessions map size:', studentSessionsMap.size);
       console.log('Sample student sessions:', Array.from(studentSessionsMap.entries()).slice(0, 3));
+      console.log('Session options (from assessments):', options);
 
       // Fetch serial numbers for all students in the leaderboard
       const userIds = leaderboardData?.map(entry => entry.user_id) || [];
@@ -559,7 +572,7 @@ export const OrganizerLeaderboard = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Sessions</SelectItem>
-                {uniqueSessions.map((session) => (
+                {sessionOptions.map((session) => (
                   <SelectItem key={session} value={session}>{session}</SelectItem>
                 ))}
               </SelectContent>
