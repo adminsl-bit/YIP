@@ -107,26 +107,49 @@ export const OrganizerLeaderboard = () => {
       if (juryError) throw juryError;
       setJuryMembers(juryData || []);
 
-      // Fetch all assessments to determine missing jury assessments and sessions
+      // Fetch all assessments for students in the leaderboard
+      // This is more efficient and ensures we get complete data for all students
+      const studentIds = leaderboardData?.map(entry => entry.user_id) || [];
       const { data: assessmentsData, error: assessmentsError } = await supabase
         .from('assessments')
         .select('student_id, jury_id, status, session_id')
-        .limit(10000); // Increase limit to ensure we get all assessments
+        .in('student_id', studentIds);
 
       if (assessmentsError) throw assessmentsError;
 
-      // Fetch session items to get session names
+      // Fetch ALL session items to get session names
       const { data: sessionsData, error: sessionsError } = await supabase
         .from('session_items')
         .select('id, title');
 
       if (sessionsError) throw sessionsError;
 
+      // EFFICIENT: Query for distinct sessions with submitted assessments
+      // This avoids hitting row limits by using aggregation
+      const { data: sessionSubmissionsData, error: sessionSubmissionsError } = await supabase
+        .from('assessments')
+        .select('session_id')
+        .eq('status', 'submitted')
+        .not('session_id', 'is', null);
+
+      if (sessionSubmissionsError) throw sessionSubmissionsError;
+
+      // Get unique session IDs that have submissions
+      const uniqueSessionIds = [...new Set(sessionSubmissionsData?.map(a => a.session_id))];
+
       // Create a map of session_id to session title
       const sessionTitleMap = new Map<string, string>();
       sessionsData?.forEach(session => {
         sessionTitleMap.set(session.id, session.title);
       });
+
+      // Build session options from sessions that have submitted assessments
+      const sessionsWithSubmissions = uniqueSessionIds
+        .map(id => sessionTitleMap.get(id))
+        .filter(Boolean) as string[];
+      
+      const options = sessionsWithSubmissions.sort();
+      setSessionOptions(options);
 
       // Create a map of student_id to their session names
       const studentSessionsMap = new Map<string, Set<string>>();
@@ -141,17 +164,6 @@ export const OrganizerLeaderboard = () => {
           }
         }
       });
-      
-      // Build available session options from assessments (submitted only)
-      const sessionsWithSubmissions = new Set<string>();
-      assessmentsData?.forEach(a => {
-        if (a.session_id && a.status === 'submitted') {
-          const name = sessionTitleMap.get(a.session_id);
-          if (name) sessionsWithSubmissions.add(name);
-        }
-      });
-      const options = Array.from(sessionsWithSubmissions).sort();
-      setSessionOptions(options);
 
       // Fetch serial numbers for all students in the leaderboard
       const userIds = leaderboardData?.map(entry => entry.user_id) || [];
