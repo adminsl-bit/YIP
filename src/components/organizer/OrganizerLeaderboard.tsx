@@ -129,7 +129,6 @@ export const OrganizerLeaderboard = () => {
       const { data: sessionSubmissionsData, error: sessionSubmissionsError } = await supabase
         .from('assessments')
         .select('session_id')
-        .eq('status', 'submitted')
         .not('session_id', 'is', null);
 
       if (sessionSubmissionsError) throw sessionSubmissionsError;
@@ -154,7 +153,7 @@ export const OrganizerLeaderboard = () => {
       // Create a map of student_id to their session names
       const studentSessionsMap = new Map<string, Set<string>>();
       assessmentsData?.forEach(assessment => {
-        if (assessment.session_id && assessment.status === 'submitted') {
+        if (assessment.session_id) {
           const sessionName = sessionTitleMap.get(assessment.session_id);
           if (sessionName) {
             if (!studentSessionsMap.has(assessment.student_id)) {
