@@ -203,77 +203,86 @@ export const AwardShowcase = () => {
 
           // Create awardee page
           container.innerHTML = `
-            <div style="width: 794px; min-height: 1123px; background: linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 50%, #FEF3C7 100%); padding: 40px; font-family: system-ui, -apple-system, sans-serif;">
-              <div style="background: rgba(255, 255, 255, 0.9); border-radius: 24px; padding: 40px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);">
+            <div style="width: 794px; min-height: 1123px; background: linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 50%, #FEF3C7 100%); padding: 40px; font-family: system-ui, -apple-system, sans-serif; box-sizing: border-box;">
+              <div style="background: rgba(255, 255, 255, 0.9); border-radius: 24px; padding: 40px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1); box-sizing: border-box;">
                 <!-- Header -->
                 <div style="text-align: center; margin-bottom: 40px;">
-                  <div style="display: inline-block; position: relative; margin-bottom: 20px;">
+                  <div style="margin: 0 auto 20px auto; width: 180px; height: 180px;">
                     ${awardee.photo_url 
-                      ? `<img src="${awardee.photo_url}" style="width: 180px; height: 180px; border-radius: 50%; object-fit: cover; border: 6px solid #fff; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);" crossorigin="anonymous" />`
-                      : `<div style="width: 180px; height: 180px; border-radius: 50%; background: linear-gradient(135deg, #64748B, #475569); display: flex; align-items: center; justify-content: center; border: 6px solid #fff; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);">
-                           <span style="color: white; font-size: 48px; font-weight: 900;">${awardee.student_name.split(' ').map(n => n[0]).join('')}</span>
+                      ? `<img src="${awardee.photo_url}" style="width: 180px; height: 180px; border-radius: 50%; object-fit: cover; border: 6px solid #fff; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); display: block;" crossorigin="anonymous" />`
+                      : `<div style="width: 180px; height: 180px; border-radius: 50%; background: linear-gradient(135deg, #64748B, #475569); display: flex; align-items: center; justify-content: center; border: 6px solid #fff; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2); box-sizing: border-box;">
+                           <span style="color: white; font-size: 48px; font-weight: 900; display: block;">${awardee.student_name.split(' ').map(n => n[0]).join('')}</span>
                          </div>`
                     }
                   </div>
                   
-                  <h1 style="font-size: 36px; font-weight: 900; color: #1E293B; margin: 0 0 16px 0;">
+                  <h1 style="font-size: 36px; font-weight: 900; color: #1E293B; margin: 0 auto 16px auto; text-align: center; display: block;">
                     ${awardee.student_name}
                   </h1>
                   
-                  <div style="display: inline-block; background: rgba(59, 130, 246, 0.1); border: 2px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 8px 24px; margin-bottom: 16px;">
-                    <span style="font-size: 18px; font-weight: 700; color: #1E40AF;">
-                      ${awardee.position}
-                    </span>
+                  <div style="text-align: center; margin: 0 auto 12px auto;">
+                    <div style="display: inline-block; background: rgba(59, 130, 246, 0.1); border: 2px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 8px 24px;">
+                      <span style="font-size: 18px; font-weight: 700; color: #1E40AF; display: block;">
+                        ${awardee.position}
+                      </span>
+                    </div>
                   </div>
                   
-                  <div style="display: inline-block; background: linear-gradient(135deg, #3B82F6, #8B5CF6); border-radius: 12px; padding: 8px 24px; margin-bottom: 16px;">
-                    <span style="font-size: 16px; font-weight: 700; color: white;">
-                      Party ${awardee.party_number}
-                    </span>
+                  <div style="text-align: center; margin: 0 auto 16px auto;">
+                    <div style="display: inline-block; background: linear-gradient(135deg, #3B82F6, #8B5CF6); border-radius: 12px; padding: 8px 24px;">
+                      <span style="font-size: 16px; font-weight: 700; color: white; display: block;">
+                        Party ${awardee.party_number}
+                      </span>
+                    </div>
                   </div>
                   
-                  <div style="display: flex; justify-content: center; gap: 24px; color: #64748B; font-size: 14px; font-weight: 600;">
-                    <div>📍 ${awardee.city}</div>
-                    <div>👥 ${awardee.constituency}</div>
+                  <div style="text-align: center; margin: 0 auto;">
+                    <span style="color: #64748B; font-size: 14px; font-weight: 600;">📍 ${awardee.city}</span>
+                    <span style="color: #64748B; font-size: 14px; font-weight: 600; margin: 0 12px;">•</span>
+                    <span style="color: #64748B; font-size: 14px; font-weight: 600;">👥 ${awardee.constituency}</span>
                   </div>
                 </div>
 
                 <!-- Awards Section -->
                 <div style="margin-top: 40px;">
-                  <h2 style="text-align: center; font-size: 28px; font-weight: 900; background: linear-gradient(to right, #D97706, #EA580C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 24px;">
+                  <h2 style="text-align: center; font-size: 28px; font-weight: 900; background: linear-gradient(to right, #D97706, #EA580C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0 auto 24px auto; display: block;">
                     🏆 Awards Received
                   </h2>
                   
-                  <div style="display: flex; flex-direction: column; gap: 16px;">
+                  <div style="width: 100%;">
                     ${awardee.awards.map(award => `
-                      <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FED7AA 100%); border: 2px solid #FCD34D; border-radius: 16px; padding: 20px;">
-                        <div style="display: flex; gap: 16px; align-items: start;">
-                          <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #F59E0B, #EA580C); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(251, 146, 60, 0.4);">
-                            <span style="font-size: 24px;">🏆</span>
-                          </div>
-                          <div style="flex: 1;">
-                            <h3 style="font-size: 20px; font-weight: 900; color: #1E293B; margin: 0 0 8px 0;">
-                              ${award.name}
-                            </h3>
-                            ${award.description ? `
-                              <p style="font-size: 14px; font-weight: 500; color: #475569; margin: 0 0 12px 0; line-height: 1.6;">
-                                ${award.description}
-                              </p>
-                            ` : ''}
-                            <div style="display: inline-block; background: ${award.assigned_by_jury_consensus ? 'rgba(59, 130, 246, 0.2)' : 'rgba(168, 85, 247, 0.2)'}; border: 1px solid ${award.assigned_by_jury_consensus ? 'rgba(59, 130, 246, 0.4)' : 'rgba(168, 85, 247, 0.4)'}; border-radius: 8px; padding: 4px 12px;">
-                              <span style="font-size: 12px; font-weight: 700; color: ${award.assigned_by_jury_consensus ? '#1E40AF' : '#6B21A8'};">
-                                ${award.assigned_by_jury_consensus ? 'Award Received' : 'Recognition Given'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
+                      <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FED7AA 100%); border: 2px solid #FCD34D; border-radius: 16px; padding: 20px; margin-bottom: 16px; width: 100%; box-sizing: border-box;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                          <tr>
+                            <td style="width: 48px; vertical-align: top; padding-right: 16px;">
+                              <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #F59E0B, #EA580C); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(251, 146, 60, 0.4);">
+                                <span style="font-size: 24px; display: block;">🏆</span>
+                              </div>
+                            </td>
+                            <td style="vertical-align: top;">
+                              <h3 style="font-size: 20px; font-weight: 900; color: #1E293B; margin: 0 0 8px 0; display: block;">
+                                ${award.name}
+                              </h3>
+                              ${award.description ? `
+                                <p style="font-size: 14px; font-weight: 500; color: #475569; margin: 0 0 12px 0; line-height: 1.6; display: block;">
+                                  ${award.description}
+                                </p>
+                              ` : ''}
+                              <div style="display: inline-block; background: ${award.assigned_by_jury_consensus ? 'rgba(59, 130, 246, 0.2)' : 'rgba(168, 85, 247, 0.2)'}; border: 1px solid ${award.assigned_by_jury_consensus ? 'rgba(59, 130, 246, 0.4)' : 'rgba(168, 85, 247, 0.4)'}; border-radius: 8px; padding: 4px 12px;">
+                                <span style="font-size: 12px; font-weight: 700; color: ${award.assigned_by_jury_consensus ? '#1E40AF' : '#6B21A8'}; display: block;">
+                                  ${award.assigned_by_jury_consensus ? 'Award Received' : 'Recognition Given'}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        </table>
                       </div>
                     `).join('')}
                   </div>
                 </div>
 
                 <!-- Page number -->
-                <div style="text-align: center; margin-top: 40px; color: #94A3B8; font-size: 14px; font-weight: 600;">
+                <div style="text-align: center; margin-top: 40px; color: #94A3B8; font-size: 14px; font-weight: 600; display: block;">
                   Page ${i + 2} of ${awardees.length + 1}
                 </div>
               </div>
