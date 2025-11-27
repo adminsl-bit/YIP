@@ -149,95 +149,165 @@ export const AwardShowcase = () => {
     try {
       toast({
         title: "Generating PDF",
-        description: "Creating award showcase PDF...",
+        description: "Creating award showcase PDF. This may take a moment...",
       });
 
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 20;
 
-      // Add title page
-      pdf.setFontSize(24);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('🏆 Award Showcase', pageWidth / 2, 40, { align: 'center' });
-      
-      pdf.setFontSize(16);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('Young Indians Parliament', pageWidth / 2, 55, { align: 'center' });
-      pdf.text('Recognizing Excellence', pageWidth / 2, 70, { align: 'center' });
+      // Create a temporary container for rendering
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.left = '-9999px';
+      container.style.width = '794px'; // A4 width in pixels at 96 DPI
+      container.style.backgroundColor = '#ffffff';
+      document.body.appendChild(container);
 
-      // Add current date
-      pdf.setFontSize(12);
-      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 85, { align: 'center' });
+      try {
+        // Add title page
+        container.innerHTML = `
+          <div style="width: 794px; height: 1123px; background: linear-gradient(135deg, #EFF6FF 0%, #FEF3C7 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: system-ui, -apple-system, sans-serif; padding: 40px;">
+            <div style="text-align: center;">
+              <div style="font-size: 48px; font-weight: 900; background: linear-gradient(to right, #D97706, #EA580C, #DC2626); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 20px;">
+                🏆 Award Showcase
+              </div>
+              <div style="font-size: 28px; font-weight: 600; color: #475569; margin-bottom: 12px;">
+                Young Indians Parliament
+              </div>
+              <div style="font-size: 24px; font-weight: 500; color: #64748B; margin-bottom: 40px;">
+                Recognizing Excellence
+              </div>
+              <div style="font-size: 18px; color: #64748B;">
+                Generated on: ${new Date().toLocaleDateString()}
+              </div>
+            </div>
+          </div>
+        `;
 
-      let yPosition = 110;
-
-      // Add each awardee
-      for (let i = 0; i < awardees.length; i++) {
-        const awardee = awardees[i];
-        
-        // Check if we need a new page
-        if (yPosition > pageHeight - 80) {
-          pdf.addPage();
-          yPosition = margin;
-        }
-
-        // Student name
-        pdf.setFontSize(18);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(awardee.student_name, margin, yPosition);
-        yPosition += 10;
-
-        // Position and party
-        pdf.setFontSize(12);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(`Position: ${awardee.position}`, margin, yPosition);
-        yPosition += 6;
-        pdf.text(`Party: ${awardee.party_number}`, margin, yPosition);
-        yPosition += 6;
-        pdf.text(`Location: ${awardee.city}, ${awardee.constituency}`, margin, yPosition);
-        yPosition += 10;
-
-        // Awards
-        pdf.setFontSize(14);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text('Awards:', margin, yPosition);
-        yPosition += 8;
-
-        awardee.awards.forEach(award => {
-          pdf.setFontSize(12);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text(`• ${award.name}`, margin + 5, yPosition);
-          yPosition += 6;
-          
-          if (award.description) {
-            pdf.setFont('helvetica', 'normal');
-            const splitDescription = pdf.splitTextToSize(award.description, pageWidth - margin * 2 - 10);
-            pdf.text(splitDescription, margin + 10, yPosition);
-            yPosition += splitDescription.length * 5;
-          }
-          
-          pdf.setFont('helvetica', 'italic');
-          pdf.text(`Type: ${award.assigned_by_jury_consensus ? 'Award Received' : 'Recognition Given'}`, margin + 10, yPosition);
-          yPosition += 8;
+        const titleCanvas = await html2canvas(container, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
         });
 
-        yPosition += 15; // Space between students
-      }
+        const titleImgData = titleCanvas.toDataURL('image/jpeg', 0.95);
+        pdf.addImage(titleImgData, 'JPEG', 0, 0, pageWidth, pageHeight);
 
-      // Save the PDF
-      pdf.save('award-showcase.pdf');
-      
-      toast({
-        title: "PDF Downloaded",
-        description: "Award showcase PDF has been downloaded successfully!",
-      });
+        // Add each awardee
+        for (let i = 0; i < awardees.length; i++) {
+          const awardee = awardees[i];
+          
+          pdf.addPage();
+
+          // Create awardee page
+          container.innerHTML = `
+            <div style="width: 794px; min-height: 1123px; background: linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 50%, #FEF3C7 100%); padding: 40px; font-family: system-ui, -apple-system, sans-serif;">
+              <div style="background: rgba(255, 255, 255, 0.9); border-radius: 24px; padding: 40px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);">
+                <!-- Header -->
+                <div style="text-align: center; margin-bottom: 40px;">
+                  <div style="display: inline-block; position: relative; margin-bottom: 20px;">
+                    ${awardee.photo_url 
+                      ? `<img src="${awardee.photo_url}" style="width: 180px; height: 180px; border-radius: 50%; object-fit: cover; border: 6px solid #fff; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);" crossorigin="anonymous" />`
+                      : `<div style="width: 180px; height: 180px; border-radius: 50%; background: linear-gradient(135deg, #64748B, #475569); display: flex; align-items: center; justify-content: center; border: 6px solid #fff; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);">
+                           <span style="color: white; font-size: 48px; font-weight: 900;">${awardee.student_name.split(' ').map(n => n[0]).join('')}</span>
+                         </div>`
+                    }
+                  </div>
+                  
+                  <h1 style="font-size: 36px; font-weight: 900; color: #1E293B; margin: 0 0 16px 0;">
+                    ${awardee.student_name}
+                  </h1>
+                  
+                  <div style="display: inline-block; background: rgba(59, 130, 246, 0.1); border: 2px solid rgba(59, 130, 246, 0.3); border-radius: 12px; padding: 8px 24px; margin-bottom: 16px;">
+                    <span style="font-size: 18px; font-weight: 700; color: #1E40AF;">
+                      ${awardee.position}
+                    </span>
+                  </div>
+                  
+                  <div style="display: inline-block; background: linear-gradient(135deg, #3B82F6, #8B5CF6); border-radius: 12px; padding: 8px 24px; margin-bottom: 16px;">
+                    <span style="font-size: 16px; font-weight: 700; color: white;">
+                      Party ${awardee.party_number}
+                    </span>
+                  </div>
+                  
+                  <div style="display: flex; justify-content: center; gap: 24px; color: #64748B; font-size: 14px; font-weight: 600;">
+                    <div>📍 ${awardee.city}</div>
+                    <div>👥 ${awardee.constituency}</div>
+                  </div>
+                </div>
+
+                <!-- Awards Section -->
+                <div style="margin-top: 40px;">
+                  <h2 style="text-align: center; font-size: 28px; font-weight: 900; background: linear-gradient(to right, #D97706, #EA580C); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 24px;">
+                    🏆 Awards Received
+                  </h2>
+                  
+                  <div style="display: flex; flex-direction: column; gap: 16px;">
+                    ${awardee.awards.map(award => `
+                      <div style="background: linear-gradient(135deg, #FEF3C7 0%, #FED7AA 100%); border: 2px solid #FCD34D; border-radius: 16px; padding: 20px;">
+                        <div style="display: flex; gap: 16px; align-items: start;">
+                          <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #F59E0B, #EA580C); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 12px rgba(251, 146, 60, 0.4);">
+                            <span style="font-size: 24px;">🏆</span>
+                          </div>
+                          <div style="flex: 1;">
+                            <h3 style="font-size: 20px; font-weight: 900; color: #1E293B; margin: 0 0 8px 0;">
+                              ${award.name}
+                            </h3>
+                            ${award.description ? `
+                              <p style="font-size: 14px; font-weight: 500; color: #475569; margin: 0 0 12px 0; line-height: 1.6;">
+                                ${award.description}
+                              </p>
+                            ` : ''}
+                            <div style="display: inline-block; background: ${award.assigned_by_jury_consensus ? 'rgba(59, 130, 246, 0.2)' : 'rgba(168, 85, 247, 0.2)'}; border: 1px solid ${award.assigned_by_jury_consensus ? 'rgba(59, 130, 246, 0.4)' : 'rgba(168, 85, 247, 0.4)'}; border-radius: 8px; padding: 4px 12px;">
+                              <span style="font-size: 12px; font-weight: 700; color: ${award.assigned_by_jury_consensus ? '#1E40AF' : '#6B21A8'};">
+                                ${award.assigned_by_jury_consensus ? 'Award Received' : 'Recognition Given'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <!-- Page number -->
+                <div style="text-align: center; margin-top: 40px; color: #94A3B8; font-size: 14px; font-weight: 600;">
+                  Page ${i + 2} of ${awardees.length + 1}
+                </div>
+              </div>
+            </div>
+          `;
+
+          const awardeeCanvas = await html2canvas(container, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#ffffff',
+            allowTaint: true
+          });
+
+          const awardeeImgData = awardeeCanvas.toDataURL('image/jpeg', 0.95);
+          pdf.addImage(awardeeImgData, 'JPEG', 0, 0, pageWidth, pageHeight);
+        }
+
+        // Save the PDF
+        pdf.save('award-showcase.pdf');
+        
+        toast({
+          title: "PDF Downloaded",
+          description: "Award showcase PDF has been downloaded successfully!",
+        });
+      } finally {
+        // Clean up
+        document.body.removeChild(container);
+      }
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast({
         title: "Error",
-        description: "Failed to generate PDF",
+        description: "Failed to generate PDF. Please try again.",
         variant: "destructive",
       });
     }
