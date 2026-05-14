@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Users, UserX, UserCheck, Shield, AlertTriangle, Edit, BarChart3, TrendingUp, KeyRound, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Search, Users, UserX, UserCheck, Shield, AlertTriangle, Edit, BarChart3, TrendingUp, KeyRound, Eye, EyeOff, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { StudentEditDialog } from "./StudentEditDialog";
 import { AssessmentChart } from "./AssessmentChart";
@@ -28,6 +28,7 @@ interface Student {
   is_active?: boolean;
   last_login_at?: string;
   session_id?: string;
+  created_at?: string;
 }
 
 interface Assessment {
@@ -74,6 +75,12 @@ export const OrganizerStudentList = () => {
     status: "all"
   });
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
+  const [activeRoles, setActiveRoles] = useState([
+    { name: 'Speaker', type: 'Admin' },
+    { name: 'Opposition', type: 'Lead' },
+    { name: 'Rapporteur', type: 'Member' }
+  ]);
 
   useEffect(() => {
     fetchStudents();
@@ -442,424 +449,598 @@ export const OrganizerStudentList = () => {
     }
   };
 
+  const stats = {
+    total: students.length,
+    active: students.filter(s => s.is_active).length,
+    deactivated: students.filter(s => !s.is_active).length,
+    new: 128 // Mocked based on design or can be calculated if created_at exists
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center h-[50vh]">
+         <div className="flex flex-col items-center gap-4">
+            <div className="w-12 h-12 border-4 border-[#13298f]/20 border-t-[#13298f] rounded-full animate-spin"></div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Syncing Registry...</p>
+         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Charts Toggle */}
-      <div className="flex justify-end">
-        <Button 
-          onClick={() => setShowCharts(!showCharts)}
-          variant="outline"
-          className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35"
-        >
-          {showCharts ? (
-            <>
-              <Users className="w-4 h-4 mr-2" />
-              Show Students
-            </>
-          ) : (
-            <>
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Show Analytics
-            </>
+    <div className="space-y-8 animate-in fade-in duration-700">
+      {/* Page Header */}
+      <div className="flex justify-between items-end mb-8">
+        <div>
+          <h2 className="text-4xl font-extrabold font-headline tracking-tight text-on-surface mb-2">Student Registry & Management</h2>
+          <p className="text-on-surface-variant font-bold uppercase text-[10px] tracking-[0.2em] opacity-60">Young Indians Parliament Authority</p>
+        </div>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => setViewMode(viewMode === 'table' ? 'grid' : 'table')}
+            className="px-4 py-3 rounded-2xl bg-white text-slate-600 border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-center"
+            title={viewMode === 'table' ? "Switch to Grid View" : "Switch to Table View"}
+          >
+            <span className="material-symbols-outlined text-[20px]">{viewMode === 'table' ? 'grid_view' : 'table_rows'}</span>
+          </button>
+          <button 
+            onClick={() => setShowCharts(!showCharts)}
+            className={`px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all flex items-center gap-2 ${showCharts ? 'bg-[#13298f] text-white shadow-lg shadow-blue-900/20' : 'bg-white text-slate-600 border border-slate-100 shadow-sm hover:shadow-md'}`}
+          >
+            <span className="material-symbols-outlined text-[18px]">{showCharts ? 'group' : 'monitoring'}</span>
+            {showCharts ? 'View Registry' : 'View Analytics'}
+          </button>
+          {!showCharts && (
+            <button className="px-6 py-3 bg-gradient-to-r from-[#13298f] to-[#3042a6] text-white font-black text-[10px] uppercase tracking-widest rounded-2xl shadow-lg shadow-blue-900/20 hover:scale-[1.05] active:scale-95 transition-all flex items-center gap-2">
+              <span className="material-symbols-outlined text-[18px]">person_add</span>
+              Add Delegate
+            </button>
           )}
-        </Button>
+        </div>
       </div>
 
-      {/* Assessment Charts */}
-      {showCharts && (
-        <Card className="bg-white/15 backdrop-blur-lg rounded-3xl border border-white/25 shadow-xl">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg">
-                <TrendingUp className="w-6 h-6 text-white" />
+      {/* Analytics View */}
+      {showCharts ? (
+        <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
+          {/* Summary Stats */}
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white p-6 rounded-[2rem] shadow-[0_32px_32px_-12px_rgba(46,65,172,0.06)] border-none flex items-center gap-5">
+              <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-[#13298f]">
+                <Users className="w-7 h-7" />
               </div>
               <div>
-                <CardTitle className="text-xl font-black text-slate-800">Assessment Analytics</CardTitle>
-                <p className="text-slate-600 font-medium">Track jury progress and performance</p>
+                <p className="text-[9px] font-black text-slate-400 tracking-[0.15em] uppercase">Total Students</p>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{stats.total}</h3>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            <AssessmentChart 
-              juryAssessments={juryAssessments} 
-              totalStudents={students.length} 
-            />
-          </CardContent>
-        </Card>
-      )}
+            <div className="bg-white p-6 rounded-[2rem] shadow-[0_32px_32px_-12px_rgba(46,65,172,0.06)] border-none flex items-center gap-5">
+              <div className="w-14 h-14 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                <span className="material-symbols-outlined text-3xl">how_to_reg</span>
+              </div>
+              <div>
+                <p className="text-[9px] font-black text-slate-400 tracking-[0.15em] uppercase">Active Members</p>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{stats.active}</h3>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-[2rem] shadow-[0_32px_32_rgba(46,65,172,0.06)] border-none flex items-center gap-5">
+              <div className="w-14 h-14 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-600">
+                <span className="material-symbols-outlined text-3xl">person_off</span>
+              </div>
+              <div>
+                <p className="text-[9px] font-black text-slate-400 tracking-[0.15em] uppercase">Deactivated</p>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{stats.deactivated}</h3>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-[2rem] shadow-[0_32px_32px_-12px_rgba(46,65,172,0.06)] border-none flex items-center gap-5">
+              <div className="w-14 h-14 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600">
+                <span className="material-symbols-outlined text-3xl">new_releases</span>
+              </div>
+              <div>
+                <p className="text-[9px] font-black text-slate-400 tracking-[0.15em] uppercase">New entries</p>
+                <h3 className="text-2xl font-black text-slate-900 tracking-tight">{stats.new}</h3>
+              </div>
+            </div>
+          </section>
 
-      {!showCharts && (
-        <>
-          {/* Search and Filters */}
-          <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
-        <CardHeader className="border-b border-border/10">
-          <CardTitle className="flex items-center gap-2">
-            <Search className="w-5 h-5 text-primary" />
-            Search & Filter Students
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Search by name, serial no, party number, position, or constituency..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 h-12 text-base border-2 border-border/20 rounded-xl focus:border-primary transition-colors"
-            />
-          </div>
-
-          {/* Filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            <Select value={filters.seatRole} onValueChange={(value) => setFilters(prev => ({ ...prev, seatRole: value }))}>
-              <SelectTrigger className="h-12 border-2 border-border/20 rounded-xl bg-background">
-                <SelectValue placeholder="Filter by Role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="speaker">Speaker</SelectItem>
-                <SelectItem value="deputy_speaker">Deputy Speaker</SelectItem>
-                <SelectItem value="administrator">Administrator</SelectItem>
-                <SelectItem value="journalist">Journalist</SelectItem>
-                <SelectItem value="minister">Minister</SelectItem>
-                <SelectItem value="mp">MP</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={filters.partyNumber} onValueChange={(value) => setFilters(prev => ({ ...prev, partyNumber: value }))}>
-              <SelectTrigger className="h-12 border-2 border-border/20 rounded-xl bg-background">
-                <SelectValue placeholder="Filter by Party" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Parties</SelectItem>
-                {[...new Set(students.map(s => s.party_number))].sort().map(party => {
-                  const partyLetter = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'][party - 1] || party;
-                  return (
-                    <SelectItem key={party} value={party.toString()}>Party {partyLetter}</SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-
-            <Select value={filters.status} onValueChange={(value) => setFilters(prev => ({ ...prev, status: value }))}>
-              <SelectTrigger className="h-12 border-2 border-border/20 rounded-xl bg-background">
-                <SelectValue placeholder="Filter by Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="assessed">Assessed</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="not_assessed">Not Assessed</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Input
-              placeholder="Filter by Constituency"
-              value={filters.constituency}
-              onChange={(e) => setFilters(prev => ({ ...prev, constituency: e.target.value }))}
-              className="h-12 border-2 border-border/20 rounded-xl"
-            />
-
-            <Input
-              placeholder="Filter by State"
-              value={filters.state}
-              onChange={(e) => setFilters(prev => ({ ...prev, state: e.target.value }))}
-              className="h-12 border-2 border-border/20 rounded-xl"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              Showing {filteredStudents.length} of {students.length} students
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setSearchTerm("");
-                setFilters({ seatRole: "all", partyNumber: "all", constituency: "", state: "", status: "all" });
-              }}
-            >
-              Clear Filters
-            </Button>
-          </div>
-        </CardContent>
-          </Card>
-
-          {/* Student List - Scrollable Container */}
-          <div className="max-h-[600px] overflow-y-auto pr-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-            {filteredStudents.map((student) => {
-              const status = getStudentStatus(student.user_id);
-              const assessmentCount = getAssessmentCount(student.user_id);
-              const averageScore = getAverageScore(student.user_id);
-              const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
-
-              return (
-                <Card
-                  key={student.id}
-                  className="h-full flex flex-col overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5"
-                >
-                  <CardContent className="p-6 flex flex-col h-full">
-                    {/* Header with Avatar and Name */}
-                    <div className="flex items-center gap-4 mb-4">
-                      <Avatar className="w-16 h-16 border-2 border-border/20">
-                        <AvatarImage src={student.photo_url} alt={student.name} />
-                        <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold">
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-lg text-foreground truncate mb-1">{student.name}</h3>
-                        <p className="text-sm text-muted-foreground truncate mb-2">{student.position}</p>
-                        <div className="flex items-center gap-2 min-h-[24px]">
-                          {getStatusIcon(status)}
-                          {getStatusBadge(status)}
-                        </div>
-                      </div>
+          <section className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Participation Trends */}
+            <div className="lg:col-span-2 bg-white p-8 rounded-[2.5rem] shadow-[0_32px_32px_-12px_rgba(46,65,172,0.06)]">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 tracking-tight">Participation Trends</h2>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Student engagement across sessions</p>
+                </div>
+              </div>
+              <div className="relative h-64 w-full flex items-end justify-between gap-2 px-4">
+                {[
+                  { label: "JAN", h: "h-24", p: "h-16" },
+                  { label: "FEB", h: "h-32", p: "h-24" },
+                  { label: "MAR", h: "h-48", p: "h-40" },
+                  { label: "APR", h: "h-56", p: "h-52", active: true },
+                  { label: "MAY", h: "h-40", p: "h-32" },
+                  { label: "JUN", h: "h-36", p: "h-28" }
+                ].map((item, idx) => (
+                  <div key={idx} className="flex-1 flex flex-col items-center gap-3">
+                    <div className={`w-full bg-slate-50 rounded-t-2xl ${item.h} relative group transition-all duration-500`}>
+                      <div className={`absolute bottom-0 w-full rounded-t-2xl transition-all ${item.active ? 'bg-[#13298f] ' + item.p : 'bg-[#13298f]/20 group-hover:bg-[#13298f]/40 ' + item.p}`}></div>
                     </div>
+                    <span className={`text-[9px] font-black tracking-widest ${item.active ? 'text-[#13298f]' : 'text-slate-400'}`}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-                    {/* Student Details Grid */}
-                    <div className="grid grid-cols-2 gap-4 mb-4 p-3 bg-accent/20 rounded-xl min-h-[88px]">
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium text-muted-foreground">Serial Number</div>
-                        <div className="text-sm font-bold text-foreground">{student.serial_number}</div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium text-muted-foreground">Party</div>
-                        <div className="text-sm font-bold text-foreground">
-                          {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'][student.party_number - 1] || student.party_number}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium text-muted-foreground">Constituency</div>
-                        <div className="text-sm text-foreground truncate">
-                          {student.constituency || '—'}
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="text-xs font-medium text-muted-foreground">Home City</div>
-                        <div className="text-sm text-foreground truncate">
-                          {student.city || '—'}
-                        </div>
-                      </div>
+            {/* Role Distribution */}
+            <div className="bg-white p-8 rounded-[2.5rem] shadow-[0_32px_32px_-12px_rgba(46,65,172,0.06)]">
+              <h2 className="text-xl font-black text-slate-900 tracking-tight mb-8">Role Distribution</h2>
+              <div className="space-y-6">
+                {[
+                  { role: "MPs", value: 65, color: "bg-[#13298f]" },
+                  { role: "Speakers", value: 15, color: "bg-orange-500" },
+                  { role: "Journalists", value: 12, color: "bg-emerald-500" },
+                  { role: "Observers", value: 8, color: "bg-slate-300" }
+                ].map((item, idx) => (
+                  <div key={idx} className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.role}</span>
+                      <span className="text-xs font-black text-slate-900">{item.value}%</span>
                     </div>
+                    <div className="w-full bg-slate-50 h-2.5 rounded-full overflow-hidden">
+                      <div className={`${item.color} h-full rounded-full transition-all duration-1000`} style={{ width: `${item.value}%` }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
 
-                    {/* Assessment Information */}
-                    <div className="flex items-center justify-between mb-4 p-3 bg-primary/5 rounded-xl min-h-[64px]">
-                      {(getSeatRole(student.position) === 'administrator' || getSeatRole(student.position) === 'journalist') ? (
-                        <div className="space-y-1 w-full">
-                          <div className="text-xs font-medium text-muted-foreground">Assessment Status</div>
-                          <div className="text-sm font-bold text-foreground">Organizer</div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="space-y-1">
-                            <div className="text-xs font-medium text-muted-foreground">Assessments</div>
-                            <div className="text-sm font-bold text-foreground">{assessmentCount} completed</div>
-                          </div>
-                          {assessmentCount > 0 && (
-                            <div className="space-y-1 text-right">
-                              <div className="text-xs font-medium text-muted-foreground">Average Score</div>
-                              <div className="text-lg font-bold text-primary">{averageScore}</div>
+          {/* Performance Radar Sim */}
+          <section className="bg-[#13298f] p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-white opacity-[0.03] rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform duration-1000"></div>
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-8 relative z-10">
+              <div className="max-w-xl">
+                <h2 className="text-2xl font-black tracking-tight mb-4">Parliamentary Performance Radar</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  {[
+                    { label: "Public Speaking", val: "8.4" },
+                    { label: "Diplomacy", val: "9.1" },
+                    { label: "Research", val: "7.8" },
+                    { label: "Collaboration", val: "8.9" }
+                  ].map((stat, idx) => (
+                    <div key={idx} className="bg-white/10 backdrop-blur-md p-4 rounded-2xl flex justify-between items-center border border-white/10">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-300">{stat.label}</span>
+                      <span className="text-lg font-black">{stat.val}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="lg:max-w-xs space-y-4">
+                <p className="text-sm font-bold text-white/70 italic leading-relaxed">"The current cohort shows exceptional growth in diplomatic negotiation and legislative drafting skills."</p>
+                <div className="flex gap-2">
+                  <span className="w-8 h-1 bg-white rounded-full"></span>
+                  <span className="w-2 h-1 bg-white/30 rounded-full"></span>
+                  <span className="w-2 h-1 bg-white/30 rounded-full"></span>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      ) : (
+        <div className="animate-in fade-in duration-500 space-y-12">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8">
+            {/* Dynamic Role Creator - Sidebar Style */}
+            <aside className="lg:col-span-4 bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 h-fit space-y-8">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold flex items-center gap-2 text-[#191c1e]">
+                  <span className="material-symbols-outlined text-[#13298f]">psychology</span> 
+                  Dynamic Role Creator
+                </h2>
+              </div>
+
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Role Name</label>
+                  <input 
+                    type="text" 
+                    placeholder="e.g. Finance Minister" 
+                    className="w-full bg-slate-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-[#13298f]/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Permissions Tier</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button className="py-2.5 rounded-xl bg-[#13298f]/10 text-[#13298f] text-[10px] font-black border-2 border-[#13298f]/20 uppercase tracking-widest">Member</button>
+                    <button className="py-2.5 rounded-xl bg-slate-50 text-slate-400 text-[10px] font-black border-2 border-transparent hover:bg-slate-100 transition-colors uppercase tracking-widest">Lead</button>
+                    <button className="py-2.5 rounded-xl bg-slate-50 text-slate-400 text-[10px] font-black border-2 border-transparent hover:bg-slate-100 transition-colors uppercase tracking-widest">Admin</button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Constituency Power</label>
+                  <input type="range" className="w-full h-1.5 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-[#13298f]" />
+                  <div className="flex justify-between mt-2 text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                    <span>Local</span>
+                    <span>Regional</span>
+                    <span>National</span>
+                  </div>
+                </div>
+
+                <button className="w-full py-4 bg-[#13298f] text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-900/20 hover:opacity-90 transition-all active:scale-95">
+                  Deploy New Role
+                </button>
+
+                <div className="pt-6 border-t border-slate-100">
+                  <p className="text-[10px] font-black text-slate-400 uppercase mb-4 tracking-widest flex justify-between">
+                    Active Roles <span>({activeRoles.length})</span>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {activeRoles.map((role, idx) => (
+                      <span key={idx} className="px-3 py-1.5 bg-slate-50 rounded-full text-[9px] font-black text-slate-600 flex items-center gap-2 group cursor-default">
+                        {role.name}
+                        <span className="material-symbols-outlined text-[14px] text-slate-300 hover:text-rose-500 cursor-pointer transition-colors">close</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </aside>
+
+            {/* Students View - Grid or Table */}
+            <div className="lg:col-span-8 space-y-6">
+              {/* Table Navigation Header */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar">
+                <button className="px-5 py-2.5 bg-[#13298f] text-white rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap">All Students ({students.length})</button>
+                <button className="px-5 py-2.5 bg-white text-slate-500 border border-slate-100 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap hover:bg-slate-50 transition-colors">Qualified Leaders</button>
+                <button className="px-5 py-2.5 bg-white text-slate-500 border border-slate-100 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap hover:bg-slate-50 transition-colors">Pending Review</button>
+              </div>
+
+              {viewMode === 'grid' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {filteredStudents.map((student) => {
+                    const averageScore = getAverageScore(student.user_id);
+                    const status = getStudentStatus(student.user_id);
+                    const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
+
+                    return (
+                      <div key={student.id} className="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 hover:shadow-md hover:border-[#13298f]/10 transition-all group relative">
+                        <div className="flex items-start justify-between mb-6">
+                          <div className="flex items-center gap-4">
+                            <div className="relative">
+                              <Avatar className="w-14 h-14 rounded-2xl shadow-sm border border-slate-100">
+                                <AvatarImage src={student.photo_url} alt={student.name} className="object-cover" />
+                                <AvatarFallback className="bg-slate-100 text-[#13298f] text-xs font-black">{initials}</AvatarFallback>
+                              </Avatar>
+                              <div className={`absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full border-2 border-white ${student.session_id ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' : 'bg-slate-300'}`}></div>
                             </div>
-                          )}
-                        </>
-                      )}
-                    </div>
+                            <div>
+                              <h3 className="font-bold text-base text-[#191c1e] leading-tight">{student.name}</h3>
+                              <p className="text-[10px] text-[#13298f] font-black uppercase tracking-widest mt-1">{student.position || 'Delegate'}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => setEditingStudent(student)} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-[#13298f] transition-all">
+                              <span className="material-symbols-outlined text-[18px]">edit</span>
+                            </button>
+                            <button onClick={() => setPasswordResetStudent(student)} className="p-2 hover:bg-slate-50 rounded-xl text-slate-400 hover:text-amber-600 transition-all">
+                               <KeyRound className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
 
-                    {/* Last Login Info (always reserve space) */}
-                    <div className="mb-4 p-2 bg-muted/30 rounded-lg min-h-[32px]">
-                      <div className="text-xs text-muted-foreground">
-                        Last login: {student.last_login_at ? new Date(student.last_login_at).toLocaleDateString() : '—'}
-                      </div>
-                    </div>
+                        <div className="grid grid-cols-2 gap-4 mb-6">
+                          <div className="bg-slate-50 p-3 rounded-2xl">
+                            <p className="text-[9px] font-black text-slate-400 uppercase mb-1 tracking-widest">Party</p>
+                            <p className="text-xs font-bold text-[#191c1e]">Reform Hub #{student.party_number}</p>
+                          </div>
+                          <div className="bg-slate-50 p-3 rounded-2xl">
+                            <p className="text-[9px] font-black text-slate-400 uppercase mb-1 tracking-widest">Constituency</p>
+                            <p className="text-xs font-bold text-[#191c1e] truncate">{student.constituency || 'TBD'}</p>
+                          </div>
+                        </div>
 
-                    {/* Action Buttons */}
-                    <div className="mt-auto flex flex-col gap-2">
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setEditingStudent(student)}
-                          className="flex-1 h-10 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300"
-                        >
-                          <Edit className="w-4 h-4 mr-2" />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setPasswordResetStudent(student)}
-                          className="flex-1 h-10 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300"
-                        >
-                          <KeyRound className="w-4 h-4 mr-2" />
-                          Password
-                        </Button>
+                        <div className="flex items-center justify-between mt-auto">
+                          <div className="flex items-center gap-3">
+                            <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full transition-all duration-1000 ${averageScore >= 80 ? 'bg-[#42d59a]' : 'bg-[#fe6f42]'}`} 
+                                style={{ width: `${averageScore}%` }} 
+                              />
+                            </div>
+                            <span className="text-xs font-black text-[#191c1e]">{averageScore}%</span>
+                          </div>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            {getAssessmentCount(student.user_id)} Assessments
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => toggleStudentStatus(student.user_id, student.is_active || false)}
-                          className={`flex-1 h-10 ${student.is_active ? 'hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30' : 'hover:bg-green-50 hover:text-green-700 hover:border-green-300'}`}
-                        >
-                          {student.is_active ? (
-                            <>
-                              <UserX className="w-4 h-4 mr-2" />
-                              Deactivate
-                            </>
-                          ) : (
-                            <>
-                              <UserCheck className="w-4 h-4 mr-2" />
-                              Activate
-                            </>
-                          )}
-                        </Button>
-                        {student.session_id && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => forceLogout(student.user_id, student.name)}
-                            className="flex-1 h-10 hover:bg-orange-50 hover:text-orange-700 hover:border-orange-300"
-                          >
-                            <Shield className="w-4 h-4 mr-2" />
-                            Force Logout
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                    );
+                  })}
+                </div>
+              ) : (
+                <>
+                  {/* Management Analytics - Bento Style */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col">
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-10 h-10 bg-[#13298f]/10 rounded-lg flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[#13298f]">group</span>
+                </div>
+                <span className="text-xs font-bold text-[#00583b] bg-[#6ffbbe] px-2 py-1 rounded-full">+12%</span>
+              </div>
+              <p className="text-sm font-semibold text-slate-500 mb-1 font-body">Total Students</p>
+              <h3 className="text-2xl font-extrabold font-headline text-[#191c1e]">{stats.total}</h3>
+            </div>
+            
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col">
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-10 h-10 bg-[#6ffbbe]/30 rounded-lg flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[#00583b]">how_to_reg</span>
+                </div>
+                <span className="text-xs font-bold text-[#00583b] bg-[#6ffbbe] px-2 py-1 rounded-full">Active</span>
+              </div>
+              <p className="text-sm font-semibold text-slate-500 mb-1 font-body">Active Members</p>
+              <h3 className="text-2xl font-extrabold font-headline text-[#191c1e]">{stats.active}</h3>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col">
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-10 h-10 bg-[#ffdad6]/30 rounded-lg flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[#ba1a1a]">person_off</span>
+                </div>
+                <span className="text-xs font-bold text-[#ba1a1a] bg-[#ffdad6] px-2 py-1 rounded-full">Off</span>
+              </div>
+              <p className="text-sm font-semibold text-slate-500 mb-1 font-body">Deactivated</p>
+              <h3 className="text-2xl font-extrabold font-headline text-[#191c1e]">{stats.deactivated}</h3>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex flex-col">
+              <div className="flex justify-between items-start mb-4">
+                <div className="w-10 h-10 bg-[#fe6f42]/20 rounded-lg flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[#ac3509]">new_releases</span>
+                </div>
+                <span className="text-xs font-bold text-[#ac3509] bg-[#ffdbd0] px-2 py-1 rounded-full">New</span>
+              </div>
+              <p className="text-sm font-semibold text-slate-500 mb-1 font-body">New Registrations</p>
+              <h3 className="text-2xl font-extrabold font-headline text-[#191c1e]">{stats.new}</h3>
             </div>
           </div>
 
-          {filteredStudents.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No students found matching your criteria.</p>
+          {/* Search & Filter Bar */}
+          <div className="bg-slate-100/50 p-4 rounded-2xl mb-6 flex flex-wrap items-center gap-4 border border-slate-200/50">
+            <div className="flex-1 min-w-[300px] relative">
+              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">search</span>
+              <input 
+                type="text" 
+                placeholder="Search by name, ID, or constituency..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-white border-none rounded-xl focus:ring-2 focus:ring-[#13298f]/20 text-sm font-medium shadow-sm transition-all"
+              />
             </div>
-          )}
-        </>
-      )}
+            <div className="flex items-center gap-3">
+              <select 
+                value={filters.seatRole} 
+                onChange={(e) => setFilters(f => ({ ...f, seatRole: e.target.value }))}
+                className="bg-white border-none rounded-xl py-3 pl-4 pr-10 text-sm font-bold focus:ring-2 focus:ring-[#13298f]/20 shadow-sm cursor-pointer"
+              >
+                <option value="all">Role: All</option>
+                <option value="mp">Delegate</option>
+                <option value="speaker">Speaker</option>
+                <option value="minister">Minister</option>
+                <option value="journalist">Journalist</option>
+              </select>
+              <select 
+                value={filters.status} 
+                onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}
+                className="bg-white border-none rounded-xl py-3 pl-4 pr-10 text-sm font-bold focus:ring-2 focus:ring-[#13298f]/20 shadow-sm cursor-pointer"
+              >
+                <option value="all">Status: All</option>
+                <option value="assessed">Active</option>
+                <option value="not_assessed">Inactive</option>
+              </select>
+              <button 
+                onClick={() => { setSearchTerm(""); setFilters({ seatRole: "all", partyNumber: "all", constituency: "", state: "", status: "all" }); }}
+                className="p-3 bg-[#13298f] text-white rounded-xl hover:bg-[#3042a6] transition-colors shadow-lg shadow-blue-900/20"
+              >
+                <span className="material-symbols-outlined">tune</span>
+              </button>
+            </div>
+          </div>
 
-      {/* Student Edit Dialog */}
+          {/* Student Data Table */}
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-50/50">
+                    <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider text-slate-500">Student</th>
+                    <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider text-slate-500">ID Number</th>
+                    <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider text-slate-500">Assigned Role</th>
+                    <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider text-slate-500">Constituency</th>
+                    <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider text-slate-500">Performance</th>
+                    <th className="px-6 py-5 text-xs font-bold uppercase tracking-wider text-slate-500 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredStudents.map((student) => {
+                    const averageScore = getAverageScore(student.user_id);
+                    const status = getStudentStatus(student.user_id);
+                    const initials = student.name.split(' ').map(n => n[0]).join('').toUpperCase();
+
+                    return (
+                      <tr key={student.id} className="hover:bg-slate-50/50 transition-colors group">
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <Avatar className="w-10 h-10 rounded-lg shadow-sm border border-slate-100 overflow-hidden">
+                                <AvatarImage src={student.photo_url} alt={student.name} className="object-cover" />
+                                <AvatarFallback className="bg-slate-100 text-[#13298f] text-[10px] font-black">{initials}</AvatarFallback>
+                              </Avatar>
+                              <div className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-white ${student.session_id ? 'bg-emerald-500' : 'bg-slate-300'}`}></div>
+                            </div>
+                            <div>
+                              <p className="text-sm font-bold text-[#191c1e]">{student.name}</p>
+                              <p className="text-[10px] text-slate-500 font-medium">{student.user_id.substring(0, 8)}@ypa.org</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm font-medium text-slate-600">YI-2024-{student.serial_number.toString().padStart(4, '0')}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-3 py-1 text-[10px] font-bold rounded-full uppercase tracking-tight ${
+                            getSeatRole(student.position) === 'speaker' ? 'bg-[#ffdad6] text-[#ba1a1a]' :
+                            getSeatRole(student.position) === 'minister' ? 'bg-[#6ffbbe] text-[#00583b]' :
+                            'bg-[#13298f]/10 text-[#13298f]'
+                          }`}>
+                            {student.position || 'Delegate'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm text-slate-600">{student.constituency || 'Portfolio Assigned'}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full transition-all duration-1000 ${averageScore >= 80 ? 'bg-[#42d59a]' : 'bg-[#fe6f42]'}`} 
+                                style={{ width: `${averageScore}%` }} 
+                              />
+                            </div>
+                            <span className={`text-xs font-bold ${averageScore >= 80 ? 'text-[#005236]' : 'text-[#ac3509]'}`}>{averageScore}%</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={() => setEditingStudent(student)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-[#13298f] transition-colors">
+                              <span className="material-symbols-outlined text-[18px]">edit</span>
+                            </button>
+                            <button onClick={() => setPasswordResetStudent(student)} className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-amber-600 transition-colors">
+                              <KeyRound className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => toggleStudentStatus(student.user_id, student.is_active || false)} className={`p-1.5 rounded-lg transition-all ${student.is_active ? 'text-slate-400 hover:text-rose-500 hover:bg-rose-50' : 'text-emerald-500 hover:bg-emerald-50'}`}>
+                              <span className="material-symbols-outlined text-[18px]">{student.is_active ? 'block' : 'check_circle'}</span>
+                            </button>
+                            <button className="p-1.5 bg-slate-50 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-[#191c1e] transition-colors">
+                              <span className="material-symbols-outlined text-[18px]">visibility</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="px-6 py-5 bg-slate-50/30 border-t border-slate-100 flex items-center justify-between">
+              <p className="text-xs font-semibold text-slate-500 font-body">Showing 1 to {filteredStudents.length} of {students.length} entries</p>
+              <div className="flex items-center gap-2">
+                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-white hover:text-[#13298f] transition-all">
+                  <span className="material-symbols-outlined text-sm">chevron_left</span>
+                </button>
+                <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#13298f] text-white text-xs font-bold shadow-sm">1</button>
+                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-transparent text-xs font-bold text-slate-600 hover:bg-white hover:border-slate-200 transition-all">2</button>
+                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-transparent text-xs font-bold text-slate-600 hover:bg-white hover:border-slate-200 transition-all">3</button>
+                <span className="text-slate-400 font-bold px-1">...</span>
+                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-transparent text-xs font-bold text-slate-600 hover:bg-white hover:border-slate-200 transition-all">254</button>
+                <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-400 hover:bg-white hover:text-[#13298f] transition-all">
+                  <span className="material-symbols-outlined text-sm">chevron_right</span>
+                </button>
+              </div>
+            </div>
+            </div>
+          </>
+        )}
+
+        {/* Global Performance Insights Section */}
+        <section className="mt-12 bg-gradient-to-br from-[#13298f] to-[#3042a6] p-12 rounded-[3rem] relative overflow-hidden shadow-2xl group">
+            <div className="absolute top-0 right-0 w-1/2 h-full opacity-5 pointer-events-none">
+              <span className="material-symbols-outlined text-[30rem] -translate-y-20 translate-x-20 transition-transform duration-1000 group-hover:scale-110">diversity_3</span>
+            </div>
+            <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-12 text-white">
+              <div>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-70">Total Participation</h2>
+                <p className="text-6xl font-black mb-2 animate-in slide-in-from-left duration-700">94.2<span className="text-2xl">%</span></p>
+                <p className="text-sm font-bold opacity-80 leading-relaxed font-body">Delegate engagement across all dynamic parliamentary sessions this quarter.</p>
+              </div>
+              <div>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-70">Bills Authored</h2>
+                <p className="text-6xl font-black mb-2 animate-in slide-in-from-left duration-1000">3,120</p>
+                <p className="text-sm font-bold opacity-80 leading-relaxed font-body">Legislative contributions submitted through the dynamic portal interface.</p>
+              </div>
+              <div>
+                <h2 className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-70">Avg. Skill Rating</h2>
+                <p className="text-6xl font-black mb-2 animate-in slide-in-from-left duration-700">8.4<span className="text-2xl">/10</span></p>
+                <p className="text-sm font-bold opacity-80 leading-relaxed font-body">Aggregate student performance in critical thinking and diplomatic speech.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  )}
+
+      {/* Re-using identified components from existing logic */}
       <StudentEditDialog 
         student={editingStudent}
         isOpen={!!editingStudent}
         onClose={() => setEditingStudent(null)}
-        onSave={() => {
-          fetchStudents();
-          fetchJuryAssessments();
-        }}
+        onSave={() => { fetchStudents(); fetchJuryAssessments(); }}
       />
 
-      {/* Password Reset Dialog */}
       <Dialog open={!!passwordResetStudent} onOpenChange={(open) => {
-        if (!open) {
-          setPasswordResetStudent(null);
-          setNewPassword('');
-          setConfirmPassword('');
-          setShowNewPassword(false);
-          setShowConfirmPassword(false);
-        }
+        if (!open) { setPasswordResetStudent(null); setNewPassword(''); setConfirmPassword(''); setShowNewPassword(false); setShowConfirmPassword(false); }
       }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <KeyRound className="w-5 h-5 text-primary" />
-              Reset Password
+        <DialogContent className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden">
+          <div className="absolute top-0 inset-x-0 h-2 bg-gradient-to-r from-[#13298f] to-amber-500"></div>
+          <DialogHeader className="pt-4">
+            <DialogTitle className="text-2xl font-black tracking-tight text-slate-900 flex items-center gap-3">
+              <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center text-amber-600">
+                <KeyRound className="w-5 h-5" />
+              </div>
+              Authorization Override
             </DialogTitle>
-            <DialogDescription>
-              Reset password for {passwordResetStudent?.name} (#{passwordResetStudent?.serial_number})
+            <DialogDescription className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              Reset Security Credentials for {passwordResetStudent?.name}
             </DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleResetPassword} className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="new-password">New Password</Label>
-              <div className="relative">
-                <Input
-                  id="new-password"
-                  type={showNewPassword ? "text" : "password"}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Enter new password"
-                  className="pr-10"
-                  disabled={isResettingPassword}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => setShowNewPassword(!showNewPassword)}
-                  disabled={isResettingPassword}
-                >
-                  {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
+          <form onSubmit={handleResetPassword} className="space-y-6 mt-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">New Password</label>
+                <div className="relative">
+                  <Input 
+                    type={showNewPassword ? "text" : "password"} 
+                    value={newPassword} 
+                    onChange={(e) => setNewPassword(e.target.value)} 
+                    placeholder="••••••••" 
+                    className="h-14 bg-slate-50 border-none rounded-2xl font-bold px-5" 
+                  />
+                  <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">{showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Confirm Security Pin</label>
+                <div className="relative">
+                  <Input 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    value={confirmPassword} 
+                    onChange={(e) => setConfirmPassword(e.target.value)} 
+                    placeholder="••••••••" 
+                    className="h-14 bg-slate-50 border-none rounded-2xl font-bold px-5" 
+                  />
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">{showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}</button>
+                </div>
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm Password</Label>
-              <div className="relative">
-                <Input
-                  id="confirm-password"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Confirm new password"
-                  className="pr-10"
-                  disabled={isResettingPassword}
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  disabled={isResettingPassword}
-                >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </Button>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 mt-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setPasswordResetStudent(null);
-                  setNewPassword('');
-                  setConfirmPassword('');
-                }}
-                disabled={isResettingPassword}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isResettingPassword}>
-                {isResettingPassword ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Resetting...
-                  </>
-                ) : (
-                  <>
-                    <KeyRound className="w-4 h-4 mr-2" />
-                    Reset Password
-                  </>
-                )}
-              </Button>
+            <div className="flex gap-3 pt-4">
+               <button type="button" onClick={() => setPasswordResetStudent(null)} className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400 transition-colors">Abort</button>
+               <button type="submit" disabled={isResettingPassword} className="flex-1 py-4 bg-[#13298f] text-white rounded-[1.5rem] font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-900/20 active:scale-95 transition-all">
+                 {isResettingPassword ? "Updating..." : "Authorize Reset"}
+               </button>
             </div>
           </form>
         </DialogContent>

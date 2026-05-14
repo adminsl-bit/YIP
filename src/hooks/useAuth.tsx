@@ -10,8 +10,12 @@ interface AuthContextType {
   profile: any | null;
   loading: boolean;
   signIn: (loginId: string, password: string) => Promise<{ error: any }>;
+  signInWithOtp: (email: string) => Promise<{ error: any }>;
+  verifyOtp: (email: string, token: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, metadata?: any) => Promise<{ error: any; user: User | null }>;
+  getSystemSetting: (key: string) => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -20,8 +24,12 @@ const AuthContext = createContext<AuthContextType>({
   profile: null,
   loading: true,
   signIn: async () => ({ error: null }),
+  signInWithOtp: async () => ({ error: null }),
+  verifyOtp: async () => ({ error: null }),
   signOut: async () => {},
   refreshProfile: async () => {},
+  signUp: async () => ({ error: null, user: null }),
+  getSystemSetting: async () => null,
 });
 
 export const useAuth = () => {
@@ -55,11 +63,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (!data) {
         console.log('No profile found for user ID:', userId);
-        // If no profile exists, sign out the user as their account may be deleted
-        toast.error('Your account is not found. Please contact support.');
-        setTimeout(() => {
-          signOut();
-        }, 1000);
+        setProfile(null);
         return;
       }
       
@@ -217,16 +221,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Determine base email from loginId
       if (loginId.includes('@')) {
         email = loginId;
-      } else if (/^\d+$/.test(loginId) || /^YIP\d+$/i.test(loginId)) {
-        // Student login: numeric id or YIP prefix -> internal email alias
-        email = `${loginId}@yip.parliament`;
       } else {
-        // Username (e.g., jury4, admin1) -> default to .com or .org domain
-        if (loginId.startsWith('admin')) {
-          email = `${loginId}@yip.org`;
-        } else {
-          email = `${loginId}@yip.com`;
-        }
+        const lowerId = loginId.toLowerCase().trim();
+        // Try parliament domain first as it's the primary for delegates
+        email = `${lowerId}@yip-parliament.com`;
       }
 
       // Helper to attempt sign-in with a specific email
@@ -234,15 +232,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return await supabase.auth.signInWithPassword({ email: em, password });
       };
 
-      // First attempt
+      // First attempt (Parliament domain)
       let { data, error } = await attemptSignIn(email);
 
-      // If username-based login failed with .com, try legacy .org as fallback
-      if (error && !loginId.includes('@') && !/^\d+$/.test(loginId)) {
-        const fallbackEmail = `${loginId}@yip.org`;
-        const fallback = await attemptSignIn(fallbackEmail);
-        data = fallback.data;
-        error = fallback.error;
+      // Fallback for staff/admin domains (yip.com, yip.org)
+      if (error && !loginId.includes('@')) {
+        const fallbackDomains = [`${loginId}@yip.com`, `${loginId}@yip.org`].filter(d => d !== email);
+        for (const fb of fallbackDomains) {
+          const fallback = await attemptSignIn(fb);
+          if (!fallback.error) {
+            data = fallback.data;
+            error = null;
+            break;
+          }
+        }
       }
 
       if (error) {
@@ -290,18 +293,112 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const signInWithOtp = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: window.location.origin,
+        },
+      });
+      if (error) {
+        toast.error(error.message);
+      } else {
+        toast.success('OTP sent to your email!');
+      }
+      return { error };
+    } catch (error: any) {
+      toast.error('Failed to send OTP');
+      return { error };
+    }
+  };
+
+  const verifyOtp = async (email: string, token: string) => {
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email,
+        token,
+        type: 'signup',
+      });
+
+      if (error) {
+        // Try 'magiclink' or 'signin' type if signup fails, or just general error
+        const { error: error2 } = await supabase.auth.verifyOtp({
+          email,
+          token,
+          type: 'signin',
+        });
+        
+        if (error2) {
+          toast.error(error2.message);
+          return { error: error2 };
+        }
+      }
+
+      toast.success('Successfully authenticated!');
+      return { error: null };
+    } catch (error: any) {
+      toast.error('Verification failed');
+      return { error };
+    }
+  };
+
+  const signUp = async (email: string, password: string, fullName: string, metadata: any = {}) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+          }
+        }
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return { error, user: null };
+      }
+
+      if (data.user) {
+        // Create profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            user_id: data.user.id,
+            name: fullName,
+            user_type: 'student',
+            position: metadata.position || 'Member',
+            party_number: metadata.party_number || Math.floor(Math.random() * 5) + 1,
+            serial_number: metadata.serial_number || Math.floor(Math.random() * 9000) + 1000,
+            constituency: metadata.constituency || 'TBD',
+            is_active: true
+          });
+
+        if (profileError) {
+          console.error('Error creating profile during signup:', profileError);
+          // We don't block for profile error as the user is already created in Auth
+        }
+
+        toast.success('Registration successful! Please check your email for verification.');
+      }
+
+      return { error: null, user: data.user };
+    } catch (error: any) {
+      toast.error('An unexpected error occurred during registration');
+      return { error, user: null };
+    }
+  };
+
   const signOut = async () => {
     console.log('SignOut function called. Current state:', { user: !!user, session: !!session, profile: !!profile });
     try {
-      // Always clear local state first to prevent UI issues
       setUser(null);
       setSession(null);
       setProfile(null);
       
-      // Clear session in database for students, journalists, and admin students
       if (user?.id) {
         try {
-          // Check if user should have session cleared (student, journalist, or admin_student)
           const { data: roleData } = await supabase
             .from('user_roles')
             .select('role')
@@ -312,7 +409,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           const isAdminStudent = roles.includes('admin_student');
           const isStudent = profile?.user_type === 'student';
           
-          // Clear session if user type requires single-session enforcement
           if (isStudent || isJournalist || isAdminStudent) {
             await supabase
               .from('profiles')
@@ -324,25 +420,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
       
-      // Clear local session ID
       localStorage.removeItem('current_session_id');
-      
-      
-      // Attempt to sign out from Supabase
       const { error } = await supabase.auth.signOut();
       
-      // Handle any Supabase signOut errors gracefully
       if (error) {
         console.log('Supabase signOut error (handled gracefully):', error.message);
-        // Don't show error to user since we've already cleared local state
       }
       
-      // Always show success and navigate
       toast.success('Signed out successfully');
       navigate('/login');
-      
     } catch (error) {
-      // If any error occurs, ensure we still clear state and navigate
       console.log('Error during sign out, but state already cleared:', error);
       setUser(null);
       setSession(null);
@@ -352,14 +439,41 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  const getSystemSetting = async (key: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('system_settings')
+        .select('setting_value')
+        .eq('setting_key', key)
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (!data) {
+        // Default to true for registration if not found, to avoid locking out users
+        if (key === 'registration_enabled') return true;
+        return null;
+      }
+      
+      return data.setting_value === 'true' || data.setting_value === true;
+    } catch (e) {
+      console.error('Error fetching system setting:', key, e);
+      return null;
+    }
+  };
+
   const value = {
     user,
     session,
     profile,
     loading,
     signIn,
+    signInWithOtp,
+    verifyOtp,
     signOut,
     refreshProfile,
+    signUp,
+    getSystemSetting,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

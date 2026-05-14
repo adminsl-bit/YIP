@@ -82,10 +82,10 @@ const scheduleData: DaySchedule[] = [
       { time: "11:00 - 12:45", session: "Committee Reports (15 min each) - Committees present reports; House debates and discusses each point", type: "discussion" },
       { time: "12:45 - 13:30", session: "Lunch & Networking - Journalists interact with members and collect statements", type: "break" },
       { time: "13:30 - 15:15", session: "Zero Hour - Breaking news items circulated; members share views, ministers and shadow ministers respond, PM gives final remarks", type: "session" },
-      { time: "15:15 - 15:30", session: "Administrator Observations & closing remarks by LoP, PM and Speakers - Visionary reflections on YIP experience", type: "ceremony" },
+      { time: "15:15 - 15:30", session: "Administrator Observations & closing remarks by LoP, PM and Speakers - Visionary reflections on The Assembly experience", type: "ceremony" },
       { time: "15:30 - 15:40", session: "Valedictory Session: Remarks by Ms Sangeetha Muthuavinashiappan", type: "ceremony" },
       { time: "15:40 - 15:50", session: "Valedictory Session: Remarks by Mr Aseem Abhyankar", type: "ceremony" },
-      { time: "15:50 - 16:00", session: "Valedictory Session: Special Remarks by Mr Darshan Mutha, Mentor YIP & Chair-Accessibility", type: "ceremony" },
+      { time: "15:50 - 16:00", session: "Valedictory Session: Special Remarks by Mr Darshan Mutha, Mentor, The Assembly & Chair-Accessibility", type: "ceremony" },
       { time: "16:00 - 16:55", session: "Recognition to Winners", type: "ceremony" },
       { time: "16:55 - 17:00", session: "Concluding & Vote of thanks by Mr Aseem Abhyankar - End of the Program", type: "ceremony" }
     ]
@@ -102,8 +102,8 @@ export const ParliamentAgenda = () => {
             <Calendar className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <h2 className="text-3xl font-bold text-foreground">National Finals Agenda</h2>
-            <p className="text-muted-foreground">15-16 November 2025, New Delhi</p>
+            <h2 className="text-3xl font-headline font-black text-foreground">Grand Assembly Agenda</h2>
+            <p className="text-muted-foreground font-body">15-16 November 2025, New Delhi</p>
           </div>
         </div>
       </div>
@@ -115,10 +115,10 @@ export const ParliamentAgenda = () => {
             <CardHeader className={`${getSessionColor('ceremony')} text-white`}>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-2xl font-bold text-white">
+                  <CardTitle className="text-2xl font-headline font-bold text-white">
                     {day.date}
                   </CardTitle>
-                  <p className="text-white/90 mt-1">{day.duration}</p>
+                  <p className="text-white/90 mt-1 font-body">{day.duration}</p>
                 </div>
                 <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
                   Day {day.day}
@@ -147,7 +147,7 @@ export const ParliamentAgenda = () => {
                           <div className={`p-2 rounded-lg ${getSessionColor(item.type)} text-white`}>
                             {getSessionIcon(item.type)}
                           </div>
-                          <h3 className="font-semibold text-foreground leading-tight">
+                          <h3 className="font-headline font-semibold text-foreground leading-tight">
                             {item.session}
                           </h3>
                         </div>
@@ -177,7 +177,7 @@ export const ParliamentAgenda = () => {
 
       {/* Footer Note */}
       <div className="text-center p-6 bg-muted/30 rounded-lg">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground font-body">
           All timings are indicative. Please stay updated with any announcements during the session.
         </p>
       </div>

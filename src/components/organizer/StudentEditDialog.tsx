@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Camera, Save, X, MapPin, Hash, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/hooks/useAuth';
 
 interface Student {
   id: string;
@@ -20,6 +21,7 @@ interface Student {
   position: string;
   party_number: number;
   party_name?: string;
+  committee?: string;
   serial_number: number;
   constituency?: string;
   state?: string;
@@ -41,6 +43,7 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentE
   const [formData, setFormData] = useState<Partial<Student>>({});
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const handleOpen = (open: boolean) => {
     if (open && student) {
@@ -76,6 +79,8 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentE
           name: formData.name.trim(),
           position: formData.position,
           party_number: formData.party_number,
+          party_name: formData.party_name?.trim() || null,
+          committee: formData.committee?.trim() || null,
           serial_number: formData.serial_number,
           constituency: formData.constituency?.trim() || null,
           state: formData.state?.trim() || null,
@@ -85,6 +90,30 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentE
         .eq('user_id', student.user_id);
 
       if (error) throw error;
+
+      // Log the action for administrative audit
+      if (user) {
+        await supabase.from('audit_logs').insert({
+          user_id: user.id,
+          action: 'UPDATE_STUDENT_PROFILE',
+          resource_type: 'profiles',
+          resource_id: student.user_id,
+          details: {
+            student_name: student.name,
+            changes: {
+              name: formData.name !== student.name ? formData.name : undefined,
+              position: formData.position !== student.position ? formData.position : undefined,
+              party_number: formData.party_number !== student.party_number ? formData.party_number : undefined,
+              party_name: formData.party_name !== student.party_name ? formData.party_name : undefined,
+              committee: formData.committee !== student.committee ? formData.committee : undefined,
+              serial_number: formData.serial_number !== student.serial_number ? formData.serial_number : undefined,
+              constituency: formData.constituency !== student.constituency ? formData.constituency : undefined,
+              state: formData.state !== student.state ? formData.state : undefined,
+              city: formData.city !== student.city ? formData.city : undefined,
+            }
+          }
+        });
+      }
 
       toast({
         title: "Success",
@@ -330,6 +359,19 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentE
             </div>
 
             <div>
+              <Label htmlFor="party_name" className="text-sm font-medium text-slate-700">
+                Custom Party Name
+              </Label>
+              <Input
+                id="party_name"
+                value={formData.party_name || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, party_name: e.target.value }))}
+                placeholder="Enter party name"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
               <Label htmlFor="email" className="text-sm font-medium text-slate-700">
                 Login ID
               </Label>
@@ -356,6 +398,19 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentE
                 value={formData.constituency || ''}
                 onChange={(e) => setFormData(prev => ({ ...prev, constituency: e.target.value }))}
                 placeholder="Enter constituency"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="committee" className="text-sm font-medium text-slate-700">
+                Parliamentary Committee
+              </Label>
+              <Input
+                id="committee"
+                value={formData.committee || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, committee: e.target.value }))}
+                placeholder="Enter committee name"
                 className="mt-1"
               />
             </div>

@@ -42,18 +42,31 @@ const Index = () => {
   return (
     <main>
       <BreakingNewsTicker />
-      <div className="absolute top-4 right-4 z-20">
-        <Link to="/login">
-          <Button 
-            variant="outline" 
-            className="bg-white/20 backdrop-blur-lg border-white/30 text-slate-800 hover:bg-white/35 hover:scale-105 transition-all duration-300 shadow-lg px-3 sm:px-6 py-2 sm:py-3 text-sm sm:text-lg font-semibold rounded-xl sm:rounded-2xl"
-          >
-            <User className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Parliament Login</span>
-            <span className="sm:hidden">Login</span>
-          </Button>
-        </Link>
-      </div>
+      {/* Floating Navigation Capsule */}
+      <nav className="fixed top-8 left-0 right-0 z-50 flex justify-center px-4">
+        <div className="flex items-center gap-10 px-8 py-4 bg-surface/70 backdrop-blur-xl border-none rounded-full shadow-elevated">
+          <div className="flex items-center gap-3">
+            <img src="/lovable-uploads/strawlabs.png" alt="Strawlabs" className="h-7 w-auto" />
+            <div className="w-px h-5 bg-outline-variant/20 mx-2" />
+            <span className="text-[10px] font-black tracking-[0.3em] text-on-surface uppercase font-headline">Hub</span>
+          </div>
+          
+          <div className="hidden md:flex items-center gap-8">
+            <a href="#about" className="text-xs font-black text-on-surface-variant/60 hover:text-primary transition-colors tracking-widest uppercase">About</a>
+            <a href="#sessions" className="text-xs font-black text-on-surface-variant/60 hover:text-primary transition-colors tracking-widest uppercase">Sessions</a>
+            <a href="#results" className="text-xs font-black text-on-surface-variant/60 hover:text-primary transition-colors tracking-widest uppercase">Results</a>
+          </div>
+ 
+          <Link to="/login">
+            <Button 
+              className="bg-primary text-on-primary hover:bg-primary-container hover:text-on-primary-container transition-all duration-500 shadow-xl shadow-primary/20 px-8 h-12 text-xs font-black rounded-full uppercase tracking-widest"
+            >
+              <User className="w-4 h-4 mr-3" />
+              Parliament Login
+            </Button>
+          </Link>
+        </div>
+      </nav>
       <LandingHero />
     </main>
   );

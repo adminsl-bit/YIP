@@ -1,32 +1,45 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Plus, Trash, Play, Pause, MoreVertical, ExternalLink, Eye, RotateCcw } from "lucide-react";
-import { LiveVotingStats } from "@/components/student/LiveVotingStats";
-import { PostVotingAnalysis } from "@/components/student/PostVotingAnalysis";
-import { DetailedPollResults } from "@/components/student/DetailedPollResults";
+import { 
+  Plus, Trash, Play, Pause, MoreVertical, ExternalLink, 
+  Eye, RotateCcw, BarChart3, Users, Clock, ArrowRight,
+  TrendingUp, MapPin, CheckCircle2, XCircle, Activity
+} from "lucide-react";
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger, 
+  DropdownMenuSeparator 
+} from "@/components/ui/dropdown-menu";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
+import { DetailedPollResults } from "@/components/student/DetailedPollResults";
 
 interface Poll {
   id: string;
   title: string;
+  heading?: string;
   description?: string;
   options: string[];
   is_active: boolean;
   show_results_publicly: boolean;
   show_post_analysis: boolean;
+  outcome?: 'passed' | 'failed' | null;
   created_at: string;
-  starts_at?: string;
-  ends_at?: string;
 }
 
 interface PollVote {
@@ -37,60 +50,52 @@ interface PollVote {
 export const PollManagement = () => {
   const { user } = useAuth();
   const [polls, setPolls] = useState<Poll[]>([]);
-  const [selectedPoll, setSelectedPoll] = useState<Poll | null>(null);
   const [pollResults, setPollResults] = useState<Record<string, PollVote[]>>({});
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [showPostVotingAnalysis, setShowPostVotingAnalysis] = useState<string | null>(null);
   const [showDetailedResults, setShowDetailedResults] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [totalParticipants, setTotalParticipants] = useState(0);
+  
   const [pollToDelete, setPollToDelete] = useState<Poll | null>(null);
   const [pollToReset, setPollToReset] = useState<Poll | null>(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [heatmapData, setHeatmapData] = useState<number[]>(new Array(12).fill(0));
+  const [originData, setOriginData] = useState<{label: string, value: number}[]>([]);
 
   const [formData, setFormData] = useState({
+    heading: "",
     title: "",
     description: "",
-    options: ["", ""]
+    options: ["", ""],
+    showPublicly: true,
+    allowMultiple: false
   });
 
   useEffect(() => {
     fetchPolls();
+    fetchTotalParticipants();
+    fetchAggregateInsights();
   }, []);
 
   useEffect(() => {
-    // Fetch results for all polls
     polls.forEach(poll => {
       fetchPollResults(poll.id);
     });
   }, [polls]);
 
-  // Realtime subscriptions: keep votes and poll list in sync without refresh
   useEffect(() => {
     const channel = supabase
-      .channel('organizer_poll_management')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'poll_votes' },
-        (payload) => {
-          const pollId = (payload as any)?.new?.poll_id || (payload as any)?.old?.poll_id;
-          if (pollId) {
-            fetchPollResults(pollId);
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'polls' },
-        () => {
-          fetchPolls();
-        }
-      )
+      .channel('organizer_poll_management_realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes' }, (payload) => {
+        const pollId = (payload as any)?.new?.poll_id || (payload as any)?.old?.poll_id;
+        if (pollId) fetchPollResults(pollId);
+        fetchAggregateInsights();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () => {
+        fetchPolls();
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
   const fetchPolls = async () => {
@@ -99,7 +104,6 @@ export const PollManagement = () => {
         .from('polls')
         .select('*')
         .order('created_at', { ascending: false });
-
       if (error) throw error;
       setPolls((data || []) as Poll[]);
     } catch (error) {
@@ -109,570 +113,659 @@ export const PollManagement = () => {
     }
   };
 
-  const fetchPollResults = async (pollId: string) => {
+  const fetchTotalParticipants = async () => {
+    const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'student');
+    setTotalParticipants(count || 0);
+  };
+
+  const fetchAggregateInsights = async () => {
     try {
-      // Fetch votes excluding journalists and admin_students
+      // Fetch votes with voter profile information (specifically state)
       const { data, error } = await supabase
         .from('poll_votes')
         .select(`
-          option_id,
-          voter_id
-        `)
+          created_at,
+          voter_id,
+          profiles!inner (
+            state
+          )
+        `);
+
+      if (error) throw error;
+      if (!data || data.length === 0) return;
+
+      // 1. Calculate Origin Data (Geographic distribution)
+      const stateCounts: Record<string, number> = {};
+      data.forEach((v: any) => {
+        const state = v.profiles?.state || 'Unknown';
+        stateCounts[state] = (stateCounts[state] || 0) + 1;
+      });
+
+      const totalVotes = data.length;
+      const sortedStates = Object.entries(stateCounts)
+        .map(([label, count]) => ({ 
+          label, 
+          value: Math.round((count / totalVotes) * 100) 
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 3); // Top 3 states
+
+      setOriginData(sortedStates);
+
+      // 2. Calculate Heatmap (Temporal distribution)
+      // We'll look at the last 2 hours of activity to show current momentum
+      const now = new Date();
+      const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+      
+      const buckets = new Array(12).fill(0);
+      const bucketSizeMs = (2 * 60 * 60 * 1000) / 12; // 10 minutes per bucket
+
+      data.forEach((v: any) => {
+        const voteTime = new Date(v.created_at);
+        if (voteTime > twoHoursAgo) {
+          const diffMs = voteTime.getTime() - twoHoursAgo.getTime();
+          const bucketIndex = Math.min(11, Math.floor(diffMs / bucketSizeMs));
+          buckets[bucketIndex]++;
+        }
+      });
+
+      // Normalize buckets for visualization (max height 100%)
+      const maxVotes = Math.max(...buckets, 1);
+      const normalizedBuckets = buckets.map(count => Math.round((count / maxVotes) * 100));
+      setHeatmapData(normalizedBuckets);
+
+    } catch (e) {
+      console.error('Error fetching aggregate insights:', e);
+    }
+  };
+
+  const fetchPollResults = async (pollId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('poll_votes')
+        .select('option_id, voter_id')
         .eq('poll_id', pollId);
 
       if (error) throw error;
 
-      // Filter out votes from users with journalist or admin_student roles
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('user_id, role')
-        .in('role', ['journalist', 'admin_student']);
-
+      const { data: roleData } = await supabase.from('user_roles').select('user_id, role').in('role', ['journalist', 'admin_student']);
       const excludedUserIds = new Set(roleData?.map(r => r.user_id) || []);
       const filteredVotes = data?.filter(vote => !excludedUserIds.has(vote.voter_id)) || [];
 
-      // Count votes for each option
       const voteCounts: Record<string, number> = {};
       filteredVotes.forEach(vote => {
         voteCounts[vote.option_id] = (voteCounts[vote.option_id] || 0) + 1;
       });
 
-      const results: PollVote[] = Object.entries(voteCounts).map(([option_id, count]) => ({
-        option_id,
-        count
-      }));
-
+      const results: PollVote[] = Object.entries(voteCounts).map(([option_id, count]) => ({ option_id, count }));
       setPollResults(prev => ({ ...prev, [pollId]: results }));
-    } catch (error) {
-      console.error('Error fetching poll results:', error);
-    }
+    } catch (e) { console.error(e); }
   };
 
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      description: "",
-      options: ["", ""]
-    });
-  };
-
-  const addOption = () => {
-    setFormData(prev => ({
-      ...prev,
-      options: [...prev.options, ""]
-    }));
-  };
-
-  const removeOption = (index: number) => {
+  const addOption = () => setFormData(prev => ({ ...prev, options: [...prev.options, ""] }));
+  const removeOption = (idx: number) => {
     if (formData.options.length > 2) {
-      setFormData(prev => ({
-        ...prev,
-        options: prev.options.filter((_, i) => i !== index)
-      }));
+      setFormData(prev => ({ ...prev, options: prev.options.filter((_, i) => i !== idx) }));
     }
   };
-
-  const updateOption = (index: number, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      options: prev.options.map((option, i) => i === index ? value : option)
-    }));
+  const updateOption = (idx: number, val: string) => {
+    setFormData(prev => ({ ...prev, options: prev.options.map((opt, i) => i === idx ? val : opt) }));
   };
 
-  const createPoll = async () => {
+  const handleCreatePoll = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!user || !formData.title.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Question is required", variant: "destructive" });
       return;
     }
-
     const validOptions = formData.options.filter(opt => opt.trim()).map(opt => opt.trim());
     if (validOptions.length < 2) {
-      toast({
-        title: "Error",
-        description: "Please provide at least 2 options",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "At least 2 options required", variant: "destructive" });
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from('polls')
-        .insert({
-          title: formData.title.trim(),
-          description: formData.description.trim(),
-          options: validOptions,
-          created_by: user.id
-        });
+      const { error } = await supabase.from('polls').insert({
+        title: formData.title.trim(),
+        heading: formData.heading.trim() || null,
+        options: validOptions,
+        created_by: user.id,
+        is_active: true,
+        show_results_publicly: formData.showPublicly
+      });
 
       if (error) throw error;
-
-      await supabase.rpc('log_audit_event', {
-        p_user_id: user.id,
-        p_action: 'poll_created',
-        p_resource_type: 'poll',
-        p_details: { title: formData.title, options_count: validOptions.length }
-      });
-
-      toast({
-        title: "Poll Created",
-        description: "New poll has been created successfully"
-      });
-
-      resetForm();
-      setIsCreateDialogOpen(false);
-      fetchPolls();
-    } catch (error) {
-      console.error('Error creating poll:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create poll",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const togglePollStatus = async (poll: Poll) => {
-    try {
-      const newStatus = !poll.is_active;
       
-      // When starting a poll, automatically make results public
-      // When stopping a poll, enable post-analysis
-      const updates: any = { is_active: newStatus };
-      if (newStatus) {
-        updates.show_results_publicly = true;
-      } else {
-        updates.show_post_analysis = true;
-      }
+      // Automatically enable voting in system settings when launching a new poll
+      await supabase
+        .from('system_settings')
+        .update({ setting_value: true })
+        .eq('setting_key', 'voting_enabled');
+
+      toast({ title: "Poll Launched", description: "Successfully created the poll and enabled voting." });
+      setFormData({ heading: "", title: "", description: "", options: ["", ""], showPublicly: true, allowMultiple: false });
+      fetchPolls();
+    } catch (e) { toast({ title: "Error", description: "Failed to create poll", variant: "destructive" }); }
+  };
+
+  const togglePollStatus = async (poll: Poll, outcome?: 'passed' | 'failed') => {
+    const newStatus = !poll.is_active;
+    const updateData: any = { 
+        is_active: newStatus,
+        show_results_publicly: newStatus ? true : poll.show_results_publicly,
+        show_post_analysis: !newStatus
+    };
+
+    if (outcome) {
+      updateData.outcome = outcome;
+    }
+
+    const { error } = await supabase.from('polls').update(updateData).eq('id', poll.id);
+
+    if (error) {
+      toast({ title: "Error", description: "Failed to update status", variant: "destructive" });
+      return;
+    }
+
+    // If starting a poll, ensure global voting is also enabled
+    if (newStatus) {
+      await supabase
+        .from('system_settings')
+        .update({ setting_value: true })
+        .eq('setting_key', 'voting_enabled');
       
-      const { error } = await supabase
-        .from('polls')
-        .update(updates)
-        .eq('id', poll.id);
-
-      if (error) throw error;
-
-      await supabase.rpc('log_audit_event', {
-        p_user_id: user?.id,
-        p_action: newStatus ? 'poll_activated' : 'poll_deactivated',
-        p_resource_type: 'poll',
-        p_resource_id: poll.id
-      });
-
-      toast({
-        title: newStatus ? "Poll Started" : "Poll Stopped",
-        description: newStatus 
-          ? `"${poll.title}" is now accepting votes` 
-          : `"${poll.title}" voting has ended and results are visible`
-      });
-
-      fetchPolls();
-    } catch (error) {
-      console.error('Error toggling poll status:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update poll status",
-        variant: "destructive"
-      });
+      // Also clear any previous outcome if restarting
+      await supabase.from('polls').update({ outcome: null }).eq('id', poll.id);
     }
+
+    fetchPolls();
+    toast({ title: newStatus ? "Poll Active" : "Poll Stopped", description: outcome ? `Resolution marked as ${outcome.toUpperCase()}` : undefined });
   };
 
-  const deletePoll = async (poll: Poll) => {
-    try {
-      const { error } = await supabase
-        .from('polls')
-        .delete()
-        .eq('id', poll.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Poll Deleted",
-        description: "Poll has been permanently deleted"
-      });
-
-      setPollToDelete(null);
-      fetchPolls();
-    } catch (error) {
-      console.error('Error deleting poll:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete poll",
-        variant: "destructive"
-      });
-    }
+  const deletePoll = async (pollId: string) => {
+    const { error } = await supabase.from('polls').delete().eq('id', pollId);
+    if (error) return toast({ title: "Error", variant: "destructive" });
+    fetchPolls();
+    setPollToDelete(null);
+    toast({ title: "Deleted Successfully" });
   };
 
-  const resetPoll = async (poll: Poll) => {
+  const resetPoll = async (pollId: string) => {
     setIsResetting(true);
-    try {
-      // Delete all votes for this poll
-      const { error } = await supabase
-        .from('poll_votes')
-        .delete()
-        .eq('poll_id', poll.id);
-
-      if (error) throw error;
-
-      await supabase.rpc('log_audit_event', {
-        p_user_id: user?.id,
-        p_action: 'poll_reset',
-        p_resource_type: 'poll',
-        p_resource_id: poll.id
-      });
-
-      toast({
-        title: "Poll Reset",
-        description: `All votes for "${poll.title}" have been cleared`
-      });
-
-      setPollToReset(null);
-      fetchPollResults(poll.id);
-    } catch (error) {
-      console.error('Error resetting poll:', error);
-      toast({
-        title: "Error",
-        description: "Failed to reset poll",
-        variant: "destructive"
-      });
-    } finally {
-      setIsResetting(false);
-    }
+    const { error } = await supabase.from('poll_votes').delete().eq('poll_id', pollId);
+    setIsResetting(false);
+    if (error) return toast({ title: "Error", variant: "destructive" });
+    fetchPollResults(pollId);
+    setPollToReset(null);
+    toast({ title: "Poll Votes Cleared" });
   };
 
   const getTotalVotes = (pollId: string) => {
-    const results = pollResults[pollId] || [];
-    return results.reduce((total, result) => total + result.count, 0);
+    return (pollResults[pollId] || []).reduce((t, r) => t + r.count, 0);
   };
 
   const openStageView = (pollId: string) => {
-    // Use poll ID as window name to ensure each poll has its own window
-    // Add timestamp to force reload if window already exists
-    const stageUrl = `/display/polls?pollId=${pollId}&t=${Date.now()}`;
-    const windowName = `poll_stage_${pollId}`;
-    console.log('Opening poll stage view at:', stageUrl, 'with window name:', windowName);
-    
-    // Try to get existing window and close it to force fresh load
-    const existingWindow = window.open('', windowName);
-    if (existingWindow && !existingWindow.closed) {
-      existingWindow.close();
-    }
-    
-    const newWindow = window.open(stageUrl, windowName, 'width=1200,height=800,fullscreen=yes');
-    if (!newWindow) {
-      toast({
-        title: "Popup Blocked",
-        description: "Please allow popups and try again, or manually navigate to /display/polls",
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Stage View Opened",
-        description: "Poll display opened in new window"
-      });
-    }
+    window.open(`/display/polls?pollId=${pollId}`, `poll_stage_${pollId}`, 'width=1200,height=800');
   };
 
   if (loading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Poll Management</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <div className="flex items-center justify-center p-20"><Clock className="animate-spin text-[#13298f] w-10 h-10" /></div>;
   }
 
-  const activePolls = polls.filter(poll => poll.is_active);
+  const activePolls = polls.filter(p => p.is_active);
+  const pastPolls = polls.filter(p => !p.is_active);
+  const totalVotesAcrossAll = Object.values(pollResults).reduce((t, r) => t + r.reduce((st, sr) => st + sr.count, 0), 0);
+  const totalPollsCount = polls.length || 1;
+  const participationRate = totalParticipants > 0 ? Math.round((totalVotesAcrossAll / (totalParticipants * totalPollsCount)) * 100) : 0;
 
   return (
-    <div className="space-y-6">
-      {/* Live Statistics for Active Polls */}
-      {activePolls.length > 0 && (
-        <div className="space-y-6">
-          <div className="text-center">
-            <h3 className="text-2xl font-bold text-slate-800 mb-2">Live Voting Statistics</h3>
-            <p className="text-slate-600">Real-time voting data for active polls</p>
-          </div>
-          {activePolls.map((poll) => (
-            <div key={poll.id} className="space-y-6">
-              <LiveVotingStats key={poll.id} pollId={poll.id} />
-              
-              {/* Post-Voting Analysis */}
-              {showPostVotingAnalysis === poll.id && (
-                <PostVotingAnalysis pollId={poll.id} pollTitle={poll.title} />
-              )}
-            </div>
-          ))}
+    <div className="space-y-12 animate-fade-in">
+      <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-6 mb-4">
+        <div className="max-w-3xl">
+          <h1 className="text-5xl font-black text-[#13298f] mb-3 font-headline">Ballot Control Center</h1>
+          <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px] ml-1 opacity-70">Overseeing active legislative resolutions and voting protocols</p>
         </div>
-      )}
+        <div className="flex gap-4">
+          <button 
+            onClick={async () => {
+              const { error } = await supabase.from('system_settings').update({ setting_value: true }).eq('setting_key', 'voting_enabled');
+              if (!error) toast({ title: "Voting Protocol Enabled", description: "All student tablets have been unfrozen." });
+            }}
+            className="px-6 py-3 bg-[#4edea3] text-[#00583b] rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-[#4edea3]/20 hover:scale-105 transition-all flex items-center gap-2"
+          >
+            <Play className="w-4 h-4" /> Force Unfreeze All
+          </button>
+        </div>
+      </header>
 
-      {/* Poll Management Interface */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Poll Management</CardTitle>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={() => resetForm()}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Poll
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>Create New Poll</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Title *</label>
-                    <Input
-                      value={formData.title}
-                      onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-                      placeholder="Enter poll title"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Description</label>
-                    <Textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                      placeholder="Optional description"
-                      rows={3}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Options *</label>
-                    {formData.options.map((option, index) => (
-                      <div key={index} className="flex items-center space-x-2 mt-2">
-                        <Input
-                          value={option}
-                          onChange={(e) => updateOption(index, e.target.value)}
-                          placeholder={`Option ${index + 1}`}
-                        />
-                        {formData.options.length > 2 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeOption(index)}
-                          >
-                            <Trash className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={addOption}
-                      className="mt-2"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Option
-                    </Button>
-                  </div>
-                  <div className="flex space-x-2 pt-4">
-                    <Button onClick={createPoll} className="flex-1">
-                      Create Poll
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => setIsCreateDialogOpen(false)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Poll</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Votes</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {polls.map((poll) => [
-                <TableRow key={poll.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{poll.title}</div>
-                      {poll.description && (
-                        <div className="text-sm text-muted-foreground mt-1">{poll.description}</div>
-                      )}
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {(Array.isArray(poll.options) ? poll.options : []).map((option: any, index: number) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {typeof option === 'string' ? option : option.text}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={poll.is_active ? "default" : "secondary"}>
-                      {poll.is_active ? "Live" : "Ended"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm font-medium">{getTotalVotes(poll.id)} votes</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex justify-end items-center gap-2">
-                      {/* Primary Action: Start/Stop Poll */}
-                      <Button
-                        variant={poll.is_active ? "destructive" : "default"}
-                        size="sm"
-                        onClick={() => togglePollStatus(poll)}
-                      >
-                        {poll.is_active ? (
-                          <>
-                            <Pause className="w-4 h-4 mr-2" />
-                            Stop
-                          </>
-                        ) : (
-                          <>
-                            <Play className="w-4 h-4 mr-2" />
-                            Start
-                          </>
-                        )}
-                      </Button>
-                      
-                      {/* View Results Button */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowDetailedResults(showDetailedResults === poll.id ? null : poll.id)}
-                      >
-                        <Eye className="w-4 h-4 mr-2" />
-                        Results
-                      </Button>
-                      
-                      {/* More Options Menu */}
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem onClick={() => openStageView(poll.id)}>
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            Open Stage Display
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem 
-                            onClick={() => setPollToReset(poll)}
-                            disabled={getTotalVotes(poll.id) === 0}
-                          >
-                            <RotateCcw className="w-4 h-4 mr-2" />
-                            Reset Poll Votes
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => setPollToDelete(poll)}
-                            className="text-destructive"
-                          >
-                            <Trash className="w-4 h-4 mr-2" />
-                            Delete Poll
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
-                </TableRow>,
-                ...(showDetailedResults === poll.id ? [
-                  <TableRow key={`${poll.id}-details`}>
-                    <TableCell colSpan={6} className="p-0">
-                      <div className="p-4 bg-gray-50/50 max-h-[600px] overflow-hidden">
-                        <DetailedPollResults 
-                          pollId={poll.id} 
-                          pollTitle={poll.title} 
-                          options={Array.isArray(poll.options) ? poll.options.map((opt: any) => 
-                            typeof opt === 'string' ? { id: opt, text: opt } : opt
-                          ) : []} 
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ] : [])
-              ]).flat()}
-            </TableBody>
-          </Table>
 
-          {polls.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <p>No polls created yet. Create your first poll to get started.</p>
+
+      {/* Main Content Layout */}
+      <section className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Creation Lateral Form */}
+        <div className="lg:col-span-4 bg-[#f2f4f6] p-8 rounded-[2.5rem] border border-[#e0e3e5] sticky top-24">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-10 h-10 bg-[#13298f] rounded-2xl flex items-center justify-center shadow-lg shadow-[#13298f]/20">
+              <Plus className="text-white w-6 h-6" />
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <h2 className="text-2xl font-black text-[#13298f] font-headline">New Poll</h2>
+          </div>
+          
+          <form className="space-y-6" onSubmit={handleCreatePoll}>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-[#757684] uppercase tracking-widest ml-1">Poll Heading</label>
+              <Input 
+                value={formData.heading}
+                onChange={e => setFormData(p => ({ ...p, heading: e.target.value }))}
+                className="w-full bg-white border-none rounded-2xl p-4 focus:ring-2 focus:ring-[#13298f]/20 text-sm shadow-sm" 
+                placeholder="e.g. Constitutional Amendment Act" 
+              />
+            </div>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!pollToDelete} onOpenChange={() => setPollToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Poll?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete "{pollToDelete?.title}"? This action cannot be undone and will permanently remove all votes.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={() => pollToDelete && deletePoll(pollToDelete)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-[#757684] uppercase tracking-widest ml-1">Poll Question</label>
+              <Textarea 
+                value={formData.title}
+                onChange={e => setFormData(p => ({ ...p, title: e.target.value }))}
+                className="w-full bg-white border-none rounded-2xl p-4 focus:ring-2 focus:ring-[#13298f]/20 text-sm shadow-sm" 
+                placeholder="What would you like to ask the participants?" 
+                rows={3} 
+              />
+            </div>
 
-      {/* Reset Poll Confirmation Dialog */}
-      <AlertDialog open={!!pollToReset} onOpenChange={() => setPollToReset(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reset Poll Votes?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete all {getTotalVotes(pollToReset?.id || '')} votes for "{pollToReset?.title}". 
-              The poll itself will remain, but all voting data will be cleared. This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isResetting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => pollToReset && resetPoll(pollToReset)}
-              disabled={isResetting}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-[#757684] uppercase tracking-widest ml-1">Options</label>
+              {formData.options.map((opt, idx) => (
+                <div key={idx} className="flex items-center gap-2 group">
+                  <input 
+                    value={opt}
+                    onChange={e => updateOption(idx, e.target.value)}
+                    className="flex-1 bg-white border-none rounded-xl px-4 py-3 text-sm shadow-sm focus:ring-2 focus:ring-[#13298f]/20" 
+                    placeholder={`Option ${idx + 1}`} 
+                  />
+                  {formData.options.length > 2 && (
+                    <button 
+                       type="button"
+                       onClick={() => removeOption(idx)}
+                       className="p-2 text-[#757684] hover:text-[#ba1a1a] opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <Trash className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button 
+                type="button" 
+                onClick={addOption}
+                className="flex items-center gap-2 text-[#13298f] text-xs font-black ml-1 hover:underline"
+              >
+                <Plus className="w-4 h-4" /> ADD ANOTHER OPTION
+              </button>
+            </div>
+
+            <div className="pt-6 border-t border-[#e0e3e5] space-y-4">
+               <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-[#191c1e]">Show Results Publicly</span>
+                  <Toggle active={formData.showPublicly} onChange={(val) => setFormData(p => ({ ...p, showPublicly: val }))} />
+               </div>
+               <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-[#191c1e]">Allow Multiple Choices</span>
+                  <Toggle active={formData.allowMultiple} onChange={(val) => setFormData(p => ({ ...p, allowMultiple: val }))} />
+               </div>
+            </div>
+
+            <button 
+              type="submit"
+              className="w-full py-4 bg-[#13298f] text-white rounded-2xl font-black text-sm shadow-xl shadow-[#13298f]/20 hover:scale-[1.02] active:scale-95 transition-all mt-4 font-headline uppercase tracking-wider"
             >
-              {isResetting ? (
-                <>
-                  <RotateCcw className="w-4 h-4 mr-2 animate-spin" />
-                  Resetting...
-                </>
-              ) : (
-                'Reset Poll'
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+               Launch Poll
+            </button>
+          </form>
+        </div>
+
+        {/* Active & Past Polls */}
+        <div className="lg:col-span-8 space-y-8">
+           {/* Active List */}
+           <div className="bg-white p-10 rounded-[3rem] shadow-sm border border-[#e0e3e5]/50">
+              <div className="flex items-center justify-between mb-10">
+                 <div>
+                    <h3 className="text-2xl font-black text-[#13298f] font-headline">Active Polls</h3>
+                    <p className="text-sm text-[#757684] font-medium opacity-80 mt-1">Real-time monitoring of live participant feedback</p>
+                 </div>
+
+              </div>
+
+              <div className="space-y-12">
+                 {activePolls.length > 0 ? activePolls.map(poll => (
+                     <PollItem 
+                        key={poll.id} 
+                        poll={poll} 
+                        results={pollResults[poll.id] || []}
+                        onToggle={(outcome?: 'passed' | 'failed') => togglePollStatus(poll, outcome)}
+                        onReset={() => setPollToReset(poll)}
+                        onDelete={() => setPollToDelete(poll)}
+                        onOpenStage={() => openStageView(poll.id)}
+                        onShowResults={() => setShowDetailedResults(showDetailedResults === poll.id ? null : poll.id)}
+                        showDetails={showDetailedResults === poll.id}
+                     />
+                 )) : (
+                    <div className="text-center py-12 bg-slate-50/50 rounded-[2rem] border-2 border-dashed border-slate-200">
+                       <Clock className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                       <p className="text-[#757684] font-bold">No active polls at the moment</p>
+                    </div>
+                 )}
+              </div>
+           </div>
+
+           {/* Past Polls Archive */}
+           <div className="bg-[#f2f4f6] p-8 rounded-[3rem]">
+              <h3 className="text-sm font-black text-[#757684] uppercase tracking-[0.2em] mb-6 px-2">Recently Completed</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 {pastPolls.slice(0, 4).map(poll => (
+                    <div 
+                       key={poll.id}
+                       onClick={() => setShowDetailedResults(poll.id)}
+                       className="bg-white p-6 rounded-[2rem] flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer group relative overflow-hidden"
+                    >
+                       {poll.outcome && (
+                         <div className={`absolute top-0 right-0 px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-bl-xl ${poll.outcome === 'passed' ? 'bg-[#4edea3] text-[#00583b]' : 'bg-[#ba1a1a] text-white'}`}>
+                           {poll.outcome}
+                         </div>
+                       )}
+                       <div className="w-12 h-12 bg-[#f7f9fb] rounded-2xl flex flex-col items-center justify-center text-[#757684] border border-[#e0e3e5]/50 group-hover:bg-[#13298f]/5 group-hover:text-[#13298f] transition-colors">
+                          <span className="text-[10px] font-black uppercase tracking-tighter leading-none">{new Date(poll.created_at).toLocaleDateString('en-US', { month: 'short' })}</span>
+                          <span className="text-xl font-black leading-tight">{new Date(poll.created_at).getDate()}</span>
+                       </div>
+                       <div className="flex-1 min-w-0">
+                          {poll.heading && <p className="text-xs font-bold text-[#13298f] mb-1">{poll.heading}</p>}
+                          <h5 className="font-bold text-sm text-[#191c1e] truncate font-headline">{poll.title}</h5>
+                          <p className="text-[10px] font-black text-[#757684] uppercase tracking-wider opacity-60">
+                             {getTotalVotes(poll.id)} Respondents • {poll.outcome ? `Verdict: ${poll.outcome.toUpperCase()}` : 'Closed'}
+                          </p>
+                       </div>
+                       <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                             <button className="p-2 text-slate-300 hover:text-slate-600">
+                                <MoreVertical className="w-4 h-4" />
+                             </button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="rounded-2xl shadow-xl border-none p-2">
+                             <DropdownMenuItem onClick={() => setPollToDelete(poll)} className="text-[#ba1a1a] rounded-xl font-bold p-3"><Trash className="w-4 h-4 mr-2" /> Delete Archive</DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => setPollToReset(poll)} className="rounded-xl font-bold p-3"><RotateCcw className="w-4 h-4 mr-2" /> Reset Results</DropdownMenuItem>
+                             <DropdownMenuSeparator />
+                             <DropdownMenuItem onClick={() => togglePollStatus(poll, 'passed')} className="text-[#00583b] rounded-xl font-bold p-3"><CheckCircle2 className="w-4 h-4 mr-2" /> Mark as Passed</DropdownMenuItem>
+                             <DropdownMenuItem onClick={() => togglePollStatus(poll, 'failed')} className="text-[#ba1a1a] rounded-xl font-bold p-3"><XCircle className="w-4 h-4 mr-2" /> Mark as Failed</DropdownMenuItem>
+                          </DropdownMenuContent>
+                       </DropdownMenu>
+                    </div>
+                 ))}
+              </div>
+           </div>
+        </div>
+      </section>
+
+      {/* Participant Tracking Asymmetric Bento */}
+      <section className="space-y-8 pb-20">
+         <div className="flex items-center gap-4">
+            <h2 className="text-3xl font-black text-[#13298f] font-headline">Participant Insights</h2>
+            <div className="h-px flex-1 bg-gradient-to-r from-[#e0e3e5] to-transparent"></div>
+         </div>
+         
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="md:col-span-2 bg-white p-10 rounded-[3rem] shadow-sm border border-[#e0e3e5]/70 relative overflow-hidden group">
+               <div className="relative z-10 flex flex-col h-full">
+                  <div className="flex justify-between items-start mb-10">
+                    <div>
+                      <h3 className="text-xl font-black text-[#13298f] font-headline mb-2">Real-time Response Heatmap</h3>
+                      <p className="text-xs font-semibold text-[#757684] opacity-70 italic">Visualizing peak voting momentum during the session</p>
+                    </div>
+                    <TrendingUp className="text-[#13298f] w-8 h-8 opacity-20" />
+                  </div>
+                  
+                  <div className="flex-1 grid grid-cols-12 gap-2 items-end min-h-[180px]">
+                     {heatmapData.map((h, i) => (
+                        <div 
+                          key={i} 
+                          className="col-span-1 bg-[#13298f]/20 hover:bg-[#13298f] transition-all rounded-t-lg group-hover:scale-y-105" 
+                          style={{ height: `${Math.max(h, 5)}%` }}
+                        ></div>
+                     ))}
+                  </div>
+                  <div className="flex justify-between mt-6 text-[10px] font-black text-[#757684] uppercase tracking-[0.2em] opacity-60">
+                     <span>2 Hours Ago</span>
+                     <span>Peak Momentum</span>
+                     <span>Current</span>
+                  </div>
+               </div>
+               <div className="absolute -right-16 -top-16 w-64 h-64 bg-[#13298f]/5 rounded-full blur-[100px] pointer-events-none"></div>
+            </div>
+
+            <div className="bg-[#13298f] text-white p-10 rounded-[3rem] shadow-2xl relative overflow-hidden group flex flex-col justify-between">
+               <div className="relative z-10">
+                  <div className="flex items-center gap-4 mb-4">
+                    <MapPin className="w-8 h-8 text-[#4edea3]" />
+                    <h3 className="font-black text-2xl font-headline italic">Participant Origin</h3>
+                  </div>
+                  <p className="text-white/60 text-sm font-medium mb-10 leading-relaxed">Top contributing delegates aggregated by geographic regional zones.</p>
+                  
+                  <div className="space-y-6">
+                     {originData.length > 0 ? originData.map((data, idx) => (
+                       <RegionStat key={idx} label={data.label} value={data.value} />
+                     )) : (
+                       <div className="py-4 text-white/40 text-xs font-bold italic">Gathering regional data...</div>
+                     )}
+                  </div>
+               </div>
+               
+               <div className="mt-12 pt-6 border-t border-white/10 relative z-10">
+                  <button className="flex items-center gap-3 font-black text-sm hover:gap-5 transition-all uppercase tracking-widest text-[#4edea3]">
+                     Full Demographics <ArrowRight className="w-4 h-4" />
+                  </button>
+               </div>
+               <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.2),_transparent_70%)]"></div>
+            </div>
+         </div>
+      </section>
+
+      {/* Overlays / Modals */}
+      <PollModals 
+        pollToDelete={pollToDelete} 
+        pollToReset={pollToReset}
+        setPollToDelete={setPollToDelete}
+        setPollToReset={setPollToReset}
+        deletePoll={deletePoll}
+        resetPoll={resetPoll}
+        isResetting={isResetting}
+        getTotalVotes={getTotalVotes}
+      />
     </div>
   );
 };
+
+/* --- Sub Components --- */
+
+const SummaryCard = ({ label, value, icon, badge, badgeColor, color }: any) => (
+  <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-[#e0e3e5]/50 hover:shadow-xl hover:scale-[1.02] transition-all group">
+    <div className="flex items-center justify-between mb-6">
+      <div className={`w-14 h-14 ${color || 'bg-[#13298f]/10 text-[#13298f]'} rounded-2xl flex items-center justify-center shadow-sm`}>
+        <span className="material-symbols-outlined text-3xl font-fill">{icon}</span>
+      </div>
+      {badge && <span className={`text-[10px] font-black ${badgeColor} px-4 py-1.5 rounded-full border border-current opacity-80 uppercase tracking-widest`}>{badge}</span>}
+    </div>
+    <div className="space-y-1">
+      <p className="text-[10px] font-black text-[#757684] uppercase tracking-[0.25em] opacity-80 mb-2 leading-none">{label}</p>
+      <h3 className="text-5xl font-black text-[#13298f] font-headline tracking-tighter leading-none">{value}</h3>
+    </div>
+  </div>
+);
+
+const PollItem = ({ poll, results, onToggle, onReset, onDelete, onOpenStage, onShowResults, showDetails }: any) => {
+  const totalVotes = results.reduce((t: number, r: any) => t + r.count, 0);
+  const options = Array.isArray(poll.options) ? poll.options : [];
+
+  return (
+    <div className="space-y-8 animate-fade-in">
+       <div className="flex flex-col md:flex-row justify-between items-start gap-8">
+          <div className="max-w-xl">
+             {poll.heading && <span className="text-[#13298f] font-bold text-xs tracking-widest uppercase mb-2 block">{poll.heading}</span>}
+             <h4 className="font-extrabold text-2xl text-[#191c1e] font-headline leading-tight">{poll.title}</h4>
+             {poll.description && <p className="text-sm text-[#757684] mt-3 font-medium opacity-80">{poll.description}</p>}
+          </div>
+          <div className="flex items-center gap-4">
+             <div className="text-right flex flex-col items-end">
+                <p className="text-[10px] font-black text-[#757684] uppercase tracking-[0.2em] mb-1">Total Votes</p>
+                <div className="flex items-center gap-2">
+                   <Users className="w-4 h-4 text-[#13298f] opacity-40" />
+                   <span className="text-2xl font-black text-[#13298f]">{totalVotes}</span>
+                </div>
+             </div>
+             
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                   <button className="w-12 h-12 rounded-2xl bg-[#f7f9fb] border border-[#e0e3e5] flex items-center justify-center text-[#757684] hover:bg-slate-50 transition-colors shadow-sm">
+                      <MoreVertical className="w-5 h-5" />
+                   </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="rounded-2xl shadow-2xl border-none p-3 w-56 space-y-1">
+                   <DropdownMenuItem onClick={onOpenStage} className="rounded-xl font-bold py-3 p-3"><ExternalLink className="w-4 h-4 mr-3" /> External Display</DropdownMenuItem>
+                   <DropdownMenuItem onClick={onShowResults} className="rounded-xl font-bold py-3 p-3"><Eye className="w-4 h-4 mr-3" /> {showDetails ? 'Hide' : 'Detailed'} Results</DropdownMenuItem>
+                   <DropdownMenuSeparator className="bg-slate-100" />
+                   <DropdownMenuItem onClick={onReset} className="rounded-xl font-bold py-3 p-3"><RotateCcw className="w-4 h-4 mr-3" /> Reset Votes</DropdownMenuItem>
+                   <DropdownMenuItem onClick={onDelete} className="text-[#ba1a1a] rounded-xl font-bold py-3 p-3"><Trash className="w-4 h-4 mr-3" /> Delete Permanently</DropdownMenuItem>
+                </DropdownMenuContent>
+             </DropdownMenu>
+
+             {poll.is_active ? (
+               <DropdownMenu>
+                 <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all bg-[#ba1a1a] text-white shadow-lg shadow-[#ba1a1a]/20 hover:scale-105">
+                       <Pause className="w-4 h-4" /> End Session
+                    </button>
+                 </DropdownMenuTrigger>
+                 <DropdownMenuContent align="end" className="rounded-2xl shadow-2xl border-none p-3 w-56 space-y-1">
+                    <div className="px-3 py-2 text-[10px] font-black text-[#757684] uppercase tracking-widest opacity-60">Declare Outcome</div>
+                    <DropdownMenuItem onClick={() => onToggle('passed')} className="text-[#00583b] bg-[#4edea3]/10 rounded-xl font-bold py-3 p-3 mb-1">
+                       <CheckCircle2 className="w-4 h-4 mr-3" /> Mark as Passed
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => onToggle('failed')} className="text-[#ba1a1a] bg-[#ba1a1a]/10 rounded-xl font-bold py-3 p-3">
+                       <XCircle className="w-4 h-4 mr-3" /> Mark as Failed
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => onToggle()} className="rounded-xl font-bold py-3 p-3">
+                       <Pause className="w-4 h-4 mr-3" /> Archive without Verdict
+                    </DropdownMenuItem>
+                 </DropdownMenuContent>
+               </DropdownMenu>
+             ) : (
+               <button 
+                  onClick={() => onToggle()}
+                  className="flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all bg-[#13298f] text-white shadow-lg shadow-[#13298f]/20 hover:scale-105"
+               >
+                  <Play className="w-4 h-4" /> Start Live
+               </button>
+             )}
+          </div>
+       </div>
+
+       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {options.map((option: any, idx: number) => {
+             const optText = typeof option === 'string' ? option : option.text;
+             const voteCount = results.find((r: any) => r.option_id === optText)?.count || 0;
+             const percent = totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+             const isTop = results.length > 0 && voteCount === Math.max(...results.map((r: any) => r.count)) && voteCount > 0;
+             
+             return (
+                <div key={idx} className={`p-6 rounded-[2rem] border transition-all ${isTop ? 'bg-[#13298f]/5 border-[#13298f]/20' : 'bg-[#f7f9fb] border-[#e0e3e5]/40'}`}>
+                   <div className="flex justify-between items-center mb-3">
+                      <span className={`text-xs font-black uppercase tracking-wider ${isTop ? 'text-[#13298f]' : 'text-[#757684]'}`}>{optText}</span>
+                      <span className={`text-xl font-black ${isTop ? 'text-[#13298f]' : 'text-slate-900'}`}>{percent}%</span>
+                   </div>
+                   <div className="h-2.5 w-full bg-slate-200/50 rounded-full overflow-hidden shadow-inner">
+                      <div className={`h-full rounded-full transition-all duration-1000 ${isTop ? 'bg-[#13298f]' : 'bg-[#13298f]/40'}`} style={{ width: `${percent}%` }}></div>
+                   </div>
+                   <p className="text-[10px] font-black text-[#757684] mt-2 opacity-60 uppercase tracking-widest">{voteCount} Votes</p>
+                </div>
+             );
+          })}
+        </div>
+
+       {showDetails && (
+          <div className="mt-8 pt-8 border-t border-slate-100 overflow-hidden animate-in slide-in-from-top duration-500">
+             <DetailedPollResults 
+                pollId={poll.id} 
+                pollTitle={poll.title} 
+                options={options.map((opt: any) => typeof opt === 'string' ? { id: opt, text: opt } : opt)} 
+                isOrganizer={true}
+             />
+          </div>
+       )}
+    </div>
+  );
+};
+
+const RegionStat = ({ label, value }: { label: string; value: number }) => (
+  <div className="space-y-3">
+     <div className="flex justify-between items-center text-xs font-black uppercase tracking-[0.2em]">
+        <span className="opacity-70">{label}</span>
+        <span className="text-[#4edea3]">{value}%</span>
+     </div>
+     <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+        <div className="h-full bg-[#4edea3] rounded-full transition-all duration-1000" style={{ width: `${value}%` }}></div>
+     </div>
+  </div>
+);
+
+const Toggle = ({ active, onChange }: { active: boolean; onChange: (v: boolean) => void }) => (
+   <button 
+     type="button"
+     onClick={() => onChange(!active)}
+     className={`w-12 h-6 rounded-full relative transition-colors duration-300 shadow-inner ${active ? 'bg-[#13298f]' : 'bg-[#e0e3e5]'}`}
+   >
+      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all duration-300 ${active ? 'left-7' : 'left-1'}`}></div>
+   </button>
+);
+
+const PollModals = ({ pollToDelete, pollToReset, setPollToDelete, setPollToReset, deletePoll, resetPoll, isResetting, getTotalVotes }: any) => (
+  <>
+    <AlertDialog open={!!pollToDelete} onOpenChange={() => setPollToDelete(null)}>
+      <AlertDialogContent className="rounded-[2.5rem] p-10 border-none shadow-2xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-2xl font-black font-headline text-[#ba1a1a]">Delete Poll Archive?</AlertDialogTitle>
+          <AlertDialogDescription className="text-[#757684] font-medium leading-relaxed mt-4">
+             Are you absolutely sure you want to delete "{pollToDelete?.title}"? This will permanently remove all historical voting data and participant analytics linked to this session.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="mt-8 gap-4">
+          <AlertDialogCancel className="rounded-2xl px-6 font-bold py-4 bg-slate-100 border-none">Cancel</AlertDialogCancel>
+          <AlertDialogAction 
+             onClick={() => deletePoll(pollToDelete.id)}
+             className="bg-[#ba1a1a] hover:bg-[#ba1a1a]/90 rounded-2xl px-8 font-black py-4 uppercase tracking-widest text-xs"
+          >
+            Confirm Delete
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+
+    <AlertDialog open={!!pollToReset} onOpenChange={() => setPollToReset(null)}>
+      <AlertDialogContent className="rounded-[2.5rem] p-10 border-none shadow-2xl">
+        <AlertDialogHeader>
+          <AlertDialogTitle className="text-2xl font-black font-headline">Reset Voting Ledger?</AlertDialogTitle>
+          <AlertDialogDescription className="text-[#757684] font-medium leading-relaxed mt-4">
+             This will wipe all {getTotalVotes(pollToReset?.id)} registered votes for "{pollToReset?.title}". Use this if there was a testing error or if you wish to restart the identical poll for a new session.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter className="mt-8 gap-4">
+          <AlertDialogCancel disabled={isResetting} className="rounded-2xl px-6 font-bold py-4 bg-slate-100 border-none">Cancel</AlertDialogCancel>
+          <AlertDialogAction 
+            onClick={() => resetPoll(pollToReset.id)}
+            disabled={isResetting}
+            className="bg-[#13298f] hover:bg-[#13298f]/90 rounded-2xl px-8 font-black py-4 uppercase tracking-widest text-xs"
+          >
+            {isResetting ? 'Clearing...' : 'Wipe Data'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
+);

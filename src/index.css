@@ -21,111 +21,132 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 33% 98.4%;
+    --foreground: 200 12% 10.6%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 200 12% 10.6%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 200 12% 10.6%;
 
-    /* Indian Tricolor Theme - Saffron Orange Primary */
-    --primary: 23 94% 55%;
-    --primary-foreground: 0 0% 100%;
-    --primary-glow: 30 100% 70%;
+    /* Civic Canvas: The Digital Diplomat Palette */
+    --primary: 229 76% 31.8%;
+    --on-primary: 0 0% 100%;
+    --primary-container: 231 55% 42%;
+    --on-primary-container: 232 100% 84.3%;
     
-    /* Green Secondary from Indian Flag */
-    --secondary: 138 70% 30%;
-    --secondary-foreground: 0 0% 100%;
+    --secondary: 16 90% 35.1%;
+    --on-secondary: 0 0% 100%;
+    --secondary-container: 16 94% 63.1%;
+    --on-secondary-container: 16 100% 19.4%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --tertiary: 160 100% 12.2%;
+    --on-tertiary: 0 0% 100%;
+    --tertiary-container: 160 100% 17.3%;
+    --on-tertiary-container: 160 63% 54.5%;
 
-    --accent: 138 70% 30%;
+    --surface: 210 33% 98.4%;
+    --surface-container-lowest: 0 0% 100%;
+    --surface-container-low: 210 14% 96.1%;
+    --surface-container: 210 11% 93.3%;
+    --surface-container-high: 210 7% 91%;
+    --surface-container-highest: 210 5% 88.6%;
+
+    --muted: 210 11% 93.3%;
+    --muted-foreground: 227 9% 30%;
+
+    --accent: 231 55% 42%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 23 94% 55%;
+    --border: 210 7% 91%;
+    --input: 210 7% 91%;
+    --ring: 229 76% 31.8%;
 
-    --radius: 0.75rem;
+    --outline: 231 7% 48.6%;
+    --outline-variant: 240 15% 83.1%;
 
-    /* Government & Parliamentary Theme Colors */
-    --parliament-blue: 220 50% 25%;
+    --radius: 1.5rem; /* More premium, larger radius */
+
+    /* Shadows & Effects */
+    --shadow-primary: 229 76% 31.8% / 0.06;
+    --shadow-glow: 229 76% 31.8% / 0.15;
+    --shadow-elevated: 229 76% 31.8% / 0.1;
+    
+    /* Glassmorphism */
+    --glass-surface: 0 0% 100% / 0.7;
+    --glass-blur: 12px;
+
+    /* Legacy compatibility for components using these */
+    --parliament-blue: 229 76% 31.8%;
     --parliament-gold: 45 90% 55%;
-    --heritage-cream: 45 20% 95%;
-    --official-navy: 220 40% 15%;
-
-    /* Gradients for Impact */
-    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-glow)));
-    --gradient-hero: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--secondary)) 100%);
-    --gradient-parliament: linear-gradient(180deg, hsl(var(--heritage-cream)), hsl(var(--background)));
-
-    /* Shadows with Indian theme colors */
-    --shadow-primary: 0 10px 30px -10px hsl(var(--primary) / 0.3);
-    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.4);
-    --shadow-elevated: 0 20px 40px -12px hsl(var(--parliament-blue) / 0.25);
-
-    /* Smooth transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --heritage-cream: 210 33% 98.4%;
+    --official-navy: 229 76% 20%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 230 25% 8%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 4.9%;
+    --card: 230 25% 10%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 4.9%;
+    --popover: 230 25% 10%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 23 94% 65%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    /* Civic Canvas Dark Palette */
+    --primary: 229 100% 75%;
+    --on-primary: 230 25% 8%;
+    --primary-container: 229 76% 31.8%;
+    --on-primary-container: 229 100% 90%;
 
-    --secondary: 138 50% 40%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 16 100% 70%;
+    --on-secondary: 230 25% 8%;
+    --secondary-container: 16 90% 35.1%;
+    --on-secondary-container: 16 100% 90%;
 
-    --muted: 217.2 32.6% 17.5%;
+    --tertiary: 160 80% 60%;
+    --on-tertiary: 230 25% 8%;
+    --tertiary-container: 160 100% 12.2%;
+    --on-tertiary-container: 160 100% 90%;
+
+    --surface: 230 25% 8%;
+    --surface-container-lowest: 230 25% 6%;
+    --surface-container-low: 230 25% 10%;
+    --surface-container: 230 25% 12%;
+    --surface-container-high: 230 25% 15%;
+    --surface-container-highest: 230 25% 20%;
+
+    --muted: 230 15% 20%;
     --muted-foreground: 215 20.2% 65.1%;
 
-    --accent: 138 50% 40%;
+    --accent: 229 76% 31.8%;
     --accent-foreground: 210 40% 98%;
 
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 23 94% 65%;
+    --border: 230 15% 20%;
+    --input: 230 15% 20%;
+    --ring: 229 100% 75%;
     
-    --sidebar-background: 240 5.9% 10%;
+    --sidebar-background: 230 25% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-primary: 229 100% 75%;
+    --sidebar-primary-foreground: 230 25% 8%;
+    --sidebar-accent: 230 25% 15%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-border: 230 15% 20%;
+    --sidebar-ring: 229 100% 75%;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-none;
   }
 
   body {

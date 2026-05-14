@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Calendar, Plus, GripVertical, Play, Pause, Square, CheckCircle, BarChart, Clock, ExternalLink, Eye, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { Calendar, Plus, GripVertical, Play, Pause, Square, CheckCircle, BarChart, Clock, ExternalLink, Eye, Pencil, Trash2, RotateCcw, Bell, Landmark, Users, Gavel, ClipboardCheck, Search, Info, Trash, Edit, ChevronDown, Check, Activity, ListChecks, PlayCircle } from "lucide-react";
 import { SessionSubItems } from "./SessionSubItems";
 import { SortableSessionItem } from "./SortableSessionItem";
 import { toast } from "@/hooks/use-toast";
@@ -72,6 +72,12 @@ interface Poll {
   show_results_publicly: boolean;
 }
 
+interface Stats {
+  student_count: number;
+  jury_count: number;
+  assessment_count: number;
+}
+
 export const SessionManagement = () => {
   const { user } = useAuth();
   const { hasRole } = useUserRole(user?.id);
@@ -82,6 +88,7 @@ export const SessionManagement = () => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [expandedAccordions, setExpandedAccordions] = useState<Record<string, string>>({});
+  const [stats, setStats] = useState<Stats>({ student_count: 0, jury_count: 0, assessment_count: 0 });
 
   // Form state
   const [title, setTitle] = useState("");
@@ -128,6 +135,7 @@ export const SessionManagement = () => {
     fetchSessionItems();
     fetchAvailableTimers();
     fetchAvailablePolls();
+    fetchStats();
 
     const subscription = supabase
       .channel('session_management_changes')
@@ -230,6 +238,33 @@ export const SessionManagement = () => {
       setAvailablePolls(data as Poll[]);
     } catch (error) {
       console.error('Error fetching polls:', error);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const { data: students } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'student');
+      const { data: jury } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'jury');
+      const { data: assessments } = await supabase.from('assessments').select('id', { count: 'exact', head: true });
+      
+      setStats({
+        student_count: students?.length || 0, // Fallback if count is not available directly
+        jury_count: jury?.length || 0,
+        assessment_count: assessments?.length || 0,
+      });
+
+      // Better way to get counts if the above doesn't work well
+      const { count: sCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'student');
+      const { count: jCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'jury');
+      const { count: aCount } = await supabase.from('assessments').select('*', { count: 'exact', head: true });
+      
+      setStats({
+        student_count: sCount || 0,
+        jury_count: jCount || 0,
+        assessment_count: aCount || 0,
+      });
+    } catch (e) {
+      console.error('Error fetching stats:', e);
     }
   };
 
@@ -633,158 +668,73 @@ export const SessionManagement = () => {
     }));
   };
 
+  const activeTimer = sessionItems.find(item => item.is_active)?.timer_id ? availableTimers.find(t => t.id === sessionItems.find(item => item.is_active)?.timer_id) : null;
+
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Session Management
-          </CardTitle>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => window.open('/display/session', '_blank')}
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              Open Display
-            </Button>
-            <Dialog open={showCreateDialog} onOpenChange={(open) => {
-              setShowCreateDialog(open);
-              if (!open) {
-                setEditingSessionId(null);
-                setTitle("");
-                setBillType("government_bill");
-                setDescription("");
-                setLinkedTimerId("");
-                setLinkedPollId("");
-              }
-            }}>
-              <DialogTrigger asChild>
-                <Button size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Session Item
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                  <DialogTitle>{editingSessionId ? 'Edit' : 'Create'} Session Item</DialogTitle>
-                  <DialogDescription>
-                    {editingSessionId ? 'Update the' : 'Add a new'} agenda item with optional timer. Polls can be linked here or individually to sub-items later.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Title *</Label>
-                    <Input
-                      id="title"
-                      placeholder="e.g., Healthcare Reform Bill 2025"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="bill-type">Type *</Label>
-                    <Select value={billType} onValueChange={setBillType}>
-                      <SelectTrigger id="bill-type">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="government_bill">Government Bill</SelectItem>
-                        <SelectItem value="private_member_bill">Private Member Bill</SelectItem>
-                        <SelectItem value="committee_report">Committee Report</SelectItem>
-                        <SelectItem value="question_hour">Question Hour</SelectItem>
-                        <SelectItem value="general_discussion">General Discussion</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea
-                      id="description"
-                      placeholder="Brief description of the session item"
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="timer">Link Timer (Optional)</Label>
-                      <Select value={linkedTimerId || "none"} onValueChange={(val) => setLinkedTimerId(val === "none" ? "" : val)}>
-                        <SelectTrigger id="timer">
-                          <SelectValue placeholder="Select a timer" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No Timer</SelectItem>
-                          {availableTimers.map(timer => (
-                            <SelectItem key={timer.id} value={timer.id}>
-                              {timer.title} ({formatTime(timer.duration_seconds)})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="poll">Link Poll (Optional)</Label>
-                      <Select value={linkedPollId || "none"} onValueChange={(val) => setLinkedPollId(val === "none" ? "" : val)}>
-                        <SelectTrigger id="poll">
-                          <SelectValue placeholder="Select a poll" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">No Poll</SelectItem>
-                          {availablePolls.map(poll => (
-                            <SelectItem key={poll.id} value={poll.id}>
-                              {poll.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-xs text-muted-foreground">
-                        Tip: Select "No Poll" for parent sessions. Link individual polls to sub-items after creation.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button onClick={handleCreateSession} disabled={loading}>
-                    {editingSessionId ? 'Update' : 'Create'} Session Item
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+    <div className="space-y-12 pb-20 animate-in fade-in duration-700">
+      {/* Header Section */}
+      <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-6 mb-4">
+        <div className="max-w-3xl">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#6ffbbe] text-[#002113] rounded-full text-[10px] font-black uppercase tracking-widest mb-6 shadow-sm shadow-[#6ffbbe]/20">
+            <span className="w-2 h-2 rounded-full bg-[#005236] animate-pulse"></span>
+            ACTIVE SESSION: MONSOON SUMMIT 2024
           </div>
-        </CardHeader>
+          <h1 className="text-5xl font-extrabold tracking-tighter text-[#191c1e] mb-3 font-headline">Session Management</h1>
+          <p className="text-[#454653] font-bold text-sm leading-relaxed max-w-2xl">
+            Orchestrate parliamentary procedures, manage live debates, and coordinate legislative timing from a single diplomat portal.
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => window.open('/display/session', '_blank')}
+            className="group flex items-center gap-3 px-6 py-3.5 bg-white text-[#13298f] border border-[#13298f]/10 rounded-2xl shadow-sm hover:shadow-md transition-all font-black uppercase tracking-widest text-[10px]"
+          >
+            <ExternalLink className="w-4 h-4 transition-transform group-hover:rotate-12" /> Open Public View
+          </button>
+          <button 
+            onClick={() => setShowCreateDialog(true)}
+            className="px-6 py-3.5 bg-gradient-to-r from-[#13298f] to-[#3042a6] text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-blue-900/20 hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Assemble Agenda Item
+          </button>
+        </div>
+      </header>
 
-        <CardContent>
-          {sessionItems.length === 0 ? (
-            <div className="text-center py-12 text-muted-foreground">
-              <Calendar className="h-12 w-12 mx-auto mb-4 opacity-20" />
-              <p className="text-lg">No session items yet</p>
-              <p className="text-sm">Create your first agenda item to get started</p>
+
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* Agenda Timeline Section */}
+        <section className="lg:col-span-8 bg-[#f2f4f6] rounded-[2.5rem] p-10 border border-slate-200/50">
+          <div className="flex justify-between items-center mb-10">
+            <h2 className="text-2xl font-black text-[#191c1e] tracking-tight">Scheduled Agenda Items</h2>
+            <div className="flex gap-2">
+              <span className="px-4 py-1.5 bg-white rounded-full text-[10px] font-black uppercase tracking-widest text-slate-500 border border-slate-100 shadow-sm">
+                {sessionItems.filter(i => i.status === 'pending').length} Remaining
+              </span>
+              <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm transition-all ${sessionItems.some(i => i.is_active) ? 'bg-[#ffdbd0] text-[#852300] border-[#ffb59f]' : 'bg-[#dee0ff] text-[#13298f] border-[#bac3ff]'}`}>
+                {sessionItems.filter(i => i.status === 'completed').length} Completed
+              </span>
             </div>
-          ) : (
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCenter}
-              onDragEnd={handleDragEnd}
-            >
-              <SortableContext
-                items={sessionItems.map((item) => item.id)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div className="space-y-4">
-                  {sessionItems.map((item) => (
+          </div>
+
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={sessionItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
+              <div className="space-y-6">
+                {sessionItems.length === 0 ? (
+                  <div className="bg-white border-2 border-dashed border-slate-100 rounded-[3rem] p-24 text-center flex flex-col items-center justify-center gap-8 group">
+                    <div className="size-28 rounded-full bg-slate-50 flex items-center justify-center text-slate-200 shadow-inner group-hover:scale-110 transition-transform">
+                      <Landmark className="w-14 h-14" />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-black text-[#191c1e]">Agenda Repository Empty</h4>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3">Scheduled sessions will appear in this timeline</p>
+                    </div>
+                  </div>
+                ) : (
+                  sessionItems.map((item, index) => (
                     <SortableSessionItem
                       key={item.id}
+                      index={index + 1}
                       item={item}
                       availableTimers={availableTimers}
                       availablePolls={availablePolls}
@@ -801,16 +751,128 @@ export const SessionManagement = () => {
                       getBillTypeBadge={getBillTypeBadge}
                       getStatusBadge={getStatusBadge}
                       formatTime={formatTime}
-                      isAdminStudent={hasRole('admin_student')}
                       getDisplayedRemaining={getDisplayedRemaining}
                     />
-                  ))}
+                  ))
+                )}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </section>
+
+        {/* Sidebar Controls & Forms */}
+        <aside className="lg:col-span-4 space-y-8">
+          {/* Procedure Control Switchboard */}
+          <div className="bg-[#13298f] text-white rounded-[2.5rem] p-10 relative overflow-hidden shadow-2xl shadow-blue-900/30">
+            <div className="relative z-10">
+              <h2 className="text-xl font-headline font-black mb-8 flex items-center gap-3">
+                <span className="material-symbols-outlined text-emerald-400">shield_with_house</span>
+                Procedure Control
+              </h2>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-4 bg-white/10 rounded-2xl hover:bg-white/15 transition-colors border border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-white/90">Automatic Transition</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-[#afb9ff]">Timed sequence flow</span>
+                  </div>
+                  <Switch defaultChecked className="data-[state=checked]:bg-[#6ffbbe]" />
                 </div>
-              </SortableContext>
-            </DndContext>
-          )}
-        </CardContent>
-      </Card>
+                <div className="flex items-center justify-between p-4 bg-white/10 rounded-2xl hover:bg-white/15 transition-colors border border-white/5">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-white/90">Member Notifications</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-[#afb9ff]">Real-time push alerts</span>
+                  </div>
+                  <Switch className="data-[state=checked]:bg-[#6ffbbe]" />
+                </div>
+              </div>
+              <button 
+                onClick={() => toast({ title: "Recess Initiated", description: "Parliamentary break active." })}
+                className="w-full mt-8 py-4 bg-white text-[#13298f] rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95 shadow-xl shadow-black/10"
+              >
+                 Immediate Recess
+              </button>
+            </div>
+            {/* Visual Flair */}
+            <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -mr-24 -mt-24 blur-3xl"></div>
+          </div>
+
+          {/* New Agenda Entry Form */}
+          <div className="bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-sm space-y-8">
+            <div className="flex items-center gap-4">
+              <div className="size-12 rounded-2xl bg-slate-50 flex items-center justify-center text-[#13298f]">
+                  <span className="material-symbols-outlined text-2xl">post_add</span>
+              </div>
+              <h3 className="text-xl font-headline font-black text-[#191c1e]">New Agenda Entry</h3>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Title of the Item</label>
+                <input 
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full bg-[#f7f9fb] border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-[#13298f]/20 transition-all placeholder:text-slate-300" 
+                  placeholder="e.g. Question Hour" 
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Type</label>
+                  <select 
+                    value={billType}
+                    onChange={(e) => setBillType(e.target.value)}
+                    className="w-full bg-[#f7f9fb] border-none rounded-2xl px-4 py-4 text-[11px] font-black uppercase tracking-widest focus:ring-2 focus:ring-[#13298f]/20"
+                  >
+                    <option value="government_bill">Govt Bill</option>
+                    <option value="private_member_bill">Private Bill</option>
+                    <option value="question_hour">Question</option>
+                    <option value="general_discussion">Discussion</option>
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Duration</label>
+                  <select className="w-full bg-[#f7f9fb] border-none rounded-2xl px-4 py-4 text-[11px] font-black uppercase tracking-widest focus:ring-2 focus:ring-[#13298f]/20">
+                    <option>15 mins</option>
+                    <option>30 mins</option>
+                    <option>1 hour</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button 
+                  onClick={() => { setTitle(""); setDescription(""); }}
+                  className="flex-1 py-4 border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all"
+                >
+                    Reset
+                </button>
+                <button 
+                  onClick={handleCreateSession}
+                  className="flex-1 py-4 bg-[#13298f] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-900/10 hover:opacity-95 active:scale-95 transition-all"
+                >
+                    Schedule
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Technical Support Mascot Card */}
+          <div className="relative bg-gradient-to-br from-[#ffdbd0] to-[#ffb59f]/40 rounded-[2.5rem] p-10 overflow-visible h-48 flex items-center border border-[#ffdbd0]">
+            <div className="relative z-10 w-3/5 space-y-3">
+              <p className="text-[#852300] font-black text-lg leading-tight font-headline">Need technical assistance?</p>
+              <button className="text-[10px] font-black text-[#ac3509] uppercase tracking-widest flex items-center gap-1.5 hover:gap-2 transition-all">
+                  Chat with Support <span className="material-symbols-outlined text-sm font-black">arrow_forward</span>
+              </button>
+            </div>
+            <img 
+              alt="YI Parliament Mascot" 
+              className="absolute -right-4 -bottom-4 w-44 h-44 object-contain drop-shadow-2x transition-transform hover:scale-105 duration-500" 
+              src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2LFH0vYk8C0j0AVVo4CRIhOniNE_ceNcIQIr5RkJeSQYGzAlDFiOjUaiaA647rvXcIn0fMwEJ-5rP2h0lHoknVI3FZCNUncpLNKV4Ydg3p5EfE8-mzp3cYWwZ6KhhZwWxrSdt2RGcQR83gZgjdxxuCteuU-VnOTPsWSup9HVrcg-c2LrgfT-UGNTACxJydHJYsPVmQZj9u4cmpAv7npVcqcLlzSkBAWd9ZnewT-KZhH5mTE202_Vhzdpvgc3Qhln7XwC6N-u6EJDC" 
+            />
+          </div>
+        </aside>
+      </div>
     </div>
   );
 };

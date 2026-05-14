@@ -29,7 +29,8 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				sans: ['Inter', 'sans-serif'],
+				sans: ['Manrope', 'Inter', 'sans-serif'],
+				display: ['Plus Jakarta Sans', 'sans-serif'],
 				serif: ['Playfair Display', 'serif'],
 			},
 			colors: {
@@ -66,6 +67,16 @@ export default {
 				card: {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
+				},
+				surface: {
+					DEFAULT: 'hsl(var(--surface))',
+					container: {
+						lowest: 'hsl(var(--surface-container-lowest))',
+						low: 'hsl(var(--surface-container-low))',
+						DEFAULT: 'hsl(var(--surface-container))',
+						high: 'hsl(var(--surface-container-high))',
+						highest: 'hsl(var(--surface-container-highest))'
+					}
 				},
 				parliament: {
 					blue: 'hsl(var(--parliament-blue))',

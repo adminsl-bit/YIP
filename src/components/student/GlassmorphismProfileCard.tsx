@@ -58,13 +58,11 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
 
       if (error) throw error;
 
-      // If no data exists, score is null, or score is 0, don't show leaderboard
       if (!data || data.final_total_score === null || data.final_total_score <= 0) {
         setLeaderboardData(null);
         return;
       }
 
-      // Only count students with scores greater than 0
       const { count } = await supabase
         .from('organizer_leaderboard')
         .select('*', { count: 'exact', head: true })
@@ -91,11 +89,11 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
   const getPositionIcon = (position: string) => {
     const pos = position.toLowerCase();
     if (pos.includes('president') || pos.includes('prime minister')) {
-      return <Crown className="w-5 h-5 text-amber-400" />;
+      return <Crown className="w-5 h-5 text-amber-500" />;
     } else if (pos.includes('speaker') || pos.includes('deputy') || pos.includes('minister') || pos.includes('ministry')) {
-      return <Gavel className="w-5 h-5 text-blue-400" />;
+      return <Gavel className="w-5 h-5 text-primary" />;
     }
-    return <Users className="w-5 h-5 text-slate-400" />;
+    return <Users className="w-5 h-5 text-on-surface-variant/60" />;
   };
 
   const getPartyColor = (partyNumber: number) => {
@@ -137,28 +135,27 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
       icon: Hash,
       label: 'Serial Number',
       value: student.serial_number.toString(),
-      color: 'bg-gray-200',
-      iconColor: 'text-gray-600'
+      color: 'bg-surface-container-highest',
+      iconColor: 'text-on-surface-variant'
     },
     {
       id: 'constituency',
       icon: Building,
       label: 'Constituency',
       value: student.constituency,
-      color: 'bg-gray-200',
-      iconColor: 'text-gray-600'
+      color: 'bg-surface-container-highest',
+      iconColor: 'text-on-surface-variant'
     },
     {
       id: 'state',
       icon: MapPin,
       label: 'State',
       value: student.state,
-      color: 'bg-gray-200',
-      iconColor: 'text-gray-600'
+      color: 'bg-surface-container-highest',
+      iconColor: 'text-on-surface-variant'
     },
   ].filter(item => item.value);
 
-  // Add leaderboard items if visible
   const leaderboardItems = settings.leaderboard_visible && leaderboardData ? [
     {
       id: 'ranking',
@@ -183,70 +180,76 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
   return (
     <div className="relative w-full max-w-sm">
       <div 
-        className={`relative flex flex-col items-center p-8 rounded-3xl border transition-all duration-500 ease-out backdrop-blur-xl bg-white shadow-2xl ${
+        className={`relative flex flex-col items-center p-6 rounded-3xl transition-all duration-500 ease-out backdrop-blur-3xl shadow-elevated ${
           isSpecialPosition(student.position, student.name)
-            ? 'border-2 border-amber-400/60 bg-gradient-to-br from-amber-50/80 to-yellow-50/80'
-            : 'border-border/20'
+            ? 'bg-gradient-to-br from-amber-50/90 to-surface-container-low/90'
+            : 'bg-surface-container-low/80'
         }`}
       >
-        {/* Avatar */}
-        <div className={`w-24 h-24 mb-4 rounded-full p-1 border-2 ${
-          isSpecialPosition(student.position, student.name) ? 'border-amber-400' : 'border-border/30'
-        }`}>
-          <div className="relative w-full h-full">
-            <Avatar className="w-full h-full">
-              <AvatarImage 
-                src={student.photo_url
-                  ? (() => {
-                      const raw = student.photo_url.includes('/file/d/')
-                        ? `https://drive.google.com/uc?export=view&id=${student.photo_url.split('/d/')[1]?.split('/')[0]}`
-                        : student.photo_url;
-                      const suffix = raw.includes('?') ? '&' : '?';
-                      return `${raw}${suffix}cb=${student.updated_at ? new Date(student.updated_at).getTime() : ''}`;
-                    })()
-                  : undefined}
-                alt={`${student.name}'s Avatar`}
-                className="object-cover"
-                referrerPolicy="no-referrer"
-                loading="lazy"
-                decoding="async"
-                onError={() => console.log('Image failed to load for:', student.name, 'URL:', student.photo_url)}
-                onLoad={() => console.log('Image loaded for:', student.name, 'URL:', student.photo_url)}
-              />
-              <AvatarFallback className={`bg-gradient-to-br ${getPartyColor(student.party_number)} text-white text-xl font-bold`}>
-                {initials}
-              </AvatarFallback>
-            </Avatar>
+        {/* Avatar Section */}
+        <div className="relative mb-4">
+          <div className={`w-32 h-32 rounded-2xl p-1.5 transition-all duration-500 ${
+            isSpecialPosition(student.position, student.name) 
+              ? 'bg-gradient-to-br from-amber-400 to-yellow-500 shadow-lg shadow-amber-500/20' 
+              : 'bg-surface-container-high'
+          }`}>
+            <div className="relative w-full h-full rounded-xl overflow-hidden bg-surface">
+              <Avatar className="w-full h-full rounded-none">
+                <AvatarImage 
+                  src={student.photo_url
+                    ? (() => {
+                        const raw = student.photo_url.includes('/file/d/')
+                          ? `https://drive.google.com/uc?export=view&id=${student.photo_url.split('/d/')[1]?.split('/')[0]}`
+                          : student.photo_url;
+                        const suffix = raw.includes('?') ? '&' : '?';
+                        return `${raw}${suffix}cb=${student.updated_at ? new Date(student.updated_at).getTime() : ''}`;
+                      })()
+                    : undefined}
+                  alt={`${student.name}'s Avatar`}
+                  className="object-cover"
+                  referrerPolicy="no-referrer"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <AvatarFallback className={`bg-gradient-to-br ${getPartyColor(student.party_number)} text-white text-2xl font-black font-headline`}>
+                  {initials}
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            
             {isSpecialPosition(student.position, student.name) && (
-              <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white shadow-lg">
-                <Crown className="w-4 h-4 text-white" />
+              <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center border-4 border-surface shadow-xl">
+                <Crown className="w-5 h-5 text-white" />
               </div>
             )}
           </div>
         </div>
 
-        {/* Name and Title */}
-        <h2 className={`text-2xl font-bold text-center ${
-          isSpecialPosition(student.position, student.name) ? 'text-amber-800' : 'text-card-foreground'
-        }`}>{student.name}</h2>
-        
-        <div className="flex items-center gap-2 mt-1 mb-2">
-          {getPositionIcon(student.position)}
-          <p className={`text-sm font-medium ${
-            isSpecialPosition(student.position, student.name) ? 'text-amber-700' : 'text-primary'
-          }`}>{student.position}</p>
+        {/* Identity Section */}
+        <div className="text-center mb-4">
+          <h2 className={`text-2xl font-headline font-black tracking-tight mb-2 ${
+            isSpecialPosition(student.position, student.name) ? 'text-amber-900' : 'text-on-surface'
+          }`}>
+            {student.name}
+          </h2>
+          
+          <div className="flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-surface-container-high/50 backdrop-blur-sm">
+            {getPositionIcon(student.position)}
+            <p className={`text-sm font-bold tracking-wide uppercase ${
+              isSpecialPosition(student.position, student.name) ? 'text-amber-700' : 'text-primary'
+            }`}>
+              {student.position}
+            </p>
+          </div>
         </div>
 
         {/* Party Badge */}
-        <div className="mb-4">
-          <PartyBadge partyNumber={student.party_number} partyName={student.party_name} size="md" />
+        <div className="mb-6 w-full flex justify-center">
+          <PartyBadge partyNumber={student.party_number} partyName={student.party_name} size="lg" />
         </div>
 
-        {/* Divider */}
-        <div className="w-1/2 h-px my-4 rounded-full bg-border" />
-
-        {/* Info Items */}
-        <div className="w-full space-y-3">
+        {/* Info Grid */}
+        <div className="w-full space-y-2">
           {allInfoItems.map((item) => (
             <InfoItem 
               key={item.id} 
@@ -257,38 +260,49 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
           ))}
           
           {settings.leaderboard_visible && loadingLeaderboard && (
-            <div className="flex items-center justify-center py-3">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+            <div className="flex items-center justify-center py-4">
+              <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
             </div>
           )}
         </div>
       </div>
       
-      {/* Background Glow */}
-      <div className="absolute inset-0 rounded-3xl -z-10 transition-all duration-500 ease-out blur-2xl opacity-30 bg-gradient-to-r from-indigo-500/50 to-purple-500/50" />
+      {/* Dynamic Background Glow */}
+      <div className={`absolute inset-0 rounded-3xl -z-10 blur-3xl opacity-20 transition-all duration-700 ${
+        isSpecialPosition(student.position, student.name)
+          ? 'bg-amber-400'
+          : 'bg-primary'
+      }`} />
     </div>
   );
 };
 
-// Sub-components
 const InfoItem = ({ item, setHoveredItem, hoveredItem }: any) => (
-  <div className="relative">
+  <div className="relative group">
     <div
-      className="flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ease-out group overflow-hidden bg-gray-100 hover:bg-gray-200"
+      className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-300 ease-out ${
+        hoveredItem === item.id ? 'bg-surface-container-highest shadow-sm' : 'bg-surface-container-high/40'
+      }`}
       onMouseEnter={() => setHoveredItem(item.id)}
       onMouseLeave={() => setHoveredItem(null)}
     >
-      <div className={`w-8 h-8 ${item.color} rounded-lg flex items-center justify-center`}>
-        <item.icon className={`w-4 h-4 ${item.iconColor}`} />
+      <div className={`w-10 h-10 ${item.color} rounded-xl flex items-center justify-center shadow-inner`}>
+        <item.icon className={`w-5 h-5 ${item.iconColor}`} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-muted-foreground">{item.label}</p>
-        <p className="text-sm font-semibold text-card-foreground truncate">{item.value}</p>
+        <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/50 mb-0.5">
+          {item.label}
+        </p>
+        <p className="text-sm font-bold text-on-surface truncate">
+          {item.value}
+        </p>
       </div>
     </div>
-    <Tooltip item={item} hoveredItem={hoveredItem} />
   </div>
 );
+
+export default GlassmorphismProfileCard;
+
 
 
 const Tooltip = ({ item, hoveredItem }: any) => (
@@ -301,5 +315,3 @@ const Tooltip = ({ item, hoveredItem }: any) => (
     <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-popover border-b border-r border-border" />
   </div>
 );
-
-export default GlassmorphismProfileCard;

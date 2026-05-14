@@ -139,18 +139,16 @@ const PollControls = ({ pollId }: { pollId: string }) => {
   if (!poll) return null;
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <Button
-        size="sm"
-        variant={poll.is_active ? "default" : "outline"}
+    <div className="flex items-center gap-3 flex-wrap">
+      <button
         onClick={handleToggleVoting}
         disabled={loading}
-        className="h-6 text-xs"
+        className={`px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${poll.is_active ? 'bg-[#1A3192] text-white shadow-lg shadow-blue-900/20' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200'}`}
       >
         {poll.is_active ? 'Close Voting' : 'Open Voting'}
-      </Button>
-      <div className="flex items-center gap-1.5">
-        <span className="text-xs text-muted-foreground">Show Results</span>
+      </button>
+      <div className="flex items-center gap-3 px-3 py-1 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700">
+        <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Public Results</span>
         <Switch
           checked={poll.show_results_publicly || false}
           onCheckedChange={handleToggleResults}
@@ -534,12 +532,9 @@ export const SessionSubItems = ({ sessionId, isSessionActive, isAdminStudent = f
         .from('polls')
         .insert({
           title: newPollTitle.trim(),
-          options: pollOptions.map((opt, index) => ({
-            id: `option_${index + 1}`,
-            text: opt.trim()
-          })),
-          is_active: false,
-          show_results_publicly: false,
+          options: pollOptions.map(opt => opt.trim()).filter(opt => opt !== ""),
+          is_active: true,
+          show_results_publicly: true,
           created_by: user.id,
         })
         .select()
@@ -614,397 +609,258 @@ export const SessionSubItems = ({ sessionId, isSessionActive, isAdminStudent = f
 
   if (subItems.length === 0) {
     return (
-      <div className="mt-2 space-y-2">
+      <div className="mt-4 p-8 border-2 border-dashed border-slate-100 dark:border-slate-800 rounded-[2rem] flex flex-col items-center justify-center text-center gap-4">
         {!isAdminStudent && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <SessionSubItemUpload sessionId={sessionId} onUploadComplete={fetchSubItems} />
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
+                <button className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-200 transition-colors">
+                  <Plus className="w-4 h-4" />
                   Add Manually
-                </Button>
+                </button>
               </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Add Sub-item</DialogTitle>
-                <DialogDescription>
-                  Add a new question, bill, or agenda item manually
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Title *</label>
-                  <Input
-                    value={newItemTitle}
-                    onChange={(e) => setNewItemTitle(e.target.value)}
-                    placeholder="Enter title"
-                    maxLength={200}
-                  />
+              <DialogContent className="rounded-[2rem] border-none shadow-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-black tracking-tight">Add Procedural Item</DialogTitle>
+                  <DialogDescription className="text-sm font-bold text-slate-400 uppercase tracking-widest">
+                    Insert a new question or agenda sub-item
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-6 py-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Title *</label>
+                    <Input
+                      value={newItemTitle}
+                      onChange={(e) => setNewItemTitle(e.target.value)}
+                      placeholder="Enter procedural title..."
+                      className="rounded-2xl border-slate-100 dark:border-slate-800 h-12 font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Context</label>
+                    <Input
+                      value={newItemDescription}
+                      onChange={(e) => setNewItemDescription(e.target.value)}
+                      placeholder="Optional brief description"
+                      className="rounded-2xl border-slate-100 dark:border-slate-800 h-12 font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Content</label>
+                    <Textarea
+                      value={newItemContent}
+                      onChange={(e) => setNewItemContent(e.target.value)}
+                      placeholder="Detailed content or body..."
+                      rows={4}
+                      className="rounded-2xl border-slate-100 dark:border-slate-800 font-bold"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium">Description</label>
-                  <Input
-                    value={newItemDescription}
-                    onChange={(e) => setNewItemDescription(e.target.value)}
-                    placeholder="Short description (optional)"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Content</label>
-                  <Textarea
-                    value={newItemContent}
-                    onChange={(e) => setNewItemContent(e.target.value)}
-                    placeholder="Detailed content (optional)"
-                    rows={4}
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleAddManual} disabled={loading}>
-                  Add Sub-item
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter className="gap-2">
+                  <button onClick={() => setShowAddDialog(false)} className="px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-colors">Cancel</button>
+                  <button onClick={handleAddManual} disabled={loading} className="px-8 py-3 bg-[#1A3192] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-900/20 active:scale-95 transition-all">Create Sub-item</button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         )}
-        <p className="text-sm text-muted-foreground">
-          {isAdminStudent ? 'No sub-items yet.' : 'No sub-items yet. Upload or add manually above.'}
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+          {isAdminStudent ? 'No detailed sub-items found' : 'No sub-items initialized for this session'}
         </p>
       </div>
     );
   }
 
   return (
-    <div className="mt-3 space-y-2">
-      <div className="flex items-center justify-between gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
+    <div className="mt-6 space-y-6">
+      <div className="flex items-center justify-between gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-slate-100 dark:border-slate-800">
+        <button
           onClick={() => setExpanded(!expanded)}
-          className="text-sm"
+          className="flex items-center gap-3 px-4 py-2 hover:bg-white dark:hover:bg-slate-700 rounded-2xl transition-all group"
         >
-          {expanded ? <ChevronUp className="h-4 w-4 mr-1" /> : <ChevronDown className="h-4 w-4 mr-1" />}
-          {subItems.length} Sub-items
-        </Button>
+          <div className={`size-8 rounded-lg flex items-center justify-center transition-transform ${expanded ? 'rotate-180 bg-slate-900 text-white' : 'bg-white dark:bg-slate-800 text-slate-400 group-hover:scale-110'}`}>
+            <ChevronDown className="w-5 h-5" />
+          </div>
+          <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest">{subItems.length} Procedural Sub-items</span>
+        </button>
+        
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
+          <button
             onClick={handleToggleGlobalVisibility}
             disabled={loading || !isSessionActive}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-sm transition-all ${globalVisibility ? 'bg-emerald-500 text-white shadow-emerald-500/20' : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-100 dark:border-slate-700'}`}
           >
-            {globalVisibility ? <Eye className="h-4 w-4 mr-2" /> : <EyeOff className="h-4 w-4 mr-2" />}
-            {globalVisibility ? "Visible" : "Hidden"}
-          </Button>
+            {globalVisibility ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+            {globalVisibility ? "Publicly Visible" : "Hidden from Public"}
+          </button>
+          
           {!isAdminStudent && (
             <>
               <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add
-                  </Button>
+                  <button className="flex items-center gap-2 px-5 py-2.5 bg-[#1A3192] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-900/10 hover:scale-105 active:scale-95 transition-all">
+                    <Plus className="w-4 h-4" />
+                    New Item
+                  </button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="rounded-[2.5rem] border-none shadow-2xl">
                   <DialogHeader>
-                    <DialogTitle>Add Sub-item</DialogTitle>
-                    <DialogDescription>
-                      Add a new question, bill, or agenda item manually
+                    <DialogTitle className="text-2xl font-black tracking-tighter">New Procedural Entry</DialogTitle>
+                    <DialogDescription className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      Add a manual agenda entry or question
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">Title *</label>
-                      <Input
-                        value={newItemTitle}
-                        onChange={(e) => setNewItemTitle(e.target.value)}
-                        placeholder="Enter title"
-                        maxLength={200}
-                      />
+                  <div className="space-y-6 py-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Entry Title</label>
+                      <Input value={newItemTitle} onChange={(e) => setNewItemTitle(e.target.value)} placeholder="Constitutional Amendment Q1" className="bg-slate-50 dark:bg-slate-800 border-none rounded-2xl h-14 font-bold" />
                     </div>
-                    <div>
-                      <label className="text-sm font-medium">Description</label>
-                      <Input
-                        value={newItemDescription}
-                        onChange={(e) => setNewItemDescription(e.target.value)}
-                        placeholder="Short description (optional)"
-                      />
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Brief Description</label>
+                      <Input value={newItemDescription} onChange={(e) => setNewItemDescription(e.target.value)} placeholder="Contextual summary..." className="bg-slate-50 dark:bg-slate-800 border-none rounded-2xl h-14 font-bold" />
                     </div>
-                    <div>
-                      <label className="text-sm font-medium">Content</label>
-                      <Textarea
-                        value={newItemContent}
-                        onChange={(e) => setNewItemContent(e.target.value)}
-                        placeholder="Detailed content (optional)"
-                        rows={4}
-                      />
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Technical Body</label>
+                      <Textarea value={newItemContent} onChange={(e) => setNewItemContent(e.target.value)} rows={4} placeholder="Full content text..." className="bg-slate-50 dark:bg-slate-800 border-none rounded-2xl font-bold" />
                     </div>
                   </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setShowAddDialog(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleAddManual} disabled={loading}>
-                      Add Sub-item
-                    </Button>
+                  <DialogFooter className="gap-3">
+                    <button onClick={() => setShowAddDialog(false)} className="px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400">Cancel</button>
+                    <button onClick={handleAddManual} disabled={loading} className="px-8 py-3 bg-[#1A3192] text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-blue-900/10">Publish Entry</button>
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
               <SessionSubItemUpload sessionId={sessionId} onUploadComplete={fetchSubItems} />
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button className="p-2.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all">
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent className="rounded-[2.5rem] border-none">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-xl font-black tracking-tight">Purge All Entries?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-sm font-bold text-slate-500 uppercase tracking-widest">
+                      This will permanently delete all {subItems.length} procedural sub-items.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="gap-3">
+                    <AlertDialogCancel className="rounded-2xl font-black text-[10px] uppercase tracking-widest">Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteAll} className="bg-rose-600 hover:bg-rose-700 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Confirm Purge</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </>
           )}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" size="sm" disabled={loading}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete All
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete all sub-items?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete all {subItems.length} sub-items. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteAll}>Delete All</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
       </div>
 
       {expanded && (
-        <div className="space-y-2 pl-2 border-l-2 border-muted">
+        <div className="grid grid-cols-1 gap-4 pl-6 border-l-2 border-slate-100 dark:border-slate-800 animate-in fade-in slide-in-from-left-4 duration-500">
           {subItems.map((item, index) => (
-            <Card key={item.id}>
-              <CardContent className="p-3">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium">{item.title}</span>
+            <div key={item.id} className="group bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-black/50 transition-all relative">
+                <div className="flex items-start justify-between gap-6">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2 flex-wrap">
+                      <span className="text-[9px] font-black text-[#1A3192] dark:text-blue-400 uppercase tracking-[0.2em] bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full">{index + 1}</span>
+                      <h5 className="text-base font-black text-slate-900 dark:text-white tracking-tight truncate">{item.title}</h5>
                       {item.is_active && (
-                        <Badge variant="default" className="text-xs">
-                          Active on Display
-                        </Badge>
-                      )}
-                      {item.poll_id && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Vote className="h-3 w-3 mr-1" />
-                          Poll Linked
-                        </Badge>
+                        <span className="px-2.5 py-1 bg-emerald-500/10 text-emerald-500 text-[8px] font-black rounded-full uppercase tracking-widest flex items-center gap-1.5">
+                          <span className="size-1 rounded-full bg-emerald-500 animate-pulse"></span>
+                          Display Active
+                        </span>
                       )}
                     </div>
-                    {item.description && (
-                      <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
-                    )}
-                    {item.poll_id && (
-                      <div className="mt-2 space-y-1">
-                        <p className="text-xs text-primary">Poll: {getPollTitle(item.poll_id)}</p>
-                        <PollControls pollId={item.poll_id} />
-                      </div>
-                    )}
+                    {item.description && <p className="text-xs font-bold text-slate-400 uppercase tracking-widest truncate">{item.description}</p>}
+                    
+                    <div className="mt-4 flex items-center gap-4">
+                      {item.poll_id ? (
+                        <div className="flex items-center gap-4 p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-700">
+                           <div className="flex flex-col">
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Bound Poll</span>
+                              <span className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[150px]">{getPollTitle(item.poll_id)}</span>
+                           </div>
+                           <PollControls pollId={item.poll_id} />
+                           {!isAdminStudent && (
+                             <button onClick={() => handleUnlinkPoll(item.id)} className="p-1.5 text-slate-400 hover:text-rose-500 transition-colors">
+                               <X className="w-4 h-4" />
+                             </button>
+                           )}
+                        </div>
+                      ) : !isAdminStudent && (
+                        <button 
+                          onClick={() => { setSelectedSubItemId(item.id); setShowPollDialog(true); }}
+                          className="flex items-center gap-2 px-4 py-2 bg-slate-50 dark:bg-slate-800 text-slate-500 rounded-xl font-bold text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-colors border border-dashed border-slate-200"
+                        >
+                          <Vote className="w-3.5 h-3.5" />
+                          Link Assessment Poll
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant={item.is_active ? "default" : "outline"}
-                      onClick={() => handleToggleSubItemActive(item.id, item.is_active)}
-                      disabled={loading || !isSessionActive}
-                      className="h-7 px-2"
-                      title={item.is_active ? "Deactivate on display" : "Activate on display"}
-                    >
-                      {item.is_active ? <Eye className="h-3 w-3 mr-1" /> : <EyeOff className="h-3 w-3 mr-1" />}
-                      <span className="text-xs">{item.is_active ? 'Active' : 'Activate'}</span>
-                    </Button>
-                    {item.poll_id ? (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleUnlinkPoll(item.id)}
-                        disabled={loading}
-                        className="h-7 px-2"
-                        title="Unlink poll"
-                      >
-                        <X className="h-3 w-3 mr-1" />
-                        <span className="text-xs">Unlink</span>
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setSelectedSubItemId(item.id);
-                          setShowPollDialog(true);
-                        }}
-                        disabled={loading}
-                        className="h-7 px-2"
-                        title="Link/Create poll"
-                      >
-                        <Link2 className="h-3 w-3 mr-1" />
-                        <span className="text-xs">Poll</span>
-                      </Button>
-                    )}
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleMoveUp(index)}
-                      disabled={index === 0 || loading}
-                      className="h-7 w-7 p-0"
-                    >
-                      <ChevronUp className="h-3 w-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleMoveDown(index)}
-                      disabled={index === subItems.length - 1 || loading}
-                      className="h-7 w-7 p-0"
-                    >
-                      <ChevronDown className="h-3 w-3" />
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          disabled={loading}
-                          className="h-7 w-7 p-0 text-destructive"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete this sub-item?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(item.id)}>Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
+                  {!isAdminStudent && (
+                    <div className="flex flex-col gap-2 shrink-0">
+                      <div className="flex gap-1.5">
+                        <button onClick={() => handleMoveUp(index)} disabled={index === 0} className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-400 hover:text-[#1A3192] disabled:opacity-30"><ChevronUp className="w-4 h-4" /></button>
+                        <button onClick={() => handleMoveDown(index)} disabled={index === subItems.length - 1} className="p-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-slate-400 hover:text-[#1A3192] disabled:opacity-30"><ChevronDown className="w-4 h-4" /></button>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <button onClick={() => handleToggleSubItemActive(item.id, item.is_active)} className={`p-2 rounded-xl transition-all ${item.is_active ? 'bg-emerald-500 text-white' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-emerald-500'}`}>
+                          {item.is_active ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                        </button>
+                        <button onClick={() => handleDelete(item.id)} className="p-2 bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-rose-500 rounded-xl"><Trash2 className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Poll Management Dialog */}
+      {/* Linked Poll Selection Dialog */}
       <Dialog open={showPollDialog} onOpenChange={setShowPollDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="rounded-[2.5rem] border-none shadow-2xl max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Link or Create Poll</DialogTitle>
-            <DialogDescription>
-              Link an existing poll or create a new one for this sub-item
+            <DialogTitle className="text-2xl font-black tracking-tight">Parliamentary Assessment</DialogTitle>
+            <DialogDescription className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              Link an existing poll or define one for this entry
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="space-y-6">
-            {/* Link Existing Poll */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Link Existing Poll</h3>
-              <Select onValueChange={handleLinkExistingPoll} disabled={loading}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a poll to link" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availablePolls.map((poll) => (
-                    <SelectItem key={poll.id} value={poll.id}>
-                      {poll.title} {poll.is_active && "(Active)"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Or</span>
-              </div>
-            </div>
-
-            {/* Create New Poll */}
+          <div className="grid grid-cols-2 gap-8 py-6">
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold">Create New Poll</h3>
-              <div>
-                <label className="text-sm font-medium">Poll Question *</label>
-                <Input
-                  value={newPollTitle}
-                  onChange={(e) => setNewPollTitle(e.target.value)}
-                  placeholder="Enter poll question"
-                />
+              <h6 className="text-[10px] font-black text-[#1A3192] uppercase tracking-[0.2em]">Select Portfolio Poll</h6>
+              <div className="max-h-60 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+                {availablePolls.map(p => (
+                  <button key={p.id} onClick={() => handleLinkExistingPoll(p.id)} className="w-full text-left p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 group transition-all">
+                    <p className="text-xs font-black text-slate-900 dark:text-white group-hover:text-[#1A3192] transition-colors">{p.title}</p>
+                  </button>
+                ))}
               </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Poll Options</label>
-                <div className="space-y-2">
-                  {pollOptions.map((option, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <Input
-                        value={option}
-                        onChange={(e) => {
-                          const newOptions = [...pollOptions];
-                          newOptions[idx] = e.target.value;
-                          setPollOptions(newOptions);
-                        }}
-                        placeholder={`Option ${idx + 1}`}
-                      />
-                      {pollOptions.length > 2 && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setPollOptions(pollOptions.filter((_, i) => i !== idx));
-                          }}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+            </div>
+
+            <div className="space-y-4 border-l border-slate-100 dark:border-slate-800 pl-8">
+              <h6 className="text-[10px] font-black text-emerald-600 uppercase tracking-[0.2em]">Deploy Custom Poll</h6>
+              <div className="space-y-4">
+                <Input value={newPollTitle} onChange={(e) => setNewPollTitle(e.target.value)} placeholder="Assessment Title..." className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl h-12 font-bold" />
+                <div className="flex flex-wrap gap-2">
+                  {pollOptions.map((opt, i) => (
+                    <span key={i} className="px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-[9px] font-black text-slate-500">{opt}</span>
                   ))}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setPollOptions([...pollOptions, ""])}
-                    disabled={pollOptions.length >= 6}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Option
-                  </Button>
                 </div>
+                <button 
+                  onClick={handleCreateAndLinkPoll}
+                  disabled={loading || !newPollTitle}
+                  className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-emerald-500/20 active:scale-95 transition-all"
+                >
+                  Create & Link
+                </button>
               </div>
             </div>
           </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => {
-              setShowPollDialog(false);
-              setSelectedSubItemId(null);
-              setNewPollTitle("");
-              setPollOptions(["Yes", "No", "Abstain"]);
-            }}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreateAndLinkPoll} disabled={loading || !newPollTitle.trim()}>
-              Create & Link Poll
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

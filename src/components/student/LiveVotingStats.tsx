@@ -204,18 +204,22 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
 
   if (loading) {
     return (
-      <Card className="bg-white/15 backdrop-blur-lg border border-white/25 shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg">
-              <TrendingUp className="w-5 h-5 text-white" />
+      <Card className="bg-surface-container-lowest border-none shadow-elevated rounded-[1.5rem] overflow-hidden">
+        <CardHeader className="p-8 pb-4">
+          <CardTitle className="flex items-center gap-4 font-headline text-2xl tracking-tight text-on-surface">
+            <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-container rounded-[0.75rem] flex items-center justify-center shadow-primary">
+              <TrendingUp className="w-6 h-6 text-on-primary" />
             </div>
             Live Voting Statistics
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-10 w-10 border-4 border-green-500 border-t-transparent shadow-lg"></div>
+        <CardContent className="p-8 pt-4">
+          <div className="flex flex-col items-center justify-center h-48 gap-4">
+            <div className="relative w-12 h-12">
+              <div className="absolute inset-0 rounded-full border-4 border-primary/20"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+            </div>
+            <p className="font-body text-on-surface-variant animate-pulse">Syncing with the assembly...</p>
           </div>
         </CardContent>
       </Card>
@@ -233,15 +237,15 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
 
   if (!isPublic) {
     return (
-      <Card className="bg-white/15 backdrop-blur-lg border border-white/25 shadow-xl">
-        <CardContent className="p-6">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-gradient-to-br from-slate-400 to-slate-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <TrendingUp className="w-8 h-8 text-white" />
+      <Card className="bg-surface-container-lowest border-none shadow-elevated rounded-[1.5rem] overflow-hidden">
+        <CardContent className="p-12">
+          <div className="text-center max-w-sm mx-auto">
+            <div className="w-20 h-20 bg-surface-container-high rounded-[1rem] flex items-center justify-center mx-auto mb-6 shadow-sm">
+              <TrendingUp className="w-10 h-10 text-on-surface-variant opacity-40" />
             </div>
-            <h4 className="text-lg font-semibold text-slate-700 mb-2">Results Hidden</h4>
-            <p className="text-slate-600">
-              Poll results will be revealed when the organizer makes them public.
+            <h4 className="font-headline text-2xl font-bold text-on-surface mb-3 tracking-tight">Results are Sealed</h4>
+            <p className="font-body text-on-surface-variant leading-relaxed">
+              The poll results are currently private. They will be revealed once the House Organizer makes them public.
             </p>
           </div>
         </CardContent>
@@ -252,26 +256,28 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
   const totalVoted = Object.values(stats.customOptions || {}).reduce((sum, count) => sum + count, 0);
 
   return (
-    <Card className={`bg-white/15 backdrop-blur-lg border border-white/25 shadow-xl transition-all duration-300 ${isLive ? 'ring-2 ring-green-400 shadow-green-400/20' : ''}`}>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg">
-              <TrendingUp className="w-5 h-5 text-white" />
+    <Card className={`bg-surface-container-lowest border-none shadow-elevated rounded-[1.5rem] overflow-hidden transition-all duration-500 ${isLive ? 'ring-2 ring-primary/20 shadow-glow' : ''}`}>
+      <CardHeader className="p-8 pb-0">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <CardTitle className="flex items-center gap-4 font-headline text-2xl tracking-tight text-on-surface">
+            <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-container rounded-[0.75rem] flex items-center justify-center shadow-primary">
+              <TrendingUp className="w-6 h-6 text-on-primary" />
             </div>
-            Live Voting Statistics
+            <span className="hidden sm:inline">Live Voting Statistics</span>
+            <span className="sm:hidden text-xl">Live Stats</span>
             {isLive && (
               <motion.div
-                initial={{ scale: 0, opacity: 0 }}
+                initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                className="px-2 py-1 bg-green-500 text-white text-xs rounded-full font-bold"
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="px-3 py-1 bg-tertiary/10 text-tertiary text-[10px] uppercase tracking-widest rounded-full font-black border border-tertiary/20 flex items-center gap-1.5"
               >
-                LIVE
+                <div className="w-1.5 h-1.5 bg-tertiary rounded-full animate-pulse"></div>
+                Live
               </motion.div>
             )}
           </CardTitle>
-          <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+          <Badge className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant border-none px-4 py-1.5 rounded-full font-body font-medium transition-colors">
             {poll.title}
           </Badge>
         </div>
@@ -279,73 +285,75 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
       
       <CardContent className="space-y-6">
         {/* Overall Participation */}
-        <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-bold text-slate-800 flex items-center gap-2">
-              <Users className="w-4 h-4" />
+        <div className="bg-surface-container-low rounded-[1.25rem] p-6 border-none">
+          <div className="flex items-center justify-between mb-6">
+            <h4 className="font-headline text-lg font-bold text-on-surface flex items-center gap-2.5">
+              <Users className="w-5 h-5 text-primary" />
               Participation Overview
             </h4>
-            <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold">
+            <div className="px-3 py-1 bg-primary/10 text-primary text-sm font-black rounded-full border border-primary/20">
               {stats.participationRate.toFixed(1)}%
-            </Badge>
-          </div>
-          
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-            <div className="text-center">
-              <div className="text-2xl font-black text-slate-800">{stats.totalEligibleVoters}</div>
-              <div className="text-sm text-slate-600">Total Students</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-black text-emerald-600">{totalVoted}</div>
-              <div className="text-sm text-slate-600">Have Voted</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-black text-orange-600">{stats.notVoted}</div>
-              <div className="text-sm text-slate-600">Not Voted</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-black text-blue-600">{stats.participationRate.toFixed(1)}%</div>
-              <div className="text-sm text-slate-600">Participation</div>
             </div>
           </div>
           
-          <Progress 
-            value={stats.participationRate} 
-            className="h-3 bg-white/30"
-          />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="space-y-1">
+              <div className="text-sm font-body font-medium text-on-surface-variant">Total Eligible</div>
+              <div className="text-3xl font-headline font-black text-on-surface tracking-tighter">{stats.totalEligibleVoters}</div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-sm font-body font-medium text-on-surface-variant">Votes Cast</div>
+              <div className="text-3xl font-headline font-black text-tertiary tracking-tighter">{totalVoted}</div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-sm font-body font-medium text-on-surface-variant">Pending</div>
+              <div className="text-3xl font-headline font-black text-secondary tracking-tighter">{stats.notVoted}</div>
+            </div>
+            <div className="space-y-1">
+              <div className="text-sm font-body font-medium text-on-surface-variant">Rate</div>
+              <div className="text-3xl font-headline font-black text-primary tracking-tighter">{stats.participationRate.toFixed(1)}%</div>
+            </div>
+          </div>
+          
+          <div className="relative h-3 w-full bg-surface-container-high rounded-full overflow-hidden">
+            <motion.div 
+              initial={{ width: 0 }}
+              animate={{ width: `${stats.participationRate}%` }}
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-primary-container"
+            />
+          </div>
         </div>
 
         {/* Vote Summary Cards */}
-        <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 border border-white/30">
-          <h4 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
-            <CheckCircle className="w-4 h-4" />
+        <div className="bg-surface-container-low rounded-[1.25rem] p-6 border-none">
+          <h4 className="font-headline text-lg font-bold text-on-surface flex items-center gap-2.5 mb-6">
+            <CheckCircle className="w-5 h-5 text-tertiary" />
             Vote Distribution Summary
           </h4>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {poll && Array.isArray(poll.options) && poll.options.map((option: any, index: number) => {
               const optionKey = typeof option === 'string' ? option : option.id;
               const optionText = typeof option === 'string' ? option : option.text;
               const voteCount = stats.customOptions?.[optionKey] || 0;
               const percentageOfTotal = stats.totalEligibleVoters > 0 ? (voteCount / stats.totalEligibleVoters) * 100 : 0;
               
-              const colors = [
-                { bg: "bg-green-500", light: "bg-green-100", text: "text-green-800" },
-                { bg: "bg-blue-500", light: "bg-blue-100", text: "text-blue-800" },
-                { bg: "bg-purple-500", light: "bg-purple-100", text: "text-purple-800" },
-                { bg: "bg-orange-500", light: "bg-orange-100", text: "text-orange-800" },
-                { bg: "bg-pink-500", light: "bg-pink-100", text: "text-pink-800" }
+              const colorSets = [
+                { bg: "bg-primary/10", icon: "bg-primary", text: "text-primary", border: "border-primary/20" },
+                { bg: "bg-tertiary/10", icon: "bg-tertiary", text: "text-tertiary", border: "border-tertiary/20" },
+                { bg: "bg-secondary/10", icon: "bg-secondary", text: "text-secondary", border: "border-secondary/20" },
+                { bg: "bg-on-surface-variant/10", icon: "bg-on-surface-variant", text: "text-on-surface-variant", border: "border-on-surface-variant/20" },
               ];
-              const color = colors[index % colors.length];
+              const colors = colorSets[index % colorSets.length];
               
               return (
-                <div key={optionKey} className={`${color.light} rounded-lg p-3 text-center`}>
-                  <div className={`w-12 h-12 ${color.bg} rounded-full flex items-center justify-center mx-auto mb-2`}>
-                    <span className="text-white font-bold text-lg">{voteCount}</span>
+                <div key={optionKey} className={`${colors.bg} rounded-[1rem] p-5 flex flex-col items-center border ${colors.border} transition-transform hover:scale-[1.02]`}>
+                  <div className={`w-14 h-14 ${colors.icon} rounded-full flex items-center justify-center mb-3 shadow-sm`}>
+                    <span className="text-on-primary font-headline font-black text-xl">{voteCount}</span>
                   </div>
-                  <div className={`font-bold ${color.text} capitalize mb-1`}>{optionText}</div>
-                  <div className="text-sm text-gray-600">
-                    {percentageOfTotal.toFixed(1)}% of all students
+                  <div className={`font-headline font-bold ${colors.text} text-center capitalize mb-1 truncate w-full`}>{optionText}</div>
+                  <div className="text-xs font-body font-medium text-on-surface-variant opacity-70">
+                    {percentageOfTotal.toFixed(1)}% of students
                   </div>
                 </div>
               );
@@ -354,70 +362,67 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
         </div>
 
         {/* Vote Breakdown by Option */}
-        <div className="space-y-4">
-          <h4 className="font-bold text-slate-800 flex items-center gap-2 mb-4">
-            <TrendingUp className="w-4 h-4" />
-            Detailed Vote Results
+        <div className="space-y-6">
+          <h4 className="font-headline text-lg font-bold text-on-surface flex items-center gap-2.5">
+            <TrendingUp className="w-5 h-5 text-primary" />
+            Detailed Breakdown
           </h4>
           
           <AnimatePresence>
-            {/* Dynamic Options - Show vote count and percentage of total votes */}
-            {poll && Array.isArray(poll.options) && poll.options.map((option: any, index: number) => {
-              const optionKey = typeof option === 'string' ? option : option.id;
-              const optionText = typeof option === 'string' ? option : option.text;
-              const voteCount = stats.customOptions?.[optionKey] || 0;
-              const percentageOfVotes = totalVoted > 0 ? (voteCount / totalVoted) * 100 : 0;
-              const percentageOfTotal = stats.totalEligibleVoters > 0 ? (voteCount / stats.totalEligibleVoters) * 100 : 0;
-              
-              // Choose colors based on index
-              const colorClasses = [
-                { bg: "bg-green-50/50", border: "border-green-200/50", icon: "bg-green-500", text: "text-green-800", count: "text-green-700", percent: "text-green-600", progress: "bg-green-100" },
-                { bg: "bg-blue-50/50", border: "border-blue-200/50", icon: "bg-blue-500", text: "text-blue-800", count: "text-blue-700", percent: "text-blue-600", progress: "bg-blue-100" },
-                { bg: "bg-purple-50/50", border: "border-purple-200/50", icon: "bg-purple-500", text: "text-purple-800", count: "text-purple-700", percent: "text-purple-600", progress: "bg-purple-100" },
-                { bg: "bg-orange-50/50", border: "border-orange-200/50", icon: "bg-orange-500", text: "text-orange-800", count: "text-orange-700", percent: "text-orange-600", progress: "bg-orange-100" },
-                { bg: "bg-pink-50/50", border: "border-pink-200/50", icon: "bg-pink-500", text: "text-pink-800", count: "text-pink-700", percent: "text-pink-600", progress: "bg-pink-100" }
-              ];
-              const colors = colorClasses[index % colorClasses.length];
-              
-              return (
-                <motion.div 
-                  key={`option-${index}`}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className={`${colors.bg} backdrop-blur-sm rounded-xl p-4 border ${colors.border}`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 ${colors.icon} rounded-lg flex items-center justify-center`}>
-                        <CheckCircle className="w-4 h-4 text-white" />
-                      </div>
-                      <span className={`font-bold ${colors.text}`}>{optionText}</span>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-2xl font-black ${colors.count}`}>{voteCount}</div>
-                      <div className={`text-xs ${colors.percent}`}>
-                        {percentageOfVotes.toFixed(1)}% of votes
-                      </div>
-                      <div className={`text-xs ${colors.percent} opacity-75`}>
-                        {percentageOfTotal.toFixed(1)}% of students
+            <div className="space-y-4">
+              {poll && Array.isArray(poll.options) && poll.options.map((option: any, index: number) => {
+                const optionKey = typeof option === 'string' ? option : option.id;
+                const optionText = typeof option === 'string' ? option : option.text;
+                const voteCount = stats.customOptions?.[optionKey] || 0;
+                const percentageOfVotes = totalVoted > 0 ? (voteCount / totalVoted) * 100 : 0;
+                
+                const barColors = [
+                  "bg-primary",
+                  "bg-tertiary",
+                  "bg-secondary",
+                  "bg-on-surface-variant",
+                ];
+                const color = barColors[index % barColors.length];
+                
+                return (
+                  <motion.div 
+                    key={`option-${index}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="space-y-2"
+                  >
+                    <div className="flex items-center justify-between font-body text-sm">
+                      <span className="font-bold text-on-surface flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${color}`} />
+                        {optionText}
+                      </span>
+                      <div className="space-x-2">
+                        <span className="font-black text-on-surface">{voteCount} votes</span>
+                        <span className="text-on-surface-variant opacity-60">({percentageOfVotes.toFixed(1)}%)</span>
                       </div>
                     </div>
-                  </div>
-                  <Progress 
-                    value={percentageOfVotes} 
-                    className={`h-2 ${colors.progress}`}
-                  />
-                </motion.div>
-              );
-            })}
+                    <div className="relative h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${percentageOfVotes}%` }}
+                        className={`absolute top-0 left-0 h-full ${color}`}
+                      />
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
           </AnimatePresence>
         </div>
 
         {/* Real-time indicator */}
-        <div className="flex items-center justify-center gap-2 text-sm text-slate-600 bg-white/10 rounded-lg p-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span>Real-time updates enabled</span>
+        <div className="flex items-center justify-center gap-2.5 py-4 border-t border-surface-container font-body text-sm text-on-surface-variant opacity-60">
+          <div className="relative flex items-center justify-center w-2.5 h-2.5">
+            <div className="absolute w-full h-full bg-tertiary rounded-full animate-ping opacity-25"></div>
+            <div className="relative w-1.5 h-1.5 bg-tertiary rounded-full"></div>
+          </div>
+          <span>Synchronized with Parliamentary Live Stream</span>
         </div>
       </CardContent>
     </Card>

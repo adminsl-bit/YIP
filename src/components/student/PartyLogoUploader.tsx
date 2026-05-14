@@ -13,14 +13,14 @@ import {
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 
-interface ProfilePhotoUploaderProps {
+interface PartyLogoUploaderProps {
   className?: string;
-  currentPhotoUrl?: string | null;
+  currentLogoUrl?: string | null;
 }
 
-export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({ 
+export const PartyLogoUploader: React.FC<PartyLogoUploaderProps> = ({ 
   className = "",
-  currentPhotoUrl 
+  currentLogoUrl 
 }) => {
   const { user, refreshProfile } = useAuth();
   const { toast } = useToast();
@@ -78,30 +78,21 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       if (!ctx) return;
 
       const img = imgRef.current;
-      const rect = img.getBoundingClientRect();
       
-      // Calculate how much of the original image is within the circular mask (centered)
-      // The mask is 320px in the UI, we want to map that to our 400px canvas
       const scale = size / 320; 
-      
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = "high";
 
-      // We remove the circular clip here so the full square is saved.
-      // This prevents black corners when saved as JPEG and allows the 
-      // dashboard's CSS to handle the final display shape.
+      // Save as a full square to prevent black backgrounds/corners
+      // The dashboard UI handles the rounded corners via CSS
 
-      // We need to draw the image centered and scaled
-      // Initial centered position in 320px container
       const containerSize = 320;
-      // baseScale makes the image fill the 320px container
       const baseScale = Math.max(containerSize / img.naturalWidth, containerSize / img.naturalHeight);
       const currentScale = baseScale * zoom;
       
       const drawWidth = img.naturalWidth * currentScale * scale;
       const drawHeight = img.naturalHeight * currentScale * scale;
       
-      // Center + Manual offset (position.x/y are relative to center)
       const dx = (size - drawWidth) / 2 + (position.x * scale);
       const dy = (size - drawHeight) / 2 + (position.y * scale);
 
@@ -113,7 +104,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
         const file = new File([blob], fileName.replace(/\.[^/.]+$/, "") + ".png", { type: uploadFileType });
         
         const ext = fileName.split(".").pop()?.toLowerCase() || "jpg";
-        const path = `${user.id}/profile_${Date.now()}.${ext}`;
+        const path = `${user.id}/party_logo_${Date.now()}.${ext}`;
 
         const { error: uploadError } = await supabase.storage
           .from("student-photos")
@@ -128,14 +119,14 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
         const { data } = supabase.storage.from("student-photos").getPublicUrl(path);
         const { error: updateError } = await supabase
           .from("profiles")
-          .update({ photo_url: data.publicUrl })
+          .update({ party_logo_url: data.publicUrl })
           .eq("user_id", user.id);
 
         if (updateError) throw updateError;
 
         await refreshProfile();
         setShowCropper(false);
-        toast({ title: "Photo updated", description: "Your profile picture has been cropped and updated." });
+        toast({ title: "Logo updated", description: "Your party logo has been updated." });
         setUploading(false);
       }, 'image/png');
 
@@ -162,7 +153,6 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
     const currentWidth = img.naturalWidth * currentScale;
     const currentHeight = img.naturalHeight * currentScale;
     
-    // Calculate boundaries (how much we can shift from center)
     const maxX = Math.max(0, (currentWidth - containerSize) / 2);
     const maxY = Math.max(0, (currentHeight - containerSize) / 2);
     
@@ -177,47 +167,6 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
 
   const onMouseUp = () => setIsDragging(false);
 
-  const removePhoto = async () => {
-    if (!user) {
-      toast({ title: "Not signed in", description: "Please sign in to remove your photo.", variant: "destructive" });
-      return;
-    }
-
-    try {
-      setRemoving(true);
-
-      // Clear the photo_url in the profile
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ photo_url: null })
-        .eq("user_id", user.id);
-
-      if (updateError) throw updateError;
-
-      // Try to delete the file from storage (optional - file may not exist)
-      const path = `${user.id}/profile`;
-      await supabase.storage
-        .from("student-photos")
-        .remove([`${path}.jpg`, `${path}.jpeg`, `${path}.png`, `${path}.webp`]);
-
-      await refreshProfile();
-
-      toast({ 
-        title: "Photo removed", 
-        description: "Your profile picture has been removed successfully." 
-      });
-    } catch (err: any) {
-      console.error("Remove error", err);
-      toast({ 
-        title: "Remove failed", 
-        description: err?.message || "Please try again.", 
-        variant: "destructive" 
-      });
-    } finally {
-      setRemoving(false);
-    }
-  };
-
   return (
     <div className={`flex items-center gap-2 ${className}`}>
       <input
@@ -230,10 +179,10 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       <Button
         onClick={onClick}
         disabled={uploading || removing}
-        variant="default"
+        variant="ghost"
         size="icon"
-        className="w-8 h-8 rounded-full shadow-lg bg-primary hover:bg-primary/90 hover:scale-110 border-2 border-white"
-        title="Upload Photo"
+        className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm border border-slate-200 shadow-sm hover:bg-white hover:scale-110"
+        title="Upload Party Logo"
       >
         {uploading ? (
           <Upload className="w-3 h-3 animate-spin" />
@@ -241,24 +190,11 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
           <Camera className="w-3 h-3" />
         )}
       </Button>
-      
-      {currentPhotoUrl && (
-        <Button
-          onClick={removePhoto}
-          disabled={uploading || removing}
-          variant="destructive"
-          size="icon"
-          className="w-8 h-8 rounded-full shadow-lg hover:scale-110 border-2 border-white"
-          title="Remove Photo"
-        >
-          <X className="w-3 h-3" />
-        </Button>
-      )}
 
       <Dialog open={showCropper} onOpenChange={setShowCropper}>
         <DialogContent className="max-w-md bg-white p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
           <DialogHeader className="p-8 pb-0">
-            <DialogTitle className="responsive-text-xl font-black text-slate-800 tracking-tight">Adjust Profile Photo</DialogTitle>
+            <DialogTitle className="responsive-text-xl font-black text-slate-800 tracking-tight">Adjust Party Logo</DialogTitle>
           </DialogHeader>
 
           <div className="p-8 space-y-8">
@@ -269,9 +205,8 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
               onMouseUp={onMouseUp}
               onMouseLeave={onMouseUp}
             >
-              {/* Circular Mask Overlay */}
               <div className="absolute inset-0 pointer-events-none z-10 border-[40px] border-black/40">
-                <div className="w-full h-full rounded-full border-2 border-white/30 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]"></div>
+                <div className="w-full h-full rounded-[2rem] border-2 border-white/30 shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]"></div>
               </div>
 
               {imageToCrop && (
@@ -281,13 +216,10 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
                   alt="To Crop"
                   className="absolute left-1/2 top-1/2 max-w-none transition-transform duration-75"
                   style={{
-                    // base scale to cover the container (320px)
                     transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px)) scale(calc(${zoom} * max(320 / ${imgRef.current?.naturalWidth || 1}, 320 / ${imgRef.current?.naturalHeight || 1})))`,
                     transformOrigin: 'center center'
                   }}
-                  onLoad={(e) => {
-                    setPosition({ x: 0, y: 0 });
-                  }}
+                  onLoad={() => setPosition({ x: 0, y: 0 })}
                   draggable={false}
                 />
               )}
@@ -308,7 +240,6 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
                 step={0.01} 
                 onValueChange={([val]) => {
                   setZoom(val);
-                  // When zooming out, we might need to adjust position to stay within boundaries
                   setPosition(prev => {
                     if (!imgRef.current) return prev;
                     const img = imgRef.current;
@@ -341,7 +272,7 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
               onClick={handleApplyCrop}
               disabled={uploading}
             >
-              {uploading ? "Applying..." : "Save Photo"}
+              {uploading ? "Applying..." : "Save Logo"}
             </Button>
           </DialogFooter>
         </DialogContent>

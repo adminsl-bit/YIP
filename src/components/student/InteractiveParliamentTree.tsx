@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Crown, Gavel, Users, MapPin, Search, X, Filter } from 'lucide-react';
+import { Crown, Gavel, Users, MapPin, Search, X, Filter, Loader2 } from 'lucide-react';
 import GlassmorphismProfileCard from './GlassmorphismProfileCard';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSystemSettings } from '@/hooks/useSystemSettings';
@@ -26,6 +26,7 @@ interface Student {
   photo_url?: string;
   email?: string;
   user_type: string;
+  party_alignment?: string;
 }
 
 interface LeaderboardData {
@@ -102,7 +103,7 @@ const InteractiveParliamentTree = () => {
       setLoading(true);
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, user_id, name, position, party_number, party_name, serial_number, constituency, state, photo_url, email, user_type')
+        .select('id, user_id, name, position, party_number, party_name, serial_number, constituency, state, photo_url, email, user_type, party_alignment')
         .eq('user_type', 'student')
         .order('party_number')
         .order('serial_number');
@@ -266,15 +267,15 @@ const InteractiveParliamentTree = () => {
 
   if (loading) {
     return (
-      <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
-        <div className="flex items-center justify-center gap-4 mb-6">
-          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg">
-            <Users className="w-6 h-6 text-white" />
+      <div className="bg-surface-container p-8 rounded-[2.5rem] shadow-sm">
+        <div className="flex items-center justify-center gap-3 mb-8">
+          <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+            <Users className="w-6 h-6 text-primary" />
           </div>
-          <h2 className="text-2xl font-black text-slate-800">Parliament Tree</h2>
+          <h2 className="text-2xl font-headline font-black text-on-surface">Assembly is Forming</h2>
         </div>
         <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-10 w-10 border-4 border-green-500 border-t-transparent shadow-lg"></div>
+          <Loader2 className="w-10 h-10 animate-spin text-primary/30" />
         </div>
       </div>
     );
@@ -282,274 +283,263 @@ const InteractiveParliamentTree = () => {
 
   const groupedStudents = groupByParty(filteredStudents);
 
+  const speaker = filteredStudents.find(p => p.position?.toLowerCase().includes('speaker') && !p.position?.toLowerCase().includes('deputy'));
+  const deputySpeakers = filteredStudents.filter(p => p.position?.toLowerCase().includes('deputy speaker'));
+  
+  const rulingMembers = filteredStudents.filter(p => p.party_alignment === 'ruling_party');
+  const oppositionMembers = filteredStudents.filter(p => p.party_alignment === 'opposition');
+  const independentMembers = filteredStudents.filter(p => !p.party_alignment || p.party_alignment === 'non_aligned');
+
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center gap-4 mb-4">
-          <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-3xl flex items-center justify-center shadow-lg shadow-green-500/30">
-            <Users className="w-8 h-8 text-white" />
+    <div className="space-y-16 pb-20">
+      {/* Header Section */}
+      <div className="text-center mb-16 px-4">
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col items-center justify-center gap-6 mb-8"
+        >
+          <div className="space-y-4">
+            <span className="px-4 py-1.5 bg-primary/10 text-primary text-[10px] font-black rounded-full uppercase tracking-[0.3em] backdrop-blur-md border border-primary/10">
+              The Sovereign Will
+            </span>
+            <h1 className="text-5xl md:text-7xl font-headline font-black text-on-surface tracking-tight leading-none">
+              The Assembly Floor
+            </h1>
+            <p className="text-on-surface-variant/60 font-medium text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-sans">
+              Representatives of the Sovereign Will of the People
+            </p>
           </div>
-          <div className="text-center">
-            <h2 className="text-4xl font-black text-transparent bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text">
-              Parliament Tree
-            </h2>
-            {hasActiveFilters && (
-              <Badge variant="secondary" className="mt-2">
-                {filteredStudents.length} of {students.length} members
-              </Badge>
-            )}
-          </div>
-        </div>
-        <p className="text-lg text-slate-600 font-semibold mb-6 text-center">
-          Meet all parliament members organized by their respective parties
-        </p>
+        </motion.div>
         
-        {/* Search Bar */}
-        <div className="max-w-lg mx-auto mb-6">
-          <div className="flex items-center gap-3 mb-3 justify-center">
-            <Search className="w-6 h-6 text-green-600" />
-            <span className="text-lg font-bold text-slate-700">Search Parliament Members</span>
+        {/* Search & Filters (Maintain functionality) */}
+        <div className="max-w-4xl mx-auto mb-12">
+          <div className="flex flex-col gap-6">
+            <div className="relative group">
+              <div className="absolute inset-0 bg-primary/5 blur-2xl rounded-3xl -z-10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+              <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 w-5 h-5 text-on-surface-variant/40 group-focus-within:text-primary transition-colors" />
+              <Input
+                placeholder="Search the Assembly by name, position, party..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-16 pr-8 bg-surface-container-low border-none text-on-surface placeholder:text-on-surface-variant/30 focus:bg-surface-container-lowest focus:ring-4 focus:ring-primary/5 rounded-[2rem] h-20 text-xl font-bold shadow-sm transition-all"
+              />
+            </div>
+
+            <div className="flex flex-wrap gap-4 items-center justify-center">
+              <div className="flex flex-wrap gap-3 items-center justify-center">
+                <Select value={positionFilter} onValueChange={setPositionFilter}>
+                  <SelectTrigger className="w-48 bg-surface-container-low border-none rounded-2xl font-bold h-12 shadow-sm">
+                    <SelectValue placeholder="Position" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-none shadow-elevated bg-surface-container-lowest">
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="speaker">Speaker</SelectItem>
+                    <SelectItem value="deputy_speaker">Deputy Speaker</SelectItem>
+                    <SelectItem value="administrator">Administrator</SelectItem>
+                    <SelectItem value="journalist">Journalist</SelectItem>
+                    <SelectItem value="minister">Minister/Shadow Minister</SelectItem>
+                    <SelectItem value="mp">Member of Parliament</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={partyFilter} onValueChange={setPartyFilter}>
+                  <SelectTrigger className="w-48 bg-surface-container-low border-none rounded-2xl font-bold h-12 shadow-sm">
+                    <SelectValue placeholder="Party" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-none shadow-elevated bg-surface-container-lowest">
+                    <SelectItem value="all">All Parties</SelectItem>
+                    {getUniqueParties().map(party => {
+                      const partyLetter = ['No Party', 'A', 'B', 'C', 'D', 'E'][party] || party;
+                      const partyName = students.find(s => s.party_number === party)?.party_name;
+                      return (
+                        <SelectItem key={party} value={party.toString()}>
+                          {partyName ? `${partyName} (${partyLetter})` : `Party ${partyLetter}`}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+
+                <Select value={stateFilter} onValueChange={setStateFilter}>
+                  <SelectTrigger className="w-48 bg-surface-container-low border-none rounded-2xl font-bold h-12 shadow-sm">
+                    <SelectValue placeholder="State" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-none shadow-elevated bg-surface-container-lowest">
+                    <SelectItem value="all">All States</SelectItem>
+                    {getUniqueStates().map(state => (
+                      <SelectItem key={state} value={state!}>
+                        {state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {hasActiveFilters && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearAllFilters}
+                    className="flex items-center gap-2 text-primary hover:bg-primary/5 font-bold rounded-2xl h-12 px-6"
+                  >
+                    <X className="w-4 h-4" />
+                    Clear
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-6 h-6 text-slate-500" />
-            <Input
-              placeholder="Search by name, position, party, constituency..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-14 pr-6 bg-white/30 backdrop-blur-md border-2 border-white/40 text-slate-800 placeholder:text-slate-600 focus:bg-white/40 focus:border-white/60 focus:ring-4 focus:ring-white/20 rounded-2xl h-14 text-lg font-medium shadow-lg"
-            />
-          </div>
-        </div>
-
-        {/* Filters Row */}
-        <div className="flex flex-wrap gap-4 items-center justify-center mb-6">
-          <div className="flex items-center gap-2">
-            <Filter className="w-4 h-4 text-slate-600" />
-            <span className="text-sm font-medium text-slate-600">Filters:</span>
-          </div>
-          
-          <Select value={positionFilter} onValueChange={setPositionFilter}>
-            <SelectTrigger className="w-40 bg-white/20 backdrop-blur-sm border-white/30">
-              <SelectValue placeholder="Position" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Roles</SelectItem>
-              <SelectItem value="speaker">Speaker</SelectItem>
-              <SelectItem value="deputy_speaker">Deputy Speaker</SelectItem>
-              <SelectItem value="administrator">Administrator</SelectItem>
-              <SelectItem value="journalist">Journalist</SelectItem>
-              <SelectItem value="minister">Minister/Shadow Minister</SelectItem>
-              <SelectItem value="mp">Member of Parliament</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={partyFilter} onValueChange={setPartyFilter}>
-            <SelectTrigger className="w-40 bg-white/20 backdrop-blur-sm border-white/30">
-              <SelectValue placeholder="Party" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Parties</SelectItem>
-              {getUniqueParties().map(party => {
-                const partyLetter = ['No Party', 'A', 'B', 'C', 'D', 'E'][party] || party;
-                const partyName = students.find(s => s.party_number === party)?.party_name;
-                return (
-                  <SelectItem key={party} value={party.toString()}>
-                    {partyName ? `${partyName} (${partyLetter})` : `Party ${partyLetter}`}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-
-          <Select value={stateFilter} onValueChange={setStateFilter}>
-            <SelectTrigger className="w-40 bg-white/20 backdrop-blur-sm border-white/30">
-              <SelectValue placeholder="State" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All States</SelectItem>
-              {getUniqueStates().map(state => (
-                <SelectItem key={state} value={state!}>
-                  {state}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {hasActiveFilters && (
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={clearAllFilters}
-              className="flex items-center gap-2 bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30"
-            >
-              <X className="w-3 h-3" />
-              Clear Filters
-            </Button>
-          )}
         </div>
       </div>
 
-      {Object.keys(groupedStudents).length === 0 ? (
-        <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-12 border border-white/25 shadow-xl text-center">
-          <div className="relative inline-block mb-6">
-            <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
-              <Users className="w-10 h-10 text-white" />
-            </div>
-            <div className="absolute -top-2 -right-2 w-6 h-6 bg-gray-400/40 rounded-full animate-bounce"></div>
+      <div className="max-w-[1600px] mx-auto px-4 space-y-24">
+        {/* Presiding Officers */}
+        <section className="relative flex flex-col items-center">
+          <div className="mb-12 flex flex-col items-center">
+             <span className="px-4 py-1 bg-primary/10 text-primary text-[10px] font-black rounded-full uppercase tracking-[0.2em] mb-6">Presiding Authority</span>
+             <motion.div 
+                whileHover={{ scale: 1.02, y: -4 }}
+                onClick={() => speaker && setSelectedStudent(speaker)}
+                className="bg-surface-container-low rounded-[3rem] p-10 shadow-elevated max-w-lg w-full cursor-pointer group relative overflow-hidden backdrop-blur-xl"
+             >
+               <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full -mr-24 -mt-24 blur-3xl group-hover:bg-primary/10 transition-colors" />
+               <div className="flex items-center gap-8 relative z-10">
+                 <div className="relative shrink-0">
+                   <div className="w-32 h-32 rounded-[2rem] overflow-hidden ring-4 ring-primary/10 ring-offset-4 ring-offset-surface-container-low group-hover:ring-primary/30 transition-all shadow-xl bg-surface-container-high">
+                     {speaker?.photo_url ? (
+                       <img src={speaker.photo_url.includes('/file/d/') ? `https://drive.google.com/uc?export=view&id=${speaker.photo_url.split('/d/')[1]?.split('/')[0]}` : speaker.photo_url} className="w-full h-full object-cover" alt="Speaker" />
+                     ) : (
+                       <AvatarFallback className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-black text-4xl">
+                         {speaker?.name?.charAt(0) || '?'}
+                       </AvatarFallback>
+                     )}
+                   </div>
+                   <div className="absolute -bottom-2 -right-2 bg-primary text-white p-2 rounded-xl shadow-lg ring-4 ring-surface-container-low">
+                     <Crown className="w-5 h-5 fill-white" />
+                   </div>
+                 </div>
+                 <div>
+                   <h3 className="text-2xl font-headline font-black text-on-surface mb-1">
+                     {speaker?.name || 'Speaker of the House'}
+                   </h3>
+                   <p className="text-primary font-black uppercase text-xs tracking-widest mb-1">Speaker</p>
+                   <p className="text-on-surface-variant/40 font-bold text-xs">{speaker?.constituency || 'Assembly Head'}</p>
+                 </div>
+               </div>
+             </motion.div>
           </div>
-          <h3 className="text-2xl font-black text-slate-800 mb-4">
-            {hasActiveFilters ? 'No Matching Members' : 'No Members Found'}
-          </h3>
-          <p className="text-lg text-slate-600 font-medium">
-            {hasActiveFilters 
-              ? 'No parliament members found matching your search and filter criteria.' 
-              : 'No parliament members found.'}
-          </p>
-          {hasActiveFilters && (
-            <Button 
-              variant="outline" 
-              onClick={clearAllFilters}
-              className="mt-4 bg-white/20 backdrop-blur-sm border-white/30 hover:bg-white/30"
-            >
-              Clear All Filters
-            </Button>
-          )}
-        </div>
-      ) : (
-        <div className="space-y-8">
-          {Object.entries(groupedStudents)
-            .sort(([a], [b]) => parseInt(a) - parseInt(b))
-            .map(([partyNumber, partyStudents]) => (
-              <motion.div
-                key={partyNumber}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3 }}
-                className="bg-white/15 backdrop-blur-lg rounded-3xl p-6 border border-white/25 shadow-xl"
+
+          <div className="flex flex-wrap justify-center gap-6 w-full max-w-5xl">
+            {deputySpeakers.map((official) => (
+              <motion.div 
+                key={official.id}
+                whileHover={{ y: -5 }}
+                onClick={() => setSelectedStudent(official)}
+                className="bg-surface-container p-6 backdrop-blur-md rounded-[2rem] shadow-sm min-w-[340px] cursor-pointer group flex items-center gap-6 hover:bg-surface-container-high transition-colors"
               >
-                <div className="mb-6 text-center">
-                  <div className={`inline-flex items-center gap-3 px-6 py-3 rounded-2xl bg-gradient-to-r ${getPartyColor(parseInt(partyNumber))} text-white font-black text-xl shadow-lg`}>
-                    <Users className="w-6 h-6" />
-                    {partyStudents[0]?.party_name 
-                      ? `${partyStudents[0].party_name} (${['No Party', 'A', 'B', 'C', 'D', 'E'][parseInt(partyNumber)] || partyNumber})`
-                      : `Party ${['No Party', 'A', 'B', 'C', 'D', 'E'][parseInt(partyNumber)] || partyNumber}`}
-                    <Badge className="bg-white/20 text-white font-bold">
-                      {partyStudents.length} members
-                    </Badge>
+                <div className="relative">
+                  <Avatar className="w-20 h-20 rounded-2xl ring-4 ring-primary/5 group-hover:ring-primary/20 transition-all shadow-md overflow-hidden">
+                    <AvatarImage src={official.photo_url} className="object-cover" />
+                    <AvatarFallback className="bg-primary/5 text-primary font-black uppercase text-xl">
+                      {official.name?.charAt(0) || '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="absolute -bottom-1 -right-1 bg-surface-container-low text-primary p-1 rounded-lg shadow-md ring-2 ring-surface-container-low">
+                    <Gavel className="w-3.5 h-3.5" />
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                  <AnimatePresence>
-                    {partyStudents
-                      .sort((a, b) => a.serial_number - b.serial_number)
-                      .map((student, index) => (
-                        <motion.div
-                          key={student.id}
-                          initial={{ opacity: 0, scale: 0.8 }}
-                          animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.8 }}
-                          transition={{ 
-                            duration: 0.3,
-                            delay: index * 0.05 
-                          }}
-                        >
-                          <Card
-                            className={`cursor-pointer bg-white/20 backdrop-blur-sm border hover:bg-white/30 hover:border-white/50 hover:shadow-xl hover:scale-105 transition-all duration-300 rounded-2xl overflow-hidden ${
-                              isSpecialPosition(student.position, student.name)
-                                ? 'border-2 border-amber-400/80 bg-gradient-to-br from-amber-100/30 to-yellow-100/30 shadow-lg shadow-amber-500/20'
-                                : 'border-white/30'
-                            }`}
-                            onClick={() => {
-                              console.log('Card clicked for student:', student.name);
-                              setSelectedStudent(student);
-                            }}
-                          >
-                            <CardContent className="p-0">
-                              <div className="flex items-center gap-4 p-4">
-                                {/* Profile Image - Left Side */}
-                                <div className="relative flex-shrink-0">
-                                  <Avatar className={`w-16 h-16 border-2 shadow-lg ${
-                                    isSpecialPosition(student.position, student.name) 
-                                      ? 'border-amber-400' 
-                                      : 'border-white/50'
-                                  }`}>
-                                    <AvatarImage src={student.photo_url ? (student.photo_url.includes('/file/d/') ? `https://drive.google.com/uc?export=view&id=${student.photo_url.split('/d/')[1]?.split('/')[0]}` : student.photo_url) : undefined} alt={student.name} referrerPolicy="no-referrer" loading="lazy" decoding="async" />
-                                    <AvatarFallback className={`bg-gradient-to-br ${getPartyColor(student.party_number)} text-white font-bold text-lg`}>
-                                      {student.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  
-                                  {/* Ranking badge - only show when leaderboard visible and student has ranking */}
-                                  {settings.leaderboard_visible && leaderboardData[student.user_id] && (
-                                    <Badge 
-                                      className="absolute -top-2 -right-2 w-8 h-8 p-0 flex items-center justify-center text-xs font-bold bg-gradient-to-r from-amber-500 to-yellow-500 text-white border-2 border-white shadow-lg"
-                                    >
-                                      #{leaderboardData[student.user_id].ranking}
-                                    </Badge>
-                                  )}
-
-                                  {/* Special position indicator */}
-                                  {isSpecialPosition(student.position, student.name) && (
-                                    <div className="absolute -bottom-1 -left-1 w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center border-2 border-white shadow-md">
-                                      <Crown className="w-3 h-3 text-white" />
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Details - Right Side */}
-                                <div className="flex-1 min-w-0">
-                                  <h4 className={`font-black text-lg mb-1 truncate ${
-                                    isSpecialPosition(student.position, student.name) ? 'text-amber-800' : 'text-slate-800'
-                                  }`}>{student.name}</h4>
-                                  
-                                  <div className="flex items-center gap-2 mb-2">
-                                    {getPositionIcon(student.position)}
-                                    <span className={`text-sm font-semibold truncate ${
-                                      isSpecialPosition(student.position, student.name) ? 'text-amber-700' : 'text-slate-600'
-                                    }`}>
-                                      {student.position}
-                                    </span>
-                                  </div>
-
-                                  {student.constituency && (
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                                      <span className="text-xs text-slate-500 truncate">
-                                        {student.constituency}
-                                      </span>
-                                    </div>
-                                  )}
-
-                                  <div className="flex items-center gap-2">
-                                    <div className={`w-4 h-2 bg-gradient-to-r ${getPartyColor(student.party_number)} rounded-full`} />
-                                    <span className="text-xs font-medium text-slate-600">
-                                      {student.party_name 
-                                        ? `${student.party_name} (${['No Party', 'A', 'B', 'C', 'D', 'E'][student.party_number] || student.party_number})`
-                                        : `Party ${['No Party', 'A', 'B', 'C', 'D', 'E'][student.party_number] || student.party_number}`}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        </motion.div>
-                      ))}
-                  </AnimatePresence>
+                <div>
+                  <h4 className="font-headline font-black text-on-surface leading-tight text-lg">
+                    {official.name}
+                  </h4>
+                  <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em]">
+                    Deputy Speaker
+                  </p>
+                  <p className="text-[10px] text-on-surface-variant/40 font-bold mt-1">Constituency: {official.constituency}</p>
                 </div>
               </motion.div>
             ))}
-        </div>
-      )}
+          </div>
+          
+          <div className="w-px h-24 bg-gradient-to-b from-outline-variant/20 to-transparent mt-12" />
+        </section>
 
-      {/* Student Profile Modal */}
+        {/* The Chamber Benches */}
+        <section className="w-full">
+           <div className="grid grid-cols-1 xl:grid-cols-2 gap-12 xl:gap-20 items-start">
+              {/* Government Side */}
+              <div className="space-y-8">
+                <div className="flex flex-col items-center gap-4 mb-8">
+                  <div className="w-16 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+                  <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] opacity-40">Section Alpha</span>
+                </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  <AnimatePresence mode="popLayout">
+                    {rulingMembers.map((student, idx) => (
+                      <MemberSmallCard 
+                        key={student.id} 
+                        student={student} 
+                        onClick={() => setSelectedStudent(student)} 
+                        delay={idx}
+                        accentColor="bg-primary"
+                      />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Opposition Side */}
+              <div className="space-y-8">
+                <div className="flex flex-col items-center gap-4 mb-8">
+                  <div className="w-16 h-px bg-gradient-to-r from-transparent via-secondary/30 to-transparent" />
+                  <span className="text-[10px] font-black text-secondary uppercase tracking-[0.4em] opacity-40">Section Beta</span>
+                </div>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                  <AnimatePresence mode="popLayout">
+                    {oppositionMembers.map((student, idx) => (
+                      <MemberSmallCard 
+                        key={student.id} 
+                        student={student} 
+                        onClick={() => setSelectedStudent(student)} 
+                        delay={idx}
+                        accentColor="bg-secondary"
+                      />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+           </div>
+
+           {/* Independent/Others */}
+           {independentMembers.length > 0 && (
+             <div className="mt-24 pt-24 border-t border-outline-variant/10">
+                <div className="flex flex-col items-center gap-6 mb-12">
+                   <h2 className="text-xl font-headline font-black text-on-surface-variant/40 tracking-[0.3em] uppercase">Non-Aligned Members</h2>
+                   <div className="w-24 h-1 bg-outline-variant/10 rounded-full" />
+                </div>
+                <div className="flex flex-wrap justify-center gap-6 max-w-6xl mx-auto">
+                   {independentMembers.map((student, idx) => (
+                      <MemberSmallCard 
+                        key={student.id} 
+                        student={student} 
+                        onClick={() => setSelectedStudent(student)} 
+                        delay={idx}
+                        accentColor="bg-on-surface-variant/20"
+                      />
+                   ))}
+                </div>
+             </div>
+           )}
+        </section>
+      </div>
+
+      {/* Keep existing Modal logic */}
       <Dialog open={!!selectedStudent} onOpenChange={(open) => {
-        console.log('Dialog onOpenChange:', open, 'selectedStudent:', selectedStudent?.name);
-        if (!open) {
-          setSelectedStudent(null);
-        }
+        if (!open) setSelectedStudent(null);
       }}>
-        <DialogContent className="max-w-2xl bg-transparent border-0 shadow-none p-0 rounded-3xl overflow-visible">
+        <DialogContent className="max-w-xl bg-transparent border-none shadow-none p-0 rounded-[3rem] overflow-visible">
           <DialogTitle className="sr-only">
             {selectedStudent ? `${selectedStudent.name} Profile` : 'Student Profile'}
           </DialogTitle>
@@ -558,28 +548,68 @@ const InteractiveParliamentTree = () => {
           </DialogDescription>
           
           {selectedStudent && (
-            <div className="relative">
-              {/* Close Button */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              className="relative"
+            >
               <button
-                onClick={() => {
-                  console.log('Close button clicked');
-                  setSelectedStudent(null);
-                }}
-                className="absolute top-4 right-4 z-50 w-10 h-10 bg-red-500/90 hover:bg-red-600 text-white rounded-full flex items-center justify-center shadow-lg transition-all duration-200 backdrop-blur-sm"
-                aria-label="Close profile"
+                onClick={() => setSelectedStudent(null)}
+                className="absolute -top-4 -right-4 z-50 w-12 h-12 bg-surface-container-highest/90 hover:bg-primary hover:text-white text-on-surface rounded-2xl flex items-center justify-center shadow-elevated transition-all duration-300 backdrop-blur-xl group"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6 transition-transform group-hover:rotate-90" />
               </button>
               
-              {/* Profile Content */}
-              <div className="p-8 flex items-center justify-center min-h-[400px]">
+              <div className="flex items-center justify-center min-h-[500px]">
                 <GlassmorphismProfileCard student={selectedStudent} />
               </div>
-            </div>
+            </motion.div>
           )}
         </DialogContent>
       </Dialog>
     </div>
+  );
+};
+
+const MemberSmallCard = ({ student, onClick, delay, accentColor }: { student: Student, onClick: () => void, delay: number, accentColor: string }) => {
+  const { settings } = useSystemSettings();
+  
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      whileHover={{ scale: 1.05, y: -4 }}
+      transition={{ 
+        duration: 0.3,
+        delay: delay * 0.02,
+        type: "spring",
+        stiffness: 300,
+        damping: 25
+      }}
+      onClick={onClick}
+      className="bg-surface-container p-5 rounded-[2rem] shadow-sm hover:shadow-xl hover:bg-surface-container-high hover:-translate-y-1 transition-all cursor-pointer group text-center"
+    >
+      <div className="relative mx-auto mb-4 w-20 h-20">
+        <div className="w-full h-full rounded-2xl overflow-hidden ring-4 ring-outline-variant/5 group-hover:ring-primary/20 transition-all shadow-md">
+          <Avatar className="w-full h-full rounded-none">
+            <AvatarImage src={student.photo_url?.includes('/file/d/') ? `https://drive.google.com/uc?export=view&id=${student.photo_url.split('/d/')[1]?.split('/')[0]}` : student.photo_url} className="object-cover" />
+            <AvatarFallback className={`bg-gradient-to-br ${accentColor} text-white font-black text-xl`}>
+              {student.name?.charAt(0) || '?'}
+            </AvatarFallback>
+          </Avatar>
+        </div>
+        <div className={`absolute -bottom-1 -right-1 w-4 h-4 ${accentColor} rounded-full border-2 border-surface-container-low shadow-sm transition-transform group-hover:scale-125`} />
+      </div>
+      
+      <h4 className="font-headline font-black text-on-surface text-xs leading-tight mb-1 truncate px-1 group-hover:text-primary transition-colors">
+        {student.name}
+      </h4>
+      <p className="text-[8px] font-black uppercase tracking-widest text-on-surface-variant/40 truncate opacity-60">
+        {student.position}
+      </p>
+    </motion.div>
   );
 };
 

@@ -23,6 +23,8 @@ interface Profile {
   photo_url?: string;
   updated_at?: string;
   user_type: string;
+  party_alignment?: string;
+  ministry?: string;
 }
 
 interface LeaderboardData {
@@ -34,6 +36,7 @@ interface LeaderboardData {
 interface StudentProfileProps {
   profile: Profile;
   isOwnProfile?: boolean;
+  variant?: 'default' | 'integrated';
 }
 
 const isSpecialPosition = (position: string, name?: string) => {
@@ -55,7 +58,7 @@ const isSpecialPosition = (position: string, name?: string) => {
          (name && specialNames.includes(name.toLowerCase()));
 };
 
-export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfileProps) => {
+export const StudentProfile = ({ profile, isOwnProfile = false, variant = 'default' }: StudentProfileProps) => {
   const initials = profile.name.split(' ').map(n => n[0]).join('').toUpperCase();
   const isSpecial = isSpecialPosition(profile.position, profile.name);
   const { settings } = useSystemSettings();
@@ -112,15 +115,15 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
   };
 
   return (
-    <Card className={`w-full rounded-3xl shadow-lg border overflow-hidden ${
-      isSpecial 
-        ? 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-300' 
-        : 'bg-white border-border/20'
+    <Card className={`w-full rounded-[2.5rem] overflow-hidden ${
+      variant === 'integrated' 
+        ? 'shadow-none border-none bg-transparent' 
+        : `shadow-lg border ${isSpecial ? 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-300' : 'bg-white border-border/20'}`
     }`}>
       <CardContent className="p-0">
-        <section className="flex min-h-[400px]">
-          {/* Left side - Image (Half width) */}
-          <div className="w-1/2 relative">
+        <section className={`flex flex-col md:flex-row ${variant === 'integrated' ? 'min-h-0' : 'min-h-[500px]'}`}>
+          {/* Left side - Image */}
+          <div className={`${variant === 'integrated' ? 'w-full md:w-[40%]' : 'w-full md:w-1/2'} relative aspect-square md:aspect-auto`}>
             {profile.photo_url ? (
               <img 
                 src={`${profile.photo_url}${profile.photo_url.includes('?') ? '&' : '?'}cb=${profile.updated_at ? new Date(profile.updated_at).getTime() : Date.now()}`}
@@ -161,42 +164,66 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
             )}
           </div>
 
-          {/* Right side - Profile Details (Half width) */}
-          <div className="w-1/2 p-8 flex flex-col justify-center space-y-6">
+          {/* Right side - Profile Details */}
+          <div className={`${variant === 'integrated' ? 'w-full md:w-[60%]' : 'w-full md:w-1/2'} p-8 md:p-12 flex flex-col justify-center space-y-8`}>
             <header className="space-y-4">
-              <CardTitle className={`text-4xl font-serif font-bold leading-tight ${
-                isSpecial ? 'text-amber-800' : 'text-foreground'
+              <CardTitle className={`text-2xl md:text-3xl font-headline font-black leading-tight ${
+                isSpecial ? 'text-amber-800' : 'text-[#191c1e]'
               }`}>
-                {profile.name}
+                {profile.name.replace(/^Delegate\s+/i, '')}
               </CardTitle>
-              <div className="flex items-center gap-3">
-                <span className={`text-lg font-semibold ${
-                  isSpecial ? 'text-amber-700' : 'text-muted-foreground'
+              <div className="flex flex-wrap items-center gap-3">
+                <span className={`text-base font-bold ${
+                  isSpecial ? 'text-amber-700' : 'text-slate-500'
                 }`}>{profile.position}</span>
                 <span className="text-muted-foreground">•</span>
                 <PartyBadge partyNumber={profile.party_number} partyName={profile.party_name} size="md" />
+                <Badge variant="outline" className="px-3 py-1 text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border-none">
+                  Party {profile.party_number}
+                </Badge>
+                {profile.party_alignment && (
+                  <Badge variant="outline" className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest border-none ${
+                    profile.party_alignment === 'ruling_party' ? 'bg-indigo-50 text-[#13298f]' : 
+                    profile.party_alignment === 'opposition' ? 'bg-red-50 text-[#ac3509]' : 
+                    'bg-slate-50 text-slate-400'
+                  }`}>
+                    {profile.party_alignment.replace('_', ' ')}
+                  </Badge>
+                )}
               </div>
             </header>
 
-            <div className="space-y-6">
+            <div className="space-y-4">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Hash className="w-6 h-6 text-gray-600" />
+                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Hash className="w-5 h-5 text-slate-400" />
                 </div>
-                <div className="space-y-1">
-                  <p className="text-base font-semibold text-muted-foreground">Roll Number</p>
-                  <p className="text-2xl font-bold text-foreground">{profile.serial_number}</p>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Roll Number</p>
+                  <p className="text-xl font-headline font-black text-[#191c1e]">{profile.serial_number}</p>
                 </div>
               </div>
 
               {profile.committee && (
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Users className="w-6 h-6 text-gray-600" />
+                  <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Users className="w-5 h-5 text-slate-400" />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-base font-semibold text-muted-foreground">Committee</p>
-                    <p className="text-2xl font-bold text-foreground">{profile.committee}</p>
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Committee</p>
+                    <p className="text-xl font-headline font-black text-[#191c1e]">{profile.committee}</p>
+                  </div>
+                </div>
+              )}
+
+              {profile.ministry && (
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Crown className="w-5 h-5 text-amber-500" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">Ministry</p>
+                    <p className="text-xl font-headline font-black text-[#191c1e]">{profile.ministry}</p>
                   </div>
                 </div>
               )}
@@ -204,24 +231,24 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
 
               {profile.constituency && (
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Building className="w-6 h-6 text-gray-600" />
+                  <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Building className="w-5 h-5 text-slate-400" />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-base font-semibold text-muted-foreground">Constituency</p>
-                    <p className="text-xl font-semibold text-foreground">{profile.constituency}</p>
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Constituency</p>
+                    <p className="text-lg font-headline font-black text-[#191c1e]">{profile.constituency}</p>
                   </div>
                 </div>
               )}
 
               {profile.state && (
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 bg-gray-200 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-6 h-6 text-gray-600" />
+                  <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    <MapPin className="w-5 h-5 text-slate-400" />
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-base font-semibold text-muted-foreground">State</p>
-                    <p className="text-xl font-semibold text-foreground">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">State</p>
+                    <p className="text-lg font-headline font-black text-[#191c1e]">
                       {profile.state}
                     </p>
                   </div>
@@ -232,26 +259,26 @@ export const StudentProfile = ({ profile, isOwnProfile = false }: StudentProfile
               {settings.leaderboard_visible && leaderboardData && (
                 <div className="pt-4 mt-4 border-t-2 border-primary/20 space-y-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                      <Trophy className="w-6 h-6 text-white" />
+                    <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-200">
+                      <Trophy className="w-5 h-5 text-white" />
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-base font-semibold text-muted-foreground">Ranking</p>
-                      <p className="text-2xl font-bold text-foreground">
-                        #{leaderboardData.ranking} <span className="text-base text-muted-foreground">of {leaderboardData.total_students}</span>
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ranking</p>
+                      <p className="text-xl font-headline font-black text-[#191c1e]">
+                        #{leaderboardData.ranking} <span className="text-xs text-slate-400">of {leaderboardData.total_students}</span>
                       </p>
                     </div>
                   </div>
 
                   {leaderboardData.final_total_score !== null && (
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-glow rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                        <Award className="w-6 h-6 text-white" />
+                      <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-glow rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-200">
+                        <Award className="w-5 h-5 text-white" />
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-base font-semibold text-muted-foreground">Total Score</p>
-                        <p className="text-2xl font-bold text-foreground">
-                          {leaderboardData.final_total_score.toFixed(2)} <span className="text-base text-muted-foreground">/ 100</span>
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Score</p>
+                        <p className="text-xl font-headline font-black text-[#191c1e]">
+                          {leaderboardData.final_total_score.toFixed(2)} <span className="text-xs text-slate-400">/ 100</span>
                         </p>
                       </div>
                     </div>

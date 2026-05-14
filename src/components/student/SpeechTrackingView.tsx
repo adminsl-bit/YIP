@@ -52,92 +52,58 @@ export const SpeechTrackingView = () => {
   return (
     <div className="space-y-6">
       {/* Info Banner */}
-      <Card className="p-4 bg-blue-50 border-blue-200">
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-blue-500 rounded-lg flex-shrink-0">
-            <Eye className="h-5 w-5 text-white" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-sm mb-1">Speech Tracking View</h3>
-            <p className="text-xs text-muted-foreground">
-              You can view speech tracking data for all students. This is a read-only view managed by admin students and organizers.
-            </p>
-          </div>
+      <div className="bg-[#13298f]/5 rounded-3xl p-4 border border-[#13298f]/10 flex items-start gap-4">
+        <div className="p-2.5 bg-[#13298f] rounded-2xl flex-shrink-0 shadow-lg shadow-indigo-900/20">
+          <Eye className="h-5 w-5 text-white" />
         </div>
-      </Card>
+        <div>
+          <h3 className="font-headline font-black text-sm text-[#13298f] mb-1">Speaker's Oversight</h3>
+          <p className="text-xs text-[#13298f]/60 font-medium leading-relaxed">
+            Real-time monitoring of parliamentary discourse. Track delegate engagement and manage floor time effectively.
+          </p>
+        </div>
+      </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Users className="h-5 w-5 text-primary" />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: 'Total Delegates', value: totalCount, icon: Users, color: 'bg-indigo-50 text-[#13298f]' },
+          { label: 'Participated', value: students.filter((s) => s.speech_count > 0).length, icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-600' },
+          { label: 'Awaiting Turn', value: students.filter((s) => s.speech_count === 0).length, icon: XCircle, color: 'bg-rose-50 text-rose-600' },
+          { label: 'Total Speeches', value: students.reduce((sum, s) => sum + s.speech_count, 0), icon: Mic, color: 'bg-amber-50 text-amber-600' },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white rounded-3xl p-4 border border-slate-50 shadow-sm flex items-center gap-4 group hover:shadow-md transition-all">
+            <div className={`p-2.5 rounded-2xl ${stat.color} group-hover:scale-110 transition-transform`}>
+              <stat.icon className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">Total Students</p>
-              <p className="text-2xl font-bold">{totalCount}</p>
+              <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest leading-none mb-1">{stat.label}</p>
+              <p className="text-xl font-headline font-black text-[#191c1e] leading-none">{stat.value}</p>
             </div>
           </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-green-500/10">
-              <CheckCircle2 className="h-5 w-5 text-green-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Have Spoken</p>
-              <p className="text-2xl font-bold">
-                {students.filter((s) => s.speech_count > 0).length}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-orange-500/10">
-              <XCircle className="h-5 w-5 text-orange-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Not Spoken</p>
-              <p className="text-2xl font-bold">
-                {students.filter((s) => s.speech_count === 0).length}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-purple-500/10">
-              <Mic className="h-5 w-5 text-purple-500" />
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Total Speeches</p>
-              <p className="text-2xl font-bold">
-                {students.reduce((sum, s) => sum + s.speech_count, 0)}
-              </p>
-            </div>
-          </div>
-        </Card>
+        ))}
       </div>
 
       {/* Filters */}
-      <Card className="p-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Filter className="h-5 w-5 text-muted-foreground" />
-          <h3 className="font-semibold">Filters</h3>
+      <div className="bg-white rounded-3xl p-6 border border-slate-50 shadow-sm">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="p-2.5 bg-slate-50 rounded-2xl">
+            <Filter className="h-4 w-4 text-slate-400" />
+          </div>
+          <h3 className="font-headline font-black text-sm text-[#191c1e] uppercase tracking-widest">Parliamentary Filters</h3>
+          <span className="ml-auto text-[10px] font-black text-slate-300 uppercase tracking-widest">
+            {filteredCount} / {totalCount} Delegates
+          </span>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 transition-colors group-focus-within:text-[#13298f]" />
             <Input
               placeholder="Search by name..."
               value={filters.searchQuery}
               onChange={(e) => setFilters({ ...filters, searchQuery: e.target.value })}
-              className="pl-10"
+              className="pl-11 bg-slate-50/50 border-transparent focus:bg-white focus:ring-2 focus:ring-[#13298f]/5 rounded-2xl h-11 text-xs font-bold transition-all"
             />
           </div>
 
@@ -147,13 +113,13 @@ export const SpeechTrackingView = () => {
               setFilters({ ...filters, partyNumber: value === 'all' ? null : parseInt(value) })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger className="bg-slate-50/50 border-transparent rounded-2xl h-11 text-xs font-bold px-4">
               <SelectValue placeholder="All Parties" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Parties</SelectItem>
+            <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
+              <SelectItem value="all" className="text-xs font-bold py-2.5">All Parties</SelectItem>
               {uniqueParties.map((party) => (
-                <SelectItem key={party} value={party.toString()}>
+                <SelectItem key={party} value={party.toString()} className="text-xs font-bold py-2.5">
                   Party {String.fromCharCode(64 + party)}
                 </SelectItem>
               ))}
@@ -166,80 +132,66 @@ export const SpeechTrackingView = () => {
               setFilters({ ...filters, hasSpeech: value })
             }
           >
-            <SelectTrigger>
+            <SelectTrigger className="bg-slate-50/50 border-transparent rounded-2xl h-11 text-xs font-bold px-4">
               <SelectValue placeholder="Speech Status" />
             </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Students</SelectItem>
-              <SelectItem value="spoken">Have Spoken</SelectItem>
-              <SelectItem value="not-spoken">Not Spoken</SelectItem>
+            <SelectContent className="rounded-2xl border-slate-100 shadow-xl">
+              <SelectItem value="all" className="text-xs font-bold py-2.5">All Students</SelectItem>
+              <SelectItem value="spoken" className="text-xs font-bold py-2.5">Have Spoken</SelectItem>
+              <SelectItem value="not-spoken" className="text-xs font-bold py-2.5">Not Spoken</SelectItem>
             </SelectContent>
           </Select>
         </div>
-
-        <div className="mt-4 text-sm text-muted-foreground">
-          Showing {filteredCount} of {totalCount} students
-        </div>
-      </Card>
+      </div>
 
       {/* Student List */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {students.map((student) => (
-          <Card
+          <div
             key={student.user_id}
-            className="p-4 hover:shadow-lg transition-shadow"
+            className="bg-white rounded-3xl p-4 border border-slate-50 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all group/card"
           >
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-3 flex-1">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={student.photo_url || undefined} />
-                  <AvatarFallback>{student.name.substring(0, 2)}</AvatarFallback>
+            <div className="flex items-start gap-4">
+              <div className="relative shrink-0">
+                <Avatar className="h-14 w-14 rounded-2xl border-4 border-white shadow-md">
+                  <AvatarImage src={student.photo_url || undefined} className="object-cover" />
+                  <AvatarFallback className="bg-slate-50 text-[#13298f] font-black text-xl">
+                    {student.name.substring(0, 2).toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
+                <div className="absolute -bottom-1 -right-1">
+                  <PartyBadge partyNumber={student.party_number} size="sm" />
+                </div>
+              </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-semibold text-base truncate">
-                      {student.name}
-                    </h4>
-                    <Badge variant="outline" className="text-xs">
-                      #{student.serial_number}
-                    </Badge>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <h4 className="font-headline font-black text-[#191c1e] text-sm truncate group-hover/card:text-[#13298f] transition-colors">
+                    {student.name}
+                  </h4>
+                  <span className="text-[10px] font-black text-slate-300">#{student.serial_number}</span>
+                </div>
+
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 truncate">
+                  {student.position || "Delegate"}
+                </p>
+
+                <div className="flex items-center justify-between mt-auto">
+                  <div className={`px-3 py-1.5 rounded-xl font-black text-xs flex items-center gap-2 ${student.speech_count > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-400'}`}>
+                    <Mic className="h-3 w-3" />
+                    {student.speech_count} Speeches
                   </div>
-
-                  <div className="flex items-center gap-2 flex-wrap mb-2">
-                    <PartyBadge partyNumber={student.party_number} />
-                    <span className="text-xs text-muted-foreground">
-                      {student.position}
-                    </span>
-                  </div>
-
+                  
                   {student.last_speech_at && (
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      <span>
-                        Last spoke{' '}
-                        {formatDistanceToNow(new Date(student.last_speech_at), {
-                          addSuffix: true,
-                        })}
-                      </span>
+                    <div className="flex items-center gap-1 text-[9px] font-black text-slate-300 uppercase tracking-tighter">
+                      <Clock className="h-2.5 w-2.5" />
+                      {formatDistanceToNow(new Date(student.last_speech_at), { addSuffix: true })}
                     </div>
                   )}
                 </div>
               </div>
-
-              <div className="flex flex-col items-end gap-2 ml-4">
-                <div className="flex items-center gap-2">
-                  <Badge
-                    variant={student.speech_count > 0 ? 'default' : 'secondary'}
-                    className="text-lg font-bold px-3 py-1"
-                  >
-                    <Mic className="h-4 w-4 mr-1" />
-                    {student.speech_count}
-                  </Badge>
-                </div>
-              </div>
             </div>
-          </Card>
+          </div>
         ))}
       </div>
 

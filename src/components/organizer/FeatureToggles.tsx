@@ -36,7 +36,7 @@ export const FeatureToggles = () => {
       const { data, error } = await supabase
         .from('system_settings')
         .select('*')
-        .in('setting_key', ['voting_enabled', 'results_public', 'leaderboard_visible']);
+        .in('setting_key', ['voting_enabled', 'results_public', 'leaderboard_visible', 'registration_enabled']);
 
       if (error) throw error;
 
@@ -116,6 +116,13 @@ export const FeatureToggles = () => {
       description: 'Display performance rankings to students',
       icon: Trophy,
       color: 'text-yellow-600'
+    },
+    {
+      key: 'registration_enabled',
+      label: 'Public Registration',
+      description: 'Allow new students to register themselves via landing page',
+      icon: Users,
+      color: 'text-purple-600'
     }
   ];
 
@@ -234,137 +241,71 @@ export const FeatureToggles = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Settings className="w-5 h-5" />
-          <span>Feature Toggles</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="space-y-8">
+      <div className="space-y-6">
         {toggleSettings.map((toggle) => {
-          const IconComponent = toggle.icon;
           const isEnabled = settings[toggle.key];
 
           return (
-            <div key={toggle.key} className="flex items-center justify-between p-4 border rounded-lg">
-              <div className="flex items-center space-x-4">
-                <IconComponent className={`w-5 h-5 ${toggle.color}`} />
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="font-medium">{toggle.label}</h3>
-                    <Badge variant={isEnabled ? "default" : "secondary"}>
-                      {isEnabled ? "Enabled" : "Disabled"}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{toggle.description}</p>
-                </div>
+            <div key={toggle.key} className="flex items-center justify-between group">
+              <div>
+                <p className="font-bold text-sm text-[#191c1e]">{toggle.label}</p>
+                <p className="text-[10px] text-[#757684] font-bold uppercase tracking-wider opacity-60">{toggle.description}</p>
               </div>
               <Switch
                 checked={isEnabled}
                 onCheckedChange={(checked) => updateSetting(toggle.key, checked)}
+                className="data-[state=checked]:bg-[#ac3509] scale-110 shadow-sm"
               />
             </div>
           );
         })}
+      </div>
 
-        <Accordion type="single" collapsible className="mt-2">
-          <AccordionItem value="assessment-locks" className="border rounded-lg">
-            <AccordionTrigger className="hover:no-underline px-4 py-0">
-              <div className="flex items-center justify-between w-full py-4">
-                <div className="flex items-center space-x-4">
-                  {globalLocked ? (
-                    <Lock className="w-5 h-5 text-primary" />
-                  ) : (
-                    <Unlock className="w-5 h-5 text-muted-foreground" />
-                  )}
-                  <div className="text-left">
-                    <div className="flex items-center space-x-2">
-                      <h3 className="font-medium">Assessment Locks</h3>
-                      <Badge variant={globalLocked ? 'default' : 'secondary'}>
-                        {globalLocked ? 'LOCKED' : 'UNLOCKED'}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {globalLocked ? 'All jury assessments are locked' : 'Lock all assessments or expand for per‑jury locks'}
-                    </p>
-                  </div>
-                </div>
-                <Switch
-                  checked={globalLocked}
-                  onCheckedChange={toggleGlobalLock}
-                  onClick={(e) => e.stopPropagation()}
-                  className={globalLocked ? 'data-[state=checked]:bg-primary' : ''}
-                />
-              </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-4">
-              <div className="flex items-center justify-between mb-3 pt-2">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <span className="text-sm font-medium">Individual Jury Locks</span>
-                </div>
-                <Badge variant="outline">{lockedCount} of {juryMembers.length} locked</Badge>
-              </div>
-              <div className="space-y-3">
-                {juryMembers.map((jury) => {
-                  const isLocked = isJuryLocked(jury.user_id);
-                  const initials = (jury.name || '').split(' ').map((n) => n[0]).join('').toUpperCase();
-                  return (
-                    <div
-                      key={jury.user_id}
-                      className={`flex items-center justify-between p-4 border rounded-lg ${
-                        isLocked ? 'border-primary/30 bg-primary/5' : 'border-border bg-background hover:border-primary/30'
-                      } ${globalLocked ? 'opacity-50' : ''}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10 border-2 border-border">
-                          <AvatarImage src={jury.photo_url || undefined} alt={jury.name} />
-                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm">
-                            {initials}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{jury.name}</h4>
-                            {isLocked && (
-                              <Badge variant="default" className="text-xs">
-                                <Lock className="w-3 h-3 mr-1" />
-                                Locked
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {isLocked ? 'Cannot edit assessments' : 'Can edit assessments'}
-                          </p>
-                        </div>
-                      </div>
-                      <Switch
-                        checked={isLocked}
-                        onCheckedChange={(checked) => toggleJuryLock(jury.user_id, jury.name, checked)}
-                        disabled={globalLocked}
-                        className={isLocked ? 'data-[state=checked]:bg-primary' : ''}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-        
-        <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-start space-x-2">
-            <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5" />
-            <div>
-              <h4 className="font-medium text-blue-900">Global System Controls</h4>
-              <p className="text-sm text-blue-700 mt-1">
-                These toggles affect the entire parliament session. Changes take effect immediately for all users.
-              </p>
-            </div>
-          </div>
+      <div className="mt-10 p-5 bg-[#13298f]/5 rounded-[2rem] border border-[#13298f]/10 relative overflow-hidden ring-1 ring-white/20">
+        <div className="absolute top-0 right-0 p-4 opacity-5">
+           <span className="material-symbols-outlined text-4xl text-[#13298f]">info</span>
         </div>
-      </CardContent>
-    </Card>
+        <p className="text-xs font-black text-[#13298f] mb-3 flex items-center gap-2">
+           <span className="material-symbols-outlined text-sm font-fill">info</span> 
+           Critical Warning
+        </p>
+        <p className="text-[10px] leading-relaxed text-[#13298f]/80 font-bold uppercase tracking-tight">
+           Switching off 'Enabling Voting' will instantly freeze all student tablets across the hall.
+        </p>
+      </div>
+
+      {/* Advanced Jury Locks (Kept in Accordion) */}
+      <Accordion type="single" collapsible className="mt-8">
+        <AccordionItem value="locks" className="border-none">
+          <AccordionTrigger className="py-2 hover:no-underline opacity-60 hover:opacity-100 transition-opacity">
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#757684]">Advanced Jury Locks</span>
+          </AccordionTrigger>
+          <AccordionContent className="pt-4 space-y-4">
+             <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <span className="text-xs font-bold text-slate-600">Global Assessment Lock</span>
+                <Switch 
+                   checked={globalLocked} 
+                   onCheckedChange={toggleGlobalLock} 
+                   className="data-[state=checked]:bg-[#13298f]"
+                />
+             </div>
+             <div className="space-y-2">
+                {juryMembers.map(jury => (
+                   <div key={jury.user_id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl transition-colors hover:bg-slate-100">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase">{jury.name}</span>
+                      <Switch 
+                         checked={isJuryLocked(jury.user_id)} 
+                         onCheckedChange={(c) => toggleJuryLock(jury.user_id, jury.name, c)}
+                         disabled={globalLocked}
+                         className="scale-90 data-[state=checked]:bg-[#13298f]"
+                      />
+                   </div>
+                ))}
+             </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+    </div>
   );
 };

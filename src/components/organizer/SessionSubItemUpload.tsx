@@ -180,7 +180,7 @@ export const SessionSubItemUpload = ({ sessionId, onUploadComplete }: SessionSub
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-4">
       <Input
         type="file"
         accept=".xlsx,.xls,.pdf"
@@ -190,23 +190,20 @@ export const SessionSubItemUpload = ({ sessionId, onUploadComplete }: SessionSub
         id={`upload-${sessionId}`}
       />
       <label htmlFor={`upload-${sessionId}`}>
-        <Button
+        <button
           type="button"
-          variant="outline"
-          size="sm"
           disabled={uploading}
-          asChild
+          className="flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl font-black text-[10px] uppercase tracking-widest hover:border-[#1A3192] hover:text-[#1A3192] transition-all group overflow-hidden relative"
         >
-          <span className="cursor-pointer">
-            <Upload className="h-4 w-4 mr-2" />
-            {uploading ? "Uploading..." : "Upload Items"}
-          </span>
-        </Button>
+          <Upload className={`w-4 h-4 transition-transform ${uploading ? 'animate-bounce' : 'group-hover:-translate-y-1'}`} />
+          {uploading ? "Sinking Data..." : "Upload Dossier"}
+          <div className="absolute inset-0 bg-[#1A3192]/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+        </button>
       </label>
-      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-        <FileSpreadsheet className="h-3 w-3" />
-        <FileText className="h-3 w-3" />
-        <span>Excel or PDF</span>
+      <div className="flex items-center gap-3 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-[9px] font-black text-slate-400 uppercase tracking-widest border border-slate-100 dark:border-slate-700">
+        <FileSpreadsheet className="size-3" />
+        <FileText className="size-3" />
+        <span>XLSX / PDF</span>
       </div>
     </div>
   );
