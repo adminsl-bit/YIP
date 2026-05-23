@@ -267,15 +267,15 @@ const InteractiveParliamentTree = () => {
 
   if (loading) {
     return (
-      <div className="bg-surface-container p-8 rounded-[2.5rem] shadow-sm">
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
-            <Users className="w-6 h-6 text-primary" />
+      <div className="bg-surface-container-low p-12 rounded-[3rem] shadow-sm">
+        <div className="flex flex-col items-center justify-center gap-6 mb-8">
+          <div className="w-16 h-16 bg-primary/10 rounded-[24px] flex items-center justify-center">
+            <Users className="w-8 h-8 text-primary" />
           </div>
-          <h2 className="text-2xl font-headline font-black text-on-surface">Assembly is Forming</h2>
+          <h2 className="text-display-sm font-headline font-black text-on-surface uppercase italic">Assembly is Forming</h2>
         </div>
-        <div className="flex items-center justify-center h-32">
-          <Loader2 className="w-10 h-10 animate-spin text-primary/30" />
+        <div className="flex items-center justify-center h-48">
+          <Loader2 className="w-12 h-12 animate-spin text-primary/30" />
         </div>
       </div>
     );
@@ -300,13 +300,13 @@ const InteractiveParliamentTree = () => {
           className="flex flex-col items-center justify-center gap-6 mb-8"
         >
           <div className="space-y-4">
-            <span className="px-4 py-1.5 bg-primary/10 text-primary text-[10px] font-black rounded-full uppercase tracking-[0.3em] backdrop-blur-md border border-primary/10">
+            <span className="px-4 py-1.5 bg-primary/10 text-primary text-label-xs rounded-full uppercase tracking-[0.3em] backdrop-blur-md border border-primary/10">
               The Sovereign Will
             </span>
-            <h1 className="text-5xl md:text-7xl font-headline font-black text-on-surface tracking-tight leading-none">
+            <h1 className="text-display-md md:text-display-xl font-headline font-black text-on-surface tracking-tight leading-none uppercase italic">
               The Assembly Floor
             </h1>
-            <p className="text-on-surface-variant/60 font-medium text-lg md:text-xl max-w-2xl mx-auto leading-relaxed font-sans">
+            <p className="text-on-surface-variant/70 font-medium text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
               Representatives of the Sovereign Will of the People
             </p>
           </div>
@@ -316,13 +316,13 @@ const InteractiveParliamentTree = () => {
         <div className="max-w-4xl mx-auto mb-12">
           <div className="flex flex-col gap-6">
             <div className="relative group">
-              <div className="absolute inset-0 bg-primary/5 blur-2xl rounded-3xl -z-10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-              <Search className="absolute left-6 top-1/2 transform -translate-y-1/2 w-5 h-5 text-on-surface-variant/40 group-focus-within:text-primary transition-colors" />
+              <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-[3rem] -z-10 opacity-0 group-focus-within:opacity-100 transition-opacity duration-700" />
+              <Search className="absolute left-8 top-1/2 transform -translate-y-1/2 w-6 h-6 text-on-surface-variant/40 group-focus-within:text-primary transition-all duration-500" />
               <Input
                 placeholder="Search the Assembly by name, position, party..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-16 pr-8 bg-surface-container-low border-none text-on-surface placeholder:text-on-surface-variant/30 focus:bg-surface-container-lowest focus:ring-4 focus:ring-primary/5 rounded-[2rem] h-20 text-xl font-bold shadow-sm transition-all"
+                className="pl-20 pr-10 bg-surface-container-high border-none text-on-surface placeholder:text-on-surface-variant/30 focus:bg-surface-container-lowest focus:ring-8 focus:ring-primary/5 rounded-[3rem] h-20 text-body-lg font-bold shadow-sm transition-all duration-500"
               />
             </div>
 
@@ -396,34 +396,34 @@ const InteractiveParliamentTree = () => {
         {/* Presiding Officers */}
         <section className="relative flex flex-col items-center">
           <div className="mb-12 flex flex-col items-center">
-             <span className="px-4 py-1 bg-primary/10 text-primary text-[10px] font-black rounded-full uppercase tracking-[0.2em] mb-6">Presiding Authority</span>
+             <span className="px-4 py-1 bg-primary/10 text-primary text-label-xs rounded-full uppercase tracking-[0.2em] mb-6">Presiding Authority</span>
              <motion.div 
-                whileHover={{ scale: 1.02, y: -4 }}
+                whileHover={{ scale: 1.02, y: -8 }}
                 onClick={() => speaker && setSelectedStudent(speaker)}
-                className="bg-surface-container-low rounded-[3rem] p-10 shadow-elevated max-w-lg w-full cursor-pointer group relative overflow-hidden backdrop-blur-xl"
+                className="bg-surface-container-lowest rounded-[3rem] p-12 ambient-shadow max-w-2xl w-full cursor-pointer group relative overflow-hidden"
              >
-               <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full -mr-24 -mt-24 blur-3xl group-hover:bg-primary/10 transition-colors" />
-               <div className="flex items-center gap-8 relative z-10">
+               <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-primary/10 transition-colors duration-700" />
+               <div className="flex items-center gap-10 relative z-10">
                  <div className="relative shrink-0">
-                   <div className="w-32 h-32 rounded-[2rem] overflow-hidden ring-4 ring-primary/10 ring-offset-4 ring-offset-surface-container-low group-hover:ring-primary/30 transition-all shadow-xl bg-surface-container-high">
+                   <div className="w-40 h-40 rounded-[2.5rem] overflow-hidden ring-8 ring-primary/5 ring-offset-4 ring-offset-surface-container-lowest group-hover:ring-primary/20 transition-all duration-500 shadow-2xl bg-surface-container-high">
                      {speaker?.photo_url ? (
-                       <img src={speaker.photo_url.includes('/file/d/') ? `https://drive.google.com/uc?export=view&id=${speaker.photo_url.split('/d/')[1]?.split('/')[0]}` : speaker.photo_url} className="w-full h-full object-cover" alt="Speaker" />
+                       <img src={speaker.photo_url.includes('/file/d/') ? `https://drive.google.com/uc?export=view&id=${speaker.photo_url.split('/d/')[1]?.split('/')[0]}` : speaker.photo_url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Speaker" />
                      ) : (
-                       <AvatarFallback className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-black text-4xl">
+                       <AvatarFallback className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 text-primary font-black text-5xl">
                          {speaker?.name?.charAt(0) || '?'}
                        </AvatarFallback>
                      )}
                    </div>
-                   <div className="absolute -bottom-2 -right-2 bg-primary text-white p-2 rounded-xl shadow-lg ring-4 ring-surface-container-low">
-                     <Crown className="w-5 h-5 fill-white" />
+                   <div className="absolute -bottom-3 -right-3 bg-primary text-white p-3 rounded-2xl shadow-2xl ring-4 ring-surface-container-lowest group-hover:scale-110 transition-transform duration-500">
+                     <Crown className="w-6 h-6 fill-white" />
                    </div>
                  </div>
-                 <div>
-                   <h3 className="text-2xl font-headline font-black text-on-surface mb-1">
-                     {speaker?.name || 'Speaker of the House'}
-                   </h3>
-                   <p className="text-primary font-black uppercase text-xs tracking-widest mb-1">Speaker</p>
-                   <p className="text-on-surface-variant/40 font-bold text-xs">{speaker?.constituency || 'Assembly Head'}</p>
+                 <div className="flex flex-col gap-1">
+                    <h3 className="text-display-sm font-headline font-black text-on-surface italic uppercase leading-tight">
+                      {speaker?.name || 'Speaker of the House'}
+                    </h3>
+                    <p className="text-primary font-black uppercase text-label-sm tracking-[0.2em] mb-1">Speaker</p>
+                    <p className="text-on-surface-variant/40 font-bold text-body-xs uppercase tracking-widest">{speaker?.constituency || 'Assembly Head'}</p>
                  </div>
                </div>
              </motion.div>
@@ -452,10 +452,10 @@ const InteractiveParliamentTree = () => {
                   <h4 className="font-headline font-black text-on-surface leading-tight text-lg">
                     {official.name}
                   </h4>
-                  <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em]">
+                  <p className="text-label-xs text-primary tracking-[0.2em]">
                     Deputy Speaker
                   </p>
-                  <p className="text-[10px] text-on-surface-variant/40 font-bold mt-1">Constituency: {official.constituency}</p>
+                  <p className="text-body-xxs text-on-surface-variant/40 font-bold mt-1">Constituency: {official.constituency}</p>
                 </div>
               </motion.div>
             ))}
@@ -471,7 +471,7 @@ const InteractiveParliamentTree = () => {
               <div className="space-y-8">
                 <div className="flex flex-col items-center gap-4 mb-8">
                   <div className="w-16 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-                  <span className="text-[10px] font-black text-primary uppercase tracking-[0.4em] opacity-40">Section Alpha</span>
+                  <span className="text-label-xs text-primary tracking-[0.4em] opacity-40">Section Alpha</span>
                 </div>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -493,7 +493,7 @@ const InteractiveParliamentTree = () => {
               <div className="space-y-8">
                 <div className="flex flex-col items-center gap-4 mb-8">
                   <div className="w-16 h-px bg-gradient-to-r from-transparent via-secondary/30 to-transparent" />
-                  <span className="text-[10px] font-black text-secondary uppercase tracking-[0.4em] opacity-40">Section Beta</span>
+                  <span className="text-label-xs text-secondary tracking-[0.4em] opacity-40">Section Beta</span>
                 </div>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -580,33 +580,33 @@ const MemberSmallCard = ({ student, onClick, delay, accentColor }: { student: St
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      whileHover={{ scale: 1.05, y: -4 }}
+      whileHover={{ scale: 1.05, y: -8 }}
       transition={{ 
-        duration: 0.3,
+        duration: 0.4,
         delay: delay * 0.02,
         type: "spring",
-        stiffness: 300,
-        damping: 25
+        stiffness: 260,
+        damping: 20
       }}
       onClick={onClick}
-      className="bg-surface-container p-5 rounded-[2rem] shadow-sm hover:shadow-xl hover:bg-surface-container-high hover:-translate-y-1 transition-all cursor-pointer group text-center"
+      className="bg-surface-container-lowest p-6 rounded-[2.5rem] ambient-shadow hover:shadow-2xl hover:bg-white hover:-translate-y-2 transition-all duration-500 cursor-pointer group text-center border-none"
     >
-      <div className="relative mx-auto mb-4 w-20 h-20">
-        <div className="w-full h-full rounded-2xl overflow-hidden ring-4 ring-outline-variant/5 group-hover:ring-primary/20 transition-all shadow-md">
+      <div className="relative mx-auto mb-5 w-24 h-24">
+        <div className="w-full h-full rounded-[2rem] overflow-hidden ring-8 ring-outline-variant/5 group-hover:ring-primary/10 transition-all duration-500 shadow-xl">
           <Avatar className="w-full h-full rounded-none">
-            <AvatarImage src={student.photo_url?.includes('/file/d/') ? `https://drive.google.com/uc?export=view&id=${student.photo_url.split('/d/')[1]?.split('/')[0]}` : student.photo_url} className="object-cover" />
-            <AvatarFallback className={`bg-gradient-to-br ${accentColor} text-white font-black text-xl`}>
+            <AvatarImage src={student.photo_url?.includes('/file/d/') ? `https://drive.google.com/uc?export=view&id=${student.photo_url.split('/d/')[1]?.split('/')[0]}` : student.photo_url} className="object-cover group-hover:scale-110 transition-transform duration-700" />
+            <AvatarFallback className={`bg-gradient-to-br ${accentColor} text-white font-black text-2xl`}>
               {student.name?.charAt(0) || '?'}
             </AvatarFallback>
           </Avatar>
         </div>
-        <div className={`absolute -bottom-1 -right-1 w-4 h-4 ${accentColor} rounded-full border-2 border-surface-container-low shadow-sm transition-transform group-hover:scale-125`} />
+        <div className={`absolute -bottom-1.5 -right-1.5 w-6 h-6 ${accentColor} rounded-xl border-4 border-surface-container-lowest shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:rotate-12`} />
       </div>
       
-      <h4 className="font-headline font-black text-on-surface text-xs leading-tight mb-1 truncate px-1 group-hover:text-primary transition-colors">
+      <h4 className="font-headline font-black text-on-surface text-body-md leading-tight mb-1 truncate px-1 group-hover:text-primary transition-colors duration-300 uppercase italic">
         {student.name}
       </h4>
-      <p className="text-[8px] font-black uppercase tracking-widest text-on-surface-variant/40 truncate opacity-60">
+      <p className="text-body-xs font-bold uppercase tracking-widest text-on-surface-variant/40 truncate opacity-60">
         {student.position}
       </p>
     </motion.div>

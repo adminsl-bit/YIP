@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Download, Users, Loader2 } from "lucide-react";
+import { Download, Users, Loader2, Calendar, LayoutPanelLeft, UserMinus, CheckCircle, XCircle, MoreHorizontal } from "lucide-react";
 import jsPDF from "jspdf";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface Student {
   user_id: string;
@@ -114,19 +114,19 @@ export const DetailedPollResults = ({ pollId, pollTitle, pollHeading, options, i
 
   if (loading) {
     return (
-      <div className="bg-[#ffffff] rounded-[2.5rem] p-12 border border-[#e0e3e5]/50 shadow-sm flex flex-col items-center justify-center min-h-[300px]">
-        <Loader2 className="w-10 h-10 text-[#13298f] animate-spin mb-4" />
-        <p className="text-[#13298f] font-bold font-headline uppercase tracking-widest text-xs">Compiling Results...</p>
+      <div className="bg-surface-container-lowest rounded-[3rem] p-16 shadow-2xl border border-outline-variant/10 flex flex-col items-center justify-center min-h-[400px]">
+        <Loader2 className="w-12 h-12 text-primary animate-spin mb-6" />
+        <p className="text-primary font-bold font-display uppercase tracking-[0.2em] text-label-sm">Compiling Verdict...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-[#ffffff] rounded-[2.5rem] p-12 border border-[#e0e3e5]/50 shadow-sm flex flex-col items-center justify-center min-h-[300px]">
-        <span className="material-symbols-outlined text-5xl text-[#ba1a1a] mb-4">error</span>
-        <h3 className="text-xl font-black font-headline text-[#191c1e] mb-2">Unable to Load Results</h3>
-        <p className="text-[#757684] text-sm">{error}</p>
+      <div className="bg-surface-container-lowest rounded-[3rem] p-16 shadow-2xl border border-outline-variant/10 flex flex-col items-center justify-center min-h-[400px]">
+        <XCircle className="w-16 h-16 text-secondary mb-6" />
+        <h3 className="text-display-xs font-display font-bold text-on-surface uppercase italic mb-4">Legislative Deadlock</h3>
+        <p className="text-on-surface-variant/40 text-body-md font-medium">{error}</p>
       </div>
     );
   }
@@ -174,56 +174,56 @@ export const DetailedPollResults = ({ pollId, pollTitle, pollHeading, options, i
 
       pdf.save(`poll-results-${pollTitle.replace(/[^a-zA-Z0-9]/g, '-')}.pdf`);
       
-      toast({ title: "PDF Downloaded", description: "Poll results have been downloaded as PDF" });
+      toast.success("Political Dossier Exported: Poll results have been downloaded as PDF");
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast({ title: "Error", description: "Failed to generate PDF", variant: "destructive" });
+      toast.error("Export Failed: Could not generate the parliamentary report.");
     }
   };
 
   return (
-    <div className="bg-[#f8fafc] rounded-[3rem] border border-white shadow-[0_32px_128px_-16px_rgba(0,0,0,0.1)] w-full flex flex-col max-h-full overflow-hidden">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 p-10 pb-6 shrink-0 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
+    <div className="bg-surface-container-lowest rounded-[3rem] shadow-2xl border border-outline-variant/10 w-full flex flex-col max-h-full overflow-hidden">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-10 p-12 lg:p-14 shrink-0 relative overflow-hidden bg-surface-container-low border-b border-outline-variant/5">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full -mr-48 -mt-48 blur-3xl"></div>
         
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl bg-[#13298f] flex items-center justify-center shadow-[0_8px_16px_rgba(19,41,143,0.2)]">
-              <span className="material-symbols-outlined text-white text-2xl">analytics</span>
+        <div className="relative z-10 flex-1">
+          <div className="flex items-center gap-4 mb-6">
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center border border-primary/20 shadow-sm">
+              <LayoutPanelLeft className="w-7 h-7 text-primary" />
             </div>
-            <h2 className="text-sm font-black font-headline text-[#13298f] uppercase tracking-[0.2em]">Detailed Analytics</h2>
+            <h2 className="text-label-md font-bold font-display text-primary uppercase tracking-[0.2em]">Legislative Analytics</h2>
           </div>
-          <h1 className="text-2xl md:text-3xl font-black font-headline text-[#191c1e] leading-tight max-w-2xl">
+          <h1 className="text-display-lg font-display font-bold text-on-surface leading-tight uppercase italic tracking-tight mb-4">
             {pollHeading || pollTitle}
           </h1>
           {pollHeading && (
-            <p className="text-[#757684] font-bold font-headline mt-1 text-sm uppercase tracking-widest opacity-60">
+            <p className="text-on-surface-variant/60 font-bold font-display text-body-sm uppercase tracking-widest">
               {pollTitle}
             </p>
           )}
-          <div className="flex items-center gap-4 mt-6">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 rounded-full">
-              <Users className="w-3.5 h-3.5 text-[#13298f]" />
-              <span className="text-[10px] font-black uppercase tracking-[0.1em] text-[#13298f]">{votesWithStudents.length} Delegates</span>
+          <div className="flex items-center gap-10 mt-10">
+            <div className="flex items-center gap-4 px-8 py-3 bg-primary/5 border border-primary/10 rounded-full">
+              <Users className="w-6 h-6 text-primary" />
+              <span className="text-label-lg font-bold uppercase tracking-widest text-primary">{votesWithStudents.length} Delegates</span>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-100 rounded-full">
-              <span className="material-symbols-outlined text-[14px] text-slate-500">event</span>
-              <span className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-500">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+            <div className="flex items-center gap-4 px-8 py-3 bg-surface-container rounded-full border border-outline-variant/10">
+              <Calendar className="w-6 h-6 text-on-surface-variant/40" />
+              <span className="text-label-lg font-bold uppercase tracking-widest text-on-surface-variant/60">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
             </div>
           </div>
         </div>
         
         {isOrganizer && (
-          <button 
+            <button 
             onClick={downloadPDF}
-            className="flex items-center gap-2 px-6 py-3 bg-white text-[#13298f] hover:bg-[#13298f] hover:text-white rounded-2xl font-bold shadow-sm hover:shadow-md transition-all text-sm shrink-0 relative z-10 border border-slate-200/50"
+            className="flex items-center gap-5 px-12 py-6 bg-white text-primary hover:bg-primary hover:text-on-primary rounded-[2rem] font-bold shadow-xl hover:shadow-primary/20 transition-all text-label-lg uppercase tracking-[0.1em] shrink-0 relative z-10 border border-primary/10 active:scale-95"
           >
-            <Download className="w-4 h-4" /> Export PDF
+            <Download className="w-7 h-7" /> Export Report
           </button>
         )}
       </div>
 
-      <div className="space-y-10 overflow-y-auto p-10 pt-4 min-h-0 custom-scrollbar [scrollbar-gutter:stable]">
+      <div className="space-y-16 overflow-y-auto p-12 lg:p-16 pt-10 min-h-0 custom-scrollbar [scrollbar-gutter:stable] no-scrollbar">
         {[...options, { id: 'did_not_vote', text: 'Did Not Vote' }].map((option) => {
           const optionDisplay = getOptionDisplay(option);
           const optionVotes = getVotesForOption(optionDisplay.id);
@@ -236,58 +236,58 @@ export const DetailedPollResults = ({ pollId, pollTitle, pollHeading, options, i
           const isAye = optionDisplay.text.toLowerCase() === 'aye' || optionDisplay.text.toLowerCase() === 'yes';
           const isNo = optionDisplay.text.toLowerCase() === 'no' || optionDisplay.text.toLowerCase() === 'nay';
 
-          let headerColor = 'bg-[#f2f4f6] text-[#191c1e]';
-          let icon = 'how_to_vote';
-          let iconColor = 'text-[#757684]';
+          let headerColor = 'bg-surface-container-low text-on-surface';
+          let icon = <MoreHorizontal className="w-10 h-10" />;
+          let iconColor = 'text-on-surface-variant/40';
           
           if (isAye) {
-            headerColor = 'bg-[#13298f]/10 text-[#13298f]';
-            icon = 'thumb_up';
-            iconColor = 'text-[#13298f]';
+            headerColor = 'bg-primary/5 text-primary';
+            icon = <CheckCircle className="w-10 h-10" />;
+            iconColor = 'text-primary';
           } else if (isNo) {
-            headerColor = 'bg-[#ba1a1a]/10 text-[#ba1a1a]';
-            icon = 'thumb_down';
-            iconColor = 'text-[#ba1a1a]';
+            headerColor = 'bg-secondary/5 text-secondary';
+            icon = <XCircle className="w-10 h-10" />;
+            iconColor = 'text-secondary';
           } else if (isNonVoteOption) {
-            headerColor = 'bg-slate-100 text-slate-500';
-            icon = 'person_off';
-            iconColor = 'text-slate-500';
+            headerColor = 'bg-surface-container text-on-surface-variant/40';
+            icon = <UserMinus className="w-10 h-10" />;
+            iconColor = 'text-on-surface-variant/40';
           }
 
           return (
-            <div key={optionDisplay.id} className="rounded-[2.5rem] border border-white shadow-[0_8px_32px_rgba(0,0,0,0.04)] overflow-hidden bg-white/50 backdrop-blur-sm shrink-0">
-              <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-8 ${headerColor} border-b border-white/20`}>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-white/40 flex items-center justify-center backdrop-blur-md">
-                    <span className={`material-symbols-outlined text-2xl ${iconColor}`}>{icon}</span>
+            <div key={optionDisplay.id} className="rounded-[4rem] border border-outline-variant/10 overflow-hidden bg-surface-container-lowest shadow-lg hover:shadow-2xl transition-all duration-500">
+              <div className={`flex flex-col sm:flex-row sm:items-center justify-between p-12 ${headerColor} border-b border-outline-variant/10`}>
+                <div className="flex items-center gap-8">
+                  <div className="w-20 h-20 rounded-[2rem] bg-white/50 flex items-center justify-center backdrop-blur-md shadow-inner">
+                    <div className={iconColor}>{icon}</div>
                   </div>
-                  <h3 className="text-xl font-black font-headline uppercase tracking-tight">{optionDisplay.text}</h3>
+                  <h3 className="text-display-sm font-display font-bold uppercase italic tracking-tight">{optionDisplay.text}</h3>
                 </div>
-                <div className="mt-4 sm:mt-0 flex flex-col items-start sm:items-end">
-                  <span className="text-3xl font-black font-headline leading-none mb-1">{percentage}%</span>
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">{optionVotes.length} Delegates</span>
+                <div className="mt-8 sm:mt-0 flex flex-col items-start sm:items-end">
+                  <span className="text-display-md font-display font-bold leading-none mb-2">{percentage}%</span>
+                  <span className="text-label-lg font-bold uppercase tracking-[0.2em] opacity-40">{optionVotes.length} Delegates</span>
                 </div>
               </div>
 
               {optionVotes.length > 0 ? (
-                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="p-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
                   {optionVotes.map((vote) => (
-                    <div key={vote.voter_id} className="flex items-center gap-4 p-4 rounded-3xl bg-white border border-slate-100 hover:border-[#13298f]/20 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group">
-                      <Avatar className="w-12 h-12 border-4 border-[#f8fafc] shadow-sm shrink-0 group-hover:scale-110 transition-transform">
+                    <div key={vote.voter_id} className="flex items-center gap-6 p-6 rounded-[2rem] bg-surface-container-low border border-outline-variant/10 hover:border-primary/30 hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 group">
+                      <Avatar className="w-16 h-16 border-4 border-white shadow-lg shrink-0 group-hover:scale-110 transition-transform duration-500">
                         <AvatarImage src={vote.student.photo_url || ''} alt={vote.student.name} />
-                        <AvatarFallback className="bg-slate-100 text-[#757684] text-xs font-black uppercase">
+                        <AvatarFallback className="bg-surface-container-highest text-on-surface-variant/60 text-label-md font-bold uppercase">
                           {vote.student.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2)}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-black text-[#191c1e] truncate font-headline group-hover:text-[#13298f] transition-colors">{vote.student.name}</p>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[10px] font-black text-[#757684] uppercase tracking-wider truncate">
+                        <p className="text-body-lg font-bold text-on-surface truncate font-display group-hover:text-primary transition-colors">{vote.student.name}</p>
+                        <div className="flex items-center gap-3 mt-2">
+                          <span className="text-body-sm font-bold text-on-surface-variant/60 uppercase tracking-widest truncate">
                             {vote.student.position}
                           </span>
-                          <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                          <span className="text-[10px] font-black text-[#13298f] uppercase tracking-wider">
-                             P{['No Party', 'A', 'B', 'C', 'D', 'E'][vote.student.party_number] || vote.student.party_number}
+                          <span className="w-1.5 h-1.5 rounded-full bg-on-surface-variant/20"></span>
+                          <span className="text-body-sm font-bold text-primary uppercase tracking-[0.1em]">
+                             P{['NONE', 'A', 'B', 'C', 'D', 'E'][vote.student.party_number] || vote.student.party_number}
                           </span>
                         </div>
                       </div>
@@ -295,9 +295,9 @@ export const DetailedPollResults = ({ pollId, pollTitle, pollHeading, options, i
                   ))}
                 </div>
               ) : (
-                <div className="p-8 text-center bg-[#f7f9fb]">
-                  <p className="text-sm font-bold text-[#757684]">
-                    {isNonVoteOption ? 'All delegates have cast their vote.' : 'No delegates selected this option.'}
+                <div className="p-16 text-center bg-surface-container-low/50">
+                  <p className="text-label-lg font-bold text-on-surface-variant/40 uppercase tracking-[0.2em] italic">
+                    {isNonVoteOption ? 'Universal participation achieved.' : 'No parliamentary alignment found.'}
                   </p>
                 </div>
               )}

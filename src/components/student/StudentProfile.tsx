@@ -4,7 +4,8 @@ import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PartyBadge } from "@/components/ui/party-badge";
 import { ProfilePhotoUploader } from "./ProfilePhotoUploader";
-import { Hash, MapPin, Building, Users, Crown, Trophy, Award } from "lucide-react";
+import { PartyLogoUploader } from "./PartyLogoUploader";
+import { Hash, MapPin, Building, Users, Crown, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
@@ -15,6 +16,7 @@ interface Profile {
   position: string;
   party_number: number;
   party_name?: string;
+  party_logo_url?: string;
   serial_number: number;
   committee?: string;
   constituency?: string;
@@ -74,7 +76,6 @@ export const StudentProfile = ({ profile, isOwnProfile = false, variant = 'defau
   const fetchLeaderboardData = async () => {
     setLoadingLeaderboard(true);
     try {
-      // Fetch student's score and ranking
       const { data, error } = await supabase
         .from('organizer_leaderboard')
         .select('final_total_score')
@@ -83,19 +84,16 @@ export const StudentProfile = ({ profile, isOwnProfile = false, variant = 'defau
 
       if (error) throw error;
 
-      // If no data exists or score is null, don't show leaderboard
       if (!data || data.final_total_score === null) {
         setLeaderboardData(null);
         return;
       }
 
-      // Get total number of students with scores
       const { count } = await supabase
         .from('organizer_leaderboard')
         .select('*', { count: 'exact', head: true })
         .not('final_total_score', 'is', null);
 
-      // Calculate ranking
       const { count: higherScores } = await supabase
         .from('organizer_leaderboard')
         .select('*', { count: 'exact', head: true })
@@ -115,21 +113,29 @@ export const StudentProfile = ({ profile, isOwnProfile = false, variant = 'defau
   };
 
   return (
-    <Card className={`w-full rounded-[2.5rem] overflow-hidden ${
+    <Card className={`w-full rounded-[2.5rem] overflow-hidden border-none shadow-none ${
       variant === 'integrated' 
-        ? 'shadow-none border-none bg-transparent' 
-        : `shadow-lg border ${isSpecial ? 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-300' : 'bg-white border-border/20'}`
+        ? 'bg-transparent' 
+        : `relative z-10 ${isSpecial ? 'bg-gradient-to-br from-amber-50 to-white' : 'bg-white/40 backdrop-blur-md'}`
     }`}>
+      {/* Background Decorative Element for non-integrated cards */}
+      {variant !== 'integrated' && !isSpecial && (
+        <div className="absolute inset-0 z-[-1] opacity-50">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/[0.03] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/[0.03] rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+        </div>
+      )}
+
       <CardContent className="p-0">
-        <section className={`flex flex-col md:flex-row ${variant === 'integrated' ? 'min-h-0' : 'min-h-[500px]'}`}>
-          {/* Left side - Image */}
-          <div className={`${variant === 'integrated' ? 'w-full md:w-[40%]' : 'w-full md:w-1/2'} relative aspect-square md:aspect-auto`}>
+        <section className={`flex flex-col lg:flex-row ${variant === 'integrated' ? 'min-h-0' : 'min-h-[600px]'}`}>
+          {/* Left side - Image & Identity */}
+          <div className={`${variant === 'integrated' ? 'w-full lg:w-[40%]' : 'w-full lg:w-1/2'} relative aspect-square lg:aspect-auto group/photo overflow-hidden`}>
             {profile.photo_url ? (
               <img 
                 src={`${profile.photo_url}${profile.photo_url.includes('?') ? '&' : '?'}cb=${profile.updated_at ? new Date(profile.updated_at).getTime() : Date.now()}`}
                 data-src={profile.photo_url}
                 alt={`${profile.name} profile photo`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover transition-transform duration-1000 group-hover/photo:scale-110"
                 loading="lazy"
                 onError={(e) => {
                   const target = e.currentTarget as HTMLImageElement;
@@ -147,45 +153,64 @@ export const StudentProfile = ({ profile, isOwnProfile = false, variant = 'defau
               <div className={`w-full h-full flex items-center justify-center ${
                 isSpecial 
                   ? 'bg-gradient-to-br from-amber-400 to-yellow-500' 
-                  : 'bg-gradient-to-br from-primary to-primary-glow'
+                  : 'bg-primary'
               }`}>
-                <span className="text-6xl font-bold text-primary-foreground">{initials}</span>
+                <span className="text-display-xl text-on-primary font-display font-black italic">{initials}</span>
               </div>
             )}
-            {isSpecial && (
-              <div className="absolute top-4 left-4 bg-amber-500 rounded-full p-2 shadow-lg">
-                <Crown className="w-6 h-6 text-white" />
-              </div>
-            )}
+            
+            {/* Overlay Badges */}
+            <div className="absolute top-10 left-10 flex flex-col gap-5">
+              {isSpecial && (
+                <div className="bg-amber-500 rounded-[1.25rem] p-5 shadow-2xl shadow-amber-500/30 backdrop-blur-md animate-in zoom-in duration-500">
+                  <Crown className="w-10 h-10 text-white" />
+                </div>
+              )}
+              {profile.party_logo_url && (
+                <div className="bg-white/80 rounded-[1.25rem] p-4 shadow-2xl shadow-on-surface/5 backdrop-blur-md w-20 h-20 flex items-center justify-center overflow-hidden transition-transform hover:scale-110 duration-500">
+                  <img src={profile.party_logo_url} alt="Party Logo" className="w-full h-full object-contain" />
+                </div>
+              )}
+            </div>
+
             {isOwnProfile && (
-              <div className="absolute bottom-4 right-4">
+              <div className="absolute bottom-10 right-10 flex flex-col gap-5 opacity-0 group-hover/photo:opacity-100 transition-opacity duration-500">
                 <ProfilePhotoUploader currentPhotoUrl={profile.photo_url} />
+                <PartyLogoUploader currentLogoUrl={profile.party_logo_url} />
               </div>
             )}
           </div>
 
           {/* Right side - Profile Details */}
-          <div className={`${variant === 'integrated' ? 'w-full md:w-[60%]' : 'w-full md:w-1/2'} p-8 md:p-12 flex flex-col justify-center space-y-8`}>
-            <header className="space-y-4">
-              <CardTitle className={`text-2xl md:text-3xl font-headline font-black leading-tight ${
-                isSpecial ? 'text-amber-800' : 'text-[#191c1e]'
-              }`}>
-                {profile.name.replace(/^Delegate\s+/i, '')}
-              </CardTitle>
-              <div className="flex flex-wrap items-center gap-3">
-                <span className={`text-base font-bold ${
-                  isSpecial ? 'text-amber-700' : 'text-slate-500'
-                }`}>{profile.position}</span>
-                <span className="text-muted-foreground">•</span>
-                <PartyBadge partyNumber={profile.party_number} partyName={profile.party_name} size="md" />
-                <Badge variant="outline" className="px-3 py-1 text-[10px] font-black uppercase tracking-widest bg-blue-50 text-blue-600 border-none">
-                  Party {profile.party_number}
-                </Badge>
+          <div className={`${variant === 'integrated' ? 'w-full lg:w-[60%]' : 'w-full lg:w-1/2'} p-10 lg:p-20 flex flex-col justify-center`}>
+            <header className="mb-16">
+              <div className="space-y-4 mb-10">
+                <CardTitle className={`text-display-md lg:text-display-lg font-display font-black tracking-tighter leading-none uppercase italic ${
+                  isSpecial ? 'text-amber-800' : 'text-on-surface'
+                }`}>
+                  {profile.name.replace(/^Delegate\s+/i, '')}
+                </CardTitle>
+                <div className="flex items-center gap-4">
+                  <div className={`h-1.5 w-12 rounded-full ${isSpecial ? 'bg-amber-500' : 'bg-primary'}`} />
+                  <span className={`text-label-sm font-black uppercase tracking-[0.4em] ${
+                    isSpecial ? 'text-amber-600' : 'text-primary'
+                  }`}>{profile.position}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <PartyBadge 
+                  partyNumber={profile.party_number} 
+                  partyName={profile.party_name} 
+                  partyLogoUrl={profile.party_logo_url}
+                  size="lg" 
+                />
+                
                 {profile.party_alignment && (
-                  <Badge variant="outline" className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest border-none ${
-                    profile.party_alignment === 'ruling_party' ? 'bg-indigo-50 text-[#13298f]' : 
-                    profile.party_alignment === 'opposition' ? 'bg-red-50 text-[#ac3509]' : 
-                    'bg-slate-50 text-slate-400'
+                  <Badge variant="outline" className={`px-8 py-3 text-label-xs border-none shadow-none font-black rounded-full uppercase tracking-widest ${
+                    profile.party_alignment === 'ruling_party' ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 
+                    profile.party_alignment === 'opposition' ? 'bg-secondary text-on-secondary shadow-lg shadow-secondary/20' : 
+                    'bg-surface-container-high text-on-surface-variant/40'
                   }`}>
                     {profile.party_alignment.replace('_', ' ')}
                   </Badge>
@@ -193,111 +218,102 @@ export const StudentProfile = ({ profile, isOwnProfile = false, variant = 'defau
               </div>
             </header>
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <Hash className="w-5 h-5 text-slate-400" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-12 mb-20">
+              <div className="flex items-center gap-6 group cursor-default">
+                <div className="w-20 h-20 bg-surface-container-low rounded-[2rem] flex items-center justify-center flex-shrink-0 group-hover:bg-primary/5 transition-all duration-700">
+                  <Hash className="w-8 h-8 text-on-surface-variant/30 group-hover:text-primary transition-colors" />
                 </div>
-                <div className="space-y-0.5">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Roll Number</p>
-                  <p className="text-xl font-headline font-black text-[#191c1e]">{profile.serial_number}</p>
+                <div className="space-y-1">
+                  <p className="text-label-xs font-black text-on-surface-variant/30 uppercase tracking-[0.3em]">Serial ID</p>
+                  <p className="text-display-xs font-display font-black text-on-surface italic">{profile.serial_number}</p>
                 </div>
               </div>
 
               {profile.committee && (
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Users className="w-5 h-5 text-slate-400" />
+                <div className="flex items-center gap-6 group cursor-default">
+                  <div className="w-20 h-20 bg-surface-container-low rounded-[2rem] flex items-center justify-center flex-shrink-0 group-hover:bg-primary/5 transition-all duration-700">
+                    <Users className="w-8 h-8 text-on-surface-variant/30 group-hover:text-primary transition-colors" />
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Committee</p>
-                    <p className="text-xl font-headline font-black text-[#191c1e]">{profile.committee}</p>
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-label-xs font-black text-on-surface-variant/30 uppercase tracking-[0.3em]">Committee</p>
+                    <p className="text-headline-sm font-display font-black text-on-surface truncate uppercase italic tracking-tight">{profile.committee}</p>
                   </div>
                 </div>
               )}
 
               {profile.ministry && (
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-amber-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Crown className="w-5 h-5 text-amber-500" />
+                <div className="flex items-center gap-6 group cursor-default">
+                  <div className="w-20 h-20 bg-amber-50 rounded-[2rem] flex items-center justify-center flex-shrink-0 group-hover:bg-amber-100 transition-all duration-700">
+                    <Crown className="w-8 h-8 text-amber-500" />
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-amber-400 uppercase tracking-widest">Ministry</p>
-                    <p className="text-xl font-headline font-black text-[#191c1e]">{profile.ministry}</p>
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-label-xs font-black text-amber-600/40 uppercase tracking-[0.3em]">Ministry</p>
+                    <p className="text-headline-sm font-display font-black text-on-surface uppercase italic tracking-tight">{profile.ministry}</p>
                   </div>
                 </div>
               )}
               
-
               {profile.constituency && (
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <Building className="w-5 h-5 text-slate-400" />
+                <div className="flex items-center gap-6 group cursor-default">
+                  <div className="w-20 h-20 bg-surface-container-low rounded-[2rem] flex items-center justify-center flex-shrink-0 group-hover:bg-primary/5 transition-all duration-700">
+                    <Building className="w-8 h-8 text-on-surface-variant/30 group-hover:text-primary transition-colors" />
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Constituency</p>
-                    <p className="text-lg font-headline font-black text-[#191c1e]">{profile.constituency}</p>
+                  <div className="space-y-1 min-w-0">
+                    <p className="text-label-xs font-black text-on-surface-variant/30 uppercase tracking-[0.3em]">Constituency</p>
+                    <p className="text-headline-sm font-display font-black text-on-surface uppercase italic tracking-tight">{profile.constituency}</p>
                   </div>
                 </div>
               )}
 
               {profile.state && (
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                    <MapPin className="w-5 h-5 text-slate-400" />
+                <div className="flex items-center gap-6 group cursor-default">
+                  <div className="w-20 h-20 bg-surface-container-low rounded-[2rem] flex items-center justify-center flex-shrink-0 group-hover:bg-primary/5 transition-all duration-700">
+                    <MapPin className="w-8 h-8 text-on-surface-variant/30 group-hover:text-primary transition-colors" />
                   </div>
-                  <div className="space-y-0.5">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">State</p>
-                    <p className="text-lg font-headline font-black text-[#191c1e]">
+                  <div className="space-y-1">
+                    <p className="text-label-xs font-black text-on-surface-variant/30 uppercase tracking-[0.3em]">Region</p>
+                    <p className="text-headline-sm font-display font-black text-on-surface uppercase italic tracking-tight">
                       {profile.state}
                     </p>
                   </div>
                 </div>
               )}
+            </div>
 
-              {/* Leaderboard Scores - Only shown when leaderboard is visible */}
+            {/* Leaderboard & Security Section */}
+            <div className="pt-16 space-y-10 border-t border-on-surface-variant/5">
               {settings.leaderboard_visible && leaderboardData && (
-                <div className="pt-4 mt-4 border-t-2 border-primary/20 space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-gradient-to-br from-amber-400 to-yellow-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-200">
-                      <Trophy className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="space-y-0.5">
-                      <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ranking</p>
-                      <p className="text-xl font-headline font-black text-[#191c1e]">
-                        #{leaderboardData.ranking} <span className="text-xs text-slate-400">of {leaderboardData.total_students}</span>
-                      </p>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                  <div className="bg-primary rounded-[2.5rem] p-8 text-on-primary shadow-2xl shadow-primary/20 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-1000" />
+                    <p className="text-label-xs opacity-60 mb-3 font-black uppercase tracking-[0.3em] relative z-10">Current Rank</p>
+                    <p className="text-display-md font-display font-black italic uppercase relative z-10 tracking-tighter">#{leaderboardData.ranking}</p>
+                    <p className="text-label-xs opacity-40 mt-2 font-black uppercase tracking-[0.1em] relative z-10">Global Standing</p>
                   </div>
-
-                  {leaderboardData.final_total_score !== null && (
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-gradient-to-br from-primary to-primary-glow rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-200">
-                        <Award className="w-5 h-5 text-white" />
-                      </div>
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Total Score</p>
-                        <p className="text-xl font-headline font-black text-[#191c1e]">
-                          {leaderboardData.final_total_score.toFixed(2)} <span className="text-xs text-slate-400">/ 100</span>
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {settings.leaderboard_visible && loadingLeaderboard && (
-                <div className="pt-4 mt-4 border-t-2 border-primary/20">
-                  <div className="flex items-center justify-center py-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <div className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-8 shadow-2xl shadow-on-surface/5 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-1000" />
+                    <p className="text-label-xs text-on-surface-variant/40 mb-3 font-black uppercase tracking-[0.3em] relative z-10">Impact Score</p>
+                    <p className="text-display-md font-display font-black text-primary italic uppercase relative z-10 tracking-tighter">{leaderboardData.final_total_score?.toFixed(1)}</p>
+                    <p className="text-label-xs text-on-surface-variant/20 mt-2 font-black uppercase tracking-[0.1em] relative z-10">Out of 100.0</p>
                   </div>
                 </div>
               )}
 
-              {/* Change Password Button - Only for own profile */}
               {isOwnProfile && (
-                <div className="pt-4 mt-4 border-t-2 border-primary/20">
-                  <ChangePasswordDialog />
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-8 p-8 bg-surface-container-low/40 rounded-[2.5rem] backdrop-blur-sm">
+                  <div className="w-full sm:w-auto">
+                    <ChangePasswordDialog />
+                  </div>
+                  <div className="hidden sm:block h-16 w-px bg-on-surface-variant/5" />
+                  <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 rounded-[1.25rem] bg-tertiary/10 flex items-center justify-center shadow-inner">
+                      <ShieldCheck className="w-7 h-7 text-tertiary" />
+                    </div>
+                    <div>
+                      <p className="text-label-xs font-black text-on-surface-variant/30 uppercase tracking-[0.2em]">Security Status</p>
+                      <p className="text-label-md font-black text-tertiary uppercase tracking-widest">Authenticated Access</p>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>

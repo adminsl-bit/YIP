@@ -131,9 +131,9 @@ export const PollResults = () => {
 
   if (loading) {
     return (
-      <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
-        <div className="flex items-center justify-center h-32">
-          <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent shadow-lg"></div>
+      <div className="bg-surface-container-lowest rounded-[2.5rem] p-12 border border-outline-variant/10 shadow-xl">
+        <div className="flex items-center justify-center h-48">
+          <Loader2 className="w-12 h-12 text-primary animate-spin" />
         </div>
       </div>
     );
@@ -141,51 +141,51 @@ export const PollResults = () => {
 
   if (!polls.length) {
     return (
-      <div className="bg-white/15 backdrop-blur-lg rounded-3xl p-12 border border-white/25 shadow-xl text-center">
-        <div className="relative inline-block mb-6">
-          <div className="w-20 h-20 bg-gradient-to-br from-gray-400 to-gray-500 rounded-3xl flex items-center justify-center mx-auto shadow-lg">
-            <BarChart3 className="w-10 h-10 text-white" />
+      <div className="bg-surface-container-lowest rounded-[3rem] p-20 border border-outline-variant/10 shadow-2xl text-center">
+        <div className="relative inline-block mb-10">
+          <div className="w-24 h-24 bg-surface-container-low rounded-[2rem] flex items-center justify-center mx-auto shadow-lg">
+            <BarChart3 className="w-10 h-10 text-on-surface-variant/20" />
           </div>
-          <div className="absolute -top-2 -right-2 w-6 h-6 bg-gray-400/40 rounded-full animate-bounce"></div>
+          <div className="absolute -top-3 -right-3 w-8 h-8 bg-primary/10 rounded-full animate-bounce"></div>
         </div>
-        <h3 className="text-2xl font-black text-slate-800 mb-4">No Public Results Available</h3>
-        <p className="text-lg text-slate-600 font-medium">
-          Poll results will appear here when organizers make them public.
+        <h3 className="text-display-xs font-display font-bold text-on-surface mb-4 uppercase italic tracking-tight">No Public Results</h3>
+        <p className="text-body-md text-on-surface-variant/60 font-medium">
+          Poll results will appear here when organizers make them public for the assembly.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {polls.map((poll) => {
         const pollResults = results[poll.id] || [];
         const totalVotes = getTotalVotes(poll.id);
         const maxVotes = getMaxVotes(poll.id);
 
         return (
-          <Card key={poll.id} className="bg-white/15 backdrop-blur-lg border border-white/25 shadow-xl">
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <Card key={poll.id} className="bg-surface-container-lowest rounded-[3rem] border border-outline-variant/10 shadow-2xl overflow-hidden">
+            <CardHeader className="p-10 lg:p-12 pb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-8">
                 <div className="flex-1">
-                  <CardTitle className="text-xl font-black text-slate-800 mb-2 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center shadow-lg">
-                      <BarChart3 className="w-5 h-5 text-white" />
+                  <CardTitle className="text-display-xs font-display font-bold text-on-surface mb-4 flex items-center gap-5 italic tracking-tight uppercase">
+                    <div className="w-14 h-14 bg-primary/5 rounded-2xl flex items-center justify-center border border-primary/10">
+                      <BarChart3 className="w-7 h-7 text-primary" />
                     </div>
                     {poll.title}
                   </CardTitle>
                   {poll.description && (
-                    <p className="text-slate-600 font-medium ml-13">{poll.description}</p>
+                    <p className="text-body-md text-on-surface-variant/60 font-medium ml-19 leading-relaxed">{poll.description}</p>
                   )}
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge className="bg-gradient-to-r from-green-500 to-teal-500 text-white shadow-lg px-3 py-1">
-                    <Users className="w-3 h-3 mr-1" />
-                    {totalVotes} votes
+                <div className="flex flex-wrap items-center gap-4">
+                  <Badge className="bg-surface-container text-on-surface-variant px-5 py-2.5 rounded-2xl font-bold text-label-sm border-none shadow-sm uppercase tracking-widest flex items-center gap-3">
+                    <Users className="w-4 h-4" />
+                    {totalVotes} Votes
                   </Badge>
                   {poll.is_active && (
-                    <Badge className="bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg px-3 py-1">
-                      <TrendingUp className="w-3 h-3 mr-1" />
+                    <Badge className="bg-emerald-50 text-emerald-600 px-5 py-2.5 rounded-2xl font-bold text-label-sm border-emerald-100 shadow-sm uppercase tracking-widest flex items-center gap-3">
+                      <TrendingUp className="w-4 h-4" />
                       Live
                     </Badge>
                   )}
@@ -193,37 +193,39 @@ export const PollResults = () => {
               </div>
             </CardHeader>
 
-            <CardContent className="space-y-4">
-              <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-6 border border-white/30">
-                <h4 className="font-bold text-slate-800 mb-6 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5" />
-                  Live Results
+            <CardContent className="p-10 lg:p-12 pt-0 space-y-8">
+              <div className="bg-surface-container-low/50 rounded-[2.5rem] p-10 border border-outline-variant/5">
+                <h4 className="font-display font-bold text-title-md text-on-surface mb-10 flex items-center gap-4 uppercase italic tracking-tight">
+                  <div className="w-1.5 h-6 bg-primary rounded-full"></div>
+                  Assembly Statistics
                 </h4>
                 
-                <div className="space-y-4">
+                <div className="space-y-8">
                   {pollResults.map((result, index) => (
-                    <div key={index} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-800">{result.option}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-slate-700">{result.count}</span>
-                          <span className="text-sm text-slate-600">({result.percentage.toFixed(1)}%)</span>
+                    <div key={index} className="space-y-4">
+                      <div className="flex items-center justify-between px-2">
+                        <span className="text-body-lg font-black text-on-surface uppercase tracking-tight italic">{result.option}</span>
+                        <div className="flex items-center gap-4">
+                          <span className="text-body-md font-bold text-on-surface">{result.count}</span>
+                          <span className="text-label-sm font-black text-on-surface-variant/40 tracking-[0.1em]">({result.percentage.toFixed(1)}%)</span>
                         </div>
                       </div>
                       <div className="relative">
-                        <div className="w-full bg-white/30 rounded-full h-6 overflow-hidden">
-                          <div 
-                            className={`h-full rounded-full transition-all duration-1000 ease-out ${
+                        <div className="w-full bg-surface-container rounded-full h-8 overflow-hidden border border-outline-variant/5 shadow-inner">
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${result.percentage}%` }}
+                            transition={{ duration: 1.5, ease: "easeOut" }}
+                            className={`h-full rounded-full ${
                               result.count === maxVotes && maxVotes > 0 
-                                ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
-                                : 'bg-gradient-to-r from-blue-500 to-purple-500'
+                                ? 'bg-primary shadow-[0_0_20px_rgba(var(--primary-rgb),0.3)]' 
+                                : 'bg-on-surface-variant/10'
                             }`}
-                            style={{ width: `${result.percentage}%` }}
                           />
                         </div>
-                        {result.count > 0 && (
+                        {result.count > 0 && result.percentage > 10 && (
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-xs font-bold text-white drop-shadow-lg">
+                            <span className="text-label-xs font-black text-on-primary tracking-widest uppercase opacity-80">
                               {result.count}
                             </span>
                           </div>
@@ -234,14 +236,14 @@ export const PollResults = () => {
                 </div>
 
                 {totalVotes === 0 && (
-                  <div className="text-center py-8 text-slate-600">
-                    <p className="font-medium">No votes yet. Be the first to vote!</p>
+                  <div className="text-center py-12">
+                    <p className="text-body-md font-bold text-on-surface-variant/30 uppercase tracking-widest">Awaiting First Ballot</p>
                   </div>
                 )}
               </div>
 
-              <div className="text-xs text-slate-500 text-center">
-                Results update in real-time • Created {new Date(poll.created_at).toLocaleDateString()}
+              <div className="text-label-sm text-on-surface-variant/30 text-center font-bold uppercase tracking-[0.25em]">
+                Live Stream • Synced {new Date(poll.created_at).toLocaleDateString()}
               </div>
             </CardContent>
           </Card>

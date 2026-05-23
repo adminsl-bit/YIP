@@ -180,7 +180,7 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
   return (
     <div className="relative w-full max-w-sm">
       <div 
-        className={`relative flex flex-col items-center p-6 rounded-3xl transition-all duration-500 ease-out backdrop-blur-3xl shadow-elevated ${
+        className={`relative flex flex-col items-center p-8 rounded-[32px] transition-all duration-700 ease-out glassmorphism ambient-shadow ${
           isSpecialPosition(student.position, student.name)
             ? 'bg-gradient-to-br from-amber-50/90 to-surface-container-low/90'
             : 'bg-surface-container-low/80'
@@ -227,15 +227,15 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
 
         {/* Identity Section */}
         <div className="text-center mb-4">
-          <h2 className={`text-2xl font-headline font-black tracking-tight mb-2 ${
+          <h2 className={`text-display-sm font-headline font-black tracking-tight mb-2 uppercase italic ${
             isSpecialPosition(student.position, student.name) ? 'text-amber-900' : 'text-on-surface'
           }`}>
             {student.name}
           </h2>
           
-          <div className="flex items-center justify-center gap-2 px-4 py-1.5 rounded-full bg-surface-container-high/50 backdrop-blur-sm">
+          <div className="flex items-center justify-center gap-3 px-6 py-2 rounded-full bg-surface-container-high/50 backdrop-blur-md ambient-shadow border border-outline-variant/5">
             {getPositionIcon(student.position)}
-            <p className={`text-sm font-bold tracking-wide uppercase ${
+            <p className={`text-label-xs font-black tracking-[0.2em] uppercase ${
               isSpecialPosition(student.position, student.name) ? 'text-amber-700' : 'text-primary'
             }`}>
               {student.position}
@@ -280,20 +280,20 @@ const GlassmorphismProfileCard = ({ student }: GlassmorphismProfileCardProps) =>
 const InfoItem = ({ item, setHoveredItem, hoveredItem }: any) => (
   <div className="relative group">
     <div
-      className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-300 ease-out ${
-        hoveredItem === item.id ? 'bg-surface-container-highest shadow-sm' : 'bg-surface-container-high/40'
+      className={`flex items-center gap-5 p-4 rounded-[20px] transition-all duration-500 ease-out ${
+        hoveredItem === item.id ? 'bg-surface-container-lowest shadow-xl scale-[1.02]' : 'bg-surface-container-high/40'
       }`}
       onMouseEnter={() => setHoveredItem(item.id)}
       onMouseLeave={() => setHoveredItem(null)}
     >
-      <div className={`w-10 h-10 ${item.color} rounded-xl flex items-center justify-center shadow-inner`}>
-        <item.icon className={`w-5 h-5 ${item.iconColor}`} />
+      <div className={`w-12 h-12 ${item.color} rounded-2xl flex items-center justify-center ambient-shadow group-hover:scale-110 transition-transform duration-500`}>
+        <item.icon className={`w-6 h-6 ${item.iconColor}`} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/50 mb-0.5">
+        <p className="text-body-xxs font-black uppercase tracking-[0.25em] text-on-surface-variant/40 mb-1">
           {item.label}
         </p>
-        <p className="text-sm font-bold text-on-surface truncate">
+        <p className="text-headline-xs font-headline font-black text-on-surface truncate uppercase italic tracking-tight">
           {item.value}
         </p>
       </div>

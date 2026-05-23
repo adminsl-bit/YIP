@@ -31,6 +31,8 @@ export default {
 			fontFamily: {
 				sans: ['Manrope', 'Inter', 'sans-serif'],
 				display: ['Plus Jakarta Sans', 'sans-serif'],
+				headline: ['Plus Jakarta Sans', 'sans-serif'],
+				body: ['Manrope', 'sans-serif'],
 				serif: ['Playfair Display', 'serif'],
 			},
 			colors: {
@@ -41,12 +43,25 @@ export default {
 				foreground: 'hsl(var(--foreground))',
 				primary: {
 					DEFAULT: 'hsl(var(--primary))',
-					foreground: 'hsl(var(--primary-foreground))',
-					glow: 'hsl(var(--primary-glow))'
+					foreground: 'hsl(var(--on-primary))',
+					glow: 'hsl(var(--primary-glow))',
+					container: 'hsl(var(--primary-container))',
+					fixed: 'hsl(var(--primary-fixed))',
+					'fixed-dim': 'hsl(var(--primary-fixed-dim))'
 				},
 				secondary: {
 					DEFAULT: 'hsl(var(--secondary))',
-					foreground: 'hsl(var(--secondary-foreground))'
+					foreground: 'hsl(var(--on-secondary))',
+					container: 'hsl(var(--secondary-container))',
+					fixed: 'hsl(var(--secondary-fixed))',
+					'fixed-dim': 'hsl(var(--secondary-fixed-dim))'
+				},
+				tertiary: {
+					DEFAULT: 'hsl(var(--tertiary))',
+					foreground: 'hsl(var(--on-tertiary))',
+					container: 'hsl(var(--tertiary-container))',
+					fixed: 'hsl(var(--tertiary-fixed))',
+					'fixed-dim': 'hsl(var(--tertiary-fixed-dim))'
 				},
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',

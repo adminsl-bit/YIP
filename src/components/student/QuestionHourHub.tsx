@@ -222,16 +222,16 @@ export const QuestionHourHub = () => {
         subtitle="Legislative Question Protocol"
         icon={HelpCircle}
         actions={
-          <div className="flex bg-surface-container-low p-1 rounded-xl">
+          <div className="flex bg-surface-container-low p-1.5 rounded-full ambient-shadow">
             <button 
               onClick={() => setViewFilter('trending')}
-              className={`px-4 py-1.5 rounded-lg font-headline font-black text-[10px] uppercase tracking-widest transition-all ${viewFilter === 'trending' ? 'bg-surface text-primary shadow-sm' : 'text-on-surface-variant/40 hover:text-on-surface-variant'}`}
+              className={`px-6 py-2 rounded-full font-headline font-black text-label-xs uppercase tracking-widest transition-all duration-300 ${viewFilter === 'trending' ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 'text-on-surface-variant/40 hover:text-on-surface-variant'}`}
             >
               Trending
             </button>
             <button 
               onClick={() => setViewFilter('recent')}
-              className={`px-4 py-1.5 rounded-lg font-headline font-black text-[10px] uppercase tracking-widest transition-all ${viewFilter === 'recent' ? 'bg-surface text-primary shadow-sm' : 'text-on-surface-variant/40 hover:text-on-surface-variant'}`}
+              className={`px-6 py-2 rounded-full font-headline font-black text-label-xs uppercase tracking-widest transition-all duration-300 ${viewFilter === 'recent' ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 'text-on-surface-variant/40 hover:text-on-surface-variant'}`}
             >
               Recent
             </button>
@@ -252,8 +252,8 @@ export const QuestionHourHub = () => {
         <aside className="w-full lg:w-[360px] bg-surface-container-low overflow-y-auto no-scrollbar shrink-0 p-4 lg:p-6 border-r border-outline-variant/10">
           <div className="space-y-8">
             <div>
-              <h2 className="text-xl font-headline font-black text-primary tracking-tight mb-2">Formal Question</h2>
-              <p className="text-on-surface-variant/60 font-medium text-xs leading-relaxed">Submit a precise question to the executive ministries for deliberation.</p>
+              <h2 className="text-display-sm font-headline font-black text-primary tracking-tight mb-2 uppercase italic">Formal Question</h2>
+              <p className="text-on-surface-variant/60 font-medium text-body-xs leading-relaxed">Submit a precise question to the executive ministries for deliberation.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -307,12 +307,12 @@ export const QuestionHourHub = () => {
               )}
             </form>
 
-            <div className="p-5 bg-surface-container rounded-2xl">
-              <div className="flex items-center gap-3 mb-2 text-primary">
-                <Gavel className="w-3.5 h-3.5" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Protocol Notice</span>
+            <div className="p-6 bg-surface-container-high rounded-[24px] border-none ambient-shadow">
+              <div className="flex items-center gap-3 mb-3 text-primary">
+                <Gavel className="w-4 h-4" />
+                <span className="text-label-xs font-black uppercase tracking-[0.2em]">Protocol Notice</span>
               </div>
-              <p className="text-[10px] text-on-surface-variant/70 leading-relaxed font-medium">Questions should be constructive and focus on policy deliberation. Inflammatory or non-parliamentary language will be retracted by the Speaker.</p>
+              <p className="text-body-xs text-on-surface-variant/70 leading-relaxed font-medium">Questions should be constructive and focus on policy deliberation. Inflammatory or non-parliamentary language will be retracted by the Speaker.</p>
             </div>
           </div>
         </aside>
@@ -341,8 +341,8 @@ export const QuestionHourHub = () => {
             {/* Questions Section */}
             <div className="space-y-6">
               <div className="flex items-center justify-between px-2">
-                <h3 className="font-headline font-black text-primary uppercase text-[10px] tracking-[0.3em]">Deliberation Floor</h3>
-                <span className="text-[9px] font-black text-on-surface-variant/40 uppercase tracking-widest">{filteredQuestions.length} Questions Pending</span>
+                <h3 className="font-headline font-black text-primary uppercase text-label-sm tracking-[0.3em]">Deliberation Floor</h3>
+                <span className="text-label-xs font-black text-on-surface-variant/40 uppercase tracking-widest">{filteredQuestions.length} Questions Pending</span>
               </div>
 
               {loading ? (
@@ -365,8 +365,9 @@ export const QuestionHourHub = () => {
                       key={q.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-surface-container-lowest p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.02)] hover:shadow-[0_8px_40px_rgb(0,0,0,0.06)] hover:scale-[1.005] transition-all duration-500 group border border-outline-variant/5"
+                      className="bg-surface-container-lowest p-8 rounded-[32px] shadow-sm hover:shadow-2xl hover:scale-[1.01] transition-all duration-700 group border-none ambient-shadow relative overflow-hidden"
                     >
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                       <div className="flex justify-between items-start mb-6">
                         <div className="flex items-center gap-4">
                           <Avatar 
@@ -395,7 +396,7 @@ export const QuestionHourHub = () => {
                         )}
                       </div>
 
-                      <p className="text-sm font-headline font-black text-[#191c1e] leading-snug mb-6 tracking-tight">
+                      <p className="text-headline-sm font-headline font-black text-on-surface leading-tight mb-8 tracking-tight uppercase italic">
                         "{q.content}"
                       </p>
 

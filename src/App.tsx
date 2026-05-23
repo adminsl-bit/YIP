@@ -72,12 +72,14 @@ const App = () => (
             <Route path="/display/polls" element={<PollDisplay />} />
             <Route path="/display/leaderboard" element={<LeaderboardDisplay />} />
             <Route path="/display/awards" element={<AwardShowcase />} />
+            <Route path="/awards" element={<AwardShowcase />} />
             <Route path="/seed-demo" element={<SeedDemoUsers />} />
             {/* Public info pages */}
             <Route path="/about" element={<About />} />
             <Route path="/results" element={<Results />} />
             <Route path="/sessions" element={<Sessions />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/register-2026" element={<Register />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />

@@ -2,33 +2,21 @@ import { Link } from "react-router-dom";
 
 const Footer = () => {
   return (
-    <footer className="bg-slate-50 border-t border-slate-200/30">
-      <div className="container mx-auto px-6 py-12">
-        <div className="flex flex-col md:flex-row justify-between items-center gap-10">
-          <div className="flex flex-col items-center md:items-start gap-4">
-            <div className="text-xl font-black text-[#2E41AC] font-headline tracking-tighter">
-              Young Indians Parliament
-            </div>
-            <p className="text-slate-400 text-[10px] font-bold uppercase tracking-widest hidden md:block">
-              The Digital Diplomat Initiative
-            </p>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-8 md:gap-12">
-            <Link className="text-slate-500 font-bold text-[10px] hover:text-[#2E41AC] transition-colors uppercase tracking-[0.2em]" to="/privacy-policy">Privacy</Link>
-            <Link className="text-slate-500 font-bold text-[10px] hover:text-[#2E41AC] transition-colors uppercase tracking-[0.2em]" to="/terms">Terms</Link>
-            <Link className="text-slate-500 font-bold text-[10px] hover:text-[#2E41AC] transition-colors uppercase tracking-[0.2em]" to="/results">Results</Link>
-            <Link className="text-slate-500 font-bold text-[10px] hover:text-[#2E41AC] transition-colors uppercase tracking-[0.2em]" to="/faq">FAQ</Link>
-          </div>
-
-          <div className="flex flex-col items-center md:items-end gap-2">
-            <div className="text-slate-500 font-bold text-[10px] uppercase tracking-widest">
-              © 2026 Young Indians Parliament
-            </div>
-            <div className="text-slate-400 font-medium text-[9px] uppercase tracking-[0.3em]">
-              Powered by <span className="text-[#2E41AC]">Strawlabs</span>
-            </div>
-          </div>
+    <footer className="bg-surface-container-low dark:bg-surface-container-highest border-t border-outline-variant/20">
+      <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row justify-between items-center gap-6">
+        <Link to="/" className="text-lg font-black text-primary dark:text-white font-headline tracking-tighter">
+          Young Indians Parliament
+        </Link>
+        <div className="flex flex-wrap justify-center gap-6">
+          <Link to="/about" className="text-on-surface-variant dark:text-slate-400 font-bold text-xs hover:text-primary transition-colors uppercase tracking-widest">The Mission</Link>
+          <Link to="/sessions" className="text-on-surface-variant dark:text-slate-400 font-bold text-xs hover:text-primary transition-colors uppercase tracking-widest">Sessions</Link>
+          <Link to="/results" className="text-on-surface-variant dark:text-slate-400 font-bold text-xs hover:text-primary transition-colors uppercase tracking-widest">Recognitions</Link>
+          <Link to="/faq" className="text-on-surface-variant dark:text-slate-400 font-bold text-xs hover:text-primary transition-colors uppercase tracking-widest">FAQ</Link>
+          <Link to="/privacy" className="text-on-surface-variant dark:text-slate-400 font-bold text-xs hover:text-primary transition-colors uppercase tracking-widest">Privacy Policy</Link>
+          <Link to="/terms" className="text-on-surface-variant dark:text-slate-400 font-bold text-xs hover:text-primary transition-colors uppercase tracking-widest">Terms of Service</Link>
+        </div>
+        <div className="text-on-surface-variant dark:text-slate-400 font-medium text-xs">
+          © 2026 Young Indians Parliament.
         </div>
       </div>
     </footer>

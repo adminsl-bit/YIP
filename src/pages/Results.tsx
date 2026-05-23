@@ -7,47 +7,47 @@ const Results = () => {
     <div className="bg-surface font-body text-on-surface antialiased min-h-screen">
       <Navbar />
 
-      <main className="pt-32 pb-24">
+      <main className="pt-24 pb-16">
         {/* Awards Hero Section */}
-        <section className="max-w-7xl mx-auto px-8 mb-24 relative text-center">
+        <section className="max-w-6xl mx-auto px-6 mb-16 relative text-center">
           <div className="z-10">
-            <h1 className="text-5xl md:text-7xl font-headline font-extrabold text-primary leading-tight -tracking-[0.03em] mb-6">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-headline font-extrabold text-primary leading-tight -tracking-[0.03em] mb-4">
               Awards & <span className="text-secondary-container">Recognitions.</span>
             </h1>
-            <div className="max-w-3xl mx-auto bg-white/50 backdrop-blur-sm p-8 rounded-3xl border border-outline-variant/10 shadow-lg mb-12">
-              <p className="text-2xl font-headline font-italic text-primary mb-4 italic">
+            <div className="max-w-2xl mx-auto bg-white/50 backdrop-blur-sm p-5 rounded-2xl border border-outline-variant/10 shadow-md mb-8">
+              <p className="text-lg font-headline font-italic text-primary mb-2 italic">
                 “The greatest glory in living lies not in never falling, but in rising every time we fall.”
               </p>
-              <p className="text-on-surface-variant font-bold">— Nelson Mandela</p>
+              <p className="text-on-surface-variant text-xs font-bold">— Nelson Mandela</p>
             </div>
-            <p className="text-xl text-on-surface-variant max-w-2xl mx-auto leading-relaxed">
+            <p className="text-sm text-on-surface-variant max-w-xl mx-auto leading-relaxed">
               Embark on a journey where resilience meets recognition, and every challenge is a step toward glory. The Young Indians Parliament celebrates the spirit of rising, recognizing the dedication, leadership, and excellence of participants poised to shape the future.
             </p>
           </div>
         </section>
 
         {/* Participation Recognition */}
-        <section className="bg-white py-24">
-          <div className="max-w-5xl mx-auto px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-headline font-bold text-on-surface mb-4 underline decoration-secondary-container decoration-4 underline-offset-8">Participation Recognition</h2>
+        <section className="bg-white py-12">
+          <div className="max-w-4xl mx-auto px-6">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl font-headline font-bold text-on-surface mb-3 underline decoration-secondary-container decoration-4 underline-offset-4">Participation Recognition</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-              <div className="space-y-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-6">
-                  <span className="material-symbols-outlined text-primary text-3xl">workspace_premium</span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="space-y-3">
+                <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
+                  <span className="material-symbols-outlined text-primary text-2xl">workspace_premium</span>
                 </div>
-                <h3 className="text-2xl font-headline font-bold text-primary">Participation Certificates</h3>
-                <p className="text-on-surface-variant leading-relaxed">
+                <h3 className="text-lg font-headline font-bold text-primary">Participation Certificates</h3>
+                <p className="text-on-surface-variant text-xs leading-relaxed">
                   All students who qualify for The Assembly will be awarded Participation Certificates. These certificates serve as official recognition of their involvement and efforts in the event, highlighting their commitment to engaging in parliamentary debate and discussion.
                 </p>
               </div>
-              <div className="space-y-4">
-                <div className="w-16 h-16 bg-secondary-container/10 rounded-2xl flex items-center justify-center mb-6">
-                  <span className="material-symbols-outlined text-secondary-container text-3xl">badge</span>
+              <div className="space-y-3">
+                <div className="w-12 h-12 bg-secondary-container/10 rounded-xl flex items-center justify-center mb-4">
+                  <span className="material-symbols-outlined text-secondary-container text-2xl">badge</span>
                 </div>
-                <h3 className="text-2xl font-headline font-bold text-primary">Student Profiles</h3>
-                <p className="text-on-surface-variant leading-relaxed">
+                <h3 className="text-lg font-headline font-bold text-primary">Student Profiles</h3>
+                <p className="text-on-surface-variant text-xs leading-relaxed">
                   In addition to the certificates, qualified students will have their profiles featured. This recognition aims to celebrate each participant’s unique contribution to The Assembly and provide them with a platform to showcase their skills, interests, and perspectives on national and international issues.
                 </p>
               </div>
@@ -56,14 +56,14 @@ const Results = () => {
         </section>
 
         {/* General Awards */}
-        <section className="bg-surface-container-low py-24">
-          <div className="max-w-7xl mx-auto px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-headline font-bold text-on-surface mb-4 underline decoration-tertiary decoration-4 underline-offset-8">General Awards</h2>
-              <p className="text-on-surface-variant text-lg">Honouring excellence in performance and contribution.</p>
+        <section className="bg-surface-container-low py-12">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl font-headline font-bold text-on-surface mb-3 underline decoration-tertiary decoration-4 underline-offset-4">General Awards</h2>
+              <p className="text-on-surface-variant text-xs">Honouring excellence in performance and contribution.</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 { id: 1, title: "Best Parliamentarian Award", desc: "Recognizes a student for outstanding overall participation, knowledge, and adherence to parliamentary protocols.", icon: "account_balance" },
                 { id: 2, title: "Best Speaker Award", desc: "Honors the student with exceptional public speaking skills and persuasive communication during debates.", icon: "record_voice_over" },
@@ -75,15 +75,15 @@ const Results = () => {
                 { id: 8, title: "Team Spirit Award", desc: "Celebrates exceptional teamwork, collaboration, and support among participants.", icon: "groups" },
                 { id: 9, title: "Best Research Presentation", desc: "Commends students excelling in research, insightful analysis, and presentation of their chosen topic.", icon: "search_insights" }
               ].map((award) => (
-                <div key={award.id} className="bg-white p-8 rounded-3xl shadow-lg border border-outline-variant/10 hover:translate-y-[-8px] transition-all duration-300">
+                <div key={award.id} className="bg-white p-5 rounded-2xl shadow border border-outline-variant/10 hover:translate-y-[-4px] transition-all duration-300">
                   <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-primary/5 rounded-xl flex items-center justify-center shrink-0">
-                      <span className="material-symbols-outlined text-primary text-2xl">{award.icon}</span>
+                    <div className="w-10 h-10 bg-primary/5 rounded-lg flex items-center justify-center shrink-0">
+                      <span className="material-symbols-outlined text-primary text-xl">{award.icon}</span>
                     </div>
                     <div>
-                      <div className="text-xs font-black text-primary/30 uppercase tracking-widest mb-1">Award {award.id}</div>
-                      <h3 className="text-xl font-headline font-bold text-primary mb-2 leading-tight">{award.title}</h3>
-                      <p className="text-on-surface-variant text-sm leading-relaxed">{award.desc}</p>
+                      <div className="text-[10px] font-black text-primary/30 uppercase tracking-widest mb-0.5">Award {award.id}</div>
+                      <h3 className="text-base font-headline font-bold text-primary mb-1.5 leading-tight">{award.title}</h3>
+                      <p className="text-on-surface-variant text-xs leading-relaxed">{award.desc}</p>
                     </div>
                   </div>
                 </div>
@@ -93,14 +93,14 @@ const Results = () => {
         </section>
 
         {/* Role Specific Awards */}
-        <section className="bg-white py-24">
-          <div className="max-w-7xl mx-auto px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-headline font-bold text-on-surface mb-4 underline decoration-primary/20 decoration-4 underline-offset-8">Awards for Specific Roles</h2>
-              <p className="text-on-surface-variant text-lg">Celebrating exceptional performance in key parliamentary positions.</p>
+        <section className="bg-white py-12">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="text-center mb-10">
+              <h2 className="text-2xl font-headline font-bold text-on-surface mb-3 underline decoration-primary/20 decoration-4 underline-offset-4">Awards for Specific Roles</h2>
+              <p className="text-on-surface-variant text-xs">Celebrating exceptional performance in key parliamentary positions.</p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[
                 { id: 1, title: "Outstanding Speaker Award", desc: "For the student effectively fulfilling the Speaker's duties with leadership and procedural knowledge.", icon: "gavel" },
                 { id: 2, title: "Exceptional Deputy Speaker", desc: "Honors the student capably supporting the Speaker and demonstrating readiness and adaptability.", icon: "support_agent" },
@@ -108,15 +108,15 @@ const Results = () => {
                 { id: 4, title: "Best Leader of the Opposition", desc: "Awarded to the student excelling in the role of challenging and providing checks and balances to the government.", icon: "shield" },
                 { id: 5, title: "Most Persuasive Policy Advocate", desc: "Recognizes students excelling in policy advocacy with in-depth knowledge and persuasive skills.", icon: "campaign" }
               ].map((award) => (
-                <div key={award.id} className="bg-surface-container-lowest p-8 rounded-[2rem] border-2 border-primary/5 hover:border-primary/20 transition-all">
-                  <div className="w-14 h-14 bg-gradient-to-br from-primary to-primary-container rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-primary/10">
-                    <span className="material-symbols-outlined text-white text-3xl">{award.icon}</span>
+                <div key={award.id} className="bg-surface-container-lowest p-5 rounded-2xl border-2 border-primary/5 hover:border-primary/10 transition-all">
+                  <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center mb-4 shadow shadow-primary/10">
+                    <span className="material-symbols-outlined text-white text-2xl">{award.icon}</span>
                   </div>
-                  <h3 className="text-2xl font-headline font-bold text-primary mb-3 leading-tight">{award.title}</h3>
-                  <p className="text-on-surface-variant leading-relaxed mb-6">{award.desc}</p>
-                  <div className="inline-flex items-center gap-2 text-primary font-bold text-sm uppercase tracking-widest">
+                  <h3 className="text-lg font-headline font-bold text-primary mb-2 leading-tight">{award.title}</h3>
+                  <p className="text-on-surface-variant text-xs leading-relaxed mb-4">{award.desc}</p>
+                  <div className="inline-flex items-center gap-2 text-primary font-bold text-xs uppercase tracking-widest">
                     Role Category
-                    <span className="w-8 h-[1px] bg-primary/20"></span>
+                    <span className="w-6 h-[1px] bg-primary/20"></span>
                   </div>
                 </div>
               ))}

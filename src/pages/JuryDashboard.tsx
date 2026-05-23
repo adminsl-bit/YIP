@@ -105,7 +105,7 @@ const JuryDashboard = () => {
     : 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-indigo-50 relative overflow-hidden">
+    <div className="min-h-screen bg-surface-container-lowest font-body text-on-surface antialiased relative overflow-hidden">
       <BreakingNewsTicker />
       {/* Enhanced animated background matching other dashboards */}
       <div className="absolute inset-0">
@@ -129,31 +129,30 @@ const JuryDashboard = () => {
       </div>
 
       {/* Navigation with enhanced glass morphism */}
-      <nav className="relative z-10 p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center gap-4 bg-white/15 backdrop-blur-lg border-b border-white/25 shadow-xl">
+      <nav className="relative z-10 p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-center gap-4 bg-surface/80 backdrop-blur-lg border-b border-outline-variant/30 shadow-sm">
         <div className="flex items-center gap-4 sm:gap-6">
           <div className="relative">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/30">
-              <Gavel className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20">
+              <Gavel className="w-6 h-6 sm:w-8 sm:h-8 text-on-primary" />
             </div>
-            <div className="absolute -top-1 -right-1 w-3 h-3 sm:w-4 sm:h-4 bg-purple-400/40 rounded-full animate-bounce"></div>
           </div>
           <div className="text-center sm:text-left">
-            <h1 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight">Jury Portal</h1>
-            <p className="text-sm sm:text-lg font-semibold text-slate-600">Young Indians Parliament</p>
+            <h1 className="text-display-xs font-black text-primary tracking-tight uppercase italic leading-none">Jury Portal</h1>
+            <p className="text-body-xxs font-black text-on-surface-variant uppercase tracking-[0.2em] mt-1 opacity-60">Young Indians Parliament</p>
           </div>
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
           {profile && (
-            <div className="text-center sm:text-right bg-white/20 backdrop-blur-sm rounded-2xl p-3 sm:p-4 border border-white/30 order-2 sm:order-1">
-              <p className="font-bold text-slate-800 text-base sm:text-lg">{profile.name}</p>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium">{profile.position}</p>
+            <div className="text-center sm:text-right bg-surface-container-low rounded-2xl p-3 sm:p-4 border border-outline-variant/30 order-2 sm:order-1">
+              <p className="font-headline font-black text-on-surface text-headline-xs">{profile.name}</p>
+              <p className="text-body-xxs text-on-surface-variant font-black uppercase tracking-widest">{profile.position}</p>
             </div>
           )}
           <Button 
             onClick={signOut}
             variant="outline"
-            className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 hover:scale-105 transition-all duration-300 shadow-lg px-4 sm:px-6 py-2 sm:py-3 text-base sm:text-lg font-semibold order-1 sm:order-2"
+            className="bg-error/5 border-error/20 text-error hover:bg-error hover:text-white transition-all duration-300 shadow-sm px-4 sm:px-6 py-2 sm:py-3 text-body-xs font-black uppercase tracking-widest order-1 sm:order-2"
           >
             <LogOut className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
             Sign Out

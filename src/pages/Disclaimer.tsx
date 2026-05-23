@@ -7,14 +7,14 @@ const Disclaimer = () => {
     <div className="bg-surface font-body text-on-surface antialiased min-h-screen">
       <Navbar />
 
-      <main className="pt-32 pb-24">
-        <section className="max-w-4xl mx-auto px-8">
-          <h1 className="text-4xl md:text-5xl font-headline font-extrabold text-primary mb-8 underline decoration-secondary-container decoration-4 underline-offset-8 text-center">
-            Disclaimer
+      <main className="pt-16 pb-12">
+        <section className="max-w-3xl mx-auto px-8">
+          <h1 className="text-display-xs font-headline text-primary mb-8 text-center">
+            Legal <span className="text-secondary italic">Disclaimer.</span>
           </h1>
           
-          <div className="bg-white p-10 rounded-[2.5rem] shadow-xl border border-outline-variant/15 space-y-8 text-on-surface-variant leading-relaxed">
-            <p className="text-xl font-semibold text-on-surface">
+          <div className="bg-surface-container-low p-6 md:p-10 rounded-2xl border border-black/5 space-y-6 text-on-surface-variant leading-relaxed text-body-md">
+            <p className="text-body-lg font-bold text-on-surface mb-6">
               While every precaution has been taken in the preparation of this website and its contents, Confederation of Indian Industry (CII) assumes no responsibility for errors or omissions.
             </p>
             
@@ -22,8 +22,8 @@ const Disclaimer = () => {
               All information and features described herein are subject to change without notice. 
             </p>
             
-            <div className="p-8 bg-surface-container-low rounded-3xl border border-outline-variant/20 space-y-4">
-              <h3 className="font-headline font-bold text-primary flex items-center gap-2">
+            <div className="p-8 bg-surface-container-lowest rounded-xl border border-black/5 space-y-4">
+              <h3 className="text-headline-xs font-headline text-primary flex items-center gap-2 mb-4 italic uppercase font-black tracking-tight">
                 <span className="material-symbols-outlined">link_off</span>
                 Third-Party Links
               </h3>

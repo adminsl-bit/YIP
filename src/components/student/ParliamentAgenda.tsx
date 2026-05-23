@@ -1,186 +1,184 @@
-import { Clock, Calendar, Coffee, Gavel, Users, FileText, MessageSquare } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import React from 'react';
+import { Calendar, Coffee, Mic2, Star, Trophy } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface AgendaItem {
   time: string;
   session: string;
-  type: 'ceremony' | 'break' | 'session' | 'discussion' | 'voting';
+  type: 'session' | 'break' | 'ceremony' | 'activity';
 }
 
-interface DaySchedule {
+interface DayAgenda {
   day: number;
   date: string;
   duration: string;
   items: AgendaItem[];
 }
 
-const getSessionIcon = (type: string) => {
-  switch (type) {
-    case 'ceremony':
-      return <Gavel className="w-4 h-4" />;
-    case 'break':
-      return <Coffee className="w-4 h-4" />;
-    case 'session':
-      return <MessageSquare className="w-4 h-4" />;
-    case 'discussion':
-      return <Users className="w-4 h-4" />;
-    case 'voting':
-      return <FileText className="w-4 h-4" />;
-    default:
-      return <Clock className="w-4 h-4" />;
-  }
-};
-
-const getSessionColor = (type: string) => {
-  switch (type) {
-    case 'ceremony':
-      return 'bg-gradient-to-r from-purple-500 to-indigo-600';
-    case 'break':
-      return 'bg-gradient-to-r from-green-500 to-emerald-600';
-    case 'session':
-      return 'bg-gradient-to-r from-blue-500 to-cyan-600';
-    case 'discussion':
-      return 'bg-gradient-to-r from-orange-500 to-red-600';
-    case 'voting':
-      return 'bg-gradient-to-r from-pink-500 to-rose-600';
-    default:
-      return 'bg-gradient-to-r from-gray-500 to-slate-600';
-  }
-};
-
-const scheduleData: DaySchedule[] = [
+const agenda: DayAgenda[] = [
   {
     day: 1,
-    date: "15 November 2025 (Saturday)",
-    duration: "8:00 AM to 5:30 PM",
+    date: 'Saturday, 15 November 2025',
+    duration: '09:00 AM - 06:00 PM',
     items: [
-      { time: "08:00", session: "Registration & Networking Breakfast", type: "break" },
-      { time: "08:45 - 09:00", session: "Inauguration & Oath of Affirmation - Formal opening; all MPs inducted into the House", type: "ceremony" },
-      { time: "09:00 - 10:30", session: "Voice of the Nation – Special Address Series on the Central Theme - Party Leaders, Shadow Ministers, Cabinet Ministers, Leader of Opposition, and Prime Minister share their visions", type: "session" },
-      { time: "10:30 - 10:45", session: "Networking & Tea Break", type: "break" },
-      { time: "10:45 - 13:00", session: "Question Hour (6 mins per question) - 14 starred/pre-selected questions with 5-6 surprise inclusions", type: "session" },
-      { time: "13:00 - 13:45", session: "Lunch & Cross-Party Consultations - Journalists interact with members and collect statements", type: "break" },
-      { time: "13:45 - 15:00", session: "Government Bills (20 min each) - Ministers present bills, members debate, and voting takes place", type: "voting" },
-      { time: "15:00 - 15:05", session: "Opening Remarks by Ms Sangeetha Muthuavinashiappan, Chair-Thalir", type: "ceremony" },
-      { time: "15:05 - 15:15", session: "Welcome Address by Mr Tarang Khurana, Yi National Chairman", type: "ceremony" },
-      { time: "15:15 - 15:35", session: "Inaugural Address by Chief Guest Shri Baijayant Panda, Hon'ble Member of Parliament", type: "ceremony" },
-      { time: "15:35 - 15:40", session: "Vote of Thanks by Mr Aseem Abhyankar, Co-Chair-Thalir", type: "ceremony" },
-      { time: "16:00 - 17:00", session: "Government Bills (Continued) - Remaining government bills presentation, debate, and voting", type: "voting" },
-      { time: "17:00", session: "Adjournment - Speaker closes proceedings of the day", type: "ceremony" },
-      { time: "17:00 - 17:30", session: "High Tea - End of Program on Day I", type: "break" }
+      { time: '09:00 AM', session: 'Registration & Welcome Kit Collection', type: 'session' },
+      { time: '10:00 AM', session: 'Opening Ceremony & Keynote Address', type: 'ceremony' },
+      { time: '11:30 AM', session: 'Introductory Parliamentary Briefing', type: 'session' },
+      { time: '01:00 PM', session: 'Networking Lunch', type: 'break' },
+      { time: '02:00 PM', session: 'Session I: Legislative Resolution Drafting', type: 'session' },
+      { time: '04:00 PM', session: 'High Tea & Peer Discussion', type: 'break' },
+      { time: '04:30 PM', session: 'Mock Debate: Practice Round', type: 'activity' },
+      { time: '06:00 PM', session: 'Day 1 Adjournment', type: 'ceremony' },
     ]
   },
   {
     day: 2,
-    date: "16 November 2025 (Sunday)",
-    duration: "8:00 AM to 5:00 PM",
+    date: 'Sunday, 16 November 2025',
+    duration: '09:30 AM - 05:30 PM',
     items: [
-      { time: "08:00", session: "Reporting & Breakfast - Arrival at India Habitat Centre with breakfast served at venue", type: "break" },
-      { time: "09:00 - 11:00", session: "Private Members' Bills (15 min each) - Private member bills presentation, debate, and voting", type: "voting" },
-      { time: "11:00 - 12:45", session: "Committee Reports (15 min each) - Committees present reports; House debates and discusses each point", type: "discussion" },
-      { time: "12:45 - 13:30", session: "Lunch & Networking - Journalists interact with members and collect statements", type: "break" },
-      { time: "13:30 - 15:15", session: "Zero Hour - Breaking news items circulated; members share views, ministers and shadow ministers respond, PM gives final remarks", type: "session" },
-      { time: "15:15 - 15:30", session: "Administrator Observations & closing remarks by LoP, PM and Speakers - Visionary reflections on The Assembly experience", type: "ceremony" },
-      { time: "15:30 - 15:40", session: "Valedictory Session: Remarks by Ms Sangeetha Muthuavinashiappan", type: "ceremony" },
-      { time: "15:40 - 15:50", session: "Valedictory Session: Remarks by Mr Aseem Abhyankar", type: "ceremony" },
-      { time: "15:50 - 16:00", session: "Valedictory Session: Special Remarks by Mr Darshan Mutha, Mentor, The Assembly & Chair-Accessibility", type: "ceremony" },
-      { time: "16:00 - 16:55", session: "Recognition to Winners", type: "ceremony" },
-      { time: "16:55 - 17:00", session: "Concluding & Vote of thanks by Mr Aseem Abhyankar - End of the Program", type: "ceremony" }
+      { time: '09:30 AM', session: 'Morning Briefing & Strategy Alignment', type: 'session' },
+      { time: '10:30 AM', session: 'Session II: The Great Debate', type: 'session' },
+      { time: '01:00 PM', session: 'Networking Lunch', type: 'break' },
+      { time: '02:00 PM', session: 'Voting & Resolution Passing', type: 'activity' },
+      { time: '03:30 PM', session: 'Jury Deliberation & Feedback', type: 'session' },
+      { time: '04:30 PM', session: 'Awards & Valedictory Ceremony', type: 'ceremony' },
+      { time: '05:30 PM', session: 'Grand Finale & Closing', type: 'ceremony' },
     ]
   }
 ];
 
 export const ParliamentAgenda = () => {
+  const getSessionIcon = (type: string) => {
+    switch(type) {
+      case 'break': return <Coffee className="w-4 h-4" />;
+      case 'ceremony': return <Trophy className="w-4 h-4" />;
+      case 'activity': return <Star className="w-4 h-4" />;
+      default: return <Mic2 className="w-4 h-4" />;
+    }
+  };
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0 }
+  };
+
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-4">
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <div className="p-3 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl">
-            <Calendar className="w-8 h-8 text-primary" />
-          </div>
-          <div>
-            <h2 className="text-3xl font-headline font-black text-foreground">Grand Assembly Agenda</h2>
-            <p className="text-muted-foreground font-body">15-16 November 2025, New Delhi</p>
+    <div className="max-w-6xl mx-auto p-6 lg:p-12 space-y-20">
+      {/* Header Section - Editorial Style */}
+      <div className="flex flex-col items-center text-center max-w-3xl mx-auto space-y-6 mb-12">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="p-5 bg-surface-container-highest/50 backdrop-blur-xl rounded-[2.5rem] shadow-inner"
+        >
+          <Calendar className="w-10 h-10 text-primary" />
+        </motion.div>
+        <div className="space-y-4">
+          <h2 className="text-display-md lg:text-display-lg font-display font-black text-on-surface tracking-[-0.03em] uppercase italic leading-none">
+            Grand Assembly <br />
+            <span className="text-primary/40">Legislative Agenda</span>
+          </h2>
+          <div className="flex items-center justify-center gap-4 text-label-lg font-bold uppercase tracking-[0.3em] text-on-surface-variant/40 italic">
+            <span>New Delhi</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-primary/20"></span>
+            <span>Nov 15-16, 2025</span>
           </div>
         </div>
       </div>
 
-      {/* Schedule Cards */}
-      <div className="grid gap-8">
-        {scheduleData.map((day) => (
-          <Card key={day.day} className="overflow-hidden border-0 shadow-lg bg-white/80 backdrop-blur-sm">
-            <CardHeader className={`${getSessionColor('ceremony')} text-white`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-2xl font-headline font-bold text-white">
-                    {day.date}
-                  </CardTitle>
-                  <p className="text-white/90 mt-1 font-body">{day.duration}</p>
-                </div>
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
-                  Day {day.day}
-                </Badge>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+        {agenda.map((day) => (
+          <motion.div 
+            key={day.day}
+            initial={{ opacity: 0, x: day.day === 1 ? -30 : 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-col bg-surface-container-low/40 rounded-[3.5rem] overflow-hidden"
+          >
+            {/* Day Header - Tonal Layering */}
+            <div className="p-10 bg-surface-container-low border-b border-white/5 flex items-center justify-between">
+              <div className="space-y-1">
+                <span className="text-primary font-black text-label-sm uppercase tracking-[0.25em]">Day {day.day}</span>
+                <h3 className="text-title-lg font-display font-black text-on-surface uppercase italic tracking-tight">
+                  {day.date.split(',')[0]}
+                </h3>
+                <p className="text-on-surface-variant/40 text-label-xs font-bold uppercase tracking-widest">{day.duration}</p>
               </div>
-            </CardHeader>
+              <div className="w-16 h-16 rounded-[2rem] bg-white/50 backdrop-blur-md flex items-center justify-center shadow-inner border border-white/20">
+                <span className="text-display-xs font-display font-black text-primary/20 italic">0{day.day}</span>
+              </div>
+            </div>
 
-            <CardContent className="p-0">
-              <div className="space-y-0">
-                {day.items.map((item, index) => (
-                  <div key={index}>
-                    <div className="flex items-start gap-4 p-6 hover:bg-muted/30 transition-colors">
-                      {/* Time Badge */}
-                      <div className="flex-shrink-0">
-                        <Badge 
-                          variant="outline" 
-                          className="px-3 py-1 text-sm font-mono bg-background border-muted-foreground/20"
-                        >
-                          {item.time}
-                        </Badge>
-                      </div>
-
-                      {/* Session Content */}
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <div className={`p-2 rounded-lg ${getSessionColor(item.type)} text-white`}>
-                            {getSessionIcon(item.type)}
-                          </div>
-                          <h3 className="font-headline font-semibold text-foreground leading-tight">
-                            {item.session}
-                          </h3>
-                        </div>
-                      </div>
-
-                      {/* Session Type Indicator */}
-                      <div className="flex-shrink-0">
-                        <Badge 
-                          variant="secondary"
-                          className="capitalize text-xs"
-                        >
-                          {item.type}
-                        </Badge>
-                      </div>
-                    </div>
-                    
-                    {index < day.items.length - 1 && (
-                      <Separator className="ml-6" />
-                    )}
+            {/* Agenda Items */}
+            <motion.div 
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="p-6 lg:p-10 space-y-4"
+            >
+              {day.items.map((item, idx) => (
+                <motion.div 
+                  key={idx} 
+                  variants={itemVariants}
+                  className="group relative flex items-center gap-6 p-6 bg-surface-container-lowest/80 rounded-[2.5rem] transition-all hover:bg-surface-container-lowest hover:shadow-2xl hover:shadow-primary/5 active:scale-[0.98]"
+                >
+                  <div className="flex-shrink-0 w-24">
+                    <span className="text-label-sm font-black text-primary uppercase tracking-tighter">
+                      {item.time}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  
+                  <div className="flex items-center gap-5 flex-1 min-w-0">
+                    <div className={`p-3 rounded-2xl bg-surface-container-high text-on-surface-variant transition-all group-hover:bg-primary group-hover:text-on-primary group-hover:scale-110 shadow-sm shadow-black/5`}>
+                      {getSessionIcon(item.type)}
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <h4 className="font-display font-bold text-body-md text-on-surface group-hover:text-primary transition-colors leading-tight truncate">
+                        {item.session}
+                      </h4>
+                      <span className="text-label-xs font-bold text-on-surface-variant/30 uppercase tracking-widest mt-1">
+                        {item.type}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Hover Accent */}
+                  <div className="absolute right-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="w-1.5 h-6 bg-primary rounded-full shadow-[0_0_12px_rgba(19,41,143,0.3)]" />
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.div>
         ))}
       </div>
 
-      {/* Footer Note */}
-      <div className="text-center p-6 bg-muted/30 rounded-lg">
-        <p className="text-sm text-muted-foreground font-body">
-          All timings are indicative. Please stay updated with any announcements during the session.
-        </p>
-      </div>
+      {/* Footer Disclaimer - Editorial Style */}
+      <motion.div 
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        className="max-w-xl mx-auto"
+      >
+        <div className="p-8 rounded-[2.5rem] bg-surface-container-high/30 backdrop-blur-sm border border-white/5 text-center space-y-4">
+          <div className="flex justify-center gap-2">
+            {[1, 2, 3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-primary/20" />)}
+          </div>
+          <p className="text-label-xs text-on-surface-variant/40 font-black uppercase tracking-[0.25em] leading-relaxed italic">
+            Institutional Note: All session timings are indicative and subject to the flow of parliamentary debate. 
+            Delegates are expected to remain in the chamber until official adjournment.
+          </p>
+        </div>
+      </motion.div>
     </div>
   );
-};
+}

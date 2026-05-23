@@ -11,6 +11,7 @@ import { useNavigate } from "react-router-dom";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
+import Navbar from "@/components/Navbar";
 
 interface Awardee {
   student_id: string;
@@ -306,8 +307,11 @@ export const AwardShowcase = () => {
   const currentAwardee = awardees[currentIndex];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 relative overflow-hidden flex flex-col">
-      <BreakingNewsTicker />
+    <div className="min-h-screen bg-surface relative overflow-hidden flex flex-col font-body antialiased">
+      <Navbar />
+      <div className="pt-16">
+        <BreakingNewsTicker />
+      </div>
       {/* Animated background */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,_rgba(59,130,246,0.15)_1px,_transparent_0)] bg-[length:40px_40px] animate-pulse"></div>
@@ -317,22 +321,22 @@ export const AwardShowcase = () => {
       </div>
 
       {/* Header */}
-      <div className="relative z-10 p-3 sm:p-4 flex-shrink-0">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 mb-3 sm:mb-4">
+      <div className="relative z-10 p-2 sm:p-3 flex-shrink-0">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 mb-2 sm:mb-3">
           <Button 
             onClick={() => navigate('/organizer')}
             variant="outline"
-            className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 w-full sm:w-auto"
+            className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 w-full sm:w-auto h-7 text-[10px]"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="w-3 h-3 mr-1.5" />
             Back to Dashboard
           </Button>
           
           <div className="text-center flex-1">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-black text-transparent bg-gradient-to-r from-yellow-600 via-orange-600 to-red-600 bg-clip-text">
+            <h1 className="text-title-sm font-headline font-extrabold text-primary leading-tight -tracking-[0.03em] mb-0.5">
               🏆 Award Showcase
             </h1>
-            <p className="text-xs sm:text-sm text-slate-600 font-medium mt-1">
+            <p className="text-[9px] text-on-surface-variant font-medium">
               Recognizing Excellence in Young Indians Parliament
             </p>
           </div>
@@ -341,27 +345,27 @@ export const AwardShowcase = () => {
             <Button
               onClick={downloadPDF}
               variant="outline"
-              className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 mb-2 w-full sm:w-auto"
+              className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 mb-1.5 w-full sm:w-auto h-7 text-[9px]"
             >
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="w-2.5 h-2.5 mr-1.5" />
               Download PDF
             </Button>
-            <div>
-              <p className="text-base sm:text-lg font-bold text-slate-800">
+            <div className="flex items-center justify-center sm:justify-end gap-2">
+              <span className="text-xs font-bold text-slate-800">
                 {currentIndex + 1} of {awardees.length}
-              </p>
-              <p className="text-xs sm:text-sm text-slate-600">Awardees</p>
+              </span>
+              <span className="text-[9px] text-slate-600">Awardees</span>
             </div>
           </div>
         </div>
 
         {/* Navigation dots */}
-        <div className="flex justify-center space-x-1.5 sm:space-x-2 mb-3 sm:mb-4 overflow-x-auto py-2">
+        <div className="flex justify-center space-x-1 sm:space-x-1.5 mb-2 sm:mb-3 overflow-x-auto py-1">
           {awardees.map((_, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
-              className={`w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full transition-all duration-300 flex-shrink-0 ${
+              className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300 flex-shrink-0 ${
                 index === currentIndex 
                   ? 'bg-yellow-500 scale-125 shadow-lg' 
                   : 'bg-white/50 hover:bg-white/75'
@@ -379,81 +383,81 @@ export const AwardShowcase = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
                 {/* Photo and Basic Info */}
                 <div className="text-center">
-                  <div className="relative inline-block mb-4">
-                    <div className="absolute -inset-2 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 rounded-full blur-lg opacity-75 animate-pulse"></div>
-                    <Avatar className="relative w-40 h-40 lg:w-52 lg:h-52 border-6 border-white shadow-2xl">
+                  <div className="relative inline-block mb-2">
+                    <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 rounded-full blur-sm opacity-75 animate-pulse"></div>
+                    <Avatar className="relative w-20 h-20 lg:w-24 lg:h-24 border-2 border-white shadow-xl">
                       <AvatarImage 
                         src={currentAwardee.photo_url} 
                         alt={currentAwardee.student_name}
                         className="object-cover"
                       />
-                      <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-600 text-white text-3xl lg:text-5xl font-bold">
+                      <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-600 text-white text-lg lg:text-2xl font-bold">
                         {currentAwardee.student_name.split(' ').map(n => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
                   </div>
                   
-                  <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-slate-800 mb-3">
+                  <h2 className="text-lg md:text-xl font-black text-slate-800 mb-1">
                     {currentAwardee.student_name}
                   </h2>
                   
-                  <div className="space-y-3">
+                  <div className="space-y-1.5">
                     <Badge 
                       variant="outline" 
-                      className="text-base lg:text-lg px-4 py-2 bg-white/30 border-white/40 text-slate-700 font-bold"
+                      className="text-[8px] px-2 py-0.5 bg-white/30 border-white/40 text-slate-700 font-bold"
                     >
                       {currentAwardee.position}
                     </Badge>
                     
-                    <div className="flex justify-center">
-                      <PartyBadge partyNumber={currentAwardee.party_number} size="md" />
+                    <div className="flex justify-center scale-90">
+                      <PartyBadge partyNumber={currentAwardee.party_number} size="sm" />
                     </div>
                     
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 text-slate-600">
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        <span className="font-medium text-sm">{currentAwardee.city}</span>
+                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-slate-600">
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-3 h-3" />
+                        <span className="font-medium text-[9px]">{currentAwardee.city}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Users className="w-4 h-4" />
-                        <span className="font-medium text-sm">{currentAwardee.constituency}</span>
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-3 h-3" />
+                        <span className="font-medium text-[9px]">{currentAwardee.constituency}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 {/* Awards */}
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="text-center">
-                    <h3 className="text-xl lg:text-2xl font-black text-transparent bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text mb-2">
+                    <h3 className="text-base lg:text-lg font-headline font-bold text-primary mb-0.5">
                       🏆 Awards Received
                     </h3>
-                    <p className="text-slate-600 font-medium text-sm">Recognition for Outstanding Performance</p>
+                    <p className="text-on-surface-variant font-medium text-[8px]">Recognition for Outstanding Performance</p>
                   </div>
                   
-                  <div className="space-y-3 max-h-64 lg:max-h-80 overflow-y-auto pr-2">
+                  <div className="space-y-2 max-h-56 lg:max-h-72 overflow-y-auto pr-2">
                     {currentAwardee.awards.map((award, index) => (
                       <div 
                         key={award.id}
-                        className="bg-gradient-to-r from-yellow-100/80 to-orange-100/80 backdrop-blur-sm rounded-xl p-4 border border-yellow-200/50 shadow-lg animate-scale-in"
+                        className="bg-gradient-to-r from-yellow-100/80 to-orange-100/80 backdrop-blur-sm rounded-lg p-3 border border-yellow-200/50 shadow-md animate-scale-in"
                         style={{ animationDelay: `${index * 0.1}s` }}
                       >
-                        <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
-                            <Trophy className="w-4 h-4 text-white" />
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-6 h-6 bg-gradient-to-br from-yellow-500 to-orange-500 rounded flex items-center justify-center shadow-md flex-shrink-0">
+                            <Trophy className="w-3 h-3 text-white" />
                           </div>
                           <div className="flex-1">
-                            <h4 className="text-lg font-black text-slate-800 mb-1">
+                            <h4 className="text-[11px] font-black text-slate-800 mb-0.5 leading-tight uppercase">
                               {award.name}
                             </h4>
                             {award.description && (
-                              <p className="text-slate-600 mb-2 font-medium text-sm">
+                              <p className="text-slate-600 mb-1.5 font-medium text-[9px] leading-tight">
                                 {award.description}
                               </p>
                             )}
                             <Badge 
                               variant={award.assigned_by_jury_consensus ? "default" : "secondary"}
-                              className={`font-medium text-xs ${
+                              className={`font-black text-[7px] uppercase tracking-wider h-4 ${
                                 award.assigned_by_jury_consensus 
                                   ? "bg-blue-500/20 text-blue-700 border border-blue-500/30" 
                                   : "bg-purple-500/20 text-purple-700 border border-purple-500/30"

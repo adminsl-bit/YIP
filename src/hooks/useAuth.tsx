@@ -315,24 +315,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const verifyOtp = async (email: string, token: string) => {
     try {
-      const { data, error } = await supabase.auth.verifyOtp({
+      // 1. Try 'signup' verification type (for new registration confirmations)
+      let { data, error } = await supabase.auth.verifyOtp({
         email,
         token,
         type: 'signup',
       });
 
+      // 2. If 'signup' fails, try 'magiclink' verification type (standard for OTP logins)
       if (error) {
-        // Try 'magiclink' or 'signin' type if signup fails, or just general error
-        const { error: error2 } = await supabase.auth.verifyOtp({
+        const magicLinkResult = await supabase.auth.verifyOtp({
           email,
           token,
-          type: 'signin',
+          type: 'magiclink',
         });
-        
-        if (error2) {
-          toast.error(error2.message);
-          return { error: error2 };
-        }
+        error = magicLinkResult.error;
+        data = magicLinkResult.data;
+      }
+
+      // 3. Fallback to 'email' type if both 'signup' and 'magiclink' failed
+      if (error) {
+        const emailResult = await supabase.auth.verifyOtp({
+          email,
+          token,
+          type: 'email',
+        });
+        error = emailResult.error;
+        data = emailResult.data;
+      }
+
+      if (error) {
+        toast.error(error.message);
+        return { error };
       }
 
       toast.success('Successfully authenticated!');

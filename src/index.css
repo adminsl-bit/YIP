@@ -15,43 +15,61 @@
   animation: marquee 30s linear infinite;
 }
 
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft var(--pulse-duration) ease-in-out infinite;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    --background: 210 33% 98.4%;
-    --foreground: 200 12% 10.6%;
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
 
     --card: 0 0% 100%;
-    --card-foreground: 200 12% 10.6%;
+    --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 200 12% 10.6%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Civic Canvas: The Digital Diplomat Palette */
-    --primary: 229 76% 31.8%;
+    --primary: 229 76% 31.8%; /* #13298f */
+    --primary-container: 231 55% 42%; /* #3042a6 */
     --on-primary: 0 0% 100%;
-    --primary-container: 231 55% 42%;
-    --on-primary-container: 232 100% 84.3%;
     
-    --secondary: 16 90% 35.1%;
+    --secondary: 16 90% 35.1%; /* #ac3509 */
+    --secondary-container: 14 99% 63%; /* #fe6f42 */
     --on-secondary: 0 0% 100%;
-    --secondary-container: 16 94% 63.1%;
-    --on-secondary-container: 16 100% 19.4%;
 
-    --tertiary: 160 100% 12.2%;
+    --tertiary: 160 100% 12.2%; /* #003e29 */
+    --tertiary-container: 160 100% 17%; /* #00583b */
     --on-tertiary: 0 0% 100%;
-    --tertiary-container: 160 100% 17.3%;
-    --on-tertiary-container: 160 63% 54.5%;
 
-    --surface: 210 33% 98.4%;
-    --surface-container-lowest: 0 0% 100%;
-    --surface-container-low: 210 14% 96.1%;
-    --surface-container: 210 11% 93.3%;
-    --surface-container-high: 210 7% 91%;
-    --surface-container-highest: 210 5% 88.6%;
+    --surface: 210 20% 98%; /* #f7f9fb */
+    --surface-container-lowest: 0 0% 100%; /* #ffffff */
+    --surface-container-low: 210 15% 95%; /* #f2f4f6 */
+    --surface-container: 210 11% 93%; /* #eceef0 */
+    --surface-container-high: 210 9% 91%; /* #e6e8ea */
+    --surface-container-highest: 210 7% 89%; /* #e0e3e5 */
+    --on-surface: 203 13% 11%; /* #191c1e */
+    --on-surface-variant: 231 9% 30%; /* #454653 */
+    --outline-variant: 240 15% 80%; /* #c5c5d5 */
+
+    --primary-fixed: 234 100% 93%; /* #dee0ff */
+    --primary-fixed-dim: 231 100% 86%; /* #bac3ff */
+    --on-primary-fixed: 229 100% 18%; /* #00105c */
+    
+    --secondary-fixed: 13 100% 91%; /* #ffdbd0 */
+    --secondary-fixed-dim: 13 100% 82%; /* #ffb59f */
+    
+    --tertiary-fixed: 154 94% 71%; /* #6ffbbe */
+    --tertiary-fixed-dim: 155 71% 58%; /* #4edea3 */
 
     --muted: 210 11% 93.3%;
     --muted-foreground: 227 9% 30%;
@@ -66,145 +84,191 @@ All colors MUST be HSL.
     --input: 210 7% 91%;
     --ring: 229 76% 31.8%;
 
-    --outline: 231 7% 48.6%;
-    --outline-variant: 240 15% 83.1%;
+    --radius: 0.5rem; /* Reverting to snippet's 0.5rem radius */
 
-    --radius: 1.5rem; /* More premium, larger radius */
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-container)));
+    --gradient-hero: linear-gradient(to bottom right, hsl(var(--background)), hsl(var(--surface-container-low)));
 
-    /* Shadows & Effects */
-    --shadow-primary: 229 76% 31.8% / 0.06;
-    --shadow-glow: 229 76% 31.8% / 0.15;
-    --shadow-elevated: 229 76% 31.8% / 0.1;
-    
-    /* Glassmorphism */
-    --glass-surface: 0 0% 100% / 0.7;
+    /* Glassmorphism Specs */
     --glass-blur: 12px;
+    --glass-opacity: 0.7;
 
-    /* Legacy compatibility for components using these */
-    --parliament-blue: 229 76% 31.8%;
-    --parliament-gold: 45 90% 55%;
-    --heritage-cream: 210 33% 98.4%;
-    --official-navy: 229 76% 20%;
+    /* Animations */
+    --pulse-duration: 2s;
   }
 
   .dark {
-    --background: 230 25% 8%;
+    --background: 222 47% 11%;
     --foreground: 210 40% 98%;
 
-    --card: 230 25% 10%;
-    --card-foreground: 210 40% 98%;
+    --surface: 222 47% 8%;
+    --surface-container-low: 222 47% 5%;
+    --on-surface: 210 40% 98%;
 
-    --popover: 230 25% 10%;
-    --popover-foreground: 210 40% 98%;
-
-    /* Civic Canvas Dark Palette */
-    --primary: 229 100% 75%;
-    --on-primary: 230 25% 8%;
-    --primary-container: 229 76% 31.8%;
-    --on-primary-container: 229 100% 90%;
-
-    --secondary: 16 100% 70%;
-    --on-secondary: 230 25% 8%;
-    --secondary-container: 16 90% 35.1%;
-    --on-secondary-container: 16 100% 90%;
-
-    --tertiary: 160 80% 60%;
-    --on-tertiary: 230 25% 8%;
-    --tertiary-container: 160 100% 12.2%;
-    --on-tertiary-container: 160 100% 90%;
-
-    --surface: 230 25% 8%;
-    --surface-container-lowest: 230 25% 6%;
-    --surface-container-low: 230 25% 10%;
-    --surface-container: 230 25% 12%;
-    --surface-container-high: 230 25% 15%;
-    --surface-container-highest: 230 25% 20%;
-
-    --muted: 230 15% 20%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 229 76% 31.8%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 230 15% 20%;
-    --input: 230 15% 20%;
-    --ring: 229 100% 75%;
-    
-    --sidebar-background: 230 25% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 229 100% 75%;
-    --sidebar-primary-foreground: 230 25% 8%;
-    --sidebar-accent: 230 25% 15%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 230 15% 20%;
-    --sidebar-ring: 229 100% 75%;
+    --border: 217 32% 17.5%;
+    --input: 217 32% 17.5%;
+    --ring: 212 26% 83%;
   }
 }
 
 @layer base {
   * {
-    @apply border-none;
+    @apply border-border;
   }
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Manrope', sans-serif;
   }
-  
-  /* Mobile-first responsive utilities */
-  .responsive-text-xs { @apply text-xs sm:text-sm md:text-base; }
-  .responsive-text-sm { @apply text-sm sm:text-base md:text-lg; }
-  .responsive-text-base { @apply text-base sm:text-lg md:text-xl; }
-  .responsive-text-lg { @apply text-lg sm:text-xl md:text-2xl; }
-  .responsive-text-xl { @apply text-xl sm:text-2xl md:text-3xl; }
-  .responsive-text-2xl { @apply text-2xl sm:text-3xl md:text-4xl; }
-  .responsive-text-3xl { @apply text-3xl sm:text-4xl md:text-5xl lg:text-6xl; }
-  
-  /* Mobile-friendly spacing */
-  .responsive-padding { @apply p-4 sm:p-6 lg:p-8; }
-  .responsive-margin { @apply m-4 sm:m-6 lg:m-8; }
-  .responsive-gap { @apply gap-4 sm:gap-6 lg:gap-8; }
-  
-  /* Touch-friendly buttons */
-  .touch-target { @apply min-h-[44px] min-w-[44px]; }
-  
-  /* Responsive containers */
-  .container-responsive { @apply px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto; }
-  
-  /* Mobile table styles - hide on mobile, show on tablet+ */
-  @media (max-width: 768px) {
-    .table-desktop-only {
-      @apply hidden;
-    }
-    .mobile-card-view {
-      @apply block;
-    }
+
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
   }
-  
-  @media (min-width: 769px) {
-    .table-desktop-only {
-      @apply block;
-    }
-    .mobile-card-view {
-      @apply hidden;
-    }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    @apply tracking-tight font-bold;
   }
-  
-  /* Responsive grid layouts */
-  .grid-responsive-1-2-3 { @apply grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6; }
-  .grid-responsive-1-2 { @apply grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6; }
-  .grid-responsive-2-4 { @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4; }
-  
-  /* Mobile-safe scrollable containers */
-  .scroll-container-mobile {
-    @apply overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0;
-    -webkit-overflow-scrolling: touch;
+
+  .font-headline {
+    font-family: 'Plus Jakarta Sans', sans-serif;
   }
-  
-  /* Mobile navigation */
-  .mobile-nav {
-    @apply flex flex-col sm:flex-row items-center;
+
+  .font-body {
+    font-family: 'Manrope', sans-serif;
+  }
+}
+
+@layer components {
+  /* Typography Tokens - High Fidelity Civic Canvas */
+  .text-display-xl {
+    @apply font-display text-[48px] md:text-[80px] font-black tracking-tighter leading-[0.95] uppercase italic;
+  }
+
+  .text-display-lg {
+    @apply font-display text-[40px] md:text-[64px] font-extrabold tracking-tight leading-[1.0];
+  }
+
+  .text-display-md {
+    @apply font-display text-[32px] md:text-[48px] font-extrabold tracking-tight leading-[1.1];
+  }
+
+  .text-display-sm {
+    @apply font-display text-[28px] md:text-[36px] font-black tracking-tighter leading-[1.1] uppercase italic;
+  }
+
+  .text-display-xs {
+    @apply font-display text-[24px] md:text-[32px] font-black tracking-tighter leading-[1.1] uppercase italic;
+  }
+
+  .text-headline-lg {
+    @apply font-display text-[24px] md:text-[32px] font-bold tracking-tight leading-[1.1];
+  }
+
+  .text-headline-md {
+    @apply font-display text-[22px] md:text-[28px] font-bold tracking-tight;
+  }
+
+  .text-headline-sm {
+    @apply font-display text-[20px] md:text-[24px] font-bold tracking-tight;
+  }
+
+  .text-headline-xs {
+    @apply font-display text-[18px] md:text-[20px] font-bold tracking-tight;
+  }
+
+  .text-title-lg {
+    @apply font-display text-[20px] font-semibold tracking-tight;
+  }
+
+  .text-title-md {
+    @apply font-display text-[18px] font-semibold tracking-tight;
+  }
+
+  .text-title-sm {
+    @apply font-display text-[16px] font-semibold tracking-tight;
+  }
+
+  .text-title-xs {
+    @apply font-display text-[14px] font-black tracking-[0.05em] uppercase;
+  }
+
+  .text-body-xl {
+    @apply font-sans text-[18px] md:text-[22px] font-medium leading-relaxed;
+  }
+
+  .text-body-lg {
+    @apply font-sans text-[17px] md:text-[19px] font-medium leading-relaxed;
+  }
+
+  .text-body-md {
+    @apply font-sans text-[15px] md:text-[17px] font-medium leading-relaxed;
+  }
+
+  .text-body-sm {
+    @apply font-sans text-[14px] md:text-[15px] font-medium leading-normal;
+  }
+
+  .text-body-xs {
+    @apply font-sans text-[12px] md:text-[13px] font-medium leading-tight;
+  }
+
+  .text-body-xxs {
+    @apply font-sans text-[11px] font-medium leading-tight;
+  }
+
+  .text-label-lg {
+    @apply font-display text-[16px] font-black tracking-[0.1em] uppercase;
+  }
+
+  .text-label-md {
+    @apply font-display text-[14px] font-black tracking-[0.1em] uppercase;
+  }
+
+  .text-label-sm {
+    @apply font-display text-[12px] font-black tracking-[0.1em] uppercase;
+  }
+
+  .text-label-xs {
+    @apply font-display text-[11px] font-black tracking-[0.1em] uppercase;
+  }
+
+  /* Civic Canvas Effects */
+  .glassmorphism {
+    @apply backdrop-blur-[12px] bg-white/70 border border-white/20;
+  }
+
+  .glass-nav {
+    @apply backdrop-blur-[12px] bg-white/70 border border-white/20;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(48, 66, 166, 0.3);
+  }
+
+  .asymmetric-shape {
+    clip-path: polygon(0 0, 100% 0, 100% 92%, 0% 100%);
+  }
+
+  .img-overlay {
+    background: linear-gradient(to bottom, rgba(19, 41, 143, 0.4), rgba(25, 28, 30, 0.9));
+  }
+
+  .ambient-shadow {
+    box-shadow: 0 20px 32px -10px rgba(19, 41, 143, 0.06),
+                0 10px 16px -5px rgba(19, 41, 143, 0.04);
+  }
+
+  .tonal-layer-1 {
+    @apply bg-surface-container-low rounded-xl p-8;
+  }
+
+  .tonal-layer-2 {
+    @apply bg-surface rounded-xl p-8;
+  }
+
+  .no-line-card {
+    @apply border-none shadow-none;
   }
 }

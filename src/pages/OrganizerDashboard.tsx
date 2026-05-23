@@ -145,19 +145,19 @@ const OrganizerDashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#f7f9fb] font-body text-[#191c1e] antialiased">
+    <div className="flex min-h-screen bg-surface-container-lowest font-body text-on-surface antialiased">
       <TimerTicker />
       
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex h-screen overflow-hidden">
         {/* SideNavBar - Persistent on Desktop */}
-        <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-[#e0e3e5]/50 h-full overflow-y-auto">
+        <aside className="hidden lg:flex flex-col w-64 bg-surface border-r border-outline-variant/30 h-full overflow-y-auto">
           <div className="p-6 flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-[#13298f] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#13298f]/20">
+            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-on-primary shadow-lg shadow-primary/20">
               <span className="material-symbols-outlined text-2xl font-fill">account_balance</span>
             </div>
             <div>
-              <h2 className="text-lg font-extrabold text-[#13298f] leading-none font-headline tracking-tight">YI Parliament</h2>
-              <p className="text-[8px] uppercase tracking-widest text-[#757684] font-bold mt-1">Organizer Hub</p>
+              <h2 className="text-headline-sm font-black text-primary leading-none font-headline tracking-tight uppercase italic">YI Parliament</h2>
+              <p className="text-body-xxs uppercase tracking-widest text-on-surface-variant font-black mt-1 opacity-60">Organizer Hub</p>
             </div>
           </div>
 
@@ -177,10 +177,10 @@ const OrganizerDashboard = () => {
             <NavTrigger value="manual-scoring" icon="edit_note" label="Manual Scoring" />
           </TabsList>
 
-          <div className="px-6 py-8 mt-auto border-t border-slate-50">
+          <div className="px-6 py-6 mt-auto border-t border-outline-variant/20">
             <button 
               onClick={signOut}
-              className="w-full flex items-center justify-center gap-2 text-slate-400 hover:text-red-500 font-bold text-xs uppercase tracking-widest py-3 transition-all"
+              className="w-full flex items-center justify-center gap-2 text-on-surface-variant hover:text-error font-black text-body-xxs uppercase tracking-widest py-3 transition-all"
             >
               <LogOut className="w-4 h-4" />
               Sign Out
@@ -191,9 +191,9 @@ const OrganizerDashboard = () => {
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col h-full min-w-0 bg-[#f7f9fb]">
           {/* TopNavBar */}
-          <header className="h-16 bg-white/70 backdrop-blur-xl border-b border-[#e0e3e5]/50 flex items-center justify-between px-8 z-30 shadow-sm sticky top-0">
+          <header className="h-16 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 flex items-center justify-between px-8 z-30 sticky top-0">
             <div className="flex items-center gap-4">
-              <span className="text-lg font-extrabold text-[#13298f] font-headline tracking-tighter uppercase">Organizer Portal</span>
+              <span className="text-headline-md font-black text-primary font-headline tracking-tighter uppercase italic">Organizer Portal</span>
             </div>
 
           </header>
@@ -211,17 +211,17 @@ const OrganizerDashboard = () => {
                   {/* Left Column: Quick Actions & News Ticker */}
                   <div className="lg:col-span-2 space-y-10">
                     {/* Quick Access Modules Card */}
-                    <div className="bg-[#f2f4f6] rounded-[2.5rem] p-10 border border-[#e0e3e5]/60 shadow-sm relative overflow-hidden group">
-                       <div className="absolute top-0 right-0 p-8 opacity-5">
-                          <span className="material-symbols-outlined text-9xl">apps</span>
+                    <div className="bg-surface-container-low rounded-[2rem] p-8 border border-outline-variant/30 shadow-sm relative overflow-hidden group">
+                       <div className="absolute top-0 right-0 p-6 opacity-5">
+                          <span className="material-symbols-outlined text-8xl">apps</span>
                        </div>
-                       <div className="flex items-center justify-between mb-10 relative z-10">
+                       <div className="flex items-center justify-between mb-8 relative z-10">
                           <div>
-                            <h2 className="text-2xl font-black font-headline text-[#13298f]">Quick Access Modules</h2>
-                            <p className="text-[#757684] text-xs font-bold mt-1 opacity-70 italic">Accelerate administrative legislative workflows</p>
+                            <h2 className="text-display-xs font-black font-headline text-primary uppercase italic">Quick Access Modules</h2>
+                            <p className="text-on-surface-variant text-body-xxs font-black mt-1 opacity-70 italic uppercase tracking-wider">Accelerate legislative workflows</p>
                           </div>
-                          <button className="text-[10px] font-black text-[#13298f] uppercase tracking-widest flex items-center gap-2 py-2 px-4 bg-white rounded-full shadow-sm hover:shadow-md transition-all">
-                             Customize <span className="material-symbols-outlined text-sm">edit</span>
+                          <button className="text-body-xxs font-black text-primary uppercase tracking-widest flex items-center gap-2 py-1.5 px-3 bg-surface rounded-full shadow-sm hover:shadow-md transition-all border border-outline-variant/30">
+                             Customize <span className="material-symbols-outlined text-xs">edit</span>
                           </button>
                        </div>
                        

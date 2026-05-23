@@ -325,7 +325,7 @@ const Onboarding = () => {
                 className="relative bg-white/70 backdrop-blur-2xl border border-white/50 rounded-[3rem] overflow-hidden shadow-[0_32px_64px_-12px_rgba(19,41,143,0.06)] transition-all duration-500 hover:shadow-[0_48px_80px_-12px_rgba(19,41,143,0.1)] group-hover:scale-[1.01]"
               >
                 {/* Holographic Overlay Effect */}
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-[2000ms] ease-in-out pointer-events-none z-20" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform [transition-duration:2s] ease-in-out pointer-events-none z-20" />
                 
                 {/* Card Header */}
                 <div className="bg-gradient-to-r from-[#13298f] to-[#3042a6] p-8 text-white relative overflow-hidden">

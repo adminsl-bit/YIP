@@ -204,25 +204,13 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
 
   if (loading) {
     return (
-      <Card className="bg-surface-container-lowest border-none shadow-elevated rounded-[1.5rem] overflow-hidden">
-        <CardHeader className="p-8 pb-4">
-          <CardTitle className="flex items-center gap-4 font-headline text-2xl tracking-tight text-on-surface">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-container rounded-[0.75rem] flex items-center justify-center shadow-primary">
-              <TrendingUp className="w-6 h-6 text-on-primary" />
-            </div>
-            Live Voting Statistics
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-8 pt-4">
-          <div className="flex flex-col items-center justify-center h-48 gap-4">
-            <div className="relative w-12 h-12">
-              <div className="absolute inset-0 rounded-full border-4 border-primary/20"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
-            </div>
-            <p className="font-body text-on-surface-variant animate-pulse">Syncing with the assembly...</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-surface-container-lowest rounded-[4rem] shadow-2xl p-16 flex flex-col items-center justify-center min-h-[400px] border border-outline-variant/10">
+        <div className="relative w-20 h-20 mb-10">
+          <div className="absolute inset-0 rounded-full border-4 border-primary/10"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin"></div>
+        </div>
+        <p className="font-display font-bold text-primary uppercase tracking-[0.2em] text-label-md animate-pulse">Syncing with Assembly...</p>
+      </div>
     );
   }
 
@@ -237,101 +225,106 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
 
   if (!isPublic) {
     return (
-      <Card className="bg-surface-container-lowest border-none shadow-elevated rounded-[1.5rem] overflow-hidden">
-        <CardContent className="p-12">
-          <div className="text-center max-w-sm mx-auto">
-            <div className="w-20 h-20 bg-surface-container-high rounded-[1rem] flex items-center justify-center mx-auto mb-6 shadow-sm">
-              <TrendingUp className="w-10 h-10 text-on-surface-variant opacity-40" />
+      <div className="bg-surface-container-lowest border border-outline-variant/10 shadow-2xl rounded-[4rem] overflow-hidden">
+        <div className="p-20">
+          <div className="text-center max-w-md mx-auto">
+            <div className="w-28 h-28 bg-surface-container-high rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-inner">
+              <TrendingUp className="w-14 h-14 text-on-surface-variant/20" />
             </div>
-            <h4 className="font-headline text-2xl font-bold text-on-surface mb-3 tracking-tight">Results are Sealed</h4>
-            <p className="font-body text-on-surface-variant leading-relaxed">
+            <h4 className="font-display text-display-sm font-bold text-on-surface mb-6 uppercase italic tracking-tight">Results are Sealed</h4>
+            <p className="font-body text-body-lg text-on-surface-variant/60 leading-relaxed">
               The poll results are currently private. They will be revealed once the House Organizer makes them public.
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   const totalVoted = Object.values(stats.customOptions || {}).reduce((sum, count) => sum + count, 0);
 
   return (
-    <Card className={`bg-surface-container-lowest border-none shadow-elevated rounded-[1.5rem] overflow-hidden transition-all duration-500 ${isLive ? 'ring-2 ring-primary/20 shadow-glow' : ''}`}>
-      <CardHeader className="p-8 pb-0">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <CardTitle className="flex items-center gap-4 font-headline text-2xl tracking-tight text-on-surface">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary to-primary-container rounded-[0.75rem] flex items-center justify-center shadow-primary">
-              <TrendingUp className="w-6 h-6 text-on-primary" />
+    <div className={`bg-surface-container-lowest border border-outline-variant/10 shadow-2xl rounded-[4rem] overflow-hidden transition-all duration-700 ${isLive ? 'ring-4 ring-primary/10' : ''}`}>
+      <div className="p-12 lg:p-14 pb-0">
+        <div className="flex items-center justify-between flex-wrap gap-8">
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 bg-primary/10 rounded-[1.5rem] flex items-center justify-center border border-primary/20 shadow-sm">
+              <TrendingUp className="w-8 h-8 text-primary" />
             </div>
-            <span className="hidden sm:inline">Live Voting Statistics</span>
-            <span className="sm:hidden text-xl">Live Stats</span>
+            <div>
+              <h3 className="font-display text-display-sm font-bold text-on-surface uppercase italic tracking-tight">
+                Live Analytics
+              </h3>
+              <p className="text-label-md font-bold text-primary uppercase tracking-[0.2em] mt-1.5">Assembly Pulse</p>
+            </div>
             {isLive && (
               <motion.div
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
-                className="px-3 py-1 bg-tertiary/10 text-tertiary text-[10px] uppercase tracking-widest rounded-full font-black border border-tertiary/20 flex items-center gap-1.5"
+                className="px-6 py-2 bg-tertiary/10 text-tertiary text-label-sm uppercase tracking-widest rounded-full font-black border border-tertiary/20 flex items-center gap-3 ml-3"
               >
-                <div className="w-1.5 h-1.5 bg-tertiary rounded-full animate-pulse"></div>
+                <div className="w-2.5 h-2.5 bg-tertiary rounded-full animate-pulse"></div>
                 Live
               </motion.div>
             )}
-          </CardTitle>
-          <Badge className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant border-none px-4 py-1.5 rounded-full font-body font-medium transition-colors">
+          </div>
+          <Badge className="bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant border-none px-8 py-3 rounded-full font-display font-bold uppercase tracking-widest text-body-sm transition-colors">
             {poll.title}
           </Badge>
         </div>
-      </CardHeader>
+      </div>
       
-      <CardContent className="space-y-6">
+      <div className="p-12 lg:p-14 space-y-12">
         {/* Overall Participation */}
-        <div className="bg-surface-container-low rounded-[1.25rem] p-6 border-none">
-          <div className="flex items-center justify-between mb-6">
-            <h4 className="font-headline text-lg font-bold text-on-surface flex items-center gap-2.5">
-              <Users className="w-5 h-5 text-primary" />
-              Participation Overview
+        <div className="bg-surface-container-low rounded-[3rem] p-12 border border-outline-variant/5">
+          <div className="flex items-center justify-between mb-10">
+            <h4 className="font-display text-display-xs font-bold text-on-surface flex items-center gap-5 uppercase italic">
+              <Users className="w-8 h-8 text-primary" />
+              House Turnout
             </h4>
-            <div className="px-3 py-1 bg-primary/10 text-primary text-sm font-black rounded-full border border-primary/20">
+            <div className="px-6 py-2.5 bg-primary/10 text-primary text-label-lg font-black rounded-full border border-primary/20">
               {stats.participationRate.toFixed(1)}%
             </div>
           </div>
           
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="space-y-1">
-              <div className="text-sm font-body font-medium text-on-surface-variant">Total Eligible</div>
-              <div className="text-3xl font-headline font-black text-on-surface tracking-tighter">{stats.totalEligibleVoters}</div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+            <div className="space-y-3">
+              <div className="text-label-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant/40">Total Delegates</div>
+              <div className="text-display-md font-display font-black text-on-surface tracking-tighter italic">{stats.totalEligibleVoters}</div>
             </div>
-            <div className="space-y-1">
-              <div className="text-sm font-body font-medium text-on-surface-variant">Votes Cast</div>
-              <div className="text-3xl font-headline font-black text-tertiary tracking-tighter">{totalVoted}</div>
+            <div className="space-y-3">
+              <div className="text-label-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant/40">Votes Cast</div>
+              <div className="text-display-md font-display font-black text-tertiary tracking-tighter italic">{totalVoted}</div>
             </div>
-            <div className="space-y-1">
-              <div className="text-sm font-body font-medium text-on-surface-variant">Pending</div>
-              <div className="text-3xl font-headline font-black text-secondary tracking-tighter">{stats.notVoted}</div>
+            <div className="space-y-3">
+              <div className="text-label-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant/40">Pending</div>
+              <div className="text-display-md font-display font-black text-secondary tracking-tighter italic">{stats.notVoted}</div>
             </div>
-            <div className="space-y-1">
-              <div className="text-sm font-body font-medium text-on-surface-variant">Rate</div>
-              <div className="text-3xl font-headline font-black text-primary tracking-tighter">{stats.participationRate.toFixed(1)}%</div>
+            <div className="space-y-3">
+              <div className="text-label-sm font-bold uppercase tracking-[0.2em] text-on-surface-variant/40">Quorum Rate</div>
+              <div className="text-display-md font-display font-black text-primary tracking-tighter italic">{stats.participationRate.toFixed(1)}%</div>
             </div>
           </div>
           
-          <div className="relative h-3 w-full bg-surface-container-high rounded-full overflow-hidden">
+          <div className="relative h-5 w-full bg-surface-container-high rounded-full overflow-hidden shadow-inner">
             <motion.div 
               initial={{ width: 0 }}
               animate={{ width: `${stats.participationRate}%` }}
-              className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-primary-container"
+              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute top-0 left-0 h-full bg-gradient-to-r from-primary to-primary-container shadow-sm"
             />
           </div>
         </div>
 
         {/* Vote Summary Cards */}
-        <div className="bg-surface-container-low rounded-[1.25rem] p-6 border-none">
-          <h4 className="font-headline text-lg font-bold text-on-surface flex items-center gap-2.5 mb-6">
-            <CheckCircle className="w-5 h-5 text-tertiary" />
-            Vote Distribution Summary
+        <div className="bg-surface-container-low rounded-[3rem] p-12 border border-outline-variant/5">
+          <h4 className="font-display text-display-xs font-bold text-on-surface flex items-center gap-5 mb-10 uppercase italic">
+            <CheckCircle className="w-8 h-8 text-tertiary" />
+            Voter Alignment
           </h4>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {poll && Array.isArray(poll.options) && poll.options.map((option: any, index: number) => {
               const optionKey = typeof option === 'string' ? option : option.id;
               const optionText = typeof option === 'string' ? option : option.text;
@@ -339,21 +332,21 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
               const percentageOfTotal = stats.totalEligibleVoters > 0 ? (voteCount / stats.totalEligibleVoters) * 100 : 0;
               
               const colorSets = [
-                { bg: "bg-primary/10", icon: "bg-primary", text: "text-primary", border: "border-primary/20" },
-                { bg: "bg-tertiary/10", icon: "bg-tertiary", text: "text-tertiary", border: "border-tertiary/20" },
-                { bg: "bg-secondary/10", icon: "bg-secondary", text: "text-secondary", border: "border-secondary/20" },
-                { bg: "bg-on-surface-variant/10", icon: "bg-on-surface-variant", text: "text-on-surface-variant", border: "border-on-surface-variant/20" },
+                { bg: "bg-primary/5", icon: "bg-primary", text: "text-primary", border: "border-primary/10" },
+                { bg: "bg-tertiary/5", icon: "bg-tertiary", text: "text-tertiary", border: "border-tertiary/10" },
+                { bg: "bg-secondary/5", icon: "bg-secondary", text: "text-secondary", border: "border-secondary/10" },
+                { bg: "bg-on-surface-variant/5", icon: "bg-on-surface-variant", text: "text-on-surface-variant", border: "border-on-surface-variant/10" },
               ];
               const colors = colorSets[index % colorSets.length];
               
               return (
-                <div key={optionKey} className={`${colors.bg} rounded-[1rem] p-5 flex flex-col items-center border ${colors.border} transition-transform hover:scale-[1.02]`}>
-                  <div className={`w-14 h-14 ${colors.icon} rounded-full flex items-center justify-center mb-3 shadow-sm`}>
-                    <span className="text-on-primary font-headline font-black text-xl">{voteCount}</span>
+                <div key={optionKey} className={`${colors.bg} rounded-[2.5rem] p-10 flex flex-col items-center border ${colors.border} transition-all duration-500 hover:shadow-xl hover:-translate-y-1`}>
+                  <div className={`w-20 h-20 ${colors.icon} rounded-[1.5rem] flex items-center justify-center mb-6 shadow-lg`}>
+                    <span className="text-on-primary font-display font-black text-3xl italic">{voteCount}</span>
                   </div>
-                  <div className={`font-headline font-bold ${colors.text} text-center capitalize mb-1 truncate w-full`}>{optionText}</div>
-                  <div className="text-xs font-body font-medium text-on-surface-variant opacity-70">
-                    {percentageOfTotal.toFixed(1)}% of students
+                  <div className={`font-display font-bold ${colors.text} text-center uppercase italic mb-3 truncate w-full text-display-xs tracking-tight`}>{optionText}</div>
+                  <div className="text-label-md font-bold text-on-surface-variant/40 uppercase tracking-[0.1em]">
+                    {percentageOfTotal.toFixed(1)}% Delegates
                   </div>
                 </div>
               );
@@ -362,14 +355,14 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
         </div>
 
         {/* Vote Breakdown by Option */}
-        <div className="space-y-6">
-          <h4 className="font-headline text-lg font-bold text-on-surface flex items-center gap-2.5">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            Detailed Breakdown
+        <div className="space-y-10 px-6">
+          <h4 className="font-display text-display-xs font-bold text-on-surface flex items-center gap-5 uppercase italic">
+            <TrendingUp className="w-8 h-8 text-primary" />
+            Legislative Trajectory
           </h4>
           
           <AnimatePresence>
-            <div className="space-y-4">
+            <div className="space-y-10">
               {poll && Array.isArray(poll.options) && poll.options.map((option: any, index: number) => {
                 const optionKey = typeof option === 'string' ? option : option.id;
                 const optionText = typeof option === 'string' ? option : option.text;
@@ -387,26 +380,27 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
                 return (
                   <motion.div 
                     key={`option-${index}`}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="space-y-2"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                    className="space-y-4"
                   >
-                    <div className="flex items-center justify-between font-body text-sm">
-                      <span className="font-bold text-on-surface flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${color}`} />
+                    <div className="flex items-center justify-between">
+                      <span className="font-display font-bold text-on-surface flex items-center gap-4 uppercase italic tracking-tight text-title-md">
+                        <div className={`w-4 h-4 rounded-full ${color} shadow-sm`} />
                         {optionText}
                       </span>
-                      <div className="space-x-2">
-                        <span className="font-black text-on-surface">{voteCount} votes</span>
-                        <span className="text-on-surface-variant opacity-60">({percentageOfVotes.toFixed(1)}%)</span>
+                      <div className="flex items-baseline gap-3">
+                        <span className="font-display font-black text-on-surface text-display-xs italic">{voteCount}</span>
+                        <span className="text-label-md font-bold text-on-surface-variant/40 uppercase tracking-widest">({percentageOfVotes.toFixed(1)}%)</span>
                       </div>
                     </div>
-                    <div className="relative h-2 w-full bg-surface-container-high rounded-full overflow-hidden">
+                    <div className="relative h-4 w-full bg-surface-container-high rounded-full overflow-hidden shadow-inner">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${percentageOfVotes}%` }}
-                        className={`absolute top-0 left-0 h-full ${color}`}
+                        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+                        className={`absolute top-0 left-0 h-full ${color} shadow-sm`}
                       />
                     </div>
                   </motion.div>
@@ -417,14 +411,15 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
         </div>
 
         {/* Real-time indicator */}
-        <div className="flex items-center justify-center gap-2.5 py-4 border-t border-surface-container font-body text-sm text-on-surface-variant opacity-60">
-          <div className="relative flex items-center justify-center w-2.5 h-2.5">
-            <div className="absolute w-full h-full bg-tertiary rounded-full animate-ping opacity-25"></div>
-            <div className="relative w-1.5 h-1.5 bg-tertiary rounded-full"></div>
+        <div className="flex items-center justify-center gap-5 py-10 border-t border-outline-variant/5 font-display text-label-md text-on-surface-variant/40 uppercase tracking-[0.3em] italic">
+          <div className="relative flex items-center justify-center w-4 h-4">
+            <div className="absolute w-full h-full bg-tertiary rounded-full animate-ping opacity-30"></div>
+            <div className="relative w-2.5 h-2.5 bg-tertiary rounded-full"></div>
           </div>
-          <span>Synchronized with Parliamentary Live Stream</span>
+          <span>Parliamentary Sync Active</span>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
+
   );
 };
