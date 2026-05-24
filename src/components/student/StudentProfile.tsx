@@ -1,325 +1,345 @@
-import { useState, useEffect } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { PartyBadge } from "@/components/ui/party-badge";
-import { ProfilePhotoUploader } from "./ProfilePhotoUploader";
-import { PartyLogoUploader } from "./PartyLogoUploader";
-import { Hash, MapPin, Building, Users, Crown, ShieldCheck } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useSystemSettings } from "@/hooks/useSystemSettings";
-import { ChangePasswordDialog } from "@/components/auth/ChangePasswordDialog";
-
-interface Profile {
-  id: string;
-  name: string;
-  position: string;
-  party_number: number;
-  party_name?: string;
-  party_logo_url?: string;
-  serial_number: number;
-  committee?: string;
-  constituency?: string;
-  state?: string;
-  city?: string;
-  photo_url?: string;
-  updated_at?: string;
-  user_type: string;
-  party_alignment?: string;
-  ministry?: string;
-}
-
-interface LeaderboardData {
-  final_total_score: number | null;
-  ranking: number;
-  total_students: number;
-}
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { ProfilePhotoUploader } from '@/components/student/ProfilePhotoUploader';
+import { PartyLogoUploader } from '@/components/student/PartyLogoUploader';
 
 interface StudentProfileProps {
-  profile: Profile;
+  profile?: any;
   isOwnProfile?: boolean;
   variant?: 'default' | 'integrated';
 }
 
-const isSpecialPosition = (position: string, name?: string) => {
-  const pos = position.toLowerCase();
-  const specialNames = [
-    'roobe saghana c',
-    'a ray archer', 
-    'adeena saleem',
-    'laxana b',
-    'arnav a',
-    'pranaav a'
-  ];
+export const StudentProfile: React.FC<StudentProfileProps> = ({ 
+  profile: externalProfile, 
+  isOwnProfile = false,
+  variant = 'default'
+}) => {
+  const { profile: authProfile } = useAuth();
   
-  return pos.includes('minister') || 
-         pos.includes('ministry') ||
-         pos.includes('leader') || 
-         pos.includes('president') || 
-         pos.includes('speaker') ||
-         (name && specialNames.includes(name.toLowerCase()));
-};
+  // Use passed profile or fall back to auth profile
+  const profile = externalProfile || authProfile;
 
-export const StudentProfile = ({ profile, isOwnProfile = false, variant = 'default' }: StudentProfileProps) => {
-  const initials = profile.name.split(' ').map(n => n[0]).join('').toUpperCase();
-  const isSpecial = isSpecialPosition(profile.position, profile.name);
-  const { settings } = useSystemSettings();
-  const [leaderboardData, setLeaderboardData] = useState<LeaderboardData | null>(null);
-  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  // Manifesto data (may need to be fetched separately if not in the passed profile)
+  const [manifesto, setManifesto] = useState<{
+    about: string;
+    problems: string[];
+    solutions: string[];
+  }>({ about: '', problems: [], solutions: [] });
 
   useEffect(() => {
-    if (settings.leaderboard_visible && profile.id) {
-      fetchLeaderboardData();
-    }
-  }, [settings.leaderboard_visible, profile.id]);
+    if (!profile?.id) return;
 
-  const fetchLeaderboardData = async () => {
-    setLoadingLeaderboard(true);
-    try {
-      const { data, error } = await supabase
-        .from('organizer_leaderboard')
-        .select('final_total_score')
-        .eq('user_id', profile.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (!data || data.final_total_score === null) {
-        setLeaderboardData(null);
-        return;
-      }
-
-      const { count } = await supabase
-        .from('organizer_leaderboard')
-        .select('*', { count: 'exact', head: true })
-        .not('final_total_score', 'is', null);
-
-      const { count: higherScores } = await supabase
-        .from('organizer_leaderboard')
-        .select('*', { count: 'exact', head: true })
-        .gt('final_total_score', data.final_total_score);
-
-      setLeaderboardData({
-        final_total_score: data.final_total_score,
-        ranking: (higherScores || 0) + 1,
-        total_students: count || 0
+    // Check if manifesto data is already in the profile object
+    if (profile.manifesto_about !== undefined) {
+      setManifesto({
+        about: profile.manifesto_about || '',
+        problems: Array.isArray(profile.manifesto_problems)
+          ? profile.manifesto_problems.map((p: any) => typeof p === 'string' ? p : p.text || '')
+          : [],
+        solutions: Array.isArray(profile.manifesto_solutions)
+          ? profile.manifesto_solutions.map((s: any) => typeof s === 'string' ? s : s.text || '')
+          : [],
       });
-    } catch (error) {
-      console.error('Error fetching leaderboard data:', error);
-      setLeaderboardData(null);
-    } finally {
-      setLoadingLeaderboard(false);
+    } else {
+      // Fetch manifesto data
+      const fetchManifesto = async () => {
+        try {
+          const { data } = await supabase
+            .from('profiles')
+            .select('manifesto_about, manifesto_problems, manifesto_solutions')
+            .eq('id', profile.id)
+            .single();
+          if (data) {
+            setManifesto({
+              about: (data as any).manifesto_about || '',
+              problems: Array.isArray((data as any).manifesto_problems)
+                ? (data as any).manifesto_problems.map((p: any) => typeof p === 'string' ? p : p.text || '')
+                : [],
+              solutions: Array.isArray((data as any).manifesto_solutions)
+                ? (data as any).manifesto_solutions.map((s: any) => typeof s === 'string' ? s : s.text || '')
+                : [],
+            });
+          }
+        } catch (err) {
+          console.error('Error fetching manifesto:', err);
+        }
+      };
+      fetchManifesto();
+    }
+  }, [profile?.id, profile?.manifesto_about]);
+
+  if (!profile) return null;
+
+  // Derived values
+  const name = profile.name || 'Delegate';
+  const position = profile.position || 'Member of Parliament';
+  const serialNumber = profile.serial_number || '—';
+  const partyName = profile.party_name || null;
+  const partyNumber = profile.party_number ?? 0;
+  const partyAlignment = profile.party_alignment || 'non_aligned';
+  const partyLogoUrl = profile.party_logo_url || null;
+  const committee = profile.committee || null;
+  const constituency = profile.constituency || '—';
+  const state = profile.state || '—';
+  const city = profile.city || '—';
+  const photoUrl = profile.photo_url || null;
+  const isActive = profile.is_active !== false;
+  const initials = name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+
+  const getAlignmentLabel = (alignment: string) => {
+    switch (alignment) {
+      case 'ruling_party': return 'Ruling Party';
+      case 'opposition': return 'Opposition';
+      default: return 'Non-Aligned';
     }
   };
 
-  return (
-    <Card className={`w-full rounded-[2.5rem] overflow-hidden border-none shadow-none ${
-      variant === 'integrated' 
-        ? 'bg-transparent' 
-        : `relative z-10 ${isSpecial ? 'bg-gradient-to-br from-amber-50 to-white' : 'bg-white/40 backdrop-blur-md'}`
-    }`}>
-      {/* Background Decorative Element for non-integrated cards */}
-      {variant !== 'integrated' && !isSpecial && (
-        <div className="absolute inset-0 z-[-1] opacity-50">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/[0.03] rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/[0.03] rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
-        </div>
-      )}
+  const getAlignmentColor = (alignment: string) => {
+    switch (alignment) {
+      case 'ruling_party': return 'bg-emerald-500/10 text-emerald-700 border-emerald-200';
+      case 'opposition': return 'bg-red-500/10 text-red-700 border-red-200';
+      default: return 'bg-gray-500/10 text-gray-600 border-gray-200';
+    }
+  };
 
-      <CardContent className="p-0">
-        <section className={`flex flex-col lg:flex-row ${variant === 'integrated' ? 'min-h-0' : 'min-h-[600px]'}`}>
-          {/* Left side - Image & Identity */}
-          <div className={`${variant === 'integrated' ? 'w-full lg:w-[40%]' : 'w-full lg:w-1/2'} relative aspect-square lg:aspect-auto group/photo overflow-hidden`}>
-            {profile.photo_url ? (
-              <img 
-                src={`${profile.photo_url}${profile.photo_url.includes('?') ? '&' : '?'}cb=${profile.updated_at ? new Date(profile.updated_at).getTime() : Date.now()}`}
-                data-src={profile.photo_url}
-                alt={`${profile.name} profile photo`}
-                className="w-full h-full object-cover transition-transform duration-1000 group-hover/photo:scale-110"
-                loading="lazy"
-                onError={(e) => {
-                  const target = e.currentTarget as HTMLImageElement;
-                  const original = target.getAttribute('data-src') || target.src;
-                  const retried = target.getAttribute('data-retried') === 'true';
-                  if (!retried) {
-                    target.setAttribute('data-retried', 'true');
-                    target.src = `${original}${original.includes('?') ? '&' : '?'}cb=${Date.now()}`;
-                    return;
-                  }
-                  target.style.display = 'none';
-                }}
-              />
-            ) : (
-              <div className={`w-full h-full flex items-center justify-center ${
-                isSpecial 
-                  ? 'bg-gradient-to-br from-amber-400 to-yellow-500' 
-                  : 'bg-primary'
-              }`}>
-                <span className="text-display-xl text-on-primary font-display font-black italic">{initials}</span>
-              </div>
-            )}
-            
-            {/* Overlay Badges */}
-            <div className="absolute top-10 left-10 flex flex-col gap-5">
-              {isSpecial && (
-                <div className="bg-amber-500 rounded-[1.25rem] p-5 shadow-2xl shadow-amber-500/30 backdrop-blur-md animate-in zoom-in duration-500">
-                  <Crown className="w-10 h-10 text-white" />
-                </div>
-              )}
-              {profile.party_logo_url && (
-                <div className="bg-white/80 rounded-[1.25rem] p-4 shadow-2xl shadow-on-surface/5 backdrop-blur-md w-20 h-20 flex items-center justify-center overflow-hidden transition-transform hover:scale-110 duration-500">
-                  <img src={profile.party_logo_url} alt="Party Logo" className="w-full h-full object-contain" />
+  const photoSrc = photoUrl
+    ? `${photoUrl}${photoUrl.includes('?') ? '&' : '?'}cb=${profile.updated_at ? new Date(profile.updated_at).getTime() : ''}`
+    : undefined;
+
+  return (
+    <div className="w-full">
+      {/* Hero Banner */}
+      <div className="relative mb-12">
+        <div className="bg-primary h-48 md:h-64 rounded-[2.5rem] overflow-hidden relative shadow-[0_8px_30px_rgba(46,65,172,0.06)]">
+          <div className="absolute inset-0 opacity-20 mix-blend-overlay">
+            <div className="w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMCAwaDIwdjIwSDB6TTIwIDIwaDIwdjIwSDIweiIvPjwvZz48L2c+PC9zdmc+')] bg-repeat" />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-primary/80 via-primary/20 to-transparent" />
+          {/* Name inside the banner so it's always on the blue background */}
+          <div className="absolute bottom-5 left-48 right-8 z-10">
+            <h1 className="font-headline text-2xl md:text-4xl font-extrabold tracking-tight text-white drop-shadow">
+              {name}
+            </h1>
+          </div>
+        </div>
+        {/* Avatar overlapping the banner bottom */}
+        <div className="absolute -bottom-8 left-8 z-20">
+          <div className="relative shrink-0">
+            <div className="w-32 h-32 md:w-40 md:h-40 rounded-[2rem] border-[6px] border-[#f7f9fb] bg-[#ffffff] overflow-hidden shadow-xl relative group/avatar">
+              {photoSrc ? (
+                <img
+                  className="w-full h-full object-cover"
+                  alt={`${name}'s profile`}
+                  src={photoSrc}
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/40 text-primary text-4xl font-black">
+                  {initials}
                 </div>
               )}
             </div>
-
             {isOwnProfile && (
-              <div className="absolute bottom-10 right-10 flex flex-col gap-5 opacity-0 group-hover/photo:opacity-100 transition-opacity duration-500">
-                <ProfilePhotoUploader currentPhotoUrl={profile.photo_url} />
-                <PartyLogoUploader currentLogoUrl={profile.party_logo_url} />
+              <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
+                <ProfilePhotoUploader currentPhotoUrl={photoUrl} />
               </div>
             )}
           </div>
+        </div>
+      </div>
 
-          {/* Right side - Profile Details */}
-          <div className={`${variant === 'integrated' ? 'w-full lg:w-[60%]' : 'w-full lg:w-1/2'} p-10 lg:p-20 flex flex-col justify-center`}>
-            <header className="mb-16">
-              <div className="space-y-4 mb-10">
-                <CardTitle className={`text-display-md lg:text-display-lg font-display font-black tracking-tighter leading-none uppercase italic ${
-                  isSpecial ? 'text-amber-800' : 'text-on-surface'
-                }`}>
-                  {profile.name.replace(/^Delegate\s+/i, '')}
-                </CardTitle>
-                <div className="flex items-center gap-4">
-                  <div className={`h-1.5 w-12 rounded-full ${isSpecial ? 'bg-amber-500' : 'bg-primary'}`} />
-                  <span className={`text-label-sm font-black uppercase tracking-[0.4em] ${
-                    isSpecial ? 'text-amber-600' : 'text-primary'
-                  }`}>{profile.position}</span>
+      {/* Bento Grid Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-16">
+        {/* Left Column: Party & Constituency */}
+        <div className="md:col-span-4 space-y-6">
+          {/* Party Identity Card */}
+          <div className="bg-surface-container-lowest p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+              <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Political Affiliation</p>
+
+            {/* Party Logo + Name */}
+            <div className="flex items-center gap-4 mb-6">
+              <div className="relative shrink-0">
+                <div className="w-16 h-16 rounded-2xl bg-white border border-gray-200 overflow-hidden shadow-sm flex items-center justify-center">
+                  {partyLogoUrl ? (
+                    <img
+                      src={`${partyLogoUrl}${partyLogoUrl.includes('?') ? '&' : '?'}cb=${profile.updated_at ? new Date(profile.updated_at).getTime() : ''}`}
+                      alt={`${partyName} logo`}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/30 flex items-center justify-center text-primary font-black text-2xl">
+                      {partyName ? partyName.charAt(0) : '?'}
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-4">
-                <PartyBadge 
-                  partyNumber={profile.party_number} 
-                  partyName={profile.party_name} 
-                  partyLogoUrl={profile.party_logo_url}
-                  size="lg" 
-                />
-                
-                {profile.party_alignment && (
-                  <Badge variant="outline" className={`px-8 py-3 text-label-xs border-none shadow-none font-black rounded-full uppercase tracking-widest ${
-                    profile.party_alignment === 'ruling_party' ? 'bg-primary text-on-primary shadow-lg shadow-primary/20' : 
-                    profile.party_alignment === 'opposition' ? 'bg-secondary text-on-secondary shadow-lg shadow-secondary/20' : 
-                    'bg-surface-container-high text-on-surface-variant/40'
-                  }`}>
-                    {profile.party_alignment.replace('_', ' ')}
-                  </Badge>
+                {/* Upload button for own profile */}
+                {isOwnProfile && (
+                  <div className="absolute -bottom-1 -right-1">
+                    <PartyLogoUploader currentLogoUrl={partyLogoUrl} />
+                  </div>
                 )}
               </div>
-            </header>
+              <div>
+                <h3 className="font-headline text-lg font-bold text-on-surface leading-tight">
+                  {partyName || 'Independent'}
+                </h3>
+                <p className="text-xs font-semibold mt-1 text-gray-400 uppercase tracking-wider">
+                  Yi Parliamentary Bloc
+                </p>
+              </div>
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-12 mb-20">
-              <div className="flex items-center gap-6 group cursor-default">
-                <div className="w-20 h-20 bg-surface-container-low rounded-[2rem] flex items-center justify-center flex-shrink-0 group-hover:bg-primary/5 transition-all duration-700">
-                  <Hash className="w-8 h-8 text-on-surface-variant/30 group-hover:text-primary transition-colors" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-label-xs font-black text-on-surface-variant/30 uppercase tracking-[0.3em]">Serial ID</p>
-                  <p className="text-display-xs font-display font-black text-on-surface italic">{profile.serial_number}</p>
+            {/* Tag pills: Party Number, Committee, Alignment */}
+            <div className="flex flex-wrap gap-2 mb-5">
+              {/* Party Number Tag */}
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></svg>
+                Party {partyNumber}
+              </span>
+
+              {/* Committee Tag */}
+              {committee && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/10 text-indigo-700 border border-indigo-200">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></svg>
+                  {committee}
+                </span>
+              )}
+
+              {/* Alignment Tag */}
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${getAlignmentColor(partyAlignment)}`}>
+                {partyAlignment === 'ruling_party' && (
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></svg>
+                )}
+                {partyAlignment === 'opposition' && (
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></svg>
+                )}
+                {getAlignmentLabel(partyAlignment)}
+              </span>
+            </div>
+
+            {/* Detail rows */}
+            <div className="space-y-3 border-t border-surface-variant/30 pt-4">
+              <div className="flex justify-between text-xs">
+                <span className="text-on-surface-variant">Role Type</span>
+                <span className="font-bold">{position}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Constituency Details */}
+          <div className="bg-surface-container-lowest p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Constituency Details</p>
+            <div className="h-40 bg-surface-container-high rounded-xl mb-4 overflow-hidden relative">
+              <div className="w-full h-full bg-gradient-to-br from-primary/5 to-primary/15 flex items-center justify-center">
+                <svg className="w-16 h-16 text-primary/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"/>
+                  <path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"/>
+                </svg>
+              </div>
+              <div className="absolute inset-0 bg-primary/5" />
+            </div>
+            <h3 className="font-headline text-lg font-bold text-on-surface">{constituency}</h3>
+            <p className="text-on-surface-variant text-xs flex items-center gap-1 mt-1 font-medium opacity-85">
+              <svg className="w-3.5 h-3.5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/>
+              </svg>
+              {state}{city !== '—' ? `, ${city}` : ''}
+            </p>
+            <div className="mt-4 pt-4 border-t border-surface-variant/30 grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Serial Number</p>
+                <p className="font-bold text-sm text-on-surface">#{serialNumber}</p>
+              </div>
+              <div>
+                <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider">Status</p>
+                <p className={`font-bold text-sm flex items-center gap-1.5 ${isActive ? 'text-emerald-600' : 'text-red-500'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                  {isActive ? 'Active' : 'Inactive'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Civic Agenda & Manifesto */}
+        <div className="md:col-span-8 bg-surface-container-lowest p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="font-headline text-xl md:text-2xl font-extrabold tracking-tight">Civic Agenda</h2>
+                <p className="text-on-surface-variant text-xs font-medium opacity-80 mt-1">
+                  Strategic Manifesto for {constituency}
+                </p>
+              </div>
+              <svg className="w-10 h-10 text-primary opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/>
+              </svg>
+            </div>
+
+            {/* About / Description */}
+            {manifesto.about && (
+              <div className="bg-surface-container-low/50 p-5 rounded-2xl mb-6">
+                <p className="text-sm text-on-surface-variant leading-relaxed">{manifesto.about}</p>
+              </div>
+            )}
+
+            {/* Challenges & Solutions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Challenges */}
+              <div>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                  <span className="text-red-500 text-lg">!</span>
+                  Key Challenges ({manifesto.problems.length})
+                </h4>
+                <div className="space-y-3">
+                  {manifesto.problems.map((problem, i) => (
+                    <div key={i} className="group bg-surface-container-low/50 hover:bg-surface-container p-4 rounded-2xl transition-all duration-300">
+                      <div className="flex items-start gap-3">
+                        <span className="w-7 h-7 rounded-lg bg-red-500/10 text-red-600 flex items-center justify-center font-black text-xs shrink-0">
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        <p className="font-semibold text-on-surface text-sm leading-snug">{problem}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {manifesto.problems.length === 0 && (
+                    <p className="text-gray-400 text-sm italic py-4">No challenges added yet.</p>
+                  )}
                 </div>
               </div>
 
-              {profile.committee && (
-                <div className="flex items-center gap-6 group cursor-default">
-                  <div className="w-20 h-20 bg-surface-container-low rounded-[2rem] flex items-center justify-center flex-shrink-0 group-hover:bg-primary/5 transition-all duration-700">
-                    <Users className="w-8 h-8 text-on-surface-variant/30 group-hover:text-primary transition-colors" />
-                  </div>
-                  <div className="space-y-1 min-w-0">
-                    <p className="text-label-xs font-black text-on-surface-variant/30 uppercase tracking-[0.3em]">Committee</p>
-                    <p className="text-headline-sm font-display font-black text-on-surface truncate uppercase italic tracking-tight">{profile.committee}</p>
-                  </div>
-                </div>
-              )}
-
-              {profile.ministry && (
-                <div className="flex items-center gap-6 group cursor-default">
-                  <div className="w-20 h-20 bg-amber-50 rounded-[2rem] flex items-center justify-center flex-shrink-0 group-hover:bg-amber-100 transition-all duration-700">
-                    <Crown className="w-8 h-8 text-amber-500" />
-                  </div>
-                  <div className="space-y-1 min-w-0">
-                    <p className="text-label-xs font-black text-amber-600/40 uppercase tracking-[0.3em]">Ministry</p>
-                    <p className="text-headline-sm font-display font-black text-on-surface uppercase italic tracking-tight">{profile.ministry}</p>
-                  </div>
-                </div>
-              )}
-              
-              {profile.constituency && (
-                <div className="flex items-center gap-6 group cursor-default">
-                  <div className="w-20 h-20 bg-surface-container-low rounded-[2rem] flex items-center justify-center flex-shrink-0 group-hover:bg-primary/5 transition-all duration-700">
-                    <Building className="w-8 h-8 text-on-surface-variant/30 group-hover:text-primary transition-colors" />
-                  </div>
-                  <div className="space-y-1 min-w-0">
-                    <p className="text-label-xs font-black text-on-surface-variant/30 uppercase tracking-[0.3em]">Constituency</p>
-                    <p className="text-headline-sm font-display font-black text-on-surface uppercase italic tracking-tight">{profile.constituency}</p>
-                  </div>
-                </div>
-              )}
-
-              {profile.state && (
-                <div className="flex items-center gap-6 group cursor-default">
-                  <div className="w-20 h-20 bg-surface-container-low rounded-[2rem] flex items-center justify-center flex-shrink-0 group-hover:bg-primary/5 transition-all duration-700">
-                    <MapPin className="w-8 h-8 text-on-surface-variant/30 group-hover:text-primary transition-colors" />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-label-xs font-black text-on-surface-variant/30 uppercase tracking-[0.3em]">Region</p>
-                    <p className="text-headline-sm font-display font-black text-on-surface uppercase italic tracking-tight">
-                      {profile.state}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Leaderboard & Security Section */}
-            <div className="pt-16 space-y-10 border-t border-on-surface-variant/5">
-              {settings.leaderboard_visible && leaderboardData && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-                  <div className="bg-primary rounded-[2.5rem] p-8 text-on-primary shadow-2xl shadow-primary/20 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-1000" />
-                    <p className="text-label-xs opacity-60 mb-3 font-black uppercase tracking-[0.3em] relative z-10">Current Rank</p>
-                    <p className="text-display-md font-display font-black italic uppercase relative z-10 tracking-tighter">#{leaderboardData.ranking}</p>
-                    <p className="text-label-xs opacity-40 mt-2 font-black uppercase tracking-[0.1em] relative z-10">Global Standing</p>
-                  </div>
-                  <div className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-8 shadow-2xl shadow-on-surface/5 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:scale-150 transition-transform duration-1000" />
-                    <p className="text-label-xs text-on-surface-variant/40 mb-3 font-black uppercase tracking-[0.3em] relative z-10">Impact Score</p>
-                    <p className="text-display-md font-display font-black text-primary italic uppercase relative z-10 tracking-tighter">{leaderboardData.final_total_score?.toFixed(1)}</p>
-                    <p className="text-label-xs text-on-surface-variant/20 mt-2 font-black uppercase tracking-[0.1em] relative z-10">Out of 100.0</p>
-                  </div>
-                </div>
-              )}
-
-              {isOwnProfile && (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-8 p-8 bg-surface-container-low/40 rounded-[2.5rem] backdrop-blur-sm">
-                  <div className="w-full sm:w-auto">
-                    <ChangePasswordDialog />
-                  </div>
-                  <div className="hidden sm:block h-16 w-px bg-on-surface-variant/5" />
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 rounded-[1.25rem] bg-tertiary/10 flex items-center justify-center shadow-inner">
-                      <ShieldCheck className="w-7 h-7 text-tertiary" />
+              {/* Solutions */}
+              <div>
+                <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4 flex items-center gap-2">
+                  <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/>
+                  </svg>
+                  Proposed Solutions ({manifesto.solutions.length})
+                </h4>
+                <div className="space-y-3">
+                  {manifesto.solutions.map((solution, i) => (
+                    <div key={i} className="group bg-emerald-50/50 hover:bg-emerald-50 p-4 rounded-2xl transition-all duration-300">
+                      <div className="flex items-start gap-3">
+                        <span className="w-7 h-7 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-xs shrink-0">
+                          {String(i + 1).padStart(2, '0')}
+                        </span>
+                        <p className="font-semibold text-emerald-800 text-sm leading-snug">{solution}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-label-xs font-black text-on-surface-variant/30 uppercase tracking-[0.2em]">Security Status</p>
-                      <p className="text-label-md font-black text-tertiary uppercase tracking-widest">Authenticated Access</p>
-                    </div>
-                  </div>
+                  ))}
+                  {manifesto.solutions.length === 0 && (
+                    <p className="text-gray-400 text-sm italic py-4">No solutions drafted yet.</p>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </div>
-        </section>
-      </CardContent>
-    </Card>
+        </div>
+      </div>
+    </div>
   );
 };
