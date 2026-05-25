@@ -108,7 +108,21 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				'on-surface': 'hsl(var(--on-surface))',
+				'on-surface-variant': 'hsl(var(--on-surface-variant))',
+				'outline-color': 'hsl(var(--outline))',
+				'outline-variant': 'hsl(var(--outline-variant))',
+				'on-primary-container': 'hsl(var(--on-primary-container))',
+				'on-primary-fixed': 'hsl(var(--on-primary-fixed))',
+				'on-secondary-container': 'hsl(var(--on-secondary-container))',
+				'on-secondary-fixed': 'hsl(var(--on-secondary-fixed))',
+				'on-tertiary-fixed': 'hsl(var(--on-tertiary-fixed))',
+				'on-tertiary-container': 'hsl(var(--on-tertiary-container))',
+				'error': 'hsl(var(--error))',
+				'error-container': 'hsl(var(--error-container))',
+				'surface-variant': 'hsl(var(--surface-variant))',
+				'surface-dim': 'hsl(var(--surface-dim))'
 			},
 			backgroundImage: {
 				'gradient-primary': 'var(--gradient-primary)',

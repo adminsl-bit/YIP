@@ -30,9 +30,13 @@ const Onboarding = () => {
   } | null>(null);
 
   useEffect(() => {
-    if (profile && profile.serial_number) {
-      // If profile already exists with serial number, skip onboarding
+    if (profile && profile.constituency) {
+      // If profile already has constituency assignment, onboarding is complete
       navigate('/student');
+    }
+    // Pre-fill name from existing profile (e.g. direct-registered users)
+    if (profile?.name && !formData.name) {
+      setFormData(prev => ({ ...prev, name: profile.name }));
     }
   }, [profile, navigate]);
 
@@ -125,24 +129,45 @@ const Onboarding = () => {
       }
 
       // 4. Create or Update Profile
-      const { error: insertError } = await supabase
+      const profileData = {
+        name: formData.name.trim(),
+        state: formData.state.trim(),
+        city: formData.city.trim(),
+        constituency: constituency,
+        position: 'Member of Parliament',
+        party_name: partyName,
+        party_number: partyNumber,
+        committee: committee,
+        serial_number: nextSerial,
+        user_type: 'student' as const,
+        is_active: true,
+        email: user.email,
+        party_alignment: partyAlignment
+      };
+
+      let insertError;
+
+      // Check if profile already exists (e.g. from direct registration)
+      const { data: existingProfile } = await supabase
         .from('profiles')
-        .upsert({
-          user_id: user.id,
-          name: formData.name.trim(),
-          state: formData.state.trim(),
-          city: formData.city.trim(),
-          constituency: constituency,
-          position: 'Member of Parliament',
-          party_name: partyName,
-          party_number: partyNumber,
-          committee: committee,
-          serial_number: nextSerial,
-          user_type: 'student',
-          is_active: true,
-          email: user.email,
-          party_alignment: partyAlignment
-        }, { onConflict: 'user_id' });
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (existingProfile) {
+        // Update existing profile with onboarding data
+        const { error } = await supabase
+          .from('profiles')
+          .update(profileData)
+          .eq('user_id', user.id);
+        insertError = error;
+      } else {
+        // Create new profile
+        const { error } = await supabase
+          .from('profiles')
+          .insert({ ...profileData, user_id: user.id });
+        insertError = error;
+      }
 
       if (insertError) throw insertError;
 

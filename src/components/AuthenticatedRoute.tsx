@@ -6,7 +6,7 @@ interface AuthenticatedRouteProps {
 }
 
 export const AuthenticatedRoute = ({ children }: AuthenticatedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
 
   if (loading) {
     return (
@@ -21,6 +21,11 @@ export const AuthenticatedRoute = ({ children }: AuthenticatedRouteProps) => {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  // If student hasn't completed onboarding (no constituency assigned), redirect
+  if (profile && profile.user_type === 'student' && !profile.constituency) {
+    return <Navigate to="/onboarding" replace />;
   }
 
   return <>{children}</>;

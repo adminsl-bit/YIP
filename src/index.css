@@ -24,6 +24,16 @@
   animation: pulse-soft var(--pulse-duration) ease-in-out infinite;
 }
 
+@keyframes pulse-live {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(186, 26, 26, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(186, 26, 26, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(186, 26, 26, 0); }
+}
+
+.animate-pulse-live {
+  animation: pulse-live 2s infinite;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */
@@ -60,6 +70,19 @@ All colors MUST be HSL.
     --on-surface: 203 13% 11%; /* #191c1e */
     --on-surface-variant: 231 9% 30%; /* #454653 */
     --outline-variant: 240 15% 80%; /* #c5c5d5 */
+    --outline: 237 5% 45%; /* #757684 */
+
+    --on-primary-container: 233 100% 84%; /* #afb9ff */
+    --on-secondary-container: 15 100% 19%; /* #631800 */
+    --on-secondary-fixed: 15 100% 12%; /* #3a0a00 */
+    --on-tertiary-fixed: 160 100% 6.5%; /* #002113 */
+    --on-tertiary-container: 155 62% 55%; /* #42d59a */
+
+    --error: 0 72% 36%; /* #ba1a1a */
+    --error-container: 5 100% 91.6%; /* #ffdad6 */
+
+    --surface-variant: 210 7% 89%; /* #e0e3e5 */
+    --surface-dim: 210 5% 85%; /* #d8dadc */
 
     --primary-fixed: 234 100% 93%; /* #dee0ff */
     --primary-fixed-dim: 231 100% 86%; /* #bac3ff */
@@ -241,6 +264,14 @@ All colors MUST be HSL.
 
   .glass-nav {
     @apply backdrop-blur-[12px] bg-white/70 border border-white/20;
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 24px -1px rgba(0, 0, 0, 0.05);
   }
 
   .text-glow {

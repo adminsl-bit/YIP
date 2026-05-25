@@ -33,9 +33,20 @@ const Register = () => {
   // If user is already authenticated and has a profile, go to dashboard
   useEffect(() => {
     if (user && profile) {
-      if (profile.user_type === 'student') navigate('/student');
-      else if (profile.user_type === 'jury') navigate('/jury');
-      else if (profile.user_type === 'organizer') navigate('/organizer');
+      // Check if student has completed onboarding (has constituency assignment)
+      const hasCompletedOnboarding = profile.user_type === 'student' 
+        ? !!profile.constituency
+        : true;
+
+      if (!hasCompletedOnboarding) {
+        navigate('/onboarding');
+      } else if (profile.user_type === 'student') {
+        navigate('/student');
+      } else if (profile.user_type === 'jury') {
+        navigate('/jury');
+      } else if (profile.user_type === 'organizer') {
+        navigate('/organizer');
+      }
     } else if (user && !profile && !isLoading) {
       // Authenticated but no profile -> Go to onboarding
       navigate('/onboarding');
@@ -107,9 +118,10 @@ const Register = () => {
           throw new Error(errorMsg);
         }
       } else {
-        toast({ title: "Welcome, Delegate!", description: "Account created successfully. You can now login." });
-        // Automatically sign them in
+        toast({ title: "Welcome, Delegate!", description: "Account created. Completing your setup..." });
+        // Sign them in, then redirect to onboarding for party/committee assignment
         await signIn(loginId, password);
+        navigate('/onboarding');
       }
     } catch (error: any) {
       console.error('Direct signup error:', error);

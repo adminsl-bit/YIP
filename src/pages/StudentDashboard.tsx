@@ -604,11 +604,11 @@ const StudentDashboard = () => {
     <div className="flex min-h-screen bg-[#F3F4F6] font-body antialiased">
 
       {/* ── Left Sidebar ── */}
-      <aside className="hidden md:flex flex-col h-screen w-64 fixed z-50 bg-white border-r border-gray-100 py-6 px-4">
+      <aside className="hidden md:flex flex-col h-screen w-64 fixed z-50 bg-white border-r border-outline-variant py-6 px-4">
         {/* Header */}
         <div className="mb-10 px-4">
-          <h1 className="font-headline font-bold text-gray-900 text-lg">The Civic Canvas</h1>
-          <p className="font-body text-gray-400 text-xs font-medium">Digital Diplomat Portal</p>
+          <h1 className="font-headline font-bold text-on-surface text-lg">The Civic Canvas</h1>
+          <p className="font-body text-on-surface-variant text-xs font-medium">Digital Diplomat Portal</p>
         </div>
 
         {/* Nav Items */}
@@ -622,7 +622,7 @@ const StudentDashboard = () => {
                 className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors duration-200 text-left font-body ${
                   activeTab === item.id
                     ? 'text-primary font-bold border-r-4 border-primary bg-primary/5'
-                    : 'text-gray-500 hover:bg-gray-50 font-medium'
+                    : 'text-on-surface-variant hover:bg-surface-container font-medium'
                 }`}
               >
                 <Icon className="w-5 h-5 shrink-0" />
@@ -636,7 +636,7 @@ const StudentDashboard = () => {
         <div className="mt-auto px-4">
           <button
             onClick={() => signOut()}
-            className="flex items-center gap-2 font-body text-gray-400 hover:text-red-500 transition-colors duration-200 font-medium"
+            className="flex items-center gap-2 font-body text-on-surface-variant hover:text-error transition-colors duration-200 font-medium"
           >
             <LogOut className="w-5 h-5" />
             <span>Sign Out</span>
@@ -645,14 +645,14 @@ const StudentDashboard = () => {
       </aside>
 
       {/* ── Mobile Bottom Nav ── */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 md:hidden flex justify-around items-center h-16 z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant md:hidden flex justify-around items-center h-16 z-50">
         {navItems.map(item => {
           const Icon = item.icon;
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
-              className={`p-2 ${activeTab === item.id ? 'text-primary' : 'text-gray-400'}`}
+              className={`p-2 ${activeTab === item.id ? 'text-primary' : 'text-on-surface-variant'}`}
             >
               <Icon className="w-5 h-5" />
             </button>
