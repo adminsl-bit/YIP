@@ -81,7 +81,7 @@ export const GlobalSquare = () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from('messages')
+        .from('chat_messages')
         .select('*, profiles:user_id (name, photo_url, user_type, city, party_name, position)')
         .eq('channel', getChannelName(ch))
         .order('created_at', { ascending: true })
@@ -110,17 +110,17 @@ export const GlobalSquare = () => {
 
     const channel = supabase.channel(`messages_${getChannelName()}`)
       .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'messages',
+        event: 'INSERT', schema: 'public', table: 'chat_messages',
         filter: `channel=eq.${getChannelName()}`,
       }, async (payload) => {
         const { data } = await supabase
-          .from('messages')
+          .from('chat_messages')
           .select('*, profiles:user_id (name, photo_url, user_type, city, party_name, position)')
           .eq('id', payload.new.id)
           .single();
         if (data) setMessages(prev => [...prev, data as any]);
       })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'messages' }, (payload) => {
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, (payload) => {
         setMessages(prev => prev.filter(m => m.id !== payload.old.id));
       })
       .subscribe();
@@ -135,7 +135,7 @@ export const GlobalSquare = () => {
     if (!newMessage.trim() || !user) return;
     const text = newMessage.trim();
     setNewMessage('');
-    const { error } = await supabase.from('messages' as any).insert({
+    const { error } = await supabase.from('chat_messages' as any).insert({
       content: text, user_id: user.id, channel: getChannelName(),
     });
     if (error) {
@@ -149,7 +149,7 @@ export const GlobalSquare = () => {
     const isOrganizer = (profile as any)?.user_type === 'organizer';
     const isOwn = messages.find(m => m.id === id)?.user_id === user?.id;
     if (!isOrganizer && !isOwn) return;
-    const { error } = await supabase.from('messages').delete().eq('id', id);
+    const { error } = await supabase.from('chat_messages').delete().eq('id', id);
     if (error) toast.error('Failed to delete');
   };
 
