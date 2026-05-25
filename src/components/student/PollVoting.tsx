@@ -111,20 +111,14 @@ export const PollVoting = () => {
   return (
     <div>
       {/* Hero */}
-      <header className="mb-12 relative">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="max-w-2xl">
-            <h1 className="text-4xl md:text-5xl font-extrabold font-headline tracking-tight text-primary mb-4 leading-tight">
-              Parliamentary <span className="text-secondary">Ballot Chamber</span>
-            </h1>
-            <p className="text-on-surface-variant text-lg max-w-xl font-medium font-body">
-              Welcome to the heart of student governance. Deliberate on active resolutions, cast your vote, and witness democratic progress in real-time.
-            </p>
-          </div>
-          <div className="hidden lg:block absolute -top-12 -right-4 w-64 h-64 opacity-10 pointer-events-none">
-            <Landmark className="w-full h-full text-primary" strokeWidth={0.75} />
-          </div>
-        </div>
+      <header className="mb-10">
+        <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+          Parliamentary <span className="text-secondary">Ballot Chamber</span>
+        </h1>
+        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+          <Landmark className="w-3 h-3" />
+          Active Legislative Floor
+        </p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

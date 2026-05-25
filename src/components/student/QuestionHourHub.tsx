@@ -182,18 +182,14 @@ export const QuestionHourHub = () => {
   return (
     <div>
       {/* Page Heading */}
-      <header className="mb-10 relative">
-        <div className="max-w-2xl">
-          <h1 className="text-4xl md:text-5xl font-extrabold font-headline tracking-tight text-primary mb-4 leading-tight">
-            Legislative <span className="text-secondary">Question Hour</span>
-          </h1>
-          <p className="text-on-surface-variant text-lg max-w-xl font-medium font-body">
-            Submit formal queries to executive ministries and engage in parliamentary deliberation on the floor.
-          </p>
-        </div>
-        <div className="hidden lg:block absolute -top-10 -right-4 w-56 h-56 opacity-10 pointer-events-none">
-          <Gavel className="w-full h-full text-primary" strokeWidth={0.75} />
-        </div>
+      <header className="mb-10">
+        <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+          Legislative <span className="text-secondary">Question Hour</span>
+        </h1>
+        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+          <Gavel className="w-3 h-3" />
+          Parliamentary Deliberation Protocol
+        </p>
       </header>
 
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start">
