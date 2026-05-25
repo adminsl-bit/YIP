@@ -598,7 +598,7 @@ const StudentDashboard = () => {
       case 'question-hour':
         return <QuestionHourHub />;
       case 'messages':
-        return <div className="h-[calc(100vh-4rem)] -m-8"><GlobalSquare /></div>;
+        return <GlobalSquare />;
       default:
         return renderProfileTab();
     }

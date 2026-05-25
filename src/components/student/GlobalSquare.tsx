@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Loader2, Trash2, Paperclip, Smile, User } from 'lucide-react';
+import { Send, Loader2, Trash2, Paperclip, Smile, User, MessagesSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -167,7 +167,23 @@ export const GlobalSquare = () => {
   const candidates = activeProfiles.filter(p => !leadership.includes(p));
 
   return (
-    <div className="flex flex-col h-full bg-white overflow-hidden">
+    <div>
+      {/* Page Heading */}
+      <header className="mb-8 relative">
+        <div className="max-w-2xl">
+          <h1 className="text-4xl md:text-5xl font-extrabold font-headline tracking-tight text-primary mb-4 leading-tight">
+            Civic <span className="text-secondary">Chat Hub</span>
+          </h1>
+          <p className="text-on-surface-variant text-lg max-w-xl font-medium font-body">
+            Connect with fellow delegates, coordinate with your party wing, or reach the organizing team directly.
+          </p>
+        </div>
+        <div className="hidden lg:block absolute -top-10 -right-4 w-56 h-56 opacity-10 pointer-events-none">
+          <MessagesSquare className="w-full h-full text-primary" strokeWidth={0.75} />
+        </div>
+      </header>
+
+    <div className="flex flex-col bg-white overflow-hidden rounded-3xl shadow-sm border border-outline-variant/10" style={{ height: 'calc(100vh - 18rem)' }}>
 
       {/* ── Tab Navigation ── */}
       <div className="px-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
@@ -387,6 +403,7 @@ export const GlobalSquare = () => {
           </div>
         </form>
       </div>
+    </div>
     </div>
   );
 };
