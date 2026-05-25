@@ -135,13 +135,12 @@ export const GlobalSquare = () => {
     if (!newMessage.trim() || !user) return;
     const text = newMessage.trim();
     setNewMessage('');
-    try {
-      const { error } = await supabase.from('messages').insert({
-        content: text, user_id: user.id, channel: getChannelName(),
-      });
-      if (error) throw error;
-    } catch {
-      toast.error('Failed to send message');
+    const { error } = await supabase.from('messages' as any).insert({
+      content: text, user_id: user.id, channel: getChannelName(),
+    });
+    if (error) {
+      console.error('Send error:', error);
+      toast.error(error.message || 'Failed to send message');
       setNewMessage(text);
     }
   };
@@ -179,7 +178,7 @@ export const GlobalSquare = () => {
         </p>
       </header>
 
-    <div className="flex flex-col bg-white overflow-hidden rounded-3xl shadow-sm border border-outline-variant/10" style={{ height: 'calc(100vh - 18rem)' }}>
+    <div className="flex flex-col bg-white overflow-hidden rounded-3xl shadow-sm border border-outline-variant/10" style={{ height: 'calc(100vh - 11rem)' }}>
 
       {/* ── Tab Navigation ── */}
       <div className="px-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
