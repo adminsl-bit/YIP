@@ -435,8 +435,8 @@ export const CivicWall = () => {
       {/* Title & Search row */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight font-headline">Civic Wall</h1>
-          <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2">
+          <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">Civic <span className="text-secondary">Wall</span></h1>
+          <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
             <Globe className="w-3 h-3" />
             National Legislative Discourse
           </p>

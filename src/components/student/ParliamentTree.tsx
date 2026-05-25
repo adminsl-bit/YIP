@@ -133,10 +133,12 @@ export const ParliamentTree = () => {
 
         {/* Header & Search */}
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="space-y-1">
-            <span className="text-primary text-[10px] tracking-[0.2em] font-bold uppercase">The Sovereign Will</span>
-            <h2 className="text-3xl font-headline font-extrabold tracking-tight">The Assembly Floor</h2>
-            <p className="text-on-surface-variant text-xs">Representatives of the Sovereign Will of the People</p>
+          <div>
+            <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">The Assembly <span className="text-secondary">Floor</span></h1>
+            <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+              <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              Representatives of the Sovereign Will
+            </p>
           </div>
           <div className="relative w-full sm:w-80">
             <input
