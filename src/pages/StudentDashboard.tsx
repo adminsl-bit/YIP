@@ -8,9 +8,10 @@ import { CivicWall } from '@/components/student/CivicWall';
 import { ParliamentTree } from '@/components/student/ParliamentTree';
 import { PollVoting } from '@/components/student/PollVoting';
 import { QuestionHourHub } from '@/components/student/QuestionHourHub';
-import { Loader2, User, LayoutDashboard, Network, Vote, MessageSquare, LogOut } from 'lucide-react';
+import { GlobalSquare } from '@/components/student/GlobalSquare';
+import { Loader2, User, LayoutDashboard, Network, Vote, MessageSquare, LogOut, MessagesSquare } from 'lucide-react';
 
-type TabId = 'profile' | 'civic-wall' | 'tree' | 'ballot' | 'question-hour';
+type TabId = 'profile' | 'civic-wall' | 'tree' | 'ballot' | 'question-hour' | 'messages';
 
 interface ManifestoItem {
   text: string;
@@ -148,6 +149,7 @@ const StudentDashboard = () => {
     { id: 'tree',          label: 'Tree',           icon: Network },
     { id: 'ballot',        label: 'Ballot',         icon: Vote },
     { id: 'question-hour', label: 'Question Hour',  icon: MessageSquare },
+    { id: 'messages',      label: 'Civic Chat',      icon: MessagesSquare },
   ];
 
   if (authLoading) {
@@ -595,6 +597,8 @@ const StudentDashboard = () => {
         return <PollVoting />;
       case 'question-hour':
         return <QuestionHourHub />;
+      case 'messages':
+        return <div className="h-[calc(100vh-4rem)] -m-8"><GlobalSquare /></div>;
       default:
         return renderProfileTab();
     }
