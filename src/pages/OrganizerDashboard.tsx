@@ -295,29 +295,45 @@ const OrganizerDashboard = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="timer" className="m-0"><TimerManagement /></TabsContent>
-              <TabsContent value="sessions" className="m-0"><SessionManagement /></TabsContent>
-              <TabsContent value="polls" className="m-0"><PollManagement /></TabsContent>
-              <TabsContent value="square" className="m-0 h-[calc(100vh-80px)] overflow-hidden border-none shadow-none"><GlobalSquare /></TabsContent>
+              <TabsContent value="timer" className="m-0 space-y-10">
+                <PageHeader primary="Session" secondary="Timer" icon={<Clock className="w-3 h-3" />} subtitle="Countdown & Time Management" />
+                <TimerManagement />
+              </TabsContent>
+
+              <TabsContent value="sessions" className="m-0 space-y-10">
+                <PageHeader primary="Parliamentary" secondary="Sessions" icon={<Calendar className="w-3 h-3" />} subtitle="Agenda & Schedule Control" />
+                <SessionManagement />
+              </TabsContent>
+
+              <TabsContent value="polls" className="m-0 space-y-10">
+                <PageHeader primary="Ballot" secondary="Management" icon={<Gavel className="w-3 h-3" />} subtitle="Active Poll Administration" />
+                <PollManagement />
+              </TabsContent>
+
+              <TabsContent value="square" className="m-0 h-[calc(100vh-80px)] overflow-hidden">
+                <GlobalSquare />
+              </TabsContent>
+
               <TabsContent value="students" className="m-0 space-y-8">
+                <PageHeader primary="Student" secondary="Roster" icon={<GraduationCap className="w-3 h-3" />} subtitle="Delegate Registry & Bulk Tools" />
                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm"><OrganizerStudentList /></div>
                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
                   <Accordion type="single" collapsible className="w-full">
                     <AccordionItem value="bulk" className="border-none">
                       <AccordionTrigger className="hover:no-underline py-0">
-                        <div className="flex items-center gap-6">
-                          <div className="w-14 h-14 bg-[#6ffbbe]/20 rounded-2xl flex items-center justify-center text-[#003e29] shadow-sm">
-                            <span className="material-symbols-outlined text-3xl">upload_file</span>
+                        <div className="flex items-center gap-5">
+                          <div className="w-12 h-12 bg-tertiary/8 rounded-2xl flex items-center justify-center text-tertiary">
+                            <span className="material-symbols-outlined text-2xl">upload_file</span>
                           </div>
-                          <div className="text-left font-headline">
-                            <h3 className="text-2xl font-black text-[#191c1e]">Bulk Student Tools</h3>
-                            <p className="text-[#757684] font-bold text-xs opacity-70">Import from Excel and dynamic role mapping</p>
+                          <div className="text-left">
+                            <h3 className="text-xl font-extrabold font-headline text-on-surface">Bulk Student Tools</h3>
+                            <p className="text-[10px] text-on-surface-variant/50 font-black uppercase tracking-[0.3em] mt-1">Import from Excel and dynamic role mapping</p>
                           </div>
                         </div>
                       </AccordionTrigger>
-                      <AccordionContent className="pt-10">
+                      <AccordionContent className="pt-8">
                         <StudentBulkImport />
-                        <div className="mt-10 pt-10 border-t border-slate-100">
+                        <div className="mt-8 pt-8 border-t border-outline-variant/10">
                           <DynamicRoleCreator />
                         </div>
                       </AccordionContent>
@@ -325,43 +341,61 @@ const OrganizerDashboard = () => {
                   </Accordion>
                 </div>
               </TabsContent>
-              <TabsContent value="security" className="m-0"><SecurityLogsManager /></TabsContent>
-              <TabsContent value="leaderboard" className="m-0"><OrganizerLeaderboard /></TabsContent>
+
+              <TabsContent value="security" className="m-0 space-y-10">
+                <PageHeader primary="Security" secondary="Monitor" icon={<ShieldCheck className="w-3 h-3" />} subtitle="Login Audit & Session Control" />
+                <SecurityLogsManager />
+              </TabsContent>
+
+              <TabsContent value="leaderboard" className="m-0 space-y-10">
+                <PageHeader primary="Performance" secondary="Leaderboard" icon={<BarChart3 className="w-3 h-3" />} subtitle="Delegate Rankings & Scores" />
+                <OrganizerLeaderboard />
+              </TabsContent>
+
               <TabsContent value="awards" className="m-0 space-y-8">
-                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
-                    <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
-                      <div>
-                        <h2 className="text-2xl font-extrabold font-headline text-primary">Parliament <span className="text-secondary">Awards</span></h2>
-                        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Assign accolades and consensus trophies</p>
-                      </div>
-                      <Button onClick={() => navigate('/display/awards')} className="bg-secondary-container/30 text-secondary hover:bg-secondary-container/50 font-bold px-6 py-5 rounded-2xl border border-secondary/10">
-                        <Presentation className="h-4 w-4 mr-2" /> Launch Award Screen
-                      </Button>
-                    </div>
-                    <AwardManagement />
-                 </div>
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5">
+                  <PageHeader primary="Parliament" secondary="Awards" icon={<Trophy className="w-3 h-3" />} subtitle="Accolades & Consensus Trophies" className="mb-0" />
+                  <Button onClick={() => navigate('/display/awards')} className="bg-secondary/10 text-secondary hover:bg-secondary/20 font-bold px-6 py-5 rounded-2xl border border-secondary/10 shrink-0">
+                    <Presentation className="h-4 w-4 mr-2" /> Launch Award Screen
+                  </Button>
+                </div>
+                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
+                  <AwardManagement />
+                </div>
               </TabsContent>
+
               <TabsContent value="photos" className="m-0 space-y-8">
-                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm"><PhotoUploadManager /></div>
-                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
-                    <Accordion type="single" collapsible className="w-full">
-                       <AccordionItem value="migration" className="border-none">
-                          <AccordionTrigger className="hover:no-underline py-0">
-                             <div className="flex items-center gap-4 font-headline">
-                                <Zap className="w-6 h-6 text-amber-500" />
-                                <h3 className="text-xl font-black">Photo Migration Tool</h3>
-                             </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="pt-8">
-                             <PhotoMigration />
-                          </AccordionContent>
-                       </AccordionItem>
-                    </Accordion>
-                 </div>
+                <PageHeader primary="Photo" secondary="Gallery" icon={<span className="material-symbols-outlined text-[12px]">photo_library</span>} subtitle="Delegate Photo Management" />
+                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm"><PhotoUploadManager /></div>
+                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="migration" className="border-none">
+                      <AccordionTrigger className="hover:no-underline py-0">
+                        <div className="flex items-center gap-4">
+                          <Zap className="w-5 h-5 text-amber-500" />
+                          <h3 className="text-xl font-extrabold font-headline text-on-surface">Photo Migration Tool</h3>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-8"><PhotoMigration /></AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </div>
               </TabsContent>
-              <TabsContent value="speeches" className="m-0"><AdminSpeechTracker /></TabsContent>
-              <TabsContent value="news" className="m-0"><BreakingNewsPublisher /></TabsContent>
-              <TabsContent value="manual-scoring" className="m-0"><ManualScoring /></TabsContent>
+
+              <TabsContent value="speeches" className="m-0 space-y-10">
+                <PageHeader primary="Speech" secondary="Tracker" icon={<Mic className="w-3 h-3" />} subtitle="Oratory Performance Monitor" />
+                <AdminSpeechTracker />
+              </TabsContent>
+
+              <TabsContent value="news" className="m-0 space-y-10">
+                <PageHeader primary="Breaking" secondary="News" icon={<Newspaper className="w-3 h-3" />} subtitle="Live Broadcast Publisher" />
+                <BreakingNewsPublisher />
+              </TabsContent>
+
+              <TabsContent value="manual-scoring" className="m-0 space-y-10">
+                <PageHeader primary="Manual" secondary="Scoring" icon={<FileEdit className="w-3 h-3" />} subtitle="Direct Score Override" />
+                <ManualScoring />
+              </TabsContent>
             </div>
           </main>
           
@@ -371,6 +405,18 @@ const OrganizerDashboard = () => {
     </div>
   );
 };
+
+const PageHeader = ({ primary, secondary, icon, subtitle, className = 'mb-0' }: { primary: string; secondary: string; icon: React.ReactNode; subtitle: string; className?: string }) => (
+  <header className={className}>
+    <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+      {primary} <span className="text-secondary">{secondary}</span>
+    </h1>
+    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+      {icon}
+      {subtitle}
+    </p>
+  </header>
+);
 
 const NavTrigger = ({ value, label, icon }: { value: string; label: string; icon: string }) => (
   <TabsTrigger
