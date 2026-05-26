@@ -145,42 +145,38 @@ const OrganizerDashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-surface-container-lowest font-body text-on-surface antialiased">
+    <div className="flex min-h-screen bg-[#F3F4F6] font-body text-on-surface antialiased">
       <TimerTicker />
-      
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex h-screen overflow-hidden">
-        {/* SideNavBar - Persistent on Desktop */}
-        <aside className="hidden lg:flex flex-col w-64 bg-surface border-r border-outline-variant/30 h-full overflow-y-auto">
-          <div className="p-6 flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-on-primary shadow-lg shadow-primary/20">
-              <span className="material-symbols-outlined text-2xl font-fill">account_balance</span>
-            </div>
-            <div>
-              <h2 className="text-headline-sm font-black text-primary leading-none font-headline tracking-tight uppercase italic">YI Parliament</h2>
-              <p className="text-body-xxs uppercase tracking-widest text-on-surface-variant font-black mt-1 opacity-60">Organizer Hub</p>
-            </div>
+
+        {/* ── Left Sidebar ── */}
+        <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-outline-variant h-full overflow-y-auto shrink-0">
+          <div className="mb-8 px-6 pt-6">
+            <h1 className="font-headline font-bold text-on-surface text-lg">The Civic Canvas</h1>
+            <p className="font-body text-on-surface-variant text-xs font-medium">Organizer Hub</p>
           </div>
 
           <TabsList className="flex-1 flex flex-col items-stretch bg-transparent h-auto px-4 space-y-1 mb-8">
-            <NavTrigger value="controls" icon="dashboard_customize" label="Controls" />
-            <NavTrigger value="timer" icon="timer" label="Timer" />
-            <NavTrigger value="sessions" icon="event_seat" label="Sessions" />
-            <NavTrigger value="polls" icon="how_to_vote" label="Ballot" />
-            <NavTrigger value="square" icon="forum" label="Square" />
-            <NavTrigger value="students" icon="group" label="Students" />
-            <NavTrigger value="security" icon="security" label="Security" />
-            <NavTrigger value="leaderboard" icon="leaderboard" label="Leaderboard" />
-            <NavTrigger value="awards" icon="emoji_events" label="Awards" />
-            <NavTrigger value="photos" icon="photo_library" label="Photos" />
-            <NavTrigger value="speeches" icon="record_voice_over" label="Speeches" />
-            <NavTrigger value="news" icon="campaign" label="Breaking News" />
-            <NavTrigger value="manual-scoring" icon="edit_note" label="Manual Scoring" />
+            <NavTrigger value="controls"       icon="dashboard_customize" label="Controls" />
+            <NavTrigger value="timer"          icon="timer"               label="Timer" />
+            <NavTrigger value="sessions"       icon="event_seat"          label="Sessions" />
+            <NavTrigger value="polls"          icon="how_to_vote"         label="Ballot" />
+            <NavTrigger value="square"         icon="forum"               label="Civic Chat" />
+            <NavTrigger value="students"       icon="group"               label="Students" />
+            <NavTrigger value="security"       icon="security"            label="Security" />
+            <NavTrigger value="leaderboard"    icon="leaderboard"         label="Leaderboard" />
+            <NavTrigger value="awards"         icon="emoji_events"        label="Awards" />
+            <NavTrigger value="photos"         icon="photo_library"       label="Photos" />
+            <NavTrigger value="speeches"       icon="record_voice_over"   label="Speeches" />
+            <NavTrigger value="news"           icon="campaign"            label="Breaking News" />
+            <NavTrigger value="manual-scoring" icon="edit_note"           label="Manual Scoring" />
           </TabsList>
 
-          <div className="px-6 py-6 mt-auto border-t border-outline-variant/20">
-            <button 
+          <div className="px-6 py-6 mt-auto">
+            <button
               onClick={signOut}
-              className="w-full flex items-center justify-center gap-2 text-on-surface-variant hover:text-error font-black text-body-xxs uppercase tracking-widest py-3 transition-all"
+              className="flex items-center gap-2 font-body text-on-surface-variant hover:text-error transition-colors duration-200 font-medium text-sm"
             >
               <LogOut className="w-4 h-4" />
               Sign Out
@@ -188,104 +184,114 @@ const OrganizerDashboard = () => {
           </div>
         </aside>
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col h-full min-w-0 bg-[#f7f9fb]">
-          {/* TopNavBar */}
-          <header className="h-16 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/30 flex items-center justify-between px-8 z-30 sticky top-0">
-            <div className="flex items-center gap-4">
-              <span className="text-headline-md font-black text-primary font-headline tracking-tighter uppercase italic">Organizer Portal</span>
-            </div>
+        {/* ── Main Content Area ── */}
+        <div className="flex-1 flex flex-col h-full min-w-0">
 
+          {/* Sticky glassmorphic top bar */}
+          <header className="h-16 bg-white/80 backdrop-blur-xl border-b border-outline-variant/10 flex items-center px-8 z-30 sticky top-0 shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm shadow-primary/20">
+                <span className="material-symbols-outlined text-on-primary text-base font-fill">account_balance</span>
+              </div>
+              <span className="font-headline font-bold text-on-surface">Organizer Portal</span>
+            </div>
           </header>
 
-          {/* Canvas */}
-          <main className={`flex-1 transition-all duration-300 ${activeTab === 'square' ? 'p-0 overflow-hidden bg-white' : 'p-4 sm:p-8 lg:p-12 pb-32 overflow-y-auto'}`}>
-            {/* Stats section follows immediately */}
+          {/* ── Canvas ── */}
+          <main className={`flex-1 transition-all duration-200 ${activeTab === 'square' ? 'p-0 overflow-hidden' : 'p-8 lg:p-10 pb-24 overflow-y-auto'}`}>
+            <div>
+              <TabsContent value="controls" className="m-0 space-y-10">
 
+                {/* Page heading */}
+                <header>
+                  <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+                    Organizer <span className="text-secondary">Controls</span>
+                  </h1>
+                  <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+                    <Settings className="w-3 h-3" />
+                    Parliamentary Operations Centre
+                  </p>
+                </header>
 
+                {/* Stat cards row */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                  <StatCard value={stats.totalStudents}        label="Delegates"           icon="group"          color="primary" />
+                  <StatCard value={stats.totalJury}            label="Jury Members"        icon="gavel"          color="secondary" />
+                  <StatCard value={stats.assessmentsCompleted} label="Assessments Done"    icon="task_alt"       color="tertiary" />
+                  <StatCard value={Math.round(stats.totalAssessments > 0 ? (stats.assessmentsCompleted / stats.totalAssessments) * 100 : 0)} label="Completion %" icon="percent" color="primary" />
+                </div>
 
-            {/* Tab Contents */}
-            <div className="animate-fade-in delay-100">
-              <TabsContent value="controls" className="m-0 space-y-12">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-                  {/* Left Column: Quick Actions & News Ticker */}
-                  <div className="lg:col-span-2 space-y-10">
-                    {/* Quick Access Modules Card */}
-                    <div className="bg-surface-container-low rounded-[2rem] p-8 border border-outline-variant/30 shadow-sm relative overflow-hidden group">
-                       <div className="absolute top-0 right-0 p-6 opacity-5">
-                          <span className="material-symbols-outlined text-8xl">apps</span>
-                       </div>
-                       <div className="flex items-center justify-between mb-8 relative z-10">
-                          <div>
-                            <h2 className="text-display-xs font-black font-headline text-primary uppercase italic">Quick Access Modules</h2>
-                            <p className="text-on-surface-variant text-body-xxs font-black mt-1 opacity-70 italic uppercase tracking-wider">Accelerate legislative workflows</p>
-                          </div>
-                          <button className="text-body-xxs font-black text-primary uppercase tracking-widest flex items-center gap-2 py-1.5 px-3 bg-surface rounded-full shadow-sm hover:shadow-md transition-all border border-outline-variant/30">
-                             Customize <span className="material-symbols-outlined text-xs">edit</span>
-                          </button>
-                       </div>
-                       
-                       <div className="grid grid-cols-2 md:grid-cols-3 gap-5 relative z-10">
-                          <ModuleButton label="Manage Polls" icon="how_to_vote" onClick={() => setActiveTab('polls')} />
-                          <ModuleButton label="Broadcast Alert" icon="campaign" onClick={() => setActiveTab('news')} />
-                          <ModuleButton label="View Rosters" icon="list_alt" onClick={() => setActiveTab('students')} />
-                          <ModuleButton label="Session Report" icon="summarize" isSecondary />
-                          <ModuleButton label="Room Security" icon="lock" onClick={() => setActiveTab('security')} />
-                          <ModuleButton label="All Tools" icon="more_horiz" isSecondary />
-                       </div>
-                    </div>
 
+                  {/* Left: Quick Access + Danger Zone */}
+                  <div className="lg:col-span-2 space-y-8">
 
-
-                    {/* Danger Zone (Kept but styled) */}
-                    <div className="bg-[#ba1a1a]/5 border border-[#ba1a1a]/10 rounded-[2.5rem] p-10 flex flex-col sm:flex-row items-center justify-between gap-6">
-                        <div className="flex items-center gap-6">
-                           <div className="w-16 h-16 bg-[#ba1a1a]/10 rounded-2xl flex items-center justify-center text-[#ba1a1a] border border-[#ba1a1a]/20">
-                              <AlertTriangle className="w-8 h-8" />
-                           </div>
-                           <div>
-                              <h3 className="text-xl font-bold text-[#ba1a1a] font-headline">Legislative Recall</h3>
-                              <p className="text-xs text-[#ba1a1a]/70 font-bold opacity-80 uppercase tracking-widest">Global Session Data Termination</p>
-                           </div>
-                        </div>
-                        <AlertDialog>
-                           <AlertDialogTrigger asChild>
-                              <Button className="bg-[#ba1a1a] hover:bg-red-700 text-white font-black text-xs uppercase tracking-widest px-8 py-6 rounded-2xl shadow-xl shadow-red-900/20 active:scale-95 transition-all">
-                                 Reset Database
-                              </Button>
-                           </AlertDialogTrigger>
-                           <AlertDialogContent className="rounded-[2.5rem] p-10 border-none shadow-2xl">
-                              <AlertDialogHeader>
-                                 <AlertDialogTitle className="text-2xl font-black font-headline text-[#191c1e]">Confirm Data Erasure?</AlertDialogTitle>
-                                 <AlertDialogDescription className="text-slate-500 font-bold mt-4 leading-relaxed font-body">
-                                    All parliamentary records, votes, and assessment milestones will be permanently purged. This action is irreversible.
-                                 </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter className="mt-8 gap-4">
-                                 <AlertDialogCancel className="rounded-2xl px-6 font-black text-[10px] uppercase tracking-widest py-6 bg-slate-100 border-none">Abort</AlertDialogCancel>
-                                 <AlertDialogAction onClick={resetAllAssessments} className="bg-[#ba1a1a] hover:bg-red-700 rounded-2xl px-8 font-black text-[10px] uppercase tracking-widest py-6 shadow-lg shadow-red-900/20">
-                                    Confirm Recall
-                                 </AlertDialogAction>
-                              </AlertDialogFooter>
-                           </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
-                  </div>
-
-                  {/* Right Column: Feature Toggles & Mascot */}
-                  <div className="space-y-8">
-                     <div className="bg-[#e0e3e5] rounded-[3rem] p-10 border border-[#e0e3e5]/60 shadow-sm transition-all hover:shadow-md">
-                        <h2 className="text-xl font-black font-headline text-[#13298f] mb-8 flex items-center gap-3">
-                           <span className="material-symbols-outlined text-[#13298f] font-fill">toggle_on</span> 
-                           Process Toggles
+                    {/* Quick Access Modules */}
+                    <div className="bg-white rounded-3xl p-8 border border-outline-variant/10 shadow-sm">
+                      <div className="mb-6">
+                        <h2 className="text-xl font-extrabold font-headline text-primary">
+                          Quick <span className="text-secondary">Access</span>
                         </h2>
-                        <FeatureToggles />
-                     </div>
+                        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Accelerate legislative workflows</p>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <ModuleButton label="Manage Polls"    icon="how_to_vote"  onClick={() => setActiveTab('polls')} />
+                        <ModuleButton label="Broadcast Alert" icon="campaign"     onClick={() => setActiveTab('news')} />
+                        <ModuleButton label="View Rosters"    icon="list_alt"     onClick={() => setActiveTab('students')} />
+                        <ModuleButton label="Session Report"  icon="summarize"    isSecondary />
+                        <ModuleButton label="Room Security"   icon="lock"         onClick={() => setActiveTab('security')} />
+                        <ModuleButton label="All Tools"       icon="more_horiz"   isSecondary />
+                      </div>
+                    </div>
 
-
-
-
+                    {/* Danger Zone */}
+                    <div className="bg-error/5 border border-error/10 rounded-3xl p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+                      <div className="flex items-center gap-5">
+                        <div className="w-14 h-14 bg-error/10 rounded-2xl flex items-center justify-center text-error">
+                          <AlertTriangle className="w-7 h-7" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-extrabold font-headline text-error">Legislative Recall</h3>
+                          <p className="text-[10px] text-error/60 font-black uppercase tracking-[0.3em] mt-1">Global Session Data Termination</p>
+                        </div>
+                      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button className="bg-error hover:bg-error/90 text-on-error font-bold text-xs uppercase tracking-widest px-6 py-5 rounded-2xl shadow-lg shadow-error/20 active:scale-95 transition-all">
+                            Reset Database
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-3xl p-8 border border-outline-variant/10 shadow-2xl">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-2xl font-extrabold font-headline text-on-surface">Confirm Data Erasure?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-on-surface-variant font-medium mt-3 leading-relaxed font-body">
+                              All parliamentary records, votes, and assessment milestones will be permanently purged. This action is irreversible.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="mt-6 gap-3">
+                            <AlertDialogCancel className="rounded-2xl px-6 font-bold text-xs uppercase tracking-widest py-5 bg-surface-container border-none">Abort</AlertDialogCancel>
+                            <AlertDialogAction onClick={resetAllAssessments} className="bg-error hover:bg-error/90 rounded-2xl px-6 font-bold text-xs uppercase tracking-widest py-5 shadow-lg shadow-error/20">
+                              Confirm Recall
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
+
+                  {/* Right: Feature Toggles */}
+                  <div>
+                    <div className="bg-white rounded-3xl p-8 border border-outline-variant/10 shadow-sm">
+                      <div className="mb-6">
+                        <h2 className="text-xl font-extrabold font-headline text-primary">
+                          Process <span className="text-secondary">Toggles</span>
+                        </h2>
+                        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Feature gate controls</p>
+                      </div>
+                      <FeatureToggles />
+                    </div>
+                  </div>
+
                 </div>
               </TabsContent>
 
@@ -293,9 +299,9 @@ const OrganizerDashboard = () => {
               <TabsContent value="sessions" className="m-0"><SessionManagement /></TabsContent>
               <TabsContent value="polls" className="m-0"><PollManagement /></TabsContent>
               <TabsContent value="square" className="m-0 h-[calc(100vh-80px)] overflow-hidden border-none shadow-none"><GlobalSquare /></TabsContent>
-              <TabsContent value="students" className="m-0 space-y-12">
-                <div className="bg-white border border-[#e0e3e5]/60 rounded-[3rem] p-10 shadow-sm"><OrganizerStudentList /></div>
-                <div className="bg-white border border-[#e0e3e5]/60 rounded-[3rem] p-10 shadow-sm">
+              <TabsContent value="students" className="m-0 space-y-8">
+                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm"><OrganizerStudentList /></div>
+                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
                   <Accordion type="single" collapsible className="w-full">
                     <AccordionItem value="bulk" className="border-none">
                       <AccordionTrigger className="hover:no-underline py-0">
@@ -321,23 +327,23 @@ const OrganizerDashboard = () => {
               </TabsContent>
               <TabsContent value="security" className="m-0"><SecurityLogsManager /></TabsContent>
               <TabsContent value="leaderboard" className="m-0"><OrganizerLeaderboard /></TabsContent>
-              <TabsContent value="awards" className="m-0 space-y-12">
-                 <div className="bg-white border border-[#e0e3e5]/60 rounded-[3rem] p-10 shadow-sm">
-                    <div className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
-                      <div className="font-headline">
-                        <h2 className="text-2xl font-black text-[#13298f]">Parliament Awards</h2>
-                        <p className="text-[#757684] font-bold text-xs opacity-70">Assign accolades and consensus trophies</p>
+              <TabsContent value="awards" className="m-0 space-y-8">
+                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
+                    <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5">
+                      <div>
+                        <h2 className="text-2xl font-extrabold font-headline text-primary">Parliament <span className="text-secondary">Awards</span></h2>
+                        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Assign accolades and consensus trophies</p>
                       </div>
-                      <Button onClick={() => navigate('/display/awards')} className="bg-[#ffdbd0] text-[#ac3509] hover:bg-[#ffdbd0]/80 font-black px-8 py-6 rounded-2xl">
-                        <Presentation className="h-5 w-5 mr-3" /> Launch Award Screen
+                      <Button onClick={() => navigate('/display/awards')} className="bg-secondary-container/30 text-secondary hover:bg-secondary-container/50 font-bold px-6 py-5 rounded-2xl border border-secondary/10">
+                        <Presentation className="h-4 w-4 mr-2" /> Launch Award Screen
                       </Button>
                     </div>
                     <AwardManagement />
                  </div>
               </TabsContent>
               <TabsContent value="photos" className="m-0 space-y-8">
-                 <div className="bg-white border border-[#e0e3e5]/60 rounded-[3rem] p-10 shadow-sm"><PhotoUploadManager /></div>
-                 <div className="bg-white border border-[#e0e3e5]/60 rounded-[3rem] p-10 shadow-sm">
+                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm"><PhotoUploadManager /></div>
+                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
                     <Accordion type="single" collapsible className="w-full">
                        <AccordionItem value="migration" className="border-none">
                           <AccordionTrigger className="hover:no-underline py-0">
@@ -367,33 +373,29 @@ const OrganizerDashboard = () => {
 };
 
 const NavTrigger = ({ value, label, icon }: { value: string; label: string; icon: string }) => (
-  <TabsTrigger 
-    value={value} 
-    className="flex items-center gap-3 px-4 py-2.5 text-[#757684] data-[state=active]:bg-[#13298f]/5 data-[state=active]:text-[#13298f] rounded-xl transition-all duration-300 group hover:bg-slate-50 relative justify-start w-full"
+  <TabsTrigger
+    value={value}
+    className="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant data-[state=active]:text-primary data-[state=active]:font-bold data-[state=active]:bg-primary/5 data-[state=active]:border-r-4 data-[state=active]:border-primary rounded-lg transition-all duration-200 hover:bg-surface-container justify-start w-full font-medium"
   >
-    <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-      <span className="material-symbols-outlined text-xl transition-transform duration-300 group-hover:scale-110 group-data-[state=active]:font-fill">{icon}</span>
-    </div>
-    <span className="font-headline text-xs font-bold tracking-tight whitespace-nowrap">{label}</span>
-    <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-[#13298f] opacity-0 group-data-[state=active]:opacity-100 transition-opacity"></div>
+    <span className="material-symbols-outlined text-[20px] shrink-0 group-data-[state=active]:font-fill">{icon}</span>
+    <span className="font-body text-sm whitespace-nowrap">{label}</span>
   </TabsTrigger>
 );
 
 const StatCard = ({ value, label, icon, color }: { value: number; label: string; icon: string; color: 'primary' | 'secondary' | 'tertiary' }) => {
   const configs = {
-    primary: { bg: 'bg-[#13298f]/10', text: 'text-[#13298f]', border: 'border-[#13298f]/20' },
-    secondary: { bg: 'bg-[#ac3509]/10', text: 'text-[#ac3509]', border: 'border-[#ac3509]/20' },
-    tertiary: { bg: 'bg-[#003e29]/10', text: 'text-[#003e29]', border: 'border-[#003e29]/20' },
+    primary:   { bg: 'bg-primary/8',   text: 'text-primary' },
+    secondary: { bg: 'bg-secondary/8', text: 'text-secondary' },
+    tertiary:  { bg: 'bg-tertiary/8',  text: 'text-tertiary' },
   };
-  const config = configs[color];
-
+  const c = configs[color];
   return (
-    <div className="bg-white p-6 rounded-[2rem] shadow-sm border border-[#e0e3e5]/30 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 group">
-      <div className={`w-12 h-12 ${config.bg} ${config.text} rounded-xl flex items-center justify-center mb-4 shadow-sm`}>
-        <span className="material-symbols-outlined text-2xl font-fill">{icon}</span>
+    <div className="bg-white p-6 rounded-3xl border border-outline-variant/10 shadow-sm hover:shadow-md hover:scale-[1.01] transition-all duration-200 group">
+      <div className={`w-11 h-11 ${c.bg} ${c.text} rounded-xl flex items-center justify-center mb-4`}>
+        <span className="material-symbols-outlined text-xl font-fill">{icon}</span>
       </div>
-      <p className="text-[#757684] text-[9px] font-black uppercase tracking-[0.2em] mb-1 opacity-70 group-hover:opacity-100">{label}</p>
-      <h3 className={`text-2xl font-black font-headline tracking-tighter ${config.text}`}>{value.toLocaleString()}</h3>
+      <p className="text-[10px] text-on-surface-variant/50 font-black uppercase tracking-[0.2em] mb-1">{label}</p>
+      <h3 className={`text-2xl font-extrabold font-headline tracking-tight ${c.text}`}>{value.toLocaleString()}</h3>
     </div>
   );
 };
@@ -411,18 +413,16 @@ const ProgressWidget = ({ label, value, color }: { label: string; value: number;
 );
 
 const ModuleButton = ({ label, icon, onClick, isSecondary }: { label: string; icon: string; onClick?: () => void; isSecondary?: boolean }) => (
-  <button 
+  <button
     onClick={onClick}
-    className={`p-5 rounded-2xl flex flex-col items-center justify-center gap-3 group transition-all duration-300 hover:scale-[1.05] active:scale-95 shadow-sm border ${
-      isSecondary 
-      ? 'bg-white text-[#757684] border-[#e0e3e5] hover:border-[#13298f]/30 ring-0 hover:ring-4 ring-[#13298f]/5' 
-      : 'bg-white text-[#13298f] border-transparent hover:bg-[#13298f] hover:text-white shadow-xl shadow-[#13298f]/5'
+    className={`p-5 rounded-2xl flex flex-col items-center justify-center gap-3 group transition-all duration-200 hover:scale-[1.03] active:scale-95 border ${
+      isSecondary
+        ? 'bg-surface-container text-on-surface-variant border-outline-variant/10 hover:border-primary/20 hover:text-primary'
+        : 'bg-primary/5 text-primary border-primary/10 hover:bg-primary hover:text-on-primary hover:border-transparent shadow-sm shadow-primary/5'
     }`}
   >
-    <div className={`p-3 rounded-xl transition-transform duration-500 group-hover:scale-110 ${isSecondary ? 'bg-slate-50' : 'bg-[#13298f]/5 group-hover:bg-white/20'}`}>
-       <span className="material-symbols-outlined text-2xl">{icon}</span>
-    </div>
-    <span className="text-[10px] font-black font-headline uppercase tracking-widest">{label}</span>
+    <span className="material-symbols-outlined text-2xl transition-transform duration-300 group-hover:scale-110">{icon}</span>
+    <span className="text-[10px] font-bold font-headline uppercase tracking-wider">{label}</span>
   </button>
 );
 
