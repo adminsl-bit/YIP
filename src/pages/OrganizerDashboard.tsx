@@ -187,17 +187,7 @@ const OrganizerDashboard = () => {
         {/* ── Main Content Area ── */}
         <div className="flex-1 flex flex-col h-full min-w-0">
 
-          {/* Sticky glassmorphic top bar */}
-          <header className="h-16 bg-white/80 backdrop-blur-xl border-b border-outline-variant/10 flex items-center px-8 z-30 sticky top-0 shrink-0">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center shadow-sm shadow-primary/20">
-                <span className="material-symbols-outlined text-on-primary text-base font-fill">account_balance</span>
-              </div>
-              <span className="font-headline font-bold text-on-surface">Organizer Portal</span>
-            </div>
-          </header>
-
-          {/* ── Canvas ── */}
+          {/* ── Canvas ──*/}
           <main className={`flex-1 transition-all duration-200 ${activeTab === 'square' ? 'p-0 overflow-hidden' : 'p-8 lg:p-10 pb-24 overflow-y-auto'}`}>
             <div>
               <TabsContent value="controls" className="m-0 space-y-10">
