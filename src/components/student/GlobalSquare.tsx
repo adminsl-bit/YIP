@@ -61,9 +61,10 @@ export const GlobalSquare = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeProfiles, setActiveProfiles] = useState<Participant[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [activeChannel, setActiveChannel] = useState<Channel>('global');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const rtChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   const getChannelName = (ch: Channel = activeChannel) => {
     if (ch === 'global') return 'global_square';
@@ -72,75 +73,62 @@ export const GlobalSquare = () => {
   };
 
   const scrollToBottom = () => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  };
-
-  const fetchMessages = async (ch?: Channel) => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('chat_messages')
-        .select('*, profiles:user_id (name, photo_url, user_type, city, party_name, position)')
-        .eq('channel', getChannelName(ch))
-        .order('created_at', { ascending: true })
-        .limit(100);
-      if (error) throw error;
-      setMessages((data as any[]) || []);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   };
 
   const fetchActiveParticipants = async () => {
     try {
       const { data } = await supabase.from('profiles').select('id, name, photo_url, user_type, city, party_name, position').limit(20);
       setActiveProfiles((data as any[]) || []);
-    } catch {
-      // silent
-    }
+    } catch { /* silent */ }
   };
 
   useEffect(() => {
-    fetchMessages();
+    setMessages([]);
     fetchActiveParticipants();
 
-    const channel = supabase.channel(`messages_${getChannelName()}`)
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'chat_messages',
-        filter: `channel=eq.${getChannelName()}`,
-      }, async (payload) => {
-        const { data } = await supabase
-          .from('chat_messages')
-          .select('*, profiles:user_id (name, photo_url, user_type, city, party_name, position)')
-          .eq('id', payload.new.id)
-          .single();
-        if (data) setMessages(prev => [...prev, data as any]);
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'chat_messages' }, (payload) => {
-        setMessages(prev => prev.filter(m => m.id !== payload.old.id));
-      })
-      .subscribe();
+    const chName = `yip:chat:${getChannelName()}`;
+    const ch = supabase.channel(chName, { config: { broadcast: { self: true } } });
 
-    return () => { supabase.removeChannel(channel); };
-  }, [activeChannel, profile]);
+    ch.on('broadcast', { event: 'msg' }, ({ payload }) => {
+      setMessages(prev => [...prev, payload as Message]);
+    });
+    ch.on('broadcast', { event: 'del' }, ({ payload }: { payload: { id: string } }) => {
+      setMessages(prev => prev.filter(m => m.id !== payload.id));
+    });
+    ch.subscribe();
+    rtChannelRef.current = ch;
+
+    return () => { supabase.removeChannel(ch); rtChannelRef.current = null; };
+  }, [activeChannel, profile?.party_name]);
 
   useEffect(() => { scrollToBottom(); }, [messages]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !user) return;
+    if (!newMessage.trim() || !user || !rtChannelRef.current) return;
     const text = newMessage.trim();
     setNewMessage('');
-    const { error } = await supabase.from('chat_messages' as any).insert({
-      content: text, user_id: user.id, channel: getChannelName(),
-    });
-    if (error) {
-      console.error('Send error:', error);
-      toast.error(error.message || 'Failed to send message');
+
+    const msg: Message = {
+      id: crypto.randomUUID(),
+      content: text,
+      user_id: user.id,
+      channel: getChannelName(),
+      created_at: new Date().toISOString(),
+      profiles: {
+        name: (profile as any)?.name || 'Delegate',
+        photo_url: (profile as any)?.photo_url || null,
+        user_type: (profile as any)?.user_type || 'student',
+        city: (profile as any)?.city || '',
+        party_name: (profile as any)?.party_name,
+        position: (profile as any)?.position,
+      },
+    };
+
+    const result = await rtChannelRef.current.send({ type: 'broadcast', event: 'msg', payload: msg });
+    if (result !== 'ok') {
+      toast.error('Failed to send message');
       setNewMessage(text);
     }
   };
@@ -148,15 +136,13 @@ export const GlobalSquare = () => {
   const handleDelete = async (id: string) => {
     const isOrganizer = (profile as any)?.user_type === 'organizer';
     const isOwn = messages.find(m => m.id === id)?.user_id === user?.id;
-    if (!isOrganizer && !isOwn) return;
-    const { error } = await supabase.from('chat_messages').delete().eq('id', id);
-    if (error) toast.error('Failed to delete');
+    if (!isOrganizer && !isOwn || !rtChannelRef.current) return;
+    await rtChannelRef.current.send({ type: 'broadcast', event: 'del', payload: { id } });
   };
 
   const switchChannel = (ch: Channel) => {
     setActiveChannel(ch);
     setMessages([]);
-    fetchMessages(ch);
   };
 
   const leadership = activeProfiles.filter(p => {
