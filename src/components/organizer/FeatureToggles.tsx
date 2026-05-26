@@ -36,7 +36,7 @@ export const FeatureToggles = () => {
       const { data, error } = await supabase
         .from('system_settings')
         .select('*')
-        .in('setting_key', ['voting_enabled', 'results_public', 'leaderboard_visible', 'registration_enabled']);
+        .in('setting_key', ['voting_enabled', 'results_public', 'leaderboard_visible', 'registration_enabled', 'assessments_locked']);
 
       if (error) throw error;
 
@@ -141,9 +141,11 @@ export const FeatureToggles = () => {
         .order('name');
       if (juryError) throw juryError;
 
+      // Only fetch per-jury locks (global lock now lives in system_settings)
       const { data: locksData, error: locksError } = await supabase
         .from('assessment_locks')
-        .select('*');
+        .select('*')
+        .eq('is_global_lock', false);
       if (locksError) throw locksError;
 
       setJuryMembers(juryData || []);
@@ -166,33 +168,9 @@ export const FeatureToggles = () => {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const isGlobalLocked = () => locks.some(l => l.is_global_lock);
-  const isJuryLocked = (juryId: string) => locks.some(l => !l.is_global_lock && l.jury_id === juryId);
+  const isJuryLocked = (juryId: string) => locks.some(l => l.jury_id === juryId);
 
-  const toggleGlobalLock = async (enable: boolean) => {
-    try {
-      if (enable) {
-        // optimistic UI
-        setLocks(prev => [...prev, { id: `local-${Date.now()}`, is_global_lock: true }]);
-        const { error } = await supabase.from('assessment_locks').insert({
-          is_global_lock: true,
-          locked_by: user?.id,
-          reason: 'Global lock enabled by organizer'
-        });
-        if (error) throw error;
-        toast({ title: 'Global Lock Enabled', description: 'All jury assessments are now locked' });
-      } else {
-        setLocks(prev => prev.filter(l => !l.is_global_lock));
-        const { error } = await supabase.from('assessment_locks').delete().eq('is_global_lock', true);
-        if (error) throw error;
-        toast({ title: 'Global Lock Disabled', description: 'Jury members can now edit their assessments' });
-      }
-    } catch (e: any) {
-      console.error('Global lock toggle failed', e);
-      toast({ title: 'Error', description: e.message || 'Failed to update global lock', variant: 'destructive' });
-      fetchLocks();
-    }
-  };
+  const toggleGlobalLock = (enable: boolean) => updateSetting('assessments_locked', enable);
 
   const toggleJuryLock = async (juryId: string, juryName: string, enable: boolean) => {
     try {
@@ -219,8 +197,7 @@ export const FeatureToggles = () => {
     }
   };
 
-  const globalLocked = isGlobalLocked();
-  const lockedCount = locks.filter(l => !l.is_global_lock).length;
+  const globalLocked = settings.assessments_locked ?? false;
 
   if (loading) {
     return (
@@ -233,7 +210,7 @@ export const FeatureToggles = () => {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary/30 border-t-primary"></div>
           </div>
         </CardContent>
       </Card>
@@ -245,64 +222,63 @@ export const FeatureToggles = () => {
       <div className="space-y-6">
         {toggleSettings.map((toggle) => {
           const isEnabled = settings[toggle.key];
-
           return (
             <div key={toggle.key} className="flex items-center justify-between group">
               <div>
-                <p className="font-bold text-sm text-[#191c1e]">{toggle.label}</p>
-                <p className="text-[10px] text-[#757684] font-bold uppercase tracking-wider opacity-60">{toggle.description}</p>
+                <p className="font-bold text-sm text-on-surface">{toggle.label}</p>
+                <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider opacity-60">{toggle.description}</p>
               </div>
               <Switch
                 checked={isEnabled}
                 onCheckedChange={(checked) => updateSetting(toggle.key, checked)}
-                className="data-[state=checked]:bg-[#ac3509] scale-110 shadow-sm"
+                className="data-[state=checked]:bg-secondary scale-110 shadow-sm"
               />
             </div>
           );
         })}
       </div>
 
-      <div className="mt-10 p-5 bg-[#13298f]/5 rounded-[2rem] border border-[#13298f]/10 relative overflow-hidden ring-1 ring-white/20">
-        <div className="absolute top-0 right-0 p-4 opacity-5">
-           <span className="material-symbols-outlined text-4xl text-[#13298f]">info</span>
-        </div>
-        <p className="text-xs font-black text-[#13298f] mb-3 flex items-center gap-2">
-           <span className="material-symbols-outlined text-sm font-fill">info</span> 
-           Critical Warning
-        </p>
-        <p className="text-[10px] leading-relaxed text-[#13298f]/80 font-bold uppercase tracking-tight">
-           Switching off 'Enabling Voting' will instantly freeze all student tablets across the hall.
-        </p>
-      </div>
-
-      {/* Advanced Jury Locks (Kept in Accordion) */}
+      {/* Advanced Jury Locks */}
       <Accordion type="single" collapsible className="mt-8">
         <AccordionItem value="locks" className="border-none">
           <AccordionTrigger className="py-2 hover:no-underline opacity-60 hover:opacity-100 transition-opacity">
-            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#757684]">Advanced Jury Locks</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant font-headline">Advanced Jury Locks</span>
           </AccordionTrigger>
-          <AccordionContent className="pt-4 space-y-4">
-             <div className="flex items-center justify-between p-4 bg-white rounded-2xl border border-slate-100 shadow-sm">
-                <span className="text-xs font-bold text-slate-600">Global Assessment Lock</span>
-                <Switch 
-                   checked={globalLocked} 
-                   onCheckedChange={toggleGlobalLock} 
-                   className="data-[state=checked]:bg-[#13298f]"
-                />
-             </div>
-             <div className="space-y-2">
+          <AccordionContent className="pt-4 space-y-5">
+
+            {/* Global lock row — same style as feature toggles */}
+            <div className="flex items-center justify-between group">
+              <div>
+                <p className="font-bold text-sm text-on-surface">Global Assessment Lock</p>
+                <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider opacity-60">Freeze all jury scoring forms instantly</p>
+              </div>
+              <Switch
+                checked={globalLocked}
+                onCheckedChange={toggleGlobalLock}
+                className="data-[state=checked]:bg-primary scale-110 shadow-sm"
+              />
+            </div>
+
+            {/* Per-jury rows */}
+            {juryMembers.length > 0 && (
+              <div className="space-y-4 pt-2 border-t border-outline-variant/10">
                 {juryMembers.map(jury => (
-                   <div key={jury.user_id} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl transition-colors hover:bg-slate-100">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase">{jury.name}</span>
-                      <Switch 
-                         checked={isJuryLocked(jury.user_id)} 
-                         onCheckedChange={(c) => toggleJuryLock(jury.user_id, jury.name, c)}
-                         disabled={globalLocked}
-                         className="scale-90 data-[state=checked]:bg-[#13298f]"
-                      />
-                   </div>
+                  <div key={jury.user_id} className="flex items-center justify-between group">
+                    <div>
+                      <p className="font-bold text-sm text-on-surface">{jury.name}</p>
+                      <p className="text-[10px] text-on-surface-variant font-bold uppercase tracking-wider opacity-60">Lock this jury member's forms</p>
+                    </div>
+                    <Switch
+                      checked={isJuryLocked(jury.user_id)}
+                      onCheckedChange={(c) => toggleJuryLock(jury.user_id, jury.name, c)}
+                      disabled={globalLocked}
+                      className="scale-110 shadow-sm data-[state=checked]:bg-primary"
+                    />
+                  </div>
                 ))}
-             </div>
+              </div>
+            )}
+
           </AccordionContent>
         </AccordionItem>
       </Accordion>

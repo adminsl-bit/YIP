@@ -63,11 +63,36 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     constituency: "",
     state: ""
   });
+  const [isLockedByOrganizer, setIsLockedByOrganizer] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchStudents();
     fetchSessions();
+  }, [juryId]);
+
+  // Check if this jury member is individually locked by the organizer
+  useEffect(() => {
+    const checkJuryLock = async () => {
+      const { data } = await supabase
+        .from('assessment_locks')
+        .select('id')
+        .eq('jury_id', juryId)
+        .eq('is_global_lock', false)
+        .limit(1);
+      setIsLockedByOrganizer((data?.length ?? 0) > 0);
+    };
+
+    checkJuryLock();
+
+    const lockChannel = supabase
+      .channel(`jury-lock-${juryId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assessment_locks' }, () => {
+        checkJuryLock();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(lockChannel); };
   }, [juryId]);
 
   useEffect(() => {
@@ -643,16 +668,17 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
           {selectedStudent && selectedSession && (
             <div className="mt-4">
               <AssessmentForm
-                key={`${selectedStudent.user_id}-${selectedSession}`} // Force re-render when student OR session changes
+                key={`${selectedStudent.user_id}-${selectedSession}`}
                 student={selectedStudent}
                 sessionId={selectedSession}
                 sessionTitle={sessions.find(s => s.id === selectedSession)?.title || ''}
-                onSubmit={(scores, notes, status) => 
+                onSubmit={(scores, notes, status) =>
                   handleAssessmentSubmit(selectedStudent.user_id, scores, notes, status)
                 }
                 initialScores={getAssessment(selectedStudent.user_id)?.scores || {}}
                 initialNotes={getAssessment(selectedStudent.user_id)?.notes || ""}
                 initialStatus={getAssessment(selectedStudent.user_id)?.status}
+                isLocked={isLockedByOrganizer}
               />
             </div>
           )}
