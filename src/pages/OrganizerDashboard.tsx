@@ -30,6 +30,9 @@ import { OrganizerStats } from "@/components/organizer/OrganizerStats";
 import { OrganizerStudentList } from "@/components/organizer/OrganizerStudentList";
 import { StudentBulkImport } from "@/components/organizer/StudentBulkImport";
 import { DynamicRoleCreator } from "@/components/organizer/DynamicRoleCreator";
+import { CreateAdminUsers } from "@/components/organizer/CreateAdminUsers";
+import { CreateJuryUsers } from "@/components/organizer/CreateJuryUsers";
+import { DuplicateLoginMonitor } from "@/components/organizer/DuplicateLoginMonitor";
 import PhotoUploadManager from "@/components/organizer/PhotoUploadManager";
 import PhotoMigration from "@/components/organizer/PhotoMigration";
 import { OrganizerLeaderboard } from "@/components/organizer/OrganizerLeaderboard";
@@ -228,9 +231,9 @@ const OrganizerDashboard = () => {
                         <ModuleButton label="Manage Polls"    icon="how_to_vote"  onClick={() => setActiveTab('polls')} />
                         <ModuleButton label="Broadcast Alert" icon="campaign"     onClick={() => setActiveTab('news')} />
                         <ModuleButton label="View Rosters"    icon="list_alt"     onClick={() => setActiveTab('students')} />
-                        <ModuleButton label="Session Report"  icon="summarize"    isSecondary />
+                        <ModuleButton label="Session Report"  icon="summarize"    onClick={() => setActiveTab('sessions')} />
                         <ModuleButton label="Room Security"   icon="lock"         onClick={() => setActiveTab('security')} />
-                        <ModuleButton label="All Tools"       icon="more_horiz"   isSecondary />
+                        <ModuleButton label="Leaderboard"     icon="leaderboard"  onClick={() => setActiveTab('leaderboard')} />
                       </div>
                     </div>
 
@@ -283,6 +286,18 @@ const OrganizerDashboard = () => {
                   </div>
 
                 </div>
+
+                {/* Analytics */}
+                <div className="bg-white rounded-3xl p-8 border border-outline-variant/10 shadow-sm">
+                  <div className="mb-6">
+                    <h2 className="text-xl font-extrabold font-headline text-primary">
+                      Parliament <span className="text-secondary">Analytics</span>
+                    </h2>
+                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Party distribution, roles & assessment progress</p>
+                  </div>
+                  <OrganizerStats />
+                </div>
+
               </TabsContent>
 
               <TabsContent value="timer" className="m-0 space-y-10">
@@ -326,6 +341,14 @@ const OrganizerDashboard = () => {
                         <div className="mt-8 pt-8 border-t border-outline-variant/10">
                           <DynamicRoleCreator />
                         </div>
+                        <div className="mt-8 pt-8 border-t border-outline-variant/10">
+                          <h3 className="text-sm font-extrabold font-headline text-on-surface mb-1">Quick Account Creation</h3>
+                          <p className="text-[10px] text-on-surface-variant/50 font-black uppercase tracking-[0.3em] mb-5">Provision admin and jury accounts via edge function</p>
+                          <div className="flex flex-wrap gap-3">
+                            <CreateAdminUsers />
+                            <CreateJuryUsers />
+                          </div>
+                        </div>
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
@@ -334,6 +357,13 @@ const OrganizerDashboard = () => {
 
               <TabsContent value="security" className="m-0 space-y-10">
                 <PageHeader primary="Security" secondary="Monitor" icon={<ShieldCheck className="w-3 h-3" />} subtitle="Login Audit & Session Control" />
+                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
+                  <div className="mb-6">
+                    <h2 className="text-xl font-extrabold font-headline text-primary">Duplicate <span className="text-secondary">Login Monitor</span></h2>
+                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Real-time concurrent session detection</p>
+                  </div>
+                  <DuplicateLoginMonitor />
+                </div>
                 <SecurityLogsManager />
               </TabsContent>
 
