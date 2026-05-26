@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Background -->
+  <rect width="64" height="64" rx="14" fill="#13298f"/>
+
+  <!-- Flag pole -->
+  <rect x="31" y="5" width="2" height="9" fill="white"/>
+  <!-- Saffron flag -->
+  <polygon points="33,5 33,10 40,7.5" fill="#FF9933"/>
+
+  <!-- Dome -->
+  <path d="M16 28 Q16 14 32 14 Q48 14 48 28 Z" fill="white"/>
+  <!-- Dome base line -->
+  <rect x="14" y="27" width="36" height="3" fill="white"/>
+
+  <!-- Building body -->
+  <rect x="12" y="30" width="40" height="20" fill="white"/>
+
+  <!-- Columns -->
+  <rect x="15" y="30" width="3" height="18" fill="#13298f" opacity="0.12"/>
+  <rect x="21" y="30" width="3" height="18" fill="#13298f" opacity="0.12"/>
+  <rect x="27" y="30" width="3" height="18" fill="#13298f" opacity="0.12"/>
+  <rect x="33" y="30" width="3" height="18" fill="#13298f" opacity="0.12"/>
+  <rect x="39" y="30" width="3" height="18" fill="#13298f" opacity="0.12"/>
+  <rect x="45" y="30" width="3" height="18" fill="#13298f" opacity="0.12"/>
+
+  <!-- Central door -->
+  <rect x="27" y="38" width="10" height="12" rx="2" fill="#13298f" opacity="0.2"/>
+
+  <!-- Steps -->
+  <rect x="10" y="50" width="44" height="3" fill="white"/>
+  <rect x="8"  y="53" width="48" height="3" fill="#e8ecf8"/>
+
+  <!-- Ashoka Chakra on dome -->
+  <circle cx="32" cy="22" r="4" fill="none" stroke="#13298f" stroke-width="1.2" opacity="0.25"/>
+  <circle cx="32" cy="22" r="1" fill="#13298f" opacity="0.25"/>
+</svg>
