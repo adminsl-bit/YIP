@@ -287,17 +287,6 @@ const OrganizerDashboard = () => {
 
                 </div>
 
-                {/* Analytics */}
-                <div className="bg-white rounded-3xl p-8 border border-outline-variant/10 shadow-sm">
-                  <div className="mb-6">
-                    <h2 className="text-xl font-extrabold font-headline text-primary">
-                      Parliament <span className="text-secondary">Analytics</span>
-                    </h2>
-                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Party distribution, roles & assessment progress</p>
-                  </div>
-                  <OrganizerStats />
-                </div>
-
               </TabsContent>
 
               <TabsContent value="timer" className="m-0 space-y-10">
@@ -322,6 +311,13 @@ const OrganizerDashboard = () => {
               <TabsContent value="students" className="m-0 space-y-8">
                 <PageHeader primary="Student" secondary="Roster" icon={<GraduationCap className="w-3 h-3" />} subtitle="Delegate Registry & Bulk Tools" />
                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm"><OrganizerStudentList /></div>
+                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
+                  <div className="mb-6">
+                    <h2 className="text-xl font-extrabold font-headline text-primary">Parliament <span className="text-secondary">Analytics</span></h2>
+                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Party distribution, roles & assessment progress</p>
+                  </div>
+                  <OrganizerStats />
+                </div>
                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
                   <Accordion type="single" collapsible className="w-full">
                     <AccordionItem value="bulk" className="border-none">
