@@ -843,7 +843,7 @@ export const SessionManagement = () => {
             <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
             <div className="relative z-10">
               <h2 className="text-sm font-headline font-black mb-6 flex items-center gap-2.5 text-white">
-                <span className="material-symbols-outlined text-tertiary-container text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>shield_with_house</span>
+                <span className="material-symbols-outlined text-white text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>shield_with_house</span>
                 Procedure Control
               </h2>
               <div className="space-y-3">

@@ -1,6 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+interface Poll {
+  id: string;
+  title: string;
+  is_active: boolean;
+}
+
 interface TimerSession {
   id: string;
   title: string;
@@ -13,6 +19,7 @@ interface TimerSession {
 
 const TimerDisplay = () => {
   const [timer, setTimer] = useState<TimerSession | null>(null);
+  const [activePoll, setActivePoll] = useState<Poll | null>(null);
   const [loading, setLoading] = useState(true);
   const [colonVisible, setColonVisible] = useState(true);
 
@@ -39,11 +46,15 @@ const TimerDisplay = () => {
     calibrateClock();
     recalibRef.current = window.setInterval(calibrateClock, 30_000);
     fetchActiveTimer();
+    fetchActivePoll();
 
     const subscription = supabase
       .channel('timer_display_changes')
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'timer_sessions' }, () => {
         fetchActiveTimer();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () => {
+        fetchActivePoll();
       })
       .subscribe();
 
@@ -144,6 +155,19 @@ const TimerDisplay = () => {
       setTimer(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── Fetch active poll ──────────────────────────────────────────────────────
+  const fetchActivePoll = async () => {
+    try {
+      const { data } = await supabase
+        .from('polls').select('id, title, is_active')
+        .eq('is_active', true)
+        .order('updated_at', { ascending: false }).limit(1).maybeSingle();
+      setActivePoll(data as Poll | null);
+    } catch (_) {
+      setActivePoll(null);
     }
   };
 
@@ -279,6 +303,24 @@ const TimerDisplay = () => {
             </div>
 
           </div>
+
+          {/* Active Poll card */}
+          {activePoll && (
+            <div className="mt-5 glass-panel rounded-2xl px-6 py-4 border border-white flex items-center gap-4 shadow-lg shadow-primary/5">
+              <div className="w-10 h-10 rounded-xl bg-tertiary/15 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-tertiary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_vote</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[9px] font-headline font-black uppercase tracking-[0.3em] text-tertiary mb-0.5">Active Poll</p>
+                <p className="font-headline font-bold text-on-surface text-sm truncate">{activePoll.title}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="w-2 h-2 rounded-full bg-tertiary animate-pulse" />
+                <span className="text-[9px] font-headline font-black uppercase tracking-[0.2em] text-tertiary">Voting Open</span>
+              </div>
+            </div>
+          )}
+
         </div>
       </main>
 
