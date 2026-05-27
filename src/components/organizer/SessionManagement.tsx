@@ -889,12 +889,6 @@ export const SessionManagement = () => {
                   />
                 </div>
               </div>
-              <button
-                onClick={() => toast({ title: "Recess Initiated", description: "Parliamentary break active." })}
-                className="w-full mt-6 py-3 bg-white text-primary rounded-2xl font-headline font-black text-[10px] uppercase tracking-widest hover:bg-white/95 active:scale-95 transition-all shadow-xl shadow-black/10"
-              >
-                Immediate Recess
-              </button>
             </div>
           </div>
 
