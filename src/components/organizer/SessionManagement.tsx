@@ -755,7 +755,6 @@ export const SessionManagement = () => {
                       onActivateItem={handleActivateItem}
                       onCompleteItem={handleCompleteItem}
                       formatTime={formatTime}
-                      getDisplayedRemaining={getDisplayedRemaining}
                     />
                   ))
                 )}

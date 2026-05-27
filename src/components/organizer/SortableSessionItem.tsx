@@ -47,7 +47,6 @@ interface SortableSessionItemProps {
   onCompleteItem: (itemId: string) => void;
   formatTime: (seconds: number) => string;
   isAdminStudent?: boolean;
-  getDisplayedRemaining: (timer: TimerSession | undefined) => number;
 }
 
 export const SortableSessionItem = React.memo(({
@@ -64,7 +63,6 @@ export const SortableSessionItem = React.memo(({
   onCompleteItem,
   formatTime,
   isAdminStudent = false,
-  getDisplayedRemaining,
 }: SortableSessionItemProps) => {
   const {
     attributes,
@@ -136,11 +134,9 @@ export const SortableSessionItem = React.memo(({
                 }`}>
                   <span className="material-symbols-outlined text-sm">timer</span>
                   {formatTime(
-                    linkedTimer.status === 'running'
-                      ? getDisplayedRemaining(linkedTimer)
-                      : linkedTimer.status === 'paused'
-                        ? linkedTimer.remaining_seconds
-                        : linkedTimer.duration_seconds
+                    linkedTimer.status === 'stopped' || linkedTimer.status === 'completed'
+                      ? linkedTimer.duration_seconds
+                      : linkedTimer.remaining_seconds
                   )}
                   {item.is_active && (
                     <button
