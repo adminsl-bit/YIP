@@ -21,8 +21,8 @@ interface Poll {
   committee?: string;
 }
 
-const getKey = (opt: any): string => typeof opt === 'string' ? opt : (opt?.id ?? String(opt));
-const getText = (opt: any): string => typeof opt === 'string' ? opt : (opt?.text ?? String(opt));
+export const getKey = (opt: any): string => typeof opt === 'string' ? opt : (opt?.id ?? String(opt));
+export const getText = (opt: any): string => typeof opt === 'string' ? opt : (opt?.text ?? String(opt));
 
 export const PollVoting = () => {
   const { user } = useAuth();
@@ -405,7 +405,7 @@ const VoteBars = ({ pollId, options, refreshTrigger }: { pollId: string; options
 };
 
 /* ── Analytics Bento ── */
-const AnalyticsBento = ({
+export const AnalyticsBento = ({
   pollId, options, refreshTrigger, votingEnabled,
 }: {
   pollId: string; options: any[]; refreshTrigger: number; votingEnabled: boolean;

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Plus, Trash, Play, Pause, MoreVertical, ExternalLink,
-  Eye, RotateCcw, Users, ArrowRight, TrendingUp, MapPin,
+  Eye, RotateCcw, Users,
   CheckCircle2, XCircle, Clock
 } from "lucide-react";
 import {
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import { DetailedPollResults } from "@/components/student/DetailedPollResults";
+import { AnalyticsBento } from "@/components/student/PollVoting";
 
 interface Poll {
   id: string;
@@ -49,8 +50,6 @@ export const PollManagement = () => {
   const [pollToDelete, setPollToDelete] = useState<Poll | null>(null);
   const [pollToReset, setPollToReset] = useState<Poll | null>(null);
   const [isResetting, setIsResetting] = useState(false);
-  const [heatmapData, setHeatmapData] = useState<number[]>(new Array(12).fill(0));
-  const [originData, setOriginData] = useState<{ label: string; value: number }[]>([]);
 
   const [formData, setFormData] = useState({
     heading: "",
@@ -64,7 +63,6 @@ export const PollManagement = () => {
   useEffect(() => {
     fetchPolls();
     fetchTotalParticipants();
-    fetchAggregateInsights();
   }, []);
 
   useEffect(() => {
@@ -77,7 +75,6 @@ export const PollManagement = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes' }, (payload) => {
         const pollId = (payload as any)?.new?.poll_id || (payload as any)?.old?.poll_id;
         if (pollId) fetchPollResults(pollId);
-        fetchAggregateInsights();
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () => fetchPolls())
       .subscribe();
@@ -95,39 +92,6 @@ export const PollManagement = () => {
   const fetchTotalParticipants = async () => {
     const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'student');
     setTotalParticipants(count || 0);
-  };
-
-  const fetchAggregateInsights = async () => {
-    try {
-      const { data, error } = await supabase.from('poll_votes').select(`created_at, voter_id, profiles!inner(state)`);
-      if (error || !data || data.length === 0) return;
-
-      const stateCounts: Record<string, number> = {};
-      data.forEach((v: any) => {
-        const state = v.profiles?.state || 'Unknown';
-        stateCounts[state] = (stateCounts[state] || 0) + 1;
-      });
-      const totalVotes = data.length;
-      setOriginData(
-        Object.entries(stateCounts)
-          .map(([label, count]) => ({ label, value: Math.round((count / totalVotes) * 100) }))
-          .sort((a, b) => b.value - a.value).slice(0, 3)
-      );
-
-      const now = new Date();
-      const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
-      const buckets = new Array(12).fill(0);
-      const bucketSizeMs = (2 * 60 * 60 * 1000) / 12;
-      data.forEach((v: any) => {
-        const voteTime = new Date(v.created_at);
-        if (voteTime > twoHoursAgo) {
-          const diffMs = voteTime.getTime() - twoHoursAgo.getTime();
-          buckets[Math.min(11, Math.floor(diffMs / bucketSizeMs))]++;
-        }
-      });
-      const maxVotes = Math.max(...buckets, 1);
-      setHeatmapData(buckets.map(c => Math.round((c / maxVotes) * 100)));
-    } catch (e) { console.error(e); }
   };
 
   const fetchPollResults = async (pollId: string) => {
@@ -413,62 +377,6 @@ export const PollManagement = () => {
             </div>
           )}
 
-          {/* Insights */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-
-            {/* Heatmap */}
-            <div className="md:col-span-2 bg-surface-container rounded-3xl p-7 border border-outline-variant/10 relative overflow-hidden">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h3 className="text-sm font-headline font-black text-on-surface tracking-tight">Response Heatmap</h3>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline mt-1">Peak voting momentum</p>
-                </div>
-                <TrendingUp className="text-primary/20 w-6 h-6" />
-              </div>
-              <div className="flex gap-1.5 items-end h-28">
-                {heatmapData.map((h, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 bg-primary/15 hover:bg-primary transition-all rounded-t-lg"
-                    style={{ height: `${Math.max(h, 5)}%` }}
-                  />
-                ))}
-              </div>
-              <div className="flex justify-between mt-3 text-[9px] font-black text-on-surface-variant/40 uppercase tracking-widest font-headline">
-                <span>2h ago</span><span>Peak</span><span>Now</span>
-              </div>
-            </div>
-
-            {/* Origin */}
-            <div className="bg-gradient-to-br from-primary to-primary-container text-white rounded-3xl p-7 relative overflow-hidden flex flex-col justify-between border border-white/5 shadow-xl shadow-primary/20">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none" />
-              <div className="relative z-10">
-                <div className="flex items-center gap-2.5 mb-4">
-                  <MapPin className="w-5 h-5 text-white/60" />
-                  <h3 className="font-headline font-black text-sm text-white">Participant Origin</h3>
-                </div>
-                <div className="space-y-4">
-                  {originData.length > 0 ? originData.map((d, i) => (
-                    <div key={i} className="space-y-1.5">
-                      <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                        <span className="text-white/70">{d.label}</span>
-                        <span className="text-white">{d.value}%</span>
-                      </div>
-                      <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                        <div className="h-full bg-white/60 rounded-full transition-all duration-1000" style={{ width: `${d.value}%` }} />
-                      </div>
-                    </div>
-                  )) : (
-                    <p className="text-white/40 text-[10px] font-bold uppercase tracking-widest">Gathering data…</p>
-                  )}
-                </div>
-              </div>
-              <button className="relative z-10 mt-6 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/60 hover:text-white hover:gap-3 transition-all font-headline">
-                Full Demographics <ArrowRight className="w-3 h-3" />
-              </button>
-            </div>
-
-          </div>
         </div>
       </div>
 
@@ -570,6 +478,8 @@ const PollItem = ({ poll, results, onToggle, onReset, onDelete, onOpenStage, onS
           );
         })}
       </div>
+
+      <AnalyticsBento pollId={poll.id} options={options} refreshTrigger={0} votingEnabled={poll.is_active} />
 
       {showDetails && (
         <div className="pt-5 border-t border-outline-variant/10">
