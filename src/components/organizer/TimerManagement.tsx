@@ -230,6 +230,10 @@ export const TimerManagement = () => {
                 </button>
             </div>
 
+            {/* Body: hero+presets on left, instructions on right */}
+            <div className="flex gap-4 flex-1 min-h-0">
+
+            {/* Left column */}
             <div className="flex flex-col gap-4 flex-1 min-h-0">
 
                 {/* Timer Hero */}
@@ -341,7 +345,69 @@ export const TimerManagement = () => {
                     </div>
                 </div>
 
-            </div>
+            </div>{/* end left column */}
+
+            {/* Right — Instructions pane */}
+            <div className="w-64 shrink-0 flex flex-col gap-3 overflow-y-auto">
+
+                {/* How to use */}
+                <div className="bg-white border border-outline-variant/10 rounded-3xl p-5 shadow-sm">
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-on-surface-variant/40 font-headline mb-4">How to Use</p>
+                    <div className="space-y-4">
+                        {[
+                            { step: '01', icon: 'touch_app',    title: 'Select a Preset',   desc: 'Click any preset card below to activate it and load its duration.' },
+                            { step: '02', icon: 'play_circle',  title: 'Start the Timer',   desc: 'Press Start. The clock counts down in real-time across all devices.' },
+                            { step: '03', icon: 'pause_circle', title: 'Pause or Stop',     desc: 'Pause keeps time. Stop ends the session. Reset restores full duration.' },
+                            { step: '04', icon: 'add_circle',   title: 'Create Presets',    desc: 'Use + New to save a named duration for repeated motions or rounds.' },
+                        ].map(item => (
+                            <div key={item.step} className="flex gap-3">
+                                <div className="shrink-0 w-7 h-7 rounded-xl bg-primary/8 flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-primary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>{item.icon}</span>
+                                </div>
+                                <div>
+                                    <p className="font-headline font-bold text-xs text-on-surface tracking-tight">{item.title}</p>
+                                    <p className="font-body text-[10px] text-on-surface-variant/60 leading-relaxed mt-0.5">{item.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Display tip */}
+                <div className="bg-primary/5 border border-primary/10 rounded-3xl p-5">
+                    <div className="flex items-start gap-3">
+                        <span className="material-symbols-outlined text-primary text-xl shrink-0 mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>display_settings</span>
+                        <div>
+                            <p className="font-headline font-bold text-xs text-primary tracking-tight">Live Display</p>
+                            <p className="font-body text-[10px] text-on-surface-variant/60 leading-relaxed mt-1">
+                                Click <span className="font-bold text-primary">Open Display</span> to open the fullscreen timer on your projector or second screen. It syncs automatically.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Keyboard shortcut note */}
+                <div className="bg-surface-container rounded-3xl p-4 border border-outline-variant/10">
+                    <p className="text-[9px] font-black uppercase tracking-[0.3em] text-on-surface-variant/40 font-headline mb-3">Status Guide</p>
+                    <div className="space-y-2">
+                        {[
+                            { color: 'bg-tertiary-container', label: 'Running',   desc: 'Timer active' },
+                            { color: 'bg-secondary',          label: 'Warning',   desc: 'Under 1 min' },
+                            { color: 'bg-error',              label: 'Critical',  desc: 'Under 10 sec' },
+                            { color: 'bg-outline-variant',    label: 'Paused',    desc: 'On hold' },
+                        ].map(s => (
+                            <div key={s.label} className="flex items-center gap-2.5">
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${s.color}`} />
+                                <span className="font-headline font-bold text-[10px] text-on-surface w-14">{s.label}</span>
+                                <span className="font-body text-[10px] text-on-surface-variant/50">{s.desc}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+            </div>{/* end right pane */}
+
+            </div>{/* end body row */}
 
             {/* Create / Edit Timer Dialog */}
             <Dialog open={showCreateDialog} onOpenChange={(open) => {
