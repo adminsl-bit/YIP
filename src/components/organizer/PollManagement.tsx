@@ -333,44 +333,25 @@ export const PollManagement = () => {
           {/* Past polls */}
           {pastPolls.length > 0 && (
             <div className="bg-surface-container rounded-3xl p-7 border border-outline-variant/10">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-on-surface-variant/40 font-headline mb-5">Recently Completed</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-on-surface-variant/40 font-headline mb-6">Recently Completed</h3>
+              <div className="space-y-8">
                 {pastPolls.slice(0, 4).map(poll => (
-                  <div
-                    key={poll.id}
-                    onClick={() => setShowDetailedResults(poll.id)}
-                    className="bg-surface-container-lowest border border-outline-variant/10 p-5 rounded-3xl flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer group relative overflow-hidden"
-                  >
+                  <div key={poll.id} className="relative">
                     {poll.outcome && (
-                      <div className={`absolute top-0 right-0 px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-bl-2xl ${poll.outcome === 'passed' ? 'bg-tertiary/20 text-tertiary' : 'bg-error/10 text-error'}`}>
+                      <span className={`absolute -top-2 right-4 z-10 px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-full ${poll.outcome === 'passed' ? 'bg-tertiary/20 text-tertiary' : 'bg-error/10 text-error'}`}>
                         {poll.outcome}
-                      </div>
+                      </span>
                     )}
-                    <div className="w-11 h-11 bg-surface-container rounded-2xl flex flex-col items-center justify-center text-on-surface-variant border border-outline-variant/10 shrink-0">
-                      <span className="text-[9px] font-black uppercase tracking-tighter leading-none">{new Date(poll.created_at).toLocaleDateString('en-US', { month: 'short' })}</span>
-                      <span className="text-lg font-black leading-tight">{new Date(poll.created_at).getDate()}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      {poll.heading && <p className="text-[9px] font-black text-primary uppercase tracking-widest mb-0.5">{poll.heading}</p>}
-                      <h5 className="font-bold text-sm text-on-surface truncate font-headline">{poll.title}</h5>
-                      <p className="text-[9px] font-black text-on-surface-variant/40 uppercase tracking-wider mt-0.5">
-                        {getTotalVotes(poll.id)} votes · {poll.outcome ? `Verdict: ${poll.outcome.toUpperCase()}` : 'Closed'}
-                      </p>
-                    </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <button onClick={e => e.stopPropagation()} className="p-1.5 text-on-surface-variant/30 hover:text-on-surface-variant">
-                          <MoreVertical className="w-4 h-4" />
-                        </button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="rounded-2xl shadow-xl border-outline-variant/10 p-2 w-52">
-                        <DropdownMenuItem onClick={() => setPollToDelete(poll)} className="text-error rounded-xl font-bold p-3"><Trash className="w-4 h-4 mr-2" /> Delete</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setPollToReset(poll)} className="rounded-xl font-bold p-3"><RotateCcw className="w-4 h-4 mr-2" /> Reset Results</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => togglePollStatus(poll, 'passed')} className="text-tertiary rounded-xl font-bold p-3"><CheckCircle2 className="w-4 h-4 mr-2" /> Mark Passed</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => togglePollStatus(poll, 'failed')} className="text-error rounded-xl font-bold p-3"><XCircle className="w-4 h-4 mr-2" /> Mark Failed</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <PollItem
+                      poll={poll}
+                      results={pollResults[poll.id] || []}
+                      onToggle={(outcome?: 'passed' | 'failed') => togglePollStatus(poll, outcome)}
+                      onReset={() => setPollToReset(poll)}
+                      onDelete={() => setPollToDelete(poll)}
+                      onOpenStage={() => openStageView(poll.id)}
+                      onShowResults={() => setShowDetailedResults(showDetailedResults === poll.id ? null : poll.id)}
+                      showDetails={showDetailedResults === poll.id}
+                    />
                   </div>
                 ))}
               </div>
