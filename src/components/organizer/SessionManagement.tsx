@@ -94,8 +94,13 @@ export const SessionManagement = () => {
   const [title, setTitle] = useState("");
   const [billType, setBillType] = useState<string>("government_bill");
   const [description, setDescription] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState<number>(0);
   const [linkedTimerId, setLinkedTimerId] = useState<string>("");
   const [linkedPollId, setLinkedPollId] = useState<string>("");
+
+  // Procedure control state
+  const [autoTransition, setAutoTransition] = useState(false);
+  const [memberNotifications, setMemberNotifications] = useState(false);
 
   // Server clock calibration for smooth timer display
   const [nowTs, setNowTs] = useState<number>(Date.now());
@@ -136,6 +141,7 @@ export const SessionManagement = () => {
     fetchAvailableTimers();
     fetchAvailablePolls();
     fetchStats();
+    fetchProcedureSettings();
 
     const subscription = supabase
       .channel('session_management_changes')
@@ -268,6 +274,27 @@ export const SessionManagement = () => {
     }
   };
 
+  const fetchProcedureSettings = async () => {
+    try {
+      const { data } = await supabase
+        .from('system_settings')
+        .select('setting_key, setting_value')
+        .in('setting_key', ['auto_transition_enabled', 'notifications_enabled']);
+      data?.forEach((s: any) => {
+        const val = s.setting_value === true || s.setting_value === 'true';
+        if (s.setting_key === 'auto_transition_enabled') setAutoTransition(val);
+        if (s.setting_key === 'notifications_enabled') setMemberNotifications(val);
+      });
+    } catch (e) { /* settings may not exist yet — local state only */ }
+  };
+
+  const updateProcedureSetting = async (key: string, value: boolean) => {
+    try {
+      await (supabase.from('system_settings') as any)
+        .upsert({ setting_key: key, setting_value: value, description: key }, { onConflict: 'setting_key' });
+    } catch (e) { /* persist failure is non-critical */ }
+  };
+
   const handleCreateSession = async () => {
     if (!user || !title.trim()) {
       toast({
@@ -280,47 +307,62 @@ export const SessionManagement = () => {
 
     setLoading(true);
     try {
+      // Auto-create / update a timer preset whenever duration is specified
+      let resolvedTimerId = linkedTimerId || null;
+      const totalSeconds = durationMinutes * 60;
+
+      if (totalSeconds > 0) {
+        if (editingSessionId && linkedTimerId) {
+          // Update the already-linked timer's duration
+          await supabase.from('timer_sessions').update({
+            title,
+            duration_seconds: totalSeconds,
+            remaining_seconds: totalSeconds,
+          }).eq('id', linkedTimerId);
+        } else {
+          // Create a new timer preset and link it
+          const { data: newTimer } = await supabase.from('timer_sessions').insert({
+            title,
+            duration_seconds: totalSeconds,
+            remaining_seconds: totalSeconds,
+            status: 'stopped',
+            is_active: false,
+            created_by: user.id,
+            sort_order: availableTimers.length,
+          } as any).select().single();
+          if (newTimer) resolvedTimerId = (newTimer as any).id;
+        }
+      }
+
       if (editingSessionId) {
-        // Update existing session
         const { error } = await supabase
           .from('session_items' as any)
           .update({
             title,
             bill_type: billType as any,
             description: description || null,
-            timer_id: linkedTimerId || null,
+            timer_id: resolvedTimerId,
             poll_id: linkedPollId || null,
           })
           .eq('id', editingSessionId);
-
         if (error) throw error;
-
-        toast({
-          title: "Success",
-          description: "Session item updated successfully",
-        });
+        toast({ title: "Updated", description: "Session item updated successfully" });
       } else {
-        // Create new session
         const { error } = await supabase
           .from('session_items' as any)
           .insert([{
             title,
             bill_type: billType as any,
             description: description || null,
-            timer_id: linkedTimerId || null,
+            timer_id: resolvedTimerId,
             poll_id: linkedPollId || null,
             sort_order: sessionItems.length,
             status: 'pending',
             is_active: false,
             created_by: user.id,
           } as any]);
-
         if (error) throw error;
-
-        toast({
-          title: "Success",
-          description: "Session item created successfully",
-        });
+        toast({ title: "Scheduled", description: `"${title}" added${totalSeconds > 0 ? ` with a ${durationMinutes}-min timer` : ''}` });
       }
 
       setShowCreateDialog(false);
@@ -328,9 +370,11 @@ export const SessionManagement = () => {
       setTitle("");
       setBillType("government_bill");
       setDescription("");
+      setDurationMinutes(0);
       setLinkedTimerId("");
       setLinkedPollId("");
       fetchSessionItems();
+      fetchAvailableTimers();
     } catch (error) {
       console.error('Error saving session:', error);
       toast({
@@ -518,6 +562,9 @@ export const SessionManagement = () => {
     setDescription(session.description || '');
     setLinkedTimerId(session.timer_id || '');
     setLinkedPollId(session.poll_id || '');
+    // Pre-fill duration from linked timer if available
+    const linked = availableTimers.find(t => t.id === session.timer_id);
+    setDurationMinutes(linked ? Math.round(linked.duration_seconds / 60) : 0);
     setShowCreateDialog(true);
   };
 
@@ -757,14 +804,22 @@ export const SessionManagement = () => {
                     <span className="text-xs font-bold text-white/90 block">Automatic Transition</span>
                     <span className="text-[9px] font-black uppercase tracking-widest text-white/50">Timed sequence flow</span>
                   </div>
-                  <Switch defaultChecked className="data-[state=checked]:bg-tertiary-container" />
+                  <Switch
+                    checked={autoTransition}
+                    onCheckedChange={(v) => { setAutoTransition(v); updateProcedureSetting('auto_transition_enabled', v); }}
+                    className="data-[state=checked]:bg-tertiary-container"
+                  />
                 </div>
                 <div className="flex items-center justify-between p-3.5 bg-white/10 rounded-2xl border border-white/5 hover:bg-white/15 transition-colors">
                   <div>
                     <span className="text-xs font-bold text-white/90 block">Member Notifications</span>
                     <span className="text-[9px] font-black uppercase tracking-widest text-white/50">Real-time push alerts</span>
                   </div>
-                  <Switch className="data-[state=checked]:bg-tertiary-container" />
+                  <Switch
+                    checked={memberNotifications}
+                    onCheckedChange={(v) => { setMemberNotifications(v); updateProcedureSetting('notifications_enabled', v); }}
+                    className="data-[state=checked]:bg-tertiary-container"
+                  />
                 </div>
               </div>
               <button
@@ -818,12 +873,20 @@ export const SessionManagement = () => {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Duration</label>
-                  <select className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-[11px] font-black uppercase tracking-widest text-on-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all">
-                    <option>15 mins</option>
-                    <option>30 mins</option>
-                    <option>1 hour</option>
-                  </select>
+                  <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Duration (mins)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    value={durationMinutes || ''}
+                    onChange={(e) => setDurationMinutes(Math.max(0, parseInt(e.target.value) || 0))}
+                    placeholder="e.g. 15"
+                    className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-sm font-bold text-on-surface focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-on-surface-variant/30"
+                  />
+                  {durationMinutes > 0 && (
+                    <p className="text-[9px] text-primary/60 font-bold font-headline mt-1 flex items-center gap-1">
+                      <Clock className="w-2.5 h-2.5" /> Timer preset will be auto-created
+                    </p>
+                  )}
                 </div>
               </div>
 
