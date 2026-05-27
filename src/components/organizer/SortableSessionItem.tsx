@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Play, Pause, CheckCircle } from "lucide-react";
@@ -24,6 +24,7 @@ interface TimerSession {
   remaining_seconds: number;
   duration_seconds: number;
   updated_at: string;
+  started_at: string | null;
 }
 
 interface Poll {
@@ -82,6 +83,33 @@ export const SortableSessionItem = React.memo(({
   const linkedTimer = availableTimers.find(t => t.id === item.timer_id);
   const linkedPoll   = availablePolls.find(p => p.id === item.poll_id);
 
+  // Local countdown — ticks every second while the linked timer is running
+  const [displayRemaining, setDisplayRemaining] = useState<number>(
+    linkedTimer ? linkedTimer.duration_seconds : 0
+  );
+
+  useEffect(() => {
+    if (!linkedTimer) { setDisplayRemaining(0); return; }
+
+    if (linkedTimer.status !== 'running' || !linkedTimer.started_at) {
+      setDisplayRemaining(
+        linkedTimer.status === 'stopped' || linkedTimer.status === 'completed'
+          ? linkedTimer.duration_seconds
+          : linkedTimer.remaining_seconds
+      );
+      return;
+    }
+
+    const tick = () => {
+      const startedAt = Date.parse(linkedTimer.started_at!);
+      const elapsed = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+      setDisplayRemaining(Math.max(0, linkedTimer.remaining_seconds - elapsed));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [linkedTimer?.id, linkedTimer?.status, linkedTimer?.started_at, linkedTimer?.remaining_seconds]);
+
   const typeLabel: Record<string, string> = {
     government_bill:    'Govt Bill',
     private_member_bill:'Private Bill',
@@ -133,11 +161,7 @@ export const SortableSessionItem = React.memo(({
                     : 'bg-surface-container text-on-surface-variant border-outline-variant/10'
                 }`}>
                   <span className="material-symbols-outlined text-sm">timer</span>
-                  {formatTime(
-                    linkedTimer.status === 'stopped' || linkedTimer.status === 'completed'
-                      ? linkedTimer.duration_seconds
-                      : linkedTimer.remaining_seconds
-                  )}
+                  {formatTime(displayRemaining)}
                   {item.is_active && (
                     <button
                       onClick={() => onTimerControl(item.timer_id, linkedTimer.status === 'running' ? 'pause' : 'start')}
