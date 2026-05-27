@@ -339,7 +339,7 @@ export const SessionManagement = () => {
           .from('session_items' as any)
           .update({
             title,
-            bill_type: billType as any,
+            bill_type: mapTextToBillType(billType),
             description: description || null,
             timer_id: resolvedTimerId,
             poll_id: linkedPollId || null,
@@ -352,7 +352,7 @@ export const SessionManagement = () => {
           .from('session_items' as any)
           .insert([{
             title,
-            bill_type: billType as any,
+            bill_type: mapTextToBillType(billType),
             description: description || null,
             timer_id: resolvedTimerId,
             poll_id: linkedPollId || null,
@@ -558,7 +558,7 @@ export const SessionManagement = () => {
   const handleEditSession = (session: SessionItem) => {
     setEditingSessionId(session.id);
     setTitle(session.title);
-    setBillType(session.bill_type);
+    setBillType(getBillTypeLabel(session.bill_type));
     setDescription(session.description || '');
     setLinkedTimerId(session.timer_id || '');
     setLinkedPollId(session.poll_id || '');
@@ -670,14 +670,23 @@ export const SessionManagement = () => {
   };
 
   const getBillTypeLabel = (type: string) => {
-    const labels = {
+    const labels: Record<string, string> = {
       private_member_bill: 'Private Member Bill',
       government_bill: 'Government Bill',
       committee_report: 'Committee Report',
       question_hour: 'Question Hour',
       general_discussion: 'General Discussion',
     };
-    return labels[type as keyof typeof labels] || type;
+    return labels[type] || type;
+  };
+
+  const mapTextToBillType = (text: string): SessionItem['bill_type'] => {
+    const t = text.toLowerCase();
+    if (t.includes('government') || t.includes('govt')) return 'government_bill';
+    if (t.includes('private') || t.includes('member')) return 'private_member_bill';
+    if (t.includes('committee') || t.includes('report')) return 'committee_report';
+    if (t.includes('question') || t.includes('hour')) return 'question_hour';
+    return 'general_discussion';
   };
 
   const getBillTypeBadge = (type: string) => {
@@ -735,12 +744,6 @@ export const SessionManagement = () => {
               <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${sessionItems.some(i => i.is_active) ? 'bg-secondary/10 text-secondary border-secondary/20' : 'bg-primary/10 text-primary border-primary/10'}`}>
                 {sessionItems.filter(i => i.status === 'completed').length} Done
               </span>
-              <button
-                onClick={() => setShowCreateDialog(true)}
-                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-primary to-primary-container text-white rounded-full font-headline font-black uppercase tracking-widest text-[10px] shadow-sm shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
-              >
-                <Plus className="w-3.5 h-3.5" /> New Item
-              </button>
             </div>
           </div>
 
@@ -861,16 +864,20 @@ export const SessionManagement = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Type</label>
-                  <select
+                  <input
+                    list="bill-type-suggestions"
                     value={billType}
                     onChange={(e) => setBillType(e.target.value)}
-                    className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-[11px] font-black uppercase tracking-widest text-on-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all"
-                  >
-                    <option value="government_bill">Govt Bill</option>
-                    <option value="private_member_bill">Private Bill</option>
-                    <option value="question_hour">Question</option>
-                    <option value="general_discussion">Discussion</option>
-                  </select>
+                    placeholder="e.g. Question Hour"
+                    className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-sm font-bold text-on-surface focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-on-surface-variant/30"
+                  />
+                  <datalist id="bill-type-suggestions">
+                    <option value="Government Bill" />
+                    <option value="Private Member Bill" />
+                    <option value="Committee Report" />
+                    <option value="Question Hour" />
+                    <option value="General Discussion" />
+                  </datalist>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Duration (mins)</label>
@@ -892,7 +899,7 @@ export const SessionManagement = () => {
 
               <div className="flex gap-3 pt-1">
                 <button
-                  onClick={() => { setTitle(""); setDescription(""); setEditingSessionId(null); }}
+                  onClick={() => { setTitle(""); setBillType(""); setDescription(""); setDurationMinutes(0); setEditingSessionId(null); }}
                   className="flex-1 py-3 rounded-full border border-outline-variant/20 text-[10px] font-black uppercase tracking-widest text-on-surface-variant bg-surface-container hover:bg-surface-container-high transition-all font-headline"
                 >
                   {editingSessionId ? 'Cancel' : 'Reset'}
