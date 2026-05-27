@@ -191,88 +191,99 @@ const OrganizerDashboard = () => {
         <div className="flex-1 flex flex-col h-full min-w-0">
 
           {/* ── Canvas ──*/}
-          <main className={`flex-1 transition-all duration-200 ${activeTab === 'square' ? 'p-0 overflow-hidden' : activeTab === 'timer' ? 'p-6 lg:p-8 overflow-hidden flex flex-col' : 'p-8 lg:p-10 pb-24 overflow-y-auto'}`}>
-            <div>
-              <TabsContent value="controls" className="m-0 space-y-10">
+          <main className={`flex-1 transition-all duration-200 ${activeTab === 'square' ? 'p-0 overflow-hidden' : activeTab === 'timer' || activeTab === 'controls' ? 'p-6 lg:p-8 overflow-hidden flex flex-col' : 'p-8 lg:p-10 pb-24 overflow-y-auto'}`}>
+            <div className="flex flex-col h-full">
+              <TabsContent value="controls" className="m-0 flex-1 flex flex-col min-h-0 gap-4">
 
                 {/* Page heading */}
-                <header>
-                  <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+                <header className="shrink-0">
+                  <h1 className="text-3xl font-extrabold font-headline tracking-tight text-primary">
                     Organizer <span className="text-secondary">Controls</span>
                   </h1>
-                  <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+                  <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-1 flex items-center gap-2 font-headline">
                     <Settings className="w-3 h-3" />
                     Parliamentary Operations Centre
                   </p>
                 </header>
 
-                {/* Quick Access Modules — full width */}
-                <div className="bg-white rounded-3xl p-8 border border-outline-variant/10 shadow-sm">
-                  <div className="mb-6">
-                    <h2 className="text-xl font-extrabold font-headline text-primary">
-                      Quick <span className="text-secondary">Access</span>
-                    </h2>
-                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Accelerate legislative workflows</p>
-                  </div>
-                  <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                    <ModuleButton label="Timer"          icon="timer"             onClick={() => setActiveTab('timer')} />
-                    <ModuleButton label="Sessions"       icon="event_seat"        onClick={() => setActiveTab('sessions')} />
-                    <ModuleButton label="Ballot"         icon="how_to_vote"       onClick={() => setActiveTab('polls')} />
-                    <ModuleButton label="Civic Chat"     icon="forum"             onClick={() => setActiveTab('square')} />
-                    <ModuleButton label="Students"       icon="group"             onClick={() => setActiveTab('students')} />
-                    <ModuleButton label="Security"       icon="security"          onClick={() => setActiveTab('security')} />
-                    <ModuleButton label="Leaderboard"    icon="leaderboard"       onClick={() => setActiveTab('leaderboard')} />
-                    <ModuleButton label="Awards"         icon="emoji_events"      onClick={() => setActiveTab('awards')} />
-                    <ModuleButton label="Photos"         icon="photo_library"     onClick={() => setActiveTab('photos')} />
-                    <ModuleButton label="Speeches"       icon="record_voice_over" onClick={() => setActiveTab('speeches')} />
-                    <ModuleButton label="Breaking News"  icon="campaign"          onClick={() => setActiveTab('news')} />
-                    <ModuleButton label="Manual Scoring" icon="edit_note"         onClick={() => setActiveTab('manual-scoring')} />
-                  </div>
-                </div>
+                {/* Main grid — fills remaining height */}
+                <div className="flex-1 min-h-0 grid grid-cols-5 gap-4">
 
-                {/* Process Toggles */}
-                <div className="bg-white rounded-3xl p-8 border border-outline-variant/10 shadow-sm">
-                  <div className="mb-6">
-                    <h2 className="text-xl font-extrabold font-headline text-primary">
-                      Process <span className="text-secondary">Toggles</span>
-                    </h2>
-                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Feature gate controls</p>
-                  </div>
-                  <FeatureToggles />
-                </div>
-
-                {/* Danger Zone */}
-                <div className="bg-error/5 border border-error/10 rounded-3xl p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
-                  <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-error/10 rounded-2xl flex items-center justify-center text-error">
-                      <AlertTriangle className="w-7 h-7" />
+                  {/* Left: Quick Access (wider) */}
+                  <div className="col-span-3 bg-white rounded-3xl p-5 border border-outline-variant/10 shadow-sm flex flex-col min-h-0">
+                    <div className="mb-4 shrink-0">
+                      <h2 className="text-base font-extrabold font-headline text-primary">
+                        Quick <span className="text-secondary">Access</span>
+                      </h2>
+                      <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-1 font-headline">Accelerate legislative workflows</p>
                     </div>
-                    <div>
-                      <h3 className="text-lg font-extrabold font-headline text-error">Legislative Recall</h3>
-                      <p className="text-[10px] text-error/60 font-black uppercase tracking-[0.3em] mt-1">Global Session Data Termination</p>
+                    <div className="grid grid-cols-3 md:grid-cols-4 gap-3 flex-1 content-start">
+                      <ModuleButton label="Timer"          icon="timer"             onClick={() => setActiveTab('timer')} />
+                      <ModuleButton label="Sessions"       icon="event_seat"        onClick={() => setActiveTab('sessions')} />
+                      <ModuleButton label="Ballot"         icon="how_to_vote"       onClick={() => setActiveTab('polls')} />
+                      <ModuleButton label="Civic Chat"     icon="forum"             onClick={() => setActiveTab('square')} />
+                      <ModuleButton label="Students"       icon="group"             onClick={() => setActiveTab('students')} />
+                      <ModuleButton label="Security"       icon="security"          onClick={() => setActiveTab('security')} />
+                      <ModuleButton label="Leaderboard"    icon="leaderboard"       onClick={() => setActiveTab('leaderboard')} />
+                      <ModuleButton label="Awards"         icon="emoji_events"      onClick={() => setActiveTab('awards')} />
+                      <ModuleButton label="Photos"         icon="photo_library"     onClick={() => setActiveTab('photos')} />
+                      <ModuleButton label="Speeches"       icon="record_voice_over" onClick={() => setActiveTab('speeches')} />
+                      <ModuleButton label="Breaking News"  icon="campaign"          onClick={() => setActiveTab('news')} />
+                      <ModuleButton label="Manual Scoring" icon="edit_note"         onClick={() => setActiveTab('manual-scoring')} />
                     </div>
                   </div>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button className="bg-error hover:bg-error/90 text-on-error font-bold text-xs uppercase tracking-widest px-6 py-5 rounded-2xl shadow-lg shadow-error/20 active:scale-95 transition-all">
-                        Reset Database
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="rounded-3xl p-8 border border-outline-variant/10 shadow-2xl">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle className="text-2xl font-extrabold font-headline text-on-surface">Confirm Data Erasure?</AlertDialogTitle>
-                        <AlertDialogDescription className="text-on-surface-variant font-medium mt-3 leading-relaxed font-body">
-                          All parliamentary records, votes, and assessment milestones will be permanently purged. This action is irreversible.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter className="mt-6 gap-3">
-                        <AlertDialogCancel className="rounded-2xl px-6 font-bold text-xs uppercase tracking-widest py-5 bg-surface-container border-none">Abort</AlertDialogCancel>
-                        <AlertDialogAction onClick={resetAllAssessments} className="bg-error hover:bg-error/90 rounded-2xl px-6 font-bold text-xs uppercase tracking-widest py-5 shadow-lg shadow-error/20">
-                          Confirm Recall
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+
+                  {/* Right column: Process Toggles + Legislative Recall */}
+                  <div className="col-span-2 flex flex-col gap-4 min-h-0">
+
+                    {/* Process Toggles — scrollable internally */}
+                    <div className="flex-1 bg-white rounded-3xl p-5 border border-outline-variant/10 shadow-sm flex flex-col min-h-0">
+                      <div className="mb-4 shrink-0">
+                        <h2 className="text-base font-extrabold font-headline text-primary">
+                          Process <span className="text-secondary">Toggles</span>
+                        </h2>
+                        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-1 font-headline">Feature gate controls</p>
+                      </div>
+                      <div className="flex-1 overflow-y-auto min-h-0 pr-1">
+                        <FeatureToggles />
+                      </div>
+                    </div>
+
+                    {/* Legislative Recall */}
+                    <div className="shrink-0 bg-error/5 border border-error/10 rounded-3xl p-4 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-error/10 rounded-xl flex items-center justify-center text-error shrink-0">
+                          <AlertTriangle className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-extrabold font-headline text-error">Legislative Recall</h3>
+                          <p className="text-[10px] text-error/60 font-black uppercase tracking-[0.25em] mt-0.5">Global Session Data Termination</p>
+                        </div>
+                      </div>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button className="bg-error hover:bg-error/90 text-white font-bold text-xs uppercase tracking-widest px-4 py-2 rounded-xl shadow-lg shadow-error/20 active:scale-95 transition-all shrink-0">
+                            Reset DB
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent className="rounded-3xl p-8 border border-outline-variant/10 shadow-2xl">
+                          <AlertDialogHeader>
+                            <AlertDialogTitle className="text-2xl font-extrabold font-headline text-on-surface">Confirm Data Erasure?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-on-surface-variant font-medium mt-3 leading-relaxed font-body">
+                              All parliamentary records, votes, and assessment milestones will be permanently purged. This action is irreversible.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter className="mt-6 gap-3">
+                            <AlertDialogCancel className="rounded-2xl px-6 font-bold text-xs uppercase tracking-widest py-5 bg-surface-container border-none">Abort</AlertDialogCancel>
+                            <AlertDialogAction onClick={resetAllAssessments} className="bg-error hover:bg-error/90 rounded-2xl px-6 font-bold text-xs uppercase tracking-widest py-5 shadow-lg shadow-error/20">
+                              Confirm Recall
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+
+                  </div>
                 </div>
 
               </TabsContent>
