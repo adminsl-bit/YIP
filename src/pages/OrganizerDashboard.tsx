@@ -191,7 +191,7 @@ const OrganizerDashboard = () => {
         <div className="flex-1 flex flex-col h-full min-w-0">
 
           {/* ── Canvas ──*/}
-          <main className={`flex-1 transition-all duration-200 ${activeTab === 'square' ? 'p-0 overflow-hidden' : 'p-8 lg:p-10 pb-24 overflow-y-auto'}`}>
+          <main className={`flex-1 transition-all duration-200 ${activeTab === 'square' ? 'p-0 overflow-hidden' : activeTab === 'timer' ? 'p-6 lg:p-8 overflow-hidden flex flex-col' : 'p-8 lg:p-10 pb-24 overflow-y-auto'}`}>
             <div>
               <TabsContent value="controls" className="m-0 space-y-10">
 
@@ -277,8 +277,7 @@ const OrganizerDashboard = () => {
 
               </TabsContent>
 
-              <TabsContent value="timer" className="m-0 space-y-10">
-                <PageHeader primary="Session" secondary="Timer" icon={<Clock className="w-3 h-3" />} subtitle="Countdown & Time Management" />
+              <TabsContent value="timer" className="m-0 flex-1 flex flex-col min-h-0">
                 <TimerManagement />
               </TabsContent>
 

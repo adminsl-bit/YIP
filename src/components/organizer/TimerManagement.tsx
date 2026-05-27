@@ -140,8 +140,16 @@ export const TimerManagement = () => {
     };
 
     const handleToggleActive = async (timerId: string, currentActive: boolean) => {
+        const timer = timerSessions.find(t => t.id === timerId);
+        // Deactivate all others first
         if (!currentActive) await supabase.from('timer_sessions').update({ is_active: false }).neq('id', timerId);
-        await supabase.from('timer_sessions').update({ is_active: !currentActive }).eq('id', timerId);
+        // When (re)activating, reset if completed so it's immediately usable
+        const updates: any = { is_active: !currentActive };
+        if (!currentActive && (timer?.status === 'completed' || timer?.status === 'stopped')) {
+            updates.status = 'stopped';
+            updates.remaining_seconds = timer.duration_seconds;
+        }
+        await supabase.from('timer_sessions').update(updates).eq('id', timerId);
         fetchTimerSessions();
     };
 
@@ -176,7 +184,8 @@ export const TimerManagement = () => {
         setShowCreateDialog(false);
         setEditingTimer(null);
         setNewTimerTitle("");
-        setMinutes(5);
+        setHours(0);
+        setMinutes(0);
         setSeconds(0);
     };
 
@@ -205,54 +214,58 @@ export const TimerManagement = () => {
     };
 
     return (
-        <div className="space-y-8">
+        <div className="flex flex-col gap-4 h-full min-h-0">
 
-            {/* Open Display link */}
-            <div className="flex justify-end">
+            {/* Top bar */}
+            <div className="flex items-center justify-between shrink-0">
+                <div>
+                    <h2 className="text-xl font-extrabold font-headline tracking-tight text-primary">Session <span className="text-secondary">Timer</span></h2>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50 font-headline">Countdown &amp; Time Management</p>
+                </div>
                 <button
                     onClick={() => window.open('/display/timer', '_blank')}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-2xl shadow-sm shadow-primary/20 hover:bg-primary-container transition-all font-headline font-black uppercase tracking-widest text-[10px]"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl shadow-sm shadow-primary/20 hover:bg-primary-container transition-all font-headline font-black uppercase tracking-widest text-[10px]"
                 >
-                    <ExternalLink className="w-3.5 h-3.5" /> Open Display
+                    <ExternalLink className="w-3 h-3" /> Open Display
                 </button>
             </div>
 
-            <div className="grid grid-cols-12 gap-8">
+            <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
 
                 {/* Left — Timer Hero */}
-                <div className="col-span-12 lg:col-span-8">
-                    <div className="relative overflow-hidden bg-gradient-to-br from-primary to-primary-container p-12 md:p-16 rounded-3xl text-white shadow-2xl shadow-primary/20 border border-white/5">
-                        <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
-                            <Clock className="w-[300px] h-[300px] -rotate-12" />
+                <div className="col-span-12 lg:col-span-8 min-h-0">
+                    <div className="relative overflow-hidden bg-gradient-to-br from-primary to-primary-container p-6 md:p-8 rounded-3xl text-white shadow-2xl shadow-primary/20 border border-white/5 h-full flex flex-col justify-between">
+                        <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+                            <Clock className="w-48 h-48 -rotate-12" />
                         </div>
 
-                        <div className="relative z-10 flex flex-col items-center text-center gap-14">
-                            <div className="font-mono text-9xl md:text-[160px] font-black tracking-tighter leading-none drop-shadow-[0_0_50px_rgba(255,255,255,0.15)]">
+                        <div className="relative z-10 flex flex-col items-center text-center gap-6 flex-1 justify-center">
+                            <div className="font-mono text-7xl md:text-[100px] lg:text-[120px] font-black tracking-tighter leading-none drop-shadow-[0_0_50px_rgba(255,255,255,0.15)]">
                                 {formatTimeSimple(remaining)}
                             </div>
 
-                            <div className="flex flex-wrap items-center justify-center gap-4">
+                            <div className="flex flex-wrap items-center justify-center gap-3">
                                 <button
                                     onClick={() => activeTimer && handleTimerControl(activeTimer.id, activeTimer.status === 'running' ? 'pause' : 'start')}
-                                    className="flex items-center gap-3 px-10 py-4 bg-white text-primary rounded-full font-headline font-black hover:scale-[1.03] active:scale-95 transition-all shadow-2xl shadow-black/20 uppercase tracking-widest text-xs"
+                                    className="flex items-center gap-2 px-7 py-3 bg-white text-primary rounded-full font-headline font-black hover:scale-[1.03] active:scale-95 transition-all shadow-xl shadow-black/20 uppercase tracking-widest text-xs"
                                 >
                                     {activeTimer?.status === 'running'
-                                        ? <><Pause className="w-5 h-5 fill-primary" /> Pause</>
-                                        : <><Play className="w-5 h-5 fill-primary" /> Start</>}
+                                        ? <><Pause className="w-4 h-4 fill-primary" /> Pause</>
+                                        : <><Play className="w-4 h-4 fill-primary" /> Start</>}
                                 </button>
 
                                 <button
                                     onClick={() => activeTimer && handleTimerControl(activeTimer.id, 'reset')}
-                                    className="flex items-center gap-3 px-8 py-4 bg-white/10 hover:bg-white/20 backdrop-blur-xl text-white rounded-full font-headline font-black transition-all border border-white/20 uppercase tracking-widest text-xs"
+                                    className="flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-xl text-white rounded-full font-headline font-black transition-all border border-white/20 uppercase tracking-widest text-xs"
                                 >
-                                    <RotateCcw className="w-4 h-4" /> Reset
+                                    <RotateCcw className="w-3.5 h-3.5" /> Reset
                                 </button>
 
                                 <button
                                     onClick={() => activeTimer && handleTimerControl(activeTimer.id, 'stop')}
-                                    className="flex items-center gap-3 px-8 py-4 bg-error/80 hover:bg-error text-white rounded-full font-headline font-black transition-all uppercase tracking-widest text-xs shadow-xl shadow-error/20"
+                                    className="flex items-center gap-2 px-6 py-3 bg-error/80 hover:bg-error text-white rounded-full font-headline font-black transition-all uppercase tracking-widest text-xs shadow-xl shadow-error/20"
                                 >
-                                    <Square className="w-4 h-4 fill-white" /> Stop
+                                    <Square className="w-3.5 h-3.5 fill-white" /> Stop
                                 </button>
                             </div>
                         </div>
@@ -260,9 +273,9 @@ export const TimerManagement = () => {
                 </div>
 
                 {/* Right — Timer Presets */}
-                <div className="col-span-12 lg:col-span-4">
-                    <div className="bg-white border border-outline-variant/10 p-8 rounded-3xl shadow-sm h-full">
-                        <div className="flex items-center justify-between mb-6">
+                <div className="col-span-12 lg:col-span-4 min-h-0 flex flex-col">
+                    <div className="bg-white border border-outline-variant/10 p-5 rounded-3xl shadow-sm h-full flex flex-col min-h-0">
+                        <div className="flex items-center justify-between mb-4 shrink-0">
                             <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-on-surface-variant font-headline">Timer Presets</h3>
                             <button
                                 onClick={() => setShowCreateDialog(true)}
@@ -271,11 +284,11 @@ export const TimerManagement = () => {
                                 <Plus className="w-3 h-3" /> New
                             </button>
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-2 flex-1 overflow-y-auto min-h-0 pr-1">
                             {timerSessions.map(timer => (
                                 <div
                                     key={timer.id}
-                                    className={`group w-full flex items-center justify-between p-4 rounded-2xl transition-all border ${
+                                    className={`group w-full flex items-center justify-between p-3 rounded-2xl transition-all border ${
                                         timer.is_active
                                             ? 'bg-primary text-white border-transparent shadow-lg shadow-primary/20'
                                             : 'bg-surface-container hover:bg-surface-container-high border-outline-variant/10 text-on-surface'
@@ -318,15 +331,16 @@ export const TimerManagement = () => {
                             {timerSessions.length === 0 && (
                                 <p className="text-center text-[10px] text-on-surface-variant/50 font-bold uppercase tracking-widest py-6">No presets yet</p>
                             )}
-
-                            <button
-                                onClick={() => setShowCreateDialog(true)}
-                                className="w-full flex items-center justify-center gap-2 p-3 border border-dashed border-outline-variant/30 rounded-2xl hover:bg-surface-container transition-all text-on-surface-variant/50 group"
-                            >
-                                <Plus className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                                <span className="font-headline font-black text-[10px] uppercase tracking-widest">Add Timer</span>
-                            </button>
                         </div>
+
+                        {/* Add button — always visible at bottom */}
+                        <button
+                            onClick={() => setShowCreateDialog(true)}
+                            className="w-full flex items-center justify-center gap-2 p-2.5 mt-2 border border-dashed border-outline-variant/30 rounded-2xl hover:bg-surface-container transition-all text-on-surface-variant/50 group shrink-0"
+                        >
+                            <Plus className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
+                            <span className="font-headline font-black text-[10px] uppercase tracking-widest">Add Timer</span>
+                        </button>
                     </div>
                 </div>
 
