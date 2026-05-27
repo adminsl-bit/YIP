@@ -91,9 +91,8 @@ export const SessionManagement = () => {
 
   // Form state
   const [title, setTitle] = useState("");
-  const [billType, setBillType] = useState<string>("government_bill");
+  const [billType, setBillType] = useState<string>("");
   const [description, setDescription] = useState("");
-  const [durationMinutes, setDurationMinutes] = useState<number>(0);
   const [linkedTimerId, setLinkedTimerId] = useState<string>("");
   const [linkedPollId, setLinkedPollId] = useState<string>("");
 
@@ -305,33 +304,6 @@ export const SessionManagement = () => {
 
     setLoading(true);
     try {
-      // Auto-create / update a timer preset whenever duration is specified
-      let resolvedTimerId = linkedTimerId || null;
-      const totalSeconds = durationMinutes * 60;
-
-      if (totalSeconds > 0) {
-        if (editingSessionId && linkedTimerId) {
-          // Update the already-linked timer's duration
-          await supabase.from('timer_sessions').update({
-            title,
-            duration_seconds: totalSeconds,
-            remaining_seconds: totalSeconds,
-          }).eq('id', linkedTimerId);
-        } else {
-          // Create a new timer preset and link it
-          const { data: newTimer } = await supabase.from('timer_sessions').insert({
-            title,
-            duration_seconds: totalSeconds,
-            remaining_seconds: totalSeconds,
-            status: 'stopped',
-            is_active: false,
-            created_by: user.id,
-            sort_order: availableTimers.length,
-          } as any).select().single();
-          if (newTimer) resolvedTimerId = (newTimer as any).id;
-        }
-      }
-
       if (editingSessionId) {
         const { error } = await supabase
           .from('session_items' as any)
@@ -339,7 +311,7 @@ export const SessionManagement = () => {
             title,
             bill_type: mapTextToBillType(billType),
             description: description || null,
-            timer_id: resolvedTimerId,
+            timer_id: linkedTimerId || null,
             poll_id: linkedPollId || null,
           })
           .eq('id', editingSessionId);
@@ -352,7 +324,7 @@ export const SessionManagement = () => {
             title,
             bill_type: mapTextToBillType(billType),
             description: description || null,
-            timer_id: resolvedTimerId,
+            timer_id: linkedTimerId || null,
             poll_id: linkedPollId || null,
             sort_order: sessionItems.length,
             status: 'pending',
@@ -360,19 +332,17 @@ export const SessionManagement = () => {
             created_by: user.id,
           } as any]);
         if (error) throw error;
-        toast({ title: "Scheduled", description: `"${title}" added${totalSeconds > 0 ? ` with a ${durationMinutes}-min timer` : ''}` });
+        toast({ title: "Scheduled", description: `"${title}" added to agenda` });
       }
 
       setShowCreateDialog(false);
       setEditingSessionId(null);
       setTitle("");
-      setBillType("government_bill");
+      setBillType("");
       setDescription("");
-      setDurationMinutes(0);
       setLinkedTimerId("");
       setLinkedPollId("");
       fetchSessionItems();
-      fetchAvailableTimers();
     } catch (error) {
       console.error('Error saving session:', error);
       toast({
@@ -556,9 +526,6 @@ export const SessionManagement = () => {
     setDescription(session.description || '');
     setLinkedTimerId(session.timer_id || '');
     setLinkedPollId(session.poll_id || '');
-    // Pre-fill duration from linked timer if available
-    const linked = availableTimers.find(t => t.id === session.timer_id);
-    setDurationMinutes(linked ? Math.round(linked.duration_seconds / 60) : 0);
     setShowCreateDialog(true);
   };
 
@@ -850,37 +817,14 @@ export const SessionManagement = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Type</label>
-                  <input
-                    value={billType}
-                    onChange={(e) => setBillType(e.target.value)}
-                    placeholder="e.g. Question Hour"
-                    className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-sm font-bold text-on-surface focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-on-surface-variant/30"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Duration (mins)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={durationMinutes || ''}
-                    onChange={(e) => setDurationMinutes(Math.max(0, parseInt(e.target.value) || 0))}
-                    placeholder="e.g. 15"
-                    className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-sm font-bold text-on-surface focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-on-surface-variant/30"
-                  />
-                  {durationMinutes > 0 && !linkedTimerId && (
-                    <p className="text-[9px] text-primary/60 font-bold font-headline mt-1 flex items-center gap-1">
-                      <Clock className="w-2.5 h-2.5" /> Timer will be auto-created
-                    </p>
-                  )}
-                  {durationMinutes > 0 && linkedTimerId && (
-                    <p className="text-[9px] text-secondary/70 font-bold font-headline mt-1 flex items-center gap-1">
-                      <Clock className="w-2.5 h-2.5" /> Linked timer duration will be updated
-                    </p>
-                  )}
-                </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Type</label>
+                <input
+                  value={billType}
+                  onChange={(e) => setBillType(e.target.value)}
+                  placeholder="e.g. Question Hour"
+                  className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-sm font-bold text-on-surface focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-on-surface-variant/30"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -920,7 +864,7 @@ export const SessionManagement = () => {
 
               <div className="flex gap-3 pt-1">
                 <button
-                  onClick={() => { setTitle(""); setBillType(""); setDescription(""); setDurationMinutes(0); setEditingSessionId(null); }}
+                  onClick={() => { setTitle(""); setBillType(""); setDescription(""); setLinkedTimerId(""); setLinkedPollId(""); setEditingSessionId(null); }}
                   className="flex-1 py-3 rounded-full border border-outline-variant/20 text-[10px] font-black uppercase tracking-widest text-on-surface-variant bg-surface-container hover:bg-surface-container-high transition-all font-headline"
                 >
                   {editingSessionId ? 'Cancel' : 'Reset'}
