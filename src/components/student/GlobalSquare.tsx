@@ -63,12 +63,29 @@ export const GlobalSquare = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeChannel, setActiveChannel] = useState<Channel>('global');
+  const [parties, setParties] = useState<string[]>([]);
+  const [selectedParty, setSelectedParty] = useState<string>('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const rtChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
+  const isOrganizer = (profile as any)?.user_type === 'organizer';
+
+  useEffect(() => {
+    if (!isOrganizer) return;
+    supabase.from('profiles').select('party_name').not('party_name', 'is', null)
+      .then(({ data }) => {
+        const unique = [...new Set((data || []).map((p: any) => p.party_name).filter(Boolean))] as string[];
+        setParties(unique);
+        setSelectedParty(prev => prev || unique[0] || '');
+      });
+  }, [isOrganizer]);
+
   const getChannelName = (ch: Channel = activeChannel) => {
     if (ch === 'global') return 'global_square';
-    if (ch === 'party') return `party_${profile?.party_name?.toLowerCase().replace(/\s+/g, '_') || 'independent'}`;
+    if (ch === 'party') {
+      if (isOrganizer && selectedParty) return `party_${selectedParty.toLowerCase().replace(/\s+/g, '_')}`;
+      return `party_${profile?.party_name?.toLowerCase().replace(/\s+/g, '_') || 'independent'}`;
+    }
     return 'organizer_direct';
   };
 
@@ -100,7 +117,7 @@ export const GlobalSquare = () => {
     rtChannelRef.current = ch;
 
     return () => { supabase.removeChannel(ch); rtChannelRef.current = null; };
-  }, [activeChannel, profile?.party_name]);
+  }, [activeChannel, profile?.party_name, selectedParty]);
 
   useEffect(() => { scrollToBottom(); }, [messages]);
 
@@ -190,6 +207,26 @@ export const GlobalSquare = () => {
           </p>
         </div>
       </div>
+
+      {/* ── Organizer: Party selector strip ── */}
+      {isOrganizer && activeChannel === 'party' && parties.length > 0 && (
+        <div className="px-6 py-3 bg-surface-container-low border-b border-slate-100 flex items-center gap-3 overflow-x-auto shrink-0" style={{ scrollbarWidth: 'none' }}>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 shrink-0 font-headline">Monitor Party:</span>
+          {parties.map(party => (
+            <button
+              key={party}
+              onClick={() => { setSelectedParty(party); setMessages([]); }}
+              className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all font-headline ${
+                selectedParty === party
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-white text-on-surface-variant hover:bg-primary/10 hover:text-primary border border-slate-200'
+              }`}
+            >
+              {party}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* ── Content Split ── */}
       <div className="flex flex-1 overflow-hidden">
@@ -349,7 +386,11 @@ export const GlobalSquare = () => {
                 {activeChannel === 'global'
                   ? 'Open forum for all delegates.'
                   : activeChannel === 'party'
-                  ? `Caucus channel for ${profile?.party_name || 'your party'}.`
+                  ? isOrganizer
+                    ? `Monitoring ${selectedParty || 'party'} wing. Switch parties above.`
+                    : `Caucus channel for ${profile?.party_name || 'your party'}.`
+                  : isOrganizer
+                  ? 'Student messages arrive here. Reply to broadcast.'
                   : 'Direct channel to the organizing team.'}
               </p>
             </div>
@@ -371,7 +412,11 @@ export const GlobalSquare = () => {
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              placeholder={`Type your message to the ${activeChannel === 'global' ? 'hub' : activeChannel === 'party' ? 'party wing' : 'organizers'}...`}
+              placeholder={
+                activeChannel === 'global' ? 'Broadcast to the floor…' :
+                activeChannel === 'party' ? (isOrganizer ? `Message ${selectedParty || 'party'} wing…` : 'Message your party caucus…') :
+                isOrganizer ? 'Reply to delegates…' : 'Message the organizers…'
+              }
               className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-5 pr-14 focus:ring-2 focus:ring-primary/20 focus:bg-white focus:border-primary transition-all text-sm font-medium font-body outline-none"
             />
             <button
