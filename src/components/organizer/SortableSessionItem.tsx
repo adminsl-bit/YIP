@@ -135,7 +135,7 @@ export const SortableSessionItem = React.memo(({
                     : 'bg-surface-container text-on-surface-variant border-outline-variant/10'
                 }`}>
                   <span className="material-symbols-outlined text-sm">timer</span>
-                  {formatTime(getDisplayedRemaining(linkedTimer))}
+                  {formatTime(item.is_active ? getDisplayedRemaining(linkedTimer) : linkedTimer.duration_seconds)}
                   {item.is_active && (
                     <button
                       onClick={() => onTimerControl(item.timer_id, linkedTimer.status === 'running' ? 'pause' : 'start')}
