@@ -671,63 +671,43 @@ export const SessionManagement = () => {
   const activeTimer = sessionItems.find(item => item.is_active)?.timer_id ? availableTimers.find(t => t.id === sessionItems.find(item => item.is_active)?.timer_id) : null;
 
   return (
-    <div className="space-y-12 pb-20 animate-in fade-in duration-700">
-      {/* Header Section */}
-      <header className="flex flex-col lg:flex-row justify-between lg:items-end gap-6 mb-4">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-[#6ffbbe] text-[#002113] rounded-full text-[10px] font-black uppercase tracking-widest mb-6 shadow-sm shadow-[#6ffbbe]/20">
-            <span className="w-2 h-2 rounded-full bg-[#005236] animate-pulse"></span>
-            ACTIVE SESSION: MONSOON SUMMIT 2024
-          </div>
-          <h1 className="text-5xl font-extrabold tracking-tighter text-[#191c1e] mb-3 font-headline">Session Management</h1>
-          <p className="text-[#454653] font-bold text-sm leading-relaxed max-w-2xl">
-            Orchestrate parliamentary procedures, manage live debates, and coordinate legislative timing from a single diplomat portal.
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <button 
-            onClick={() => window.open('/display/session', '_blank')}
-            className="group flex items-center gap-3 px-6 py-3.5 bg-white text-[#13298f] border border-[#13298f]/10 rounded-2xl shadow-sm hover:shadow-md transition-all font-black uppercase tracking-widest text-[10px]"
-          >
-            <ExternalLink className="w-4 h-4 transition-transform group-hover:rotate-12" /> Open Public View
-          </button>
-          <button 
-            onClick={() => setShowCreateDialog(true)}
-            className="px-6 py-3.5 bg-gradient-to-r from-[#13298f] to-[#3042a6] text-white rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg shadow-blue-900/20 hover:scale-[1.03] active:scale-95 transition-all flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> Assemble Agenda Item
-          </button>
-        </div>
-      </header>
+    <div className="space-y-6 pb-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Agenda Timeline Section */}
-        <section className="lg:col-span-8 bg-[#f2f4f6] rounded-[2.5rem] p-10 border border-slate-200/50">
-          <div className="flex justify-between items-center mb-10">
-            <h2 className="text-2xl font-black text-[#191c1e] tracking-tight">Scheduled Agenda Items</h2>
-            <div className="flex gap-2">
-              <span className="px-4 py-1.5 bg-white rounded-full text-[10px] font-black uppercase tracking-widest text-slate-500 border border-slate-100 shadow-sm">
-                {sessionItems.filter(i => i.status === 'pending').length} Remaining
+        {/* Left — Agenda Timeline */}
+        <section className="lg:col-span-8 bg-surface-container rounded-3xl p-7 border border-outline-variant/10">
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h2 className="text-base font-black font-headline text-on-surface tracking-tight">Scheduled Agenda</h2>
+              <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline mt-1">Drag rows to reorder</p>
+            </div>
+            <div className="flex items-center gap-2.5">
+              <span className="px-3 py-1.5 bg-surface-container-lowest rounded-full text-[10px] font-black uppercase tracking-widest text-on-surface-variant border border-outline-variant/10 shadow-sm">
+                {sessionItems.filter(i => i.status === 'pending').length} Pending
               </span>
-              <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm transition-all ${sessionItems.some(i => i.is_active) ? 'bg-[#ffdbd0] text-[#852300] border-[#ffb59f]' : 'bg-[#dee0ff] text-[#13298f] border-[#bac3ff]'}`}>
-                {sessionItems.filter(i => i.status === 'completed').length} Completed
+              <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${sessionItems.some(i => i.is_active) ? 'bg-secondary/10 text-secondary border-secondary/20' : 'bg-primary/10 text-primary border-primary/10'}`}>
+                {sessionItems.filter(i => i.status === 'completed').length} Done
               </span>
+              <button
+                onClick={() => setShowCreateDialog(true)}
+                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-primary to-primary-container text-white rounded-full font-headline font-black uppercase tracking-widest text-[10px] shadow-sm shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+              >
+                <Plus className="w-3.5 h-3.5" /> New Item
+              </button>
             </div>
           </div>
 
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={sessionItems.map(i => i.id)} strategy={verticalListSortingStrategy}>
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {sessionItems.length === 0 ? (
-                  <div className="bg-white border-2 border-dashed border-slate-100 rounded-[3rem] p-24 text-center flex flex-col items-center justify-center gap-8 group">
-                    <div className="size-28 rounded-full bg-slate-50 flex items-center justify-center text-slate-200 shadow-inner group-hover:scale-110 transition-transform">
-                      <Landmark className="w-14 h-14" />
+                  <div className="bg-surface-container-lowest border-2 border-dashed border-outline-variant/20 rounded-3xl p-16 text-center flex flex-col items-center gap-6">
+                    <div className="w-20 h-20 rounded-2xl bg-primary/5 flex items-center justify-center">
+                      <Landmark className="w-10 h-10 text-primary/20" />
                     </div>
                     <div>
-                      <h4 className="text-xl font-black text-[#191c1e]">Agenda Repository Empty</h4>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3">Scheduled sessions will appear in this timeline</p>
+                      <h4 className="text-lg font-black font-headline text-on-surface">Agenda Repository Empty</h4>
+                      <p className="text-[10px] font-black text-on-surface-variant/40 uppercase tracking-[0.2em] mt-2">Scheduled sessions will appear in this timeline</p>
                     </div>
                   </div>
                 ) : (
@@ -760,69 +740,76 @@ export const SessionManagement = () => {
           </DndContext>
         </section>
 
-        {/* Sidebar Controls & Forms */}
-        <aside className="lg:col-span-4 space-y-8">
-          {/* Procedure Control Switchboard */}
-          <div className="bg-[#13298f] text-white rounded-[2.5rem] p-10 relative overflow-hidden shadow-2xl shadow-blue-900/30">
+        {/* Right — Controls sidebar */}
+        <aside className="lg:col-span-4 space-y-5">
+
+          {/* Procedure Control Panel */}
+          <div className="bg-gradient-to-br from-primary to-primary-container text-white rounded-3xl p-7 relative overflow-hidden shadow-xl shadow-primary/20 border border-white/5">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
             <div className="relative z-10">
-              <h2 className="text-xl font-headline font-black mb-8 flex items-center gap-3">
-                <span className="material-symbols-outlined text-emerald-400">shield_with_house</span>
+              <h2 className="text-sm font-headline font-black mb-6 flex items-center gap-2.5 text-white">
+                <span className="material-symbols-outlined text-tertiary-container text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>shield_with_house</span>
                 Procedure Control
               </h2>
-              <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-white/10 rounded-2xl hover:bg-white/15 transition-colors border border-white/5">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-white/90">Automatic Transition</span>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-[#afb9ff]">Timed sequence flow</span>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3.5 bg-white/10 rounded-2xl border border-white/5 hover:bg-white/15 transition-colors">
+                  <div>
+                    <span className="text-xs font-bold text-white/90 block">Automatic Transition</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-white/50">Timed sequence flow</span>
                   </div>
-                  <Switch defaultChecked className="data-[state=checked]:bg-[#6ffbbe]" />
+                  <Switch defaultChecked className="data-[state=checked]:bg-tertiary-container" />
                 </div>
-                <div className="flex items-center justify-between p-4 bg-white/10 rounded-2xl hover:bg-white/15 transition-colors border border-white/5">
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold text-white/90">Member Notifications</span>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-[#afb9ff]">Real-time push alerts</span>
+                <div className="flex items-center justify-between p-3.5 bg-white/10 rounded-2xl border border-white/5 hover:bg-white/15 transition-colors">
+                  <div>
+                    <span className="text-xs font-bold text-white/90 block">Member Notifications</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-white/50">Real-time push alerts</span>
                   </div>
-                  <Switch className="data-[state=checked]:bg-[#6ffbbe]" />
+                  <Switch className="data-[state=checked]:bg-tertiary-container" />
                 </div>
               </div>
-              <button 
+              <button
                 onClick={() => toast({ title: "Recess Initiated", description: "Parliamentary break active." })}
-                className="w-full mt-8 py-4 bg-white text-[#13298f] rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95 shadow-xl shadow-black/10"
+                className="w-full mt-6 py-3 bg-white text-primary rounded-2xl font-headline font-black text-[10px] uppercase tracking-widest hover:bg-white/95 active:scale-95 transition-all shadow-xl shadow-black/10"
               >
-                 Immediate Recess
+                Immediate Recess
               </button>
             </div>
-            {/* Visual Flair */}
-            <div className="absolute top-0 right-0 w-48 h-48 bg-white/5 rounded-full -mr-24 -mt-24 blur-3xl"></div>
           </div>
 
           {/* New Agenda Entry Form */}
-          <div className="bg-white border border-slate-100 rounded-[2.5rem] p-10 shadow-sm space-y-8">
-            <div className="flex items-center gap-4">
-              <div className="size-12 rounded-2xl bg-slate-50 flex items-center justify-center text-[#13298f]">
-                  <span className="material-symbols-outlined text-2xl">post_add</span>
+          <div className="bg-white border border-outline-variant/10 rounded-3xl p-6 shadow-sm space-y-5">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>post_add</span>
               </div>
-              <h3 className="text-xl font-headline font-black text-[#191c1e]">New Agenda Entry</h3>
+              <div>
+                <h3 className="text-sm font-headline font-black text-on-surface">
+                  {editingSessionId ? 'Edit Agenda Item' : 'New Agenda Entry'}
+                </h3>
+                <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline mt-0.5">
+                  {editingSessionId ? 'Updating existing item' : 'Add to session agenda'}
+                </p>
+              </div>
             </div>
-            
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Title of the Item</label>
-                <input 
+
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Title of the Item</label>
+                <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-[#f7f9fb] border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-[#13298f]/20 transition-all placeholder:text-slate-300" 
-                  placeholder="e.g. Question Hour" 
+                  className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-4 py-3 text-sm font-bold text-on-surface focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-on-surface-variant/30 outline-none"
+                  placeholder="e.g. Question Hour"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Type</label>
-                  <select 
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Type</label>
+                  <select
                     value={billType}
                     onChange={(e) => setBillType(e.target.value)}
-                    className="w-full bg-[#f7f9fb] border-none rounded-2xl px-4 py-4 text-[11px] font-black uppercase tracking-widest focus:ring-2 focus:ring-[#13298f]/20"
+                    className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-[11px] font-black uppercase tracking-widest text-on-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   >
                     <option value="government_bill">Govt Bill</option>
                     <option value="private_member_bill">Private Bill</option>
@@ -830,9 +817,9 @@ export const SessionManagement = () => {
                     <option value="general_discussion">Discussion</option>
                   </select>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Duration</label>
-                  <select className="w-full bg-[#f7f9fb] border-none rounded-2xl px-4 py-4 text-[11px] font-black uppercase tracking-widest focus:ring-2 focus:ring-[#13298f]/20">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Duration</label>
+                  <select className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-[11px] font-black uppercase tracking-widest text-on-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all">
                     <option>15 mins</option>
                     <option>30 mins</option>
                     <option>1 hour</option>
@@ -840,37 +827,23 @@ export const SessionManagement = () => {
                 </div>
               </div>
 
-              <div className="pt-4 flex gap-3">
-                <button 
-                  onClick={() => { setTitle(""); setDescription(""); }}
-                  className="flex-1 py-4 border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:bg-slate-50 transition-all"
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={() => { setTitle(""); setDescription(""); setEditingSessionId(null); }}
+                  className="flex-1 py-3 rounded-full border border-outline-variant/20 text-[10px] font-black uppercase tracking-widest text-on-surface-variant bg-surface-container hover:bg-surface-container-high transition-all font-headline"
                 >
-                    Reset
+                  {editingSessionId ? 'Cancel' : 'Reset'}
                 </button>
-                <button 
+                <button
                   onClick={handleCreateSession}
-                  className="flex-1 py-4 bg-[#13298f] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-900/10 hover:opacity-95 active:scale-95 transition-all"
+                  className="flex-1 py-3 rounded-full bg-gradient-to-r from-primary to-primary-container text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all font-headline flex items-center justify-center gap-1.5"
                 >
-                    Schedule
+                  {editingSessionId ? 'Update' : 'Schedule'} <Plus className="w-3 h-3" />
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Technical Support Mascot Card */}
-          <div className="relative bg-gradient-to-br from-[#ffdbd0] to-[#ffb59f]/40 rounded-[2.5rem] p-10 overflow-visible h-48 flex items-center border border-[#ffdbd0]">
-            <div className="relative z-10 w-3/5 space-y-3">
-              <p className="text-[#852300] font-black text-lg leading-tight font-headline">Need technical assistance?</p>
-              <button className="text-[10px] font-black text-[#ac3509] uppercase tracking-widest flex items-center gap-1.5 hover:gap-2 transition-all">
-                  Chat with Support <span className="material-symbols-outlined text-sm font-black">arrow_forward</span>
-              </button>
-            </div>
-            <img 
-              alt="YI Parliament Mascot" 
-              className="absolute -right-4 -bottom-4 w-44 h-44 object-contain drop-shadow-2x transition-transform hover:scale-105 duration-500" 
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2LFH0vYk8C0j0AVVo4CRIhOniNE_ceNcIQIr5RkJeSQYGzAlDFiOjUaiaA647rvXcIn0fMwEJ-5rP2h0lHoknVI3FZCNUncpLNKV4Ydg3p5EfE8-mzp3cYWwZ6KhhZwWxrSdt2RGcQR83gZgjdxxuCteuU-VnOTPsWSup9HVrcg-c2LrgfT-UGNTACxJydHJYsPVmQZj9u4cmpAv7npVcqcLlzSkBAWd9ZnewT-KZhH5mTE202_Vhzdpvgc3Qhln7XwC6N-u6EJDC" 
-            />
-          </div>
         </aside>
       </div>
     </div>
