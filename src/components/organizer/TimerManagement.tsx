@@ -230,17 +230,17 @@ export const TimerManagement = () => {
                 </button>
             </div>
 
-            <div className="grid grid-cols-12 gap-4 flex-1 min-h-0">
+            <div className="flex flex-col gap-4 flex-1 min-h-0">
 
-                {/* Left — Timer Hero */}
-                <div className="col-span-12 lg:col-span-8 min-h-0">
-                    <div className="relative overflow-hidden bg-gradient-to-br from-primary to-primary-container p-6 md:p-8 rounded-3xl text-white shadow-2xl shadow-primary/20 border border-white/5 h-full flex flex-col justify-between">
+                {/* Timer Hero */}
+                <div className="flex-1 min-h-0">
+                    <div className="relative overflow-hidden bg-gradient-to-br from-primary to-primary-container p-6 md:p-8 rounded-3xl text-white shadow-2xl shadow-primary/20 border border-white/5 h-full flex flex-col justify-center items-center text-center">
                         <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
                             <Clock className="w-48 h-48 -rotate-12" />
                         </div>
 
-                        <div className="relative z-10 flex flex-col items-center text-center gap-6 flex-1 justify-center">
-                            <div className="font-mono text-7xl md:text-[100px] lg:text-[120px] font-black tracking-tighter leading-none drop-shadow-[0_0_50px_rgba(255,255,255,0.15)]">
+                        <div className="relative z-10 flex flex-col items-center gap-6">
+                            <div className="font-mono text-7xl md:text-[100px] lg:text-[110px] font-black tracking-tighter leading-none drop-shadow-[0_0_50px_rgba(255,255,255,0.15)]">
                                 {formatTimeSimple(remaining)}
                             </div>
 
@@ -272,74 +272,71 @@ export const TimerManagement = () => {
                     </div>
                 </div>
 
-                {/* Right — Timer Presets */}
-                <div className="col-span-12 lg:col-span-4 min-h-0 flex flex-col">
-                    <div className="bg-white border border-outline-variant/10 p-5 rounded-3xl shadow-sm h-full flex flex-col min-h-0">
-                        <div className="flex items-center justify-between mb-4 shrink-0">
-                            <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-on-surface-variant font-headline">Timer Presets</h3>
-                            <button
-                                onClick={() => setShowCreateDialog(true)}
-                                className="flex items-center gap-1.5 text-primary text-[10px] font-black uppercase tracking-widest font-headline hover:text-primary-container transition-colors"
-                            >
-                                <Plus className="w-3 h-3" /> New
-                            </button>
-                        </div>
-                        <div className="space-y-2 flex-1 overflow-y-auto min-h-0 pr-1">
-                            {timerSessions.map(timer => (
-                                <div
-                                    key={timer.id}
-                                    className={`group w-full flex items-center justify-between p-3 rounded-2xl transition-all border ${
-                                        timer.is_active
-                                            ? 'bg-primary text-white border-transparent shadow-lg shadow-primary/20'
-                                            : 'bg-surface-container hover:bg-surface-container-high border-outline-variant/10 text-on-surface'
-                                    }`}
-                                >
-                                    {/* Clickable area to activate */}
-                                    <button
-                                        onClick={() => handleToggleActive(timer.id, timer.is_active)}
-                                        className="flex items-center gap-3 flex-1 min-w-0 text-left"
-                                    >
-                                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${timer.is_active ? 'bg-white/20' : 'bg-primary/8 text-primary'}`}>
-                                            <Clock className="w-4 h-4" />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <span className="font-headline font-bold text-sm tracking-tight block truncate">{timer.title}</span>
-                                            <span className={`font-mono font-black text-xs ${timer.is_active ? 'text-white/70' : 'text-on-surface-variant'}`}>
-                                                {formatTimeSimple(timer.duration_seconds)}
-                                            </span>
-                                        </div>
-                                    </button>
-
-                                    {/* Edit / Delete — visible on hover */}
-                                    <div className="flex items-center gap-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                                        <button
-                                            onClick={() => handleEditTimer(timer)}
-                                            className={`p-1.5 rounded-lg transition-colors ${timer.is_active ? 'hover:bg-white/20 text-white/80' : 'hover:bg-primary/10 text-on-surface-variant hover:text-primary'}`}
-                                        >
-                                            <Pencil className="w-3.5 h-3.5" />
-                                        </button>
-                                        <button
-                                            onClick={() => handleDeleteTimer(timer.id)}
-                                            className={`p-1.5 rounded-lg transition-colors ${timer.is_active ? 'hover:bg-white/20 text-white/80' : 'hover:bg-error/10 text-on-surface-variant hover:text-error'}`}
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-
-                            {timerSessions.length === 0 && (
-                                <p className="text-center text-[10px] text-on-surface-variant/50 font-bold uppercase tracking-widest py-6">No presets yet</p>
-                            )}
-                        </div>
-
-                        {/* Add button — always visible at bottom */}
+                {/* Timer Presets — horizontal strip below hero */}
+                <div className="shrink-0 bg-white border border-outline-variant/10 p-4 rounded-3xl shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-on-surface-variant font-headline">Timer Presets</h3>
                         <button
                             onClick={() => setShowCreateDialog(true)}
-                            className="w-full flex items-center justify-center gap-2 p-2.5 mt-2 border border-dashed border-outline-variant/30 rounded-2xl hover:bg-surface-container transition-all text-on-surface-variant/50 group shrink-0"
+                            className="flex items-center gap-1.5 text-primary text-[10px] font-black uppercase tracking-widest font-headline hover:text-primary-container transition-colors"
                         >
-                            <Plus className="w-3.5 h-3.5 group-hover:scale-110 transition-transform" />
-                            <span className="font-headline font-black text-[10px] uppercase tracking-widest">Add Timer</span>
+                            <Plus className="w-3 h-3" /> New
+                        </button>
+                    </div>
+                    <div className="flex gap-2 overflow-x-auto pb-1">
+                        {timerSessions.map(timer => (
+                            <div
+                                key={timer.id}
+                                className={`group flex-none flex items-center gap-2.5 p-2.5 pr-3 rounded-2xl transition-all border cursor-pointer ${
+                                    timer.is_active
+                                        ? 'bg-primary text-white border-transparent shadow-lg shadow-primary/20'
+                                        : 'bg-surface-container hover:bg-surface-container-high border-outline-variant/10 text-on-surface'
+                                }`}
+                            >
+                                <button
+                                    onClick={() => handleToggleActive(timer.id, timer.is_active)}
+                                    className="flex items-center gap-2.5 min-w-0 text-left"
+                                >
+                                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${timer.is_active ? 'bg-white/20' : 'bg-primary/8 text-primary'}`}>
+                                        <Clock className="w-3.5 h-3.5" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <span className="font-headline font-bold text-xs tracking-tight block whitespace-nowrap">{timer.title}</span>
+                                        <span className={`font-mono font-black text-[10px] ${timer.is_active ? 'text-white/70' : 'text-on-surface-variant'}`}>
+                                            {formatTimeSimple(timer.duration_seconds)}
+                                        </span>
+                                    </div>
+                                </button>
+
+                                {/* Edit / Delete — visible on hover */}
+                                <div className="flex items-center gap-0.5 ml-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                                    <button
+                                        onClick={() => handleEditTimer(timer)}
+                                        className={`p-1 rounded-lg transition-colors ${timer.is_active ? 'hover:bg-white/20 text-white/80' : 'hover:bg-primary/10 text-on-surface-variant hover:text-primary'}`}
+                                    >
+                                        <Pencil className="w-3 h-3" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteTimer(timer.id)}
+                                        className={`p-1 rounded-lg transition-colors ${timer.is_active ? 'hover:bg-white/20 text-white/80' : 'hover:bg-error/10 text-on-surface-variant hover:text-error'}`}
+                                    >
+                                        <Trash2 className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+
+                        {timerSessions.length === 0 && (
+                            <p className="text-[10px] text-on-surface-variant/50 font-bold uppercase tracking-widest py-2">No presets yet</p>
+                        )}
+
+                        {/* Add button inline */}
+                        <button
+                            onClick={() => setShowCreateDialog(true)}
+                            className="flex-none flex items-center gap-1.5 px-4 py-2.5 border border-dashed border-outline-variant/30 rounded-2xl hover:bg-surface-container transition-all text-on-surface-variant/50 group"
+                        >
+                            <Plus className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                            <span className="font-headline font-black text-[10px] uppercase tracking-widest whitespace-nowrap">Add Timer</span>
                         </button>
                     </div>
                 </div>
