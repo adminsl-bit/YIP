@@ -1,11 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Clock, Pause, Play, Square } from "lucide-react";
-import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
 
 interface TimerSession {
   id: string;
@@ -20,283 +14,340 @@ interface TimerSession {
 const TimerDisplay = () => {
   const [timer, setTimer] = useState<TimerSession | null>(null);
   const [loading, setLoading] = useState(true);
-const audioRef = useRef<HTMLAudioElement | null>(null);
-const previousRemainingRef = useRef<number | null>(null);
-const rafRef = useRef<number | null>(null);
-const recalibRef = useRef<number | null>(null);
-const baselineRef = useRef<{ remainingAtStart: number; startedAtMs: number } | null>(null);
-const clockOffsetRef = useRef<number>(0);
+  const [colonVisible, setColonVisible] = useState(true);
 
+  const rafRef        = useRef<number | null>(null);
+  const recalibRef    = useRef<number | null>(null);
+  const baselineRef   = useRef<{ remainingAtStart: number; startedAtMs: number } | null>(null);
+  const clockOffsetRef          = useRef<number>(0);
+  const previousRemainingRef    = useRef<number | null>(null);
 
-useEffect(() => {
-  document.title = "Young Indian Parliament - Timer Display";
-  
-  // Calibrate clock offset with server
-  const calibrateClock = async () => {
-    const clientBefore = Date.now();
-    const { data } = await supabase.rpc('get_server_time');
-    const clientAfter = Date.now();
-    if (data) {
-      const serverTime = Date.parse(data);
-      const clientMid = (clientBefore + clientAfter) / 2;
-      clockOffsetRef.current = serverTime - clientMid;
-      console.log('[TimerDisplay] Clock offset calibrated:', clockOffsetRef.current, 'ms');
-    }
-  };
-  
-  calibrateClock();
-  // Periodic re-calibration every 30s
-  recalibRef.current = window.setInterval(calibrateClock, 30000);
-  fetchActiveTimer();
+  // ── Clock calibration & initial fetch ──────────────────────────────────────
+  useEffect(() => {
+    document.title = "YIP — Timer Display";
 
-  // Initialize audio
-  audioRef.current = new Audio();
-
-  // Set up real-time subscription
-  const subscription = supabase
-    .channel('timer_changes')
-    .on('postgres_changes', 
-      { event: 'UPDATE', schema: 'public', table: 'timer_sessions' },
-      () => {
-        fetchActiveTimer();
+    const calibrateClock = async () => {
+      const clientBefore = Date.now();
+      const { data } = await supabase.rpc('get_server_time');
+      const clientAfter = Date.now();
+      if (data) {
+        const serverTime = Date.parse(data);
+        clockOffsetRef.current = serverTime - (clientBefore + clientAfter) / 2;
       }
-    )
-    .subscribe();
+    };
 
-  return () => {
-    subscription.unsubscribe();
-    if (recalibRef.current) window.clearInterval(recalibRef.current);
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-  };
-}, []);
+    calibrateClock();
+    recalibRef.current = window.setInterval(calibrateClock, 30_000);
+    fetchActiveTimer();
 
-// Local high-frequency countdown using requestAnimationFrame derived from started_at
-useEffect(() => {
-  if (rafRef.current) {
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = null;
-  }
+    const subscription = supabase
+      .channel('timer_display_changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'timer_sessions' }, () => {
+        fetchActiveTimer();
+      })
+      .subscribe();
 
-  if (!timer || timer.status !== 'running' || !(timer as any).started_at) return;
+    return () => {
+      subscription.unsubscribe();
+      if (recalibRef.current) window.clearInterval(recalibRef.current);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
 
-  const render = () => {
-    const base = baselineRef.current;
-    if (!base) return;
-    const nowAdj = Date.now() + clockOffsetRef.current;
-    const elapsed = Math.floor((nowAdj - base.startedAtMs) / 1000);
-    const computed = Math.max(0, base.remainingAtStart - elapsed);
-    setTimer(prev => (prev ? { ...prev, remaining_seconds: computed } : prev));
-    rafRef.current = requestAnimationFrame(render);
-  };
+  // ── RAF countdown (runs only when status === 'running') ────────────────────
+  useEffect(() => {
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = null; }
+    if (!timer || timer.status !== 'running' || !timer.started_at) return;
 
-  render();
+    const render = () => {
+      const base = baselineRef.current;
+      if (!base) return;
+      const nowAdj  = Date.now() + clockOffsetRef.current;
+      const elapsed = Math.floor((nowAdj - base.startedAtMs) / 1000);
+      const computed = Math.max(0, base.remainingAtStart - elapsed);
+      setTimer(prev => prev ? { ...prev, remaining_seconds: computed } : prev);
+      rafRef.current = requestAnimationFrame(render);
+    };
 
-  return () => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-  };
-}, [timer?.id, timer?.status, (timer as any)?.started_at]);
+    render();
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, [timer?.id, timer?.status, timer?.started_at]);
 
-  // Bell sound effect when timer reaches 0
+  // ── Blinking colon ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (timer?.status !== 'running') { setColonVisible(true); return; }
+    const id = setInterval(() => setColonVisible(v => !v), 500);
+    return () => clearInterval(id);
+  }, [timer?.status]);
+
+  // ── Bell on expiry ─────────────────────────────────────────────────────────
   useEffect(() => {
     if (timer && previousRemainingRef.current !== null) {
       if (previousRemainingRef.current > 0 && timer.remaining_seconds === 0) {
-        // Timer just reached 0, play bell sound
-        const createBeepSound = () => {
-          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-          const oscillator = audioContext.createOscillator();
-          const gainNode = audioContext.createGain();
-          
-          oscillator.connect(gainNode);
-          gainNode.connect(audioContext.destination);
-          
-          oscillator.frequency.value = 800;
-          oscillator.type = 'sine';
-          
-          gainNode.gain.setValueAtTime(0.5, audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
-          
-          oscillator.start(audioContext.currentTime);
-          oscillator.stop(audioContext.currentTime + 2);
-        };
-        
-        createBeepSound();
+        try {
+          const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+          const osc  = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.frequency.value = 800; osc.type = 'sine';
+          gain.gain.setValueAtTime(0.5, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 2);
+          osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 2);
+        } catch (_) {}
       }
     }
-    previousRemainingRef.current = timer?.remaining_seconds || null;
+    previousRemainingRef.current = timer?.remaining_seconds ?? null;
   }, [timer?.remaining_seconds]);
 
+  // ── Fetch active timer ─────────────────────────────────────────────────────
   const fetchActiveTimer = async () => {
     try {
-      // Prefer the currently running active timer
-      const { data: running, error: runningError } = await supabase
-        .from('timer_sessions')
-        .select('*')
+      const { data: running } = await supabase
+        .from('timer_sessions').select('*')
+        .eq('is_active', true).eq('status', 'running')
+        .order('updated_at', { ascending: false }).limit(1).maybeSingle();
+
+      if (running) {
+        const nowAdj = Date.now() + clockOffsetRef.current;
+        const startedAtMs = running.started_at ? Date.parse(running.started_at) : nowAdj;
+        const adjustedRemaining = Math.max(0, running.remaining_seconds - Math.floor((nowAdj - startedAtMs) / 1000));
+        baselineRef.current = { remainingAtStart: running.remaining_seconds, startedAtMs };
+        setTimer(prev => prev
+          ? { ...(running as TimerSession), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) }
+          : { ...(running as TimerSession), remaining_seconds: adjustedRemaining });
+        return;
+      }
+
+      const { data: activeAny } = await supabase
+        .from('timer_sessions').select('*')
         .eq('is_active', true)
-        .eq('status', 'running')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order('updated_at', { ascending: false }).limit(1).maybeSingle();
 
-if (!runningError && running) {
-  const nowAdj = Date.now() + clockOffsetRef.current;
-  const startedAt: string | null = (running as any).started_at ?? null;
-  let adjustedRemaining = (running as any).remaining_seconds;
-  if (startedAt) {
-    const startedAtMs = Date.parse(startedAt);
-    adjustedRemaining = Math.max(0, (running as any).remaining_seconds - Math.floor((nowAdj - startedAtMs) / 1000));
-    baselineRef.current = { remainingAtStart: (running as any).remaining_seconds, startedAtMs };
-  } else {
-    const serverUpdatedAt = Date.parse((running as any).updated_at);
-    adjustedRemaining = Math.max(0, (running as any).remaining_seconds - Math.floor((nowAdj - serverUpdatedAt) / 1000));
-    baselineRef.current = { remainingAtStart: (running as any).remaining_seconds, startedAtMs: nowAdj };
-  }
-  setTimer(prev => prev 
-    ? ({ ...(running as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
-    : ({ ...(running as any), remaining_seconds: adjustedRemaining } as TimerSession)
-  );
-  return;
-}
-
-      // Fallback: latest active timer (paused/stopped/completed)
-      const { data: activeAny, error: activeError } = await supabase
-        .from('timer_sessions')
-        .select('*')
-        .eq('is_active', true)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-if (activeError) throw activeError;
-if (activeAny) {
-  const nowAdj = Date.now() + clockOffsetRef.current;
-  const startedAt: string | null = (activeAny as any).started_at ?? null;
-  let adjustedRemaining = (activeAny as any).remaining_seconds;
-  if ((activeAny as any).status === 'running' && startedAt) {
-    const startedAtMs = Date.parse(startedAt);
-    adjustedRemaining = Math.max(0, (activeAny as any).remaining_seconds - Math.floor((nowAdj - startedAtMs) / 1000));
-    baselineRef.current = { remainingAtStart: (activeAny as any).remaining_seconds, startedAtMs };
-  } else {
-    baselineRef.current = null;
-  }
-  setTimer(prev => prev 
-    ? ({ ...(activeAny as any), remaining_seconds: Math.min(prev.remaining_seconds, adjustedRemaining) } as TimerSession)
-    : ({ ...(activeAny as any), remaining_seconds: adjustedRemaining } as TimerSession)
-  );
-} else {
-  setTimer(null);
-}
-    } catch (error) {
-      console.error('Error fetching timer:', error);
+      if (activeAny) {
+        const nowAdj = Date.now() + clockOffsetRef.current;
+        if ((activeAny as any).status === 'running' && activeAny.started_at) {
+          const startedAtMs = Date.parse(activeAny.started_at);
+          const adj = Math.max(0, activeAny.remaining_seconds - Math.floor((nowAdj - startedAtMs) / 1000));
+          baselineRef.current = { remainingAtStart: activeAny.remaining_seconds, startedAtMs };
+          setTimer(prev => prev
+            ? { ...(activeAny as TimerSession), remaining_seconds: Math.min(prev.remaining_seconds, adj) }
+            : { ...(activeAny as TimerSession), remaining_seconds: adj });
+        } else {
+          baselineRef.current = null;
+          setTimer(activeAny as TimerSession);
+        }
+      } else {
+        setTimer(null);
+      }
+    } catch (e) {
+      console.error('Error fetching timer:', e);
       setTimer(null);
     } finally {
       setLoading(false);
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+  // ── Derived display values ─────────────────────────────────────────────────
+  const remaining  = timer?.remaining_seconds ?? 0;
+  const duration   = timer?.duration_seconds  ?? 0;
+  const pct        = duration > 0 ? Math.ceil((remaining / duration) * 100) : 0;
 
-  const getProgressValue = () => {
-    if (!timer) return 0;
-    return ((timer.duration_seconds - timer.remaining_seconds) / timer.duration_seconds) * 100;
-  };
+  const phase =
+    !timer                                               ? 'idle'
+    : remaining === 0 || timer.status === 'completed'   ? 'expired'
+    : remaining <= 10                                    ? 'critical'
+    : remaining <= 60                                    ? 'warning'
+    : 'normal';
 
+  const mins = Math.floor(remaining / 60).toString().padStart(2, '0');
+  const secs = (remaining % 60).toString().padStart(2, '0');
+  const allocatedStr = `${Math.floor(duration / 60).toString().padStart(2, '0')}:${(duration % 60).toString().padStart(2, '0')}`;
+
+  const statusLabel =
+    phase === 'expired'            ? 'TIME EXPIRED'
+    : timer?.status === 'paused'   ? 'PAUSED'
+    : timer?.status === 'stopped'  ? 'STOPPED'
+    : 'TIME REMAINING';
+
+  const statusLabelClass =
+    phase === 'expired'  ? 'text-error'
+    : phase === 'warning' ? 'text-secondary'
+    : 'text-on-surface-variant/60';
+
+  const timerColorClass =
+    phase === 'critical' || phase === 'expired' ? 'text-error'
+    : 'text-primary';
+
+  const progressGradient =
+    phase === 'critical' || phase === 'expired'
+      ? 'from-error to-error-container'
+      : 'from-primary to-primary-container';
+
+  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-white px-4">
-        <div className="text-center text-slate-800">
-          <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-base sm:text-xl">Loading Timer Display...</p>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center animate-pulse">
+            <span className="material-symbols-outlined text-primary text-4xl">timer</span>
+          </div>
+          <p className="text-[10px] font-headline font-black uppercase tracking-[0.4em] text-on-surface-variant/40">
+            Connecting to Parliament…
+          </p>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-6 lg:p-8">
-      <BreakingNewsTicker />
-      
-      <div className="max-w-6xl mx-auto mt-6 sm:mt-8 lg:mt-12">
-        {/* Timer Header Card */}
-        <Card className="border-2 border-primary shadow-xl">
-          <CardContent className="p-4 sm:p-6 lg:p-8">
-            {timer ? (
-              <div className="space-y-4 sm:space-y-6">
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-center sm:text-left">{timer.title}</h1>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {timer.status === 'running' ? (
-                      <Play className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 fill-green-500" />
-                    ) : timer.status === 'paused' ? (
-                      <Pause className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500" />
-                    ) : (
-                      <Square className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
-                    )}
-                    <Badge 
-                      variant={timer.status === 'running' ? 'default' : 'secondary'}
-                      className="text-sm sm:text-base lg:text-lg px-3 sm:px-4 py-1 sm:py-2"
-                    >
-                      {timer.status}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="text-center py-6 sm:py-8 lg:py-12">
-                  <div className={`text-5xl sm:text-7xl lg:text-9xl font-mono font-bold transition-colors duration-300 ${
-                    timer.remaining_seconds <= timer.duration_seconds * 0.1 ? 'text-destructive animate-pulse' : ''
-                  }`}>
-                    {formatTime(timer.remaining_seconds)}
-                  </div>
-                  <p className="text-lg sm:text-xl lg:text-2xl text-muted-foreground mt-3 sm:mt-4 lg:mt-6">
-                    of {formatTime(timer.duration_seconds)}
-                  </p>
-                </div>
-
-                <Progress 
-                  value={getProgressValue()} 
-                  className={`h-4 sm:h-5 lg:h-6 transition-all duration-300 ${
-                    timer.remaining_seconds <= timer.duration_seconds * 0.1 ? 'bg-destructive' :
-                    timer.remaining_seconds <= timer.duration_seconds * 0.25 ? 'bg-orange-500' :
-                    'bg-primary'
-                  }`}
-                />
-
-                {timer.remaining_seconds <= timer.duration_seconds * 0.1 && timer.status === 'running' && (
-                  <div className="text-center">
-                    <p className="text-2xl font-semibold text-destructive animate-pulse">
-                      Time is running out!
-                    </p>
-                  </div>
-                )}
-
-                {timer.status === 'completed' && (
-                  <div className="text-center mt-6 p-6 bg-green-50 dark:bg-green-950 rounded-lg">
-                    <p className="text-3xl font-bold text-green-700 dark:text-green-300">
-                      🎉 TIME'S UP! 🎉
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-12 space-y-6">
-                <Clock className="h-24 w-24 mx-auto text-primary/20" />
-                <h2 className="text-4xl font-bold">No Active Timer</h2>
-                <p className="text-xl text-muted-foreground">
-                  Waiting for organizer to activate a timer
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+  // ── No active timer ────────────────────────────────────────────────────────
+  if (!timer) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col overflow-hidden">
+        <Header />
+        <main className="flex-grow flex flex-col items-center justify-center gap-6">
+          <div className="opacity-5 pointer-events-none select-none">
+            <span className="material-symbols-outlined text-primary" style={{ fontSize: '20rem' }}>timer_off</span>
+          </div>
+          <div className="absolute text-center space-y-3">
+            <p className="text-[10px] font-headline font-black uppercase tracking-[0.5em] text-on-surface-variant/40">Awaiting Session</p>
+            <h2 className="text-4xl font-display font-extrabold text-primary tracking-tight">No Active Timer</h2>
+            <p className="text-on-surface-variant font-body text-sm">Waiting for organizer to start a timer</p>
+          </div>
+        </main>
       </div>
+    );
+  }
+
+  // ── Main display ───────────────────────────────────────────────────────────
+  return (
+    <div className="bg-background text-on-background font-body min-h-screen flex flex-col overflow-hidden">
+
+      <Header timerTitle={timer.title} status={timer.status} />
+
+      {/* Main Canvas */}
+      <main className="flex-grow flex flex-col items-center justify-center px-6 relative">
+
+        {/* Background watermark */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
+          <span className="material-symbols-outlined text-primary" style={{ fontSize: '80vw' }}>timer</span>
+        </div>
+
+        <div className="relative w-full max-w-7xl">
+
+          {/* Floating badge */}
+          <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10 glass-panel px-8 py-2.5 rounded-full border border-primary/10 shadow-xl shadow-primary/5 flex items-center gap-3 whitespace-nowrap">
+            <span className="material-symbols-outlined text-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+            <span className="font-headline font-bold text-primary tracking-wide text-sm">{timer.title}</span>
+          </div>
+
+          {/* Timer card */}
+          <div className="glass-panel rounded-[3rem] p-16 md:p-24 flex flex-col items-center justify-center border border-white shadow-[0_32px_64px_-16px_rgba(19,41,143,0.12)]">
+
+            {/* Status label */}
+            <div className="flex flex-col items-center gap-4 mb-6">
+              <span className={`font-label font-bold tracking-[0.4em] uppercase text-lg ${statusLabelClass} ${phase === 'expired' ? 'animate-pulse' : ''}`}>
+                {statusLabel}
+              </span>
+              <div className="h-1 w-24 bg-primary/20 rounded-full" />
+            </div>
+
+            {/* Clock face */}
+            <div
+              className={`font-display font-extrabold leading-none tracking-tighter flex items-baseline timer-glow ${timerColorClass} ${phase === 'expired' ? 'animate-pulse' : ''}`}
+              style={{ fontSize: 'clamp(8rem, 22vw, 22rem)' }}
+            >
+              <span>{mins}</span>
+              <span className={`px-4 transition-opacity duration-100 ${colonVisible ? 'opacity-80' : 'opacity-0'}`}>:</span>
+              <span>{secs}</span>
+            </div>
+
+            {/* Allocated time */}
+            <div className="mt-10 flex items-center gap-8">
+              <div className="flex flex-col items-center">
+                <span className="font-label font-bold text-on-surface-variant uppercase tracking-widest opacity-40 text-sm">Allocated</span>
+                <span className="font-headline font-bold text-2xl text-on-surface">{allocatedStr}</span>
+              </div>
+              {phase !== 'idle' && (
+                <>
+                  <div className="h-10 w-px bg-outline-variant/30" />
+                  <div className="flex flex-col items-center">
+                    <span className="font-label font-bold text-on-surface-variant uppercase tracking-widest opacity-40 text-sm">Remaining</span>
+                    <span className={`font-headline font-bold text-2xl ${timerColorClass}`}>{pct}%</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+          </div>
+        </div>
+      </main>
+
+      {/* Progress bar footer */}
+      <footer className="w-full p-12 mt-auto">
+        <div className="max-w-7xl mx-auto space-y-4">
+          <div className="flex justify-between items-end px-2">
+            <div className="flex flex-col">
+              <span className="font-label font-bold text-primary uppercase tracking-tighter">Parliamentary Protocol</span>
+              <span className="font-body text-sm text-on-surface-variant">{timer.title}</span>
+            </div>
+            <div className={`font-display font-extrabold text-4xl italic ${timerColorClass} opacity-20`}>{pct}%</div>
+          </div>
+          <div className="w-full h-8 bg-surface-container-high rounded-full overflow-hidden p-1 shadow-inner">
+            <div
+              className={`h-full bg-gradient-to-r ${progressGradient} rounded-full shadow-lg relative overflow-hidden`}
+              style={{ width: `${pct}%`, transition: 'width 1s linear' }}
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent w-40 skew-x-12 animate-[shimmer_3s_infinite]" />
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      <style>{`
+        .glass-panel {
+          background: rgba(255,255,255,0.7);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+        }
+        .timer-glow {
+          text-shadow: 0 0 40px rgba(19,41,143,0.15);
+        }
+        @keyframes shimmer {
+          0%   { transform: translateX(-200%) skewX(-45deg); }
+          100% { transform: translateX(400%)  skewX(-45deg); }
+        }
+      `}</style>
+
     </div>
   );
 };
+
+// ── Shared header ──────────────────────────────────────────────────────────────
+const Header = ({ timerTitle, status }: { timerTitle?: string; status?: string }) => (
+  <header className="flex justify-between items-center px-12 py-8 w-full">
+    <div className="flex items-center gap-4">
+      <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+        <span className="material-symbols-outlined text-white text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
+      </div>
+      <div>
+        <h1 className="font-headline font-extrabold text-2xl tracking-tighter text-primary">National Youth Parliament</h1>
+        <p className="font-body text-xs font-medium text-on-surface-variant uppercase tracking-widest">Digital Diplomat Display</p>
+      </div>
+    </div>
+
+    {timerTitle && (
+      <div className="glass-panel px-6 py-3 rounded-full flex items-center gap-3 border border-outline-variant/20 shadow-sm">
+        <span className={`w-2 h-2 rounded-full ${status === 'running' ? 'bg-tertiary-container animate-pulse' : 'bg-outline-variant'}`} />
+        <span className="font-headline font-bold text-on-surface-variant text-sm tracking-wide">{timerTitle}</span>
+        {status && (
+          <>
+            <div className="w-px h-4 bg-outline-variant/30" />
+            <span className="font-headline font-black text-[10px] uppercase tracking-widest text-on-surface-variant/60">{status}</span>
+          </>
+        )}
+      </div>
+    )}
+  </header>
+);
 
 export default TimerDisplay;
