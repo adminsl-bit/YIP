@@ -12,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Calendar, Plus, GripVertical, Play, Pause, Square, CheckCircle, BarChart, Clock, ExternalLink, Eye, Pencil, Trash2, RotateCcw, Bell, Landmark, Users, Gavel, ClipboardCheck, Search, Info, Trash, Edit, ChevronDown, Check, Activity, ListChecks, PlayCircle } from "lucide-react";
-import { SessionSubItems } from "./SessionSubItems";
 import { SortableSessionItem } from "./SortableSessionItem";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -769,17 +768,12 @@ export const SessionManagement = () => {
                       availableTimers={availableTimers}
                       availablePolls={availablePolls}
                       loading={loading}
-                      expandedAccordions={expandedAccordions}
-                      onExpandChange={handleExpandChange}
                       onTimerControl={handleTimerControl}
                       onPollToggle={handlePollToggle}
-                      onPollResultsToggle={handlePollResultsToggle}
                       onEditSession={handleEditSession}
                       onDeleteSession={handleDeleteSession}
                       onActivateItem={handleActivateItem}
                       onCompleteItem={handleCompleteItem}
-                      getBillTypeBadge={getBillTypeBadge}
-                      getStatusBadge={getStatusBadge}
                       formatTime={formatTime}
                       getDisplayedRemaining={getDisplayedRemaining}
                     />
@@ -889,11 +883,45 @@ export const SessionManagement = () => {
                     placeholder="e.g. 15"
                     className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-sm font-bold text-on-surface focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-on-surface-variant/30"
                   />
-                  {durationMinutes > 0 && (
+                  {durationMinutes > 0 && !linkedTimerId && (
                     <p className="text-[9px] text-primary/60 font-bold font-headline mt-1 flex items-center gap-1">
-                      <Clock className="w-2.5 h-2.5" /> Timer preset will be auto-created
+                      <Clock className="w-2.5 h-2.5" /> Timer will be auto-created
                     </p>
                   )}
+                  {durationMinutes > 0 && linkedTimerId && (
+                    <p className="text-[9px] text-secondary/70 font-bold font-headline mt-1 flex items-center gap-1">
+                      <Clock className="w-2.5 h-2.5" /> Linked timer duration will be updated
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Link Timer</label>
+                  <select
+                    value={linkedTimerId}
+                    onChange={(e) => setLinkedTimerId(e.target.value)}
+                    className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">— none —</option>
+                    {availableTimers.map(t => (
+                      <option key={t.id} value={t.id}>{t.title}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Link Poll</label>
+                  <select
+                    value={linkedPollId}
+                    onChange={(e) => setLinkedPollId(e.target.value)}
+                    className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
+                  >
+                    <option value="">— none —</option>
+                    {availablePolls.map(p => (
+                      <option key={p.id} value={p.id}>{p.title}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
