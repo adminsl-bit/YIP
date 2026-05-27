@@ -115,7 +115,6 @@ export const SessionManagement = () => {
           const serverTime = Date.parse(data as unknown as string);
           const clientMid = (clientBefore + clientAfter) / 2;
           clockOffsetRef.current = serverTime - clientMid;
-          console.log('[SessionManagement] Clock offset calibrated:', clockOffsetRef.current, 'ms');
         }
       } catch (e) {
         console.warn('[SessionManagement] Clock calibration failed', e);
@@ -495,8 +494,6 @@ export const SessionManagement = () => {
   const handlePollToggle = async (pollId: string | null, currentActive: boolean) => {
     if (!pollId) return;
 
-    console.log('Poll toggle called - Poll ID:', pollId, 'Current Active:', currentActive, 'Will set to:', !currentActive);
-
     // Don't use global loading state to prevent flickering
     try {
       const { error } = await supabase
@@ -505,8 +502,6 @@ export const SessionManagement = () => {
         .eq('id', pollId);
 
       if (error) throw error;
-
-      console.log('Poll updated successfully to is_active:', !currentActive);
 
       toast({
         title: "Success",
@@ -859,19 +854,11 @@ export const SessionManagement = () => {
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Type</label>
                   <input
-                    list="bill-type-suggestions"
                     value={billType}
                     onChange={(e) => setBillType(e.target.value)}
                     placeholder="e.g. Question Hour"
                     className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-sm font-bold text-on-surface focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-on-surface-variant/30"
                   />
-                  <datalist id="bill-type-suggestions">
-                    <option value="Government Bill" />
-                    <option value="Private Member Bill" />
-                    <option value="Committee Report" />
-                    <option value="Question Hour" />
-                    <option value="General Discussion" />
-                  </datalist>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Duration (mins)</label>
@@ -899,29 +886,35 @@ export const SessionManagement = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Link Timer</label>
-                  <select
-                    value={linkedTimerId}
-                    onChange={(e) => setLinkedTimerId(e.target.value)}
-                    className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="">— none —</option>
-                    {availableTimers.map(t => (
-                      <option key={t.id} value={t.id}>{t.title}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={linkedTimerId}
+                      onChange={(e) => setLinkedTimerId(e.target.value)}
+                      className="w-full appearance-none bg-surface-container-high border border-outline-variant/10 rounded-2xl pl-3 pr-8 py-3 text-xs font-bold text-on-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer"
+                    >
+                      <option value="">None</option>
+                      {availableTimers.map(t => (
+                        <option key={t.id} value={t.id}>{t.title}</option>
+                      ))}
+                    </select>
+                    <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant/40 text-base">expand_more</span>
+                  </div>
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-[0.3em] font-headline">Link Poll</label>
-                  <select
-                    value={linkedPollId}
-                    onChange={(e) => setLinkedPollId(e.target.value)}
-                    className="w-full bg-surface-container-high border border-outline-variant/10 rounded-2xl px-3 py-3 text-sm font-bold text-on-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all appearance-none cursor-pointer"
-                  >
-                    <option value="">— none —</option>
-                    {availablePolls.map(p => (
-                      <option key={p.id} value={p.id}>{p.title}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={linkedPollId}
+                      onChange={(e) => setLinkedPollId(e.target.value)}
+                      className="w-full appearance-none bg-surface-container-high border border-outline-variant/10 rounded-2xl pl-3 pr-8 py-3 text-xs font-bold text-on-surface focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer"
+                    >
+                      <option value="">None</option>
+                      {availablePolls.map(p => (
+                        <option key={p.id} value={p.id}>{p.title}</option>
+                      ))}
+                    </select>
+                    <span className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 material-symbols-outlined text-on-surface-variant/40 text-base">expand_more</span>
+                  </div>
                 </div>
               </div>
 
