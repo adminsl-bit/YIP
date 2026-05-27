@@ -415,9 +415,18 @@ export const SessionManagement = () => {
             started_at: new Date().toISOString() 
           };
           break;
-        case 'pause':
-          updates = { status: 'paused' };
+        case 'pause': {
+          const currentTimer = availableTimers.find(t => t.id === timerId);
+          if (currentTimer) {
+            const serverNow = Date.now() + clockOffsetRef.current;
+            const updatedAt = Date.parse(currentTimer.updated_at);
+            const elapsed = Math.max(0, Math.floor((serverNow - updatedAt) / 1000));
+            updates = { status: 'paused', remaining_seconds: Math.max(0, currentTimer.remaining_seconds - elapsed) };
+          } else {
+            updates = { status: 'paused' };
+          }
           break;
+        }
         case 'stop':
           updates = { status: 'stopped', is_active: false };
           break;
@@ -705,6 +714,15 @@ export const SessionManagement = () => {
               <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${sessionItems.some(i => i.is_active) ? 'bg-secondary/10 text-secondary border-secondary/20' : 'bg-primary/10 text-primary border-primary/10'}`}>
                 {sessionItems.filter(i => i.status === 'completed').length} Done
               </span>
+              <a
+                href="/display/timer"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm shadow-primary/20 hover:bg-primary-container transition-all font-headline"
+              >
+                <span className="material-symbols-outlined text-sm">open_in_new</span>
+                Open Display
+              </a>
             </div>
           </div>
 

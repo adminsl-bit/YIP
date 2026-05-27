@@ -129,7 +129,13 @@ export const TimerManagement = () => {
         let updates: any = {};
         switch (action) {
             case 'start': updates = { status: 'running', started_at: new Date().toISOString() }; break;
-            case 'pause': updates = { status: 'paused' }; break;
+            case 'pause': {
+                const serverNow = Date.now() + clockOffsetRef.current;
+                const updatedAt = Date.parse(timer.updated_at);
+                const elapsed = Math.max(0, Math.floor((serverNow - updatedAt) / 1000));
+                updates = { status: 'paused', remaining_seconds: Math.max(0, timer.remaining_seconds - elapsed) };
+                break;
+            }
             case 'stop': updates = { status: 'stopped' }; break;
             case 'reset': updates = { status: 'stopped', remaining_seconds: timer.duration_seconds, completed_at: null }; break;
         }
