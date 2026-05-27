@@ -62,6 +62,7 @@ interface TimerSession {
   remaining_seconds: number;
   duration_seconds: number;
   updated_at: string;
+  started_at: string | null;
 }
 
 interface Poll {
@@ -161,7 +162,8 @@ export const SessionManagement = () => {
                 status: newRow.status,
                 remaining_seconds: newRow.remaining_seconds,
                 duration_seconds: newRow.duration_seconds,
-                updated_at: newRow.updated_at
+                updated_at: newRow.updated_at,
+                started_at: newRow.started_at ?? null,
               } : t);
             }
             if (eventType === 'INSERT' && newRow) {
@@ -171,7 +173,8 @@ export const SessionManagement = () => {
                 status: newRow.status,
                 remaining_seconds: newRow.remaining_seconds,
                 duration_seconds: newRow.duration_seconds,
-                updated_at: newRow.updated_at
+                updated_at: newRow.updated_at,
+                started_at: newRow.started_at ?? null,
               } as any;
               return [inserted, ...prev.filter(t => t.id !== newRow.id)];
             }
@@ -211,7 +214,7 @@ export const SessionManagement = () => {
     try {
       const { data, error } = await supabase
         .from('timer_sessions')
-        .select('id, title, status, remaining_seconds, duration_seconds, updated_at')
+        .select('id, title, status, remaining_seconds, duration_seconds, updated_at, started_at')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -418,9 +421,8 @@ export const SessionManagement = () => {
         case 'pause': {
           const currentTimer = availableTimers.find(t => t.id === timerId);
           if (currentTimer) {
-            const serverNow = Date.now() + clockOffsetRef.current;
-            const updatedAt = Date.parse(currentTimer.updated_at);
-            const elapsed = Math.max(0, Math.floor((serverNow - updatedAt) / 1000));
+            const startedAt = currentTimer.started_at ? Date.parse(currentTimer.started_at) : Date.now();
+            const elapsed = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
             updates = { status: 'paused', remaining_seconds: Math.max(0, currentTimer.remaining_seconds - elapsed) };
           } else {
             updates = { status: 'paused' };

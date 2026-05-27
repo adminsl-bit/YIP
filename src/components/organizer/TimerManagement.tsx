@@ -21,6 +21,7 @@ interface TimerSession {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  started_at: string | null;
   sort_order: number;
 }
 
@@ -130,9 +131,8 @@ export const TimerManagement = () => {
         switch (action) {
             case 'start': updates = { status: 'running', started_at: new Date().toISOString() }; break;
             case 'pause': {
-                const serverNow = Date.now() + clockOffsetRef.current;
-                const updatedAt = Date.parse(timer.updated_at);
-                const elapsed = Math.max(0, Math.floor((serverNow - updatedAt) / 1000));
+                const startedAt = timer.started_at ? Date.parse(timer.started_at) : Date.now();
+                const elapsed = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
                 updates = { status: 'paused', remaining_seconds: Math.max(0, timer.remaining_seconds - elapsed) };
                 break;
             }
@@ -200,9 +200,8 @@ export const TimerManagement = () => {
             lastRenderRemainingRef.current[timer.id] = timer.remaining_seconds;
             return timer.remaining_seconds;
         }
-        const serverNow = nowTs + clockOffsetRef.current;
-        const updatedAt = Date.parse((timer as any).updated_at);
-        const elapsed = Math.max(0, Math.floor((serverNow - updatedAt) / 1000));
+        const startedAt = timer.started_at ? Date.parse(timer.started_at) : Date.now();
+        const elapsed = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
         const computed = Math.max(0, timer.remaining_seconds - elapsed);
         const last = lastRenderRemainingRef.current[timer.id];
         const monotonic = last === undefined ? computed : Math.min(last, computed);
