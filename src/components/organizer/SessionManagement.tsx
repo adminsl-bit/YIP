@@ -749,47 +749,6 @@ export const SessionManagement = () => {
         {/* Right — Controls sidebar */}
         <aside className="lg:col-span-4 space-y-5">
 
-          {/* Procedure Control Panel */}
-          <div className="bg-gradient-to-br from-primary to-primary-container text-white rounded-3xl p-7 relative overflow-hidden shadow-xl shadow-primary/20 border border-white/5">
-            <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
-            <div className="relative z-10">
-              <h2 className="text-sm font-headline font-black mb-6 flex items-center gap-2.5 text-white">
-                <span className="material-symbols-outlined text-tertiary-container text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>shield_with_house</span>
-                Procedure Control
-              </h2>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3.5 bg-white/10 rounded-2xl border border-white/5 hover:bg-white/15 transition-colors">
-                  <div>
-                    <span className="text-xs font-bold text-white/90 block">Automatic Transition</span>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-white/50">Timed sequence flow</span>
-                  </div>
-                  <Switch
-                    checked={autoTransition}
-                    onCheckedChange={(v) => { setAutoTransition(v); updateProcedureSetting('auto_transition_enabled', v); }}
-                    className="data-[state=checked]:bg-tertiary-container"
-                  />
-                </div>
-                <div className="flex items-center justify-between p-3.5 bg-white/10 rounded-2xl border border-white/5 hover:bg-white/15 transition-colors">
-                  <div>
-                    <span className="text-xs font-bold text-white/90 block">Member Notifications</span>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-white/50">Real-time push alerts</span>
-                  </div>
-                  <Switch
-                    checked={memberNotifications}
-                    onCheckedChange={(v) => { setMemberNotifications(v); updateProcedureSetting('notifications_enabled', v); }}
-                    className="data-[state=checked]:bg-tertiary-container"
-                  />
-                </div>
-              </div>
-              <button
-                onClick={() => toast({ title: "Recess Initiated", description: "Parliamentary break active." })}
-                className="w-full mt-6 py-3 bg-white text-primary rounded-2xl font-headline font-black text-[10px] uppercase tracking-widest hover:bg-white/95 active:scale-95 transition-all shadow-xl shadow-black/10"
-              >
-                Immediate Recess
-              </button>
-            </div>
-          </div>
-
           {/* New Agenda Entry Form */}
           <div className="bg-white border border-outline-variant/10 rounded-3xl p-6 shadow-sm space-y-5">
             <div className="flex items-center gap-3">
@@ -876,6 +835,47 @@ export const SessionManagement = () => {
                   {editingSessionId ? 'Update' : 'Schedule'} <Plus className="w-3 h-3" />
                 </button>
               </div>
+            </div>
+          </div>
+
+          {/* Procedure Control Panel */}
+          <div className="bg-gradient-to-br from-primary to-primary-container text-white rounded-3xl p-7 relative overflow-hidden shadow-xl shadow-primary/20 border border-white/5">
+            <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
+            <div className="relative z-10">
+              <h2 className="text-sm font-headline font-black mb-6 flex items-center gap-2.5 text-white">
+                <span className="material-symbols-outlined text-tertiary-container text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>shield_with_house</span>
+                Procedure Control
+              </h2>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between p-3.5 bg-white/10 rounded-2xl border border-white/5 hover:bg-white/15 transition-colors">
+                  <div>
+                    <span className="text-xs font-bold text-white/90 block">Automatic Transition</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-white/50">Timed sequence flow</span>
+                  </div>
+                  <Switch
+                    checked={autoTransition}
+                    onCheckedChange={(v) => { setAutoTransition(v); updateProcedureSetting('auto_transition_enabled', v); }}
+                    className="data-[state=checked]:bg-tertiary-container"
+                  />
+                </div>
+                <div className="flex items-center justify-between p-3.5 bg-white/10 rounded-2xl border border-white/5 hover:bg-white/15 transition-colors">
+                  <div>
+                    <span className="text-xs font-bold text-white/90 block">Member Notifications</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest text-white/50">Real-time push alerts</span>
+                  </div>
+                  <Switch
+                    checked={memberNotifications}
+                    onCheckedChange={(v) => { setMemberNotifications(v); updateProcedureSetting('notifications_enabled', v); }}
+                    className="data-[state=checked]:bg-tertiary-container"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={() => toast({ title: "Recess Initiated", description: "Parliamentary break active." })}
+                className="w-full mt-6 py-3 bg-white text-primary rounded-2xl font-headline font-black text-[10px] uppercase tracking-widest hover:bg-white/95 active:scale-95 transition-all shadow-xl shadow-black/10"
+              >
+                Immediate Recess
+              </button>
             </div>
           </div>
 
