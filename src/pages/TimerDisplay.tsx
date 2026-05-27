@@ -186,7 +186,7 @@ const TimerDisplay = () => {
   // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="h-screen overflow-hidden bg-background flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center animate-pulse">
             <span className="material-symbols-outlined text-primary text-4xl">timer</span>
@@ -202,9 +202,9 @@ const TimerDisplay = () => {
   // ── No active timer ────────────────────────────────────────────────────────
   if (!timer) {
     return (
-      <div className="min-h-screen bg-background flex flex-col overflow-hidden">
+      <div className="h-screen overflow-hidden bg-background flex flex-col">
         <Header />
-        <main className="flex-grow flex flex-col items-center justify-center gap-6">
+        <main className="flex-1 min-h-0 flex flex-col items-center justify-center gap-6">
           <div className="opacity-5 pointer-events-none select-none">
             <span className="material-symbols-outlined text-primary" style={{ fontSize: '20rem' }}>timer_off</span>
           </div>
@@ -220,59 +220,59 @@ const TimerDisplay = () => {
 
   // ── Main display ───────────────────────────────────────────────────────────
   return (
-    <div className="bg-background text-on-background font-body min-h-screen flex flex-col overflow-hidden">
+    <div className="bg-background text-on-background font-body h-screen overflow-hidden flex flex-col">
 
       <Header timerTitle={timer.title} status={timer.status} />
 
       {/* Main Canvas */}
-      <main className="flex-grow flex flex-col items-center justify-center px-6 relative">
+      <main className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 py-2 relative overflow-hidden">
 
         {/* Background watermark */}
         <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
-          <span className="material-symbols-outlined text-primary" style={{ fontSize: '80vw' }}>timer</span>
+          <span className="material-symbols-outlined text-primary" style={{ fontSize: '70vw' }}>timer</span>
         </div>
 
-        <div className="relative w-full max-w-7xl">
+        <div className="relative w-full max-w-5xl">
 
           {/* Floating badge */}
-          <div className="absolute -top-6 left-1/2 -translate-x-1/2 z-10 glass-panel px-8 py-2.5 rounded-full border border-primary/10 shadow-xl shadow-primary/5 flex items-center gap-3 whitespace-nowrap">
-            <span className="material-symbols-outlined text-primary text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+          <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-10 glass-panel px-6 py-2 rounded-full border border-primary/10 shadow-xl shadow-primary/5 flex items-center gap-2.5 whitespace-nowrap">
+            <span className="material-symbols-outlined text-primary text-lg" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
             <span className="font-headline font-bold text-primary tracking-wide text-sm">{timer.title}</span>
           </div>
 
           {/* Timer card */}
-          <div className="glass-panel rounded-[3rem] p-16 md:p-24 flex flex-col items-center justify-center border border-white shadow-[0_32px_64px_-16px_rgba(19,41,143,0.12)]">
+          <div className="glass-panel rounded-[2.5rem] p-8 md:p-12 flex flex-col items-center justify-center border border-white shadow-[0_24px_48px_-12px_rgba(19,41,143,0.12)]">
 
             {/* Status label */}
-            <div className="flex flex-col items-center gap-4 mb-6">
-              <span className={`font-label font-bold tracking-[0.4em] uppercase text-lg ${statusLabelClass} ${phase === 'expired' ? 'animate-pulse' : ''}`}>
+            <div className="flex flex-col items-center gap-3 mb-4">
+              <span className={`font-label font-bold tracking-[0.4em] uppercase text-base ${statusLabelClass} ${phase === 'expired' ? 'animate-pulse' : ''}`}>
                 {statusLabel}
               </span>
-              <div className="h-1 w-24 bg-primary/20 rounded-full" />
+              <div className="h-0.5 w-20 bg-primary/20 rounded-full" />
             </div>
 
             {/* Clock face */}
             <div
               className={`font-display font-extrabold leading-none tracking-tighter flex items-baseline timer-glow ${timerColorClass} ${phase === 'expired' ? 'animate-pulse' : ''}`}
-              style={{ fontSize: 'clamp(8rem, 22vw, 22rem)' }}
+              style={{ fontSize: 'clamp(5rem, 18vw, 16rem)' }}
             >
               <span>{mins}</span>
-              <span className={`px-4 transition-opacity duration-100 ${colonVisible ? 'opacity-80' : 'opacity-0'}`}>:</span>
+              <span className={`px-3 transition-opacity duration-100 ${colonVisible ? 'opacity-80' : 'opacity-0'}`}>:</span>
               <span>{secs}</span>
             </div>
 
             {/* Allocated time */}
-            <div className="mt-10 flex items-center gap-8">
+            <div className="mt-6 flex items-center gap-6">
               <div className="flex flex-col items-center">
-                <span className="font-label font-bold text-on-surface-variant uppercase tracking-widest opacity-40 text-sm">Allocated</span>
-                <span className="font-headline font-bold text-2xl text-on-surface">{allocatedStr}</span>
+                <span className="font-label font-bold text-on-surface-variant uppercase tracking-widest opacity-40 text-xs">Allocated</span>
+                <span className="font-headline font-bold text-xl text-on-surface">{allocatedStr}</span>
               </div>
               {phase !== 'idle' && (
                 <>
-                  <div className="h-10 w-px bg-outline-variant/30" />
+                  <div className="h-8 w-px bg-outline-variant/30" />
                   <div className="flex flex-col items-center">
-                    <span className="font-label font-bold text-on-surface-variant uppercase tracking-widest opacity-40 text-sm">Remaining</span>
-                    <span className={`font-headline font-bold text-2xl ${timerColorClass}`}>{pct}%</span>
+                    <span className="font-label font-bold text-on-surface-variant uppercase tracking-widest opacity-40 text-xs">Remaining</span>
+                    <span className={`font-headline font-bold text-xl ${timerColorClass}`}>{pct}%</span>
                   </div>
                 </>
               )}
@@ -283,16 +283,16 @@ const TimerDisplay = () => {
       </main>
 
       {/* Progress bar footer */}
-      <footer className="w-full p-12 mt-auto">
-        <div className="max-w-7xl mx-auto space-y-4">
-          <div className="flex justify-between items-end px-2">
+      <footer className="shrink-0 w-full px-10 py-5">
+        <div className="max-w-5xl mx-auto space-y-3">
+          <div className="flex justify-between items-end px-1">
             <div className="flex flex-col">
-              <span className="font-label font-bold text-primary uppercase tracking-tighter">Parliamentary Protocol</span>
-              <span className="font-body text-sm text-on-surface-variant">{timer.title}</span>
+              <span className="font-label font-bold text-primary uppercase tracking-tighter text-xs">Parliamentary Protocol</span>
+              <span className="font-body text-xs text-on-surface-variant">{timer.title}</span>
             </div>
-            <div className={`font-display font-extrabold text-4xl italic ${timerColorClass} opacity-20`}>{pct}%</div>
+            <div className={`font-display font-extrabold text-3xl italic ${timerColorClass} opacity-20`}>{pct}%</div>
           </div>
-          <div className="w-full h-8 bg-surface-container-high rounded-full overflow-hidden p-1 shadow-inner">
+          <div className="w-full h-6 bg-surface-container-high rounded-full overflow-hidden p-1 shadow-inner">
             <div
               className={`h-full bg-gradient-to-r ${progressGradient} rounded-full shadow-lg relative overflow-hidden`}
               style={{ width: `${pct}%`, transition: 'width 1s linear' }}
@@ -324,7 +324,7 @@ const TimerDisplay = () => {
 
 // ── Shared header ──────────────────────────────────────────────────────────────
 const Header = ({ timerTitle, status }: { timerTitle?: string; status?: string }) => (
-  <header className="flex justify-between items-center px-12 py-8 w-full">
+  <header className="flex justify-between items-center px-10 py-4 w-full shrink-0">
     <div className="flex items-center gap-4">
       <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
         <span className="material-symbols-outlined text-white text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
