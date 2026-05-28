@@ -170,55 +170,62 @@ export const DetailedPollResults = ({
   const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
 
   return (
-    <div className="h-full flex flex-col p-4 gap-3 bg-surface-container-low overflow-hidden">
+    <div className="h-full flex flex-col bg-surface-container-low overflow-hidden">
 
-      {/* ── Header ── */}
-      <header className="flex justify-between items-end pb-3 border-b border-outline-variant/10 shrink-0">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="bg-gradient-primary text-white p-1 rounded">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect width="18" height="18" x="3" y="3" rx="2"/><path d="M7 8h10"/><path d="M7 12h10"/><path d="M7 16h10"/>
-              </svg>
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline">
-              Legislative Analytics
-            </span>
+      {/* ── Header — mirrors Timer tab layout ── */}
+      <header className="flex justify-between items-center px-10 py-4 w-full shrink-0">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+            <span className="material-symbols-outlined text-white text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_vote</span>
           </div>
-          <h1 className="text-3xl font-extrabold italic tracking-tight text-primary leading-none font-headline">
-            {pollHeading || pollTitle}
-          </h1>
-          {pollHeading && (
-            <p className="text-xs font-semibold text-on-surface-variant/60 mt-0.5 font-headline">{pollTitle}</p>
-          )}
-          <div className="flex items-center gap-4 mt-2">
-            <span className="flex items-center gap-1 text-xs font-semibold text-on-surface-variant/60">
-              <Users className="w-3.5 h-3.5" />{totalDelegates} DELEGATES
-            </span>
-            <span className="flex items-center gap-1 text-xs font-semibold text-on-surface-variant/60">
-              <Calendar className="w-3.5 h-3.5" />{today}
-            </span>
-            {isOrganizer && (
-              <div className="flex items-center gap-2 ml-2">
-                <button
-                  onClick={downloadCSV}
-                  className="flex items-center gap-1 px-3 py-1 bg-surface-container-lowest border border-outline-variant/10 rounded text-xs font-black text-primary hover:bg-primary hover:text-white transition-colors shadow-sm font-headline"
-                >
-                  <Download className="w-3 h-3" /> CSV
-                </button>
-                <button
-                  onClick={downloadPDF}
-                  className="flex items-center gap-1 px-3 py-1 bg-gradient-primary text-white rounded text-xs font-black hover:opacity-90 transition-opacity shadow-sm font-headline"
-                >
-                  <Download className="w-3 h-3" /> PDF
-                </button>
-              </div>
-            )}
+          <div>
+            <h1 className="font-headline font-extrabold text-2xl tracking-tighter text-primary">National Youth Parliament</h1>
+            <p className="font-body text-xs font-medium text-on-surface-variant uppercase tracking-widest">Legislative Analytics Display</p>
           </div>
         </div>
 
-        {/* Compact stat bars */}
-        <div className="flex gap-6 items-center shrink-0">
+        <div className="flex items-center gap-3">
+          {isOrganizer && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={downloadCSV}
+                className="flex items-center gap-1.5 px-4 py-2 bg-surface-container-lowest border border-outline-variant/10 rounded-full text-xs font-black text-primary hover:bg-primary hover:text-white transition-colors shadow-sm font-headline"
+              >
+                <Download className="w-3 h-3" /> CSV
+              </button>
+              <button
+                onClick={downloadPDF}
+                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-primary text-white rounded-full text-xs font-black hover:opacity-90 transition-opacity shadow-sm font-headline"
+              >
+                <Download className="w-3 h-3" /> PDF
+              </button>
+            </div>
+          )}
+          {/* Poll status pill — mirrors Timer session pill */}
+          <div className="bg-white/70 backdrop-blur-[20px] px-6 py-3 rounded-full flex items-center gap-3 border border-outline-variant/20 shadow-sm">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${isActive ? 'bg-tertiary-container animate-pulse' : 'bg-outline-variant'}`} />
+            <span className="font-headline font-bold text-on-surface-variant text-sm tracking-wide truncate max-w-[280px]">
+              {pollHeading || pollTitle}
+            </span>
+            <div className="w-px h-4 bg-outline-variant/30" />
+            <span className="font-headline font-black text-[10px] uppercase tracking-widest text-on-surface-variant/60">
+              {isActive ? 'LIVE VOTING' : 'CLOSED'}
+            </span>
+          </div>
+        </div>
+      </header>
+
+      {/* ── Stats row ── */}
+      <div className="flex items-center justify-between px-10 pb-3 shrink-0 border-b border-outline-variant/10">
+        <div className="flex items-center gap-5">
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant/60">
+            <Users className="w-3.5 h-3.5" />{totalDelegates} DELEGATES
+          </span>
+          <span className="flex items-center gap-1.5 text-xs font-semibold text-on-surface-variant/60">
+            <Calendar className="w-3.5 h-3.5" />{today}
+          </span>
+        </div>
+        <div className="flex gap-6 items-center">
           {/* House Turnout */}
           <div className="w-44">
             <div className="flex justify-between items-baseline mb-1">
@@ -246,10 +253,10 @@ export const DetailedPollResults = ({
             </div>
           </div>
         </div>
-      </header>
+      </div>
 
       {/* ── Main grid ── */}
-      <div className="flex-1 grid grid-cols-12 gap-3 min-h-0 overflow-hidden">
+      <div className="flex-1 grid grid-cols-12 gap-3 min-h-0 overflow-hidden px-4 pt-3">
 
         {/* Left column */}
         <div className="col-span-3 flex flex-col gap-3 min-h-0">
@@ -389,7 +396,7 @@ export const DetailedPollResults = ({
       </div>
 
       {/* ── Footer ── */}
-      <footer className="flex justify-between items-center text-[10px] text-on-surface-variant/40 font-black border-t border-outline-variant/10 pt-2 shrink-0 font-headline">
+      <footer className="flex justify-between items-center text-[10px] text-on-surface-variant/40 font-black border-t border-outline-variant/10 px-4 py-2 shrink-0 font-headline">
         <div className="flex gap-4">
           <span>DEVICE: WEB_PORTAL_01</span>
           <span>SECURITY: ENCRYPTED_LEDGER</span>
