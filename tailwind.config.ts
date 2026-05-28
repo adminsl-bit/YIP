@@ -113,6 +113,10 @@ export default {
 				'on-surface-variant': 'hsl(var(--on-surface-variant))',
 				'outline-color': 'hsl(var(--outline))',
 				'outline-variant': 'hsl(var(--outline-variant))',
+				'on-primary': 'hsl(var(--on-primary))',
+				'on-secondary': 'hsl(var(--on-secondary))',
+				'on-tertiary': 'hsl(var(--on-tertiary))',
+				'on-error': 'hsl(var(--on-primary))', // fallback to white
 				'on-primary-container': 'hsl(var(--on-primary-container))',
 				'on-primary-fixed': 'hsl(var(--on-primary-fixed))',
 				'on-secondary-container': 'hsl(var(--on-secondary-container))',

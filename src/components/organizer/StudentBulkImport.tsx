@@ -29,6 +29,7 @@ export const StudentBulkImport = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
   const [progress, setProgress] = useState(0);
   const [importMode, setImportMode] = useState<'full' | 'scores-only'>('full');
   const [results, setResults] = useState<{
@@ -50,7 +51,7 @@ export const StudentBulkImport = () => {
     return url;
   };
 
-  const parseExcelFile = (file: File): Promise<StudentData[]> => {
+  const parseExcelFile = (file: File, mode: 'full' | 'scores-only' = 'full'): Promise<StudentData[]> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -91,8 +92,14 @@ export const StudentBulkImport = () => {
             const password = getColumnValue(['password', 'Password']);
             const preeventScores = getColumnValue(['Preevent scores', 'preevent_scores', 'Pre-event scores']);
 
-            if (!name || !serialNumber || !loginId || !password) {
-              throw new Error(`Row ${index + 2}: Missing required fields (Serial no, Login, Name, or Password)`);
+            if (mode === 'scores-only') {
+              if (!serialNumber) {
+                throw new Error(`Row ${index + 2}: Missing required field (Serial no)`);
+              }
+            } else {
+              if (!name || !serialNumber || !loginId || !password) {
+                throw new Error(`Row ${index + 2}: Missing required fields (Serial no, Login, Name, or Password)`);
+              }
             }
 
             return {
@@ -164,7 +171,7 @@ export const StudentBulkImport = () => {
     setResults(null);
 
     try {
-      const students = await parseExcelFile(file);
+      const students = await parseExcelFile(file, importMode);
       const importResults = await importStudents(students);
       setResults(importResults);
       
@@ -215,60 +222,53 @@ export const StudentBulkImport = () => {
     }
   };
 
-  const downloadTemplate = () => {
-    const template = [
-      {
-        'Serial no': 1,
-        'Name': 'John Doe',
-        'seat role': 'Member of Parliament',
-        'Alliance': 'Ruling',
-        'Party': 'A',
-        'Party Name': 'SAMPLE PARTY',
-        'Committee': '1',
-        'constituency': 'Mumbai Central',
-        'state': 'Maharashtra',
-        'home city': 'Mumbai',
-        'Login': 'YIP0001',
-        'password': 'student123',
-        'Preevent scores': ''
-      },
-      {
-        'Serial no': 2,
-        'Name': 'Jane Smith',
-        'seat role': 'Administrator',
-        'Alliance': 'Neutral',
-        'Party': 'No Party',
-        'Party Name': 'No Party',
-        'Committee': '1',
-        'constituency': 'Delhi',
-        'state': 'NCT Delhi',
-        'home city': 'Delhi',
-        'Login': 'YIP0002',
-        'password': 'admin123',
-        'Preevent scores': ''
-      },
-      {
-        'Serial no': 3,
-        'Name': 'Bob Reporter',
-        'seat role': 'Journalist',
-        'Alliance': 'Neutral',
-        'Party': 'No Party',
-        'Party Name': 'No Party',
-        'Committee': '1',
-        'constituency': 'Bangalore',
-        'state': 'Karnataka',
-        'home city': 'Bangalore',
-        'Login': 'YIP0003',
-        'password': 'journalist123',
-        'Preevent scores': ''
+  const downloadTemplate = async () => {
+    setIsDownloadingTemplate(true);
+    try {
+      if (importMode === 'scores-only') {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('serial_number, name, position, party_number, party_name, constituency, state, city')
+          .eq('user_type', 'student')
+          .order('serial_number');
+        if (error) throw error;
+        if (!data || data.length === 0) {
+          toast.error('No students found — run a Full Import first');
+          return;
+        }
+        const rows = data.map(s => ({
+          'Serial no': s.serial_number,
+          'Name': s.name,
+          'seat role': s.position || '',
+          'Party': s.party_number || '',
+          'Party Name': s.party_name || '',
+          'constituency': s.constituency || '',
+          'state': s.state || '',
+          'home city': s.city || '',
+          'Preevent scores': '',
+        }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Students');
+        XLSX.writeFile(wb, 'preevent_scores_template.xlsx');
+        toast.success(`Downloaded ${rows.length} students — fill in "Preevent scores" and re-upload`);
+      } else {
+        const template = [
+          { 'Serial no': 1, 'Name': 'John Doe', 'seat role': 'Member of Parliament', 'Alliance': 'Ruling', 'Party': 'A', 'Party Name': 'SAMPLE PARTY', 'Committee': '1', 'constituency': 'Mumbai Central', 'state': 'Maharashtra', 'home city': 'Mumbai', 'Login': 'YIP0001', 'password': 'student123', 'Preevent scores': '' },
+          { 'Serial no': 2, 'Name': 'Jane Smith', 'seat role': 'Administrator', 'Alliance': 'Neutral', 'Party': 'No Party', 'Party Name': 'No Party', 'Committee': '1', 'constituency': 'Delhi', 'state': 'NCT Delhi', 'home city': 'Delhi', 'Login': 'YIP0002', 'password': 'admin123', 'Preevent scores': '' },
+          { 'Serial no': 3, 'Name': 'Bob Reporter', 'seat role': 'Journalist', 'Alliance': 'Neutral', 'Party': 'No Party', 'Party Name': 'No Party', 'Committee': '1', 'constituency': 'Bangalore', 'state': 'Karnataka', 'home city': 'Bangalore', 'Login': 'YIP0003', 'password': 'journalist123', 'Preevent scores': '' },
+        ];
+        const ws = XLSX.utils.json_to_sheet(template);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Students');
+        XLSX.writeFile(wb, 'student_import_template.xlsx');
+        toast.success('Template downloaded — replace sample rows with your delegate data');
       }
-    ];
-    
-    const ws = XLSX.utils.json_to_sheet(template);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Students');
-    XLSX.writeFile(wb, 'student_import_template.xlsx');
-    toast.success("Template downloaded successfully");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to download template');
+    } finally {
+      setIsDownloadingTemplate(false);
+    }
   };
 
   return (
@@ -387,10 +387,11 @@ export const StudentBulkImport = () => {
             <Button
               onClick={downloadTemplate}
               variant="outline"
+              disabled={isDownloadingTemplate}
               className="flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
-              Download Template
+              {isDownloadingTemplate ? 'Downloading...' : 'Download Template'}
             </Button>
             
             <div className="flex-1">

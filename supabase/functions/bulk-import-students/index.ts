@@ -190,6 +190,12 @@ serve(async (req) => {
             user_type: 'student',
           };
 
+          // Map alliance to party_alignment
+          const allianceRaw = (student.alliance ?? '').toLowerCase().trim();
+          if (allianceRaw === 'ruling') updateData.party_alignment = 'ruling_party';
+          else if (allianceRaw === 'opposition') updateData.party_alignment = 'opposition';
+          else updateData.party_alignment = 'non_aligned';
+
           // Only update preevent_scores if provided
           if (student.preeventScores !== undefined && student.preeventScores !== null) {
             updateData.preevent_scores = student.preeventScores;
@@ -241,6 +247,11 @@ serve(async (req) => {
           userId = authData.user.id;
 
           // Create new profile
+          const allianceRaw = (student.alliance ?? '').toLowerCase().trim();
+          const partyAlignment = allianceRaw === 'ruling' ? 'ruling_party'
+            : allianceRaw === 'opposition' ? 'opposition'
+            : 'non_aligned';
+
           const profileData: any = {
             user_id: authData.user.id,
             serial_number: student.serialNumber,
@@ -248,6 +259,7 @@ serve(async (req) => {
             position: student.seatRole,
             party_number: partyNumber,
             party_name: student.partyName,
+            party_alignment: partyAlignment,
             committee: student.committee,
             constituency: student.constituency,
             state: student.state,

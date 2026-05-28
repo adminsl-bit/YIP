@@ -26,7 +26,6 @@ import { TimerManagement } from "@/components/organizer/TimerManagement";
 import { SessionManagement } from "@/components/organizer/SessionManagement";
 import { PollManagement } from "@/components/organizer/PollManagement";
 import { SecurityLogsManager } from "@/components/organizer/SecurityLogsManager";
-import { OrganizerStats } from "@/components/organizer/OrganizerStats";
 import { OrganizerStudentList } from "@/components/organizer/OrganizerStudentList";
 import { StudentBulkImport } from "@/components/organizer/StudentBulkImport";
 import { DynamicRoleCreator } from "@/components/organizer/DynamicRoleCreator";
@@ -167,6 +166,8 @@ const OrganizerDashboard = () => {
             <NavTrigger value="polls"          icon="how_to_vote"         label="Ballot" />
             <NavTrigger value="square"         icon="forum"               label="Civic Chat" />
             <NavTrigger value="students"       icon="group"               label="Students" />
+            <NavTrigger value="bulk-import"    icon="upload_file"         label="Bulk Import" />
+            <NavTrigger value="role-creator"   icon="manage_accounts"     label="Role Creator" />
             <NavTrigger value="security"       icon="security"            label="Security" />
             <NavTrigger value="leaderboard"    icon="leaderboard"         label="Leaderboard" />
             <NavTrigger value="awards"         icon="emoji_events"        label="Awards" />
@@ -220,6 +221,8 @@ const OrganizerDashboard = () => {
                     <ModuleButton label="Ballot"         icon="how_to_vote"       onClick={() => setActiveTab('polls')} />
                     <ModuleButton label="Civic Chat"     icon="forum"             onClick={() => setActiveTab('square')} />
                     <ModuleButton label="Students"       icon="group"             onClick={() => setActiveTab('students')} />
+                    <ModuleButton label="Bulk Import"    icon="upload_file"       onClick={() => setActiveTab('bulk-import')} />
+                    <ModuleButton label="Role Creator"   icon="manage_accounts"   onClick={() => setActiveTab('role-creator')} />
                     <ModuleButton label="Security"       icon="security"          onClick={() => setActiveTab('security')} />
                     <ModuleButton label="Leaderboard"    icon="leaderboard"       onClick={() => setActiveTab('leaderboard')} />
                     <ModuleButton label="Awards"         icon="emoji_events"      onClick={() => setActiveTab('awards')} />
@@ -295,46 +298,31 @@ const OrganizerDashboard = () => {
                 <GlobalSquare />
               </TabsContent>
 
-              <TabsContent value="students" className="m-0 space-y-8">
-                <PageHeader primary="Student" secondary="Roster" icon={<GraduationCap className="w-3 h-3" />} subtitle="Delegate Registry & Bulk Tools" />
-                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm"><OrganizerStudentList /></div>
+              <TabsContent value="students" className="m-0">
+                <OrganizerStudentList />
+              </TabsContent>
+
+              <TabsContent value="bulk-import" className="m-0 space-y-8">
+                <PageHeader primary="Bulk" secondary="Import" icon={<span className="material-symbols-outlined text-[12px]">upload_file</span>} subtitle="Excel-Based Student Provisioning" />
                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
-                  <div className="mb-6">
-                    <h2 className="text-xl font-extrabold font-headline text-primary">Parliament <span className="text-secondary">Analytics</span></h2>
-                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Party distribution, roles & assessment progress</p>
-                  </div>
-                  <OrganizerStats />
+                  <StudentBulkImport />
+                </div>
+              </TabsContent>
+
+              <TabsContent value="role-creator" className="m-0 space-y-8">
+                <PageHeader primary="Role" secondary="Creator" icon={<span className="material-symbols-outlined text-[12px]">manage_accounts</span>} subtitle="Dynamic Parliamentary Role Mapping" />
+                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
+                  <DynamicRoleCreator />
                 </div>
                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
-                  <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="bulk" className="border-none">
-                      <AccordionTrigger className="hover:no-underline py-0">
-                        <div className="flex items-center gap-5">
-                          <div className="w-12 h-12 bg-tertiary/8 rounded-2xl flex items-center justify-center text-tertiary">
-                            <span className="material-symbols-outlined text-2xl">upload_file</span>
-                          </div>
-                          <div className="text-left">
-                            <h3 className="text-xl font-extrabold font-headline text-on-surface">Bulk Student Tools</h3>
-                            <p className="text-[10px] text-on-surface-variant/50 font-black uppercase tracking-[0.3em] mt-1">Import from Excel and dynamic role mapping</p>
-                          </div>
-                        </div>
-                      </AccordionTrigger>
-                      <AccordionContent className="pt-8">
-                        <StudentBulkImport />
-                        <div className="mt-8 pt-8 border-t border-outline-variant/10">
-                          <DynamicRoleCreator />
-                        </div>
-                        <div className="mt-8 pt-8 border-t border-outline-variant/10">
-                          <h3 className="text-sm font-extrabold font-headline text-on-surface mb-1">Quick Account Creation</h3>
-                          <p className="text-[10px] text-on-surface-variant/50 font-black uppercase tracking-[0.3em] mb-5">Provision admin and jury accounts via edge function</p>
-                          <div className="flex flex-wrap gap-3">
-                            <CreateAdminUsers />
-                            <CreateJuryUsers />
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
+                  <div className="mb-6">
+                    <h2 className="text-xl font-extrabold font-headline text-primary">Quick Account <span className="text-secondary">Creation</span></h2>
+                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Provision admin and jury accounts via edge function</p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <CreateAdminUsers />
+                    <CreateJuryUsers />
+                  </div>
                 </div>
               </TabsContent>
 

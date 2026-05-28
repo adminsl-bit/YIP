@@ -1,15 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { PartyBadge } from "@/components/ui/party-badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Camera, Save, X, MapPin, Hash, Users } from "lucide-react";
+import { Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/hooks/useAuth';
@@ -32,14 +26,21 @@ interface Student {
   is_active?: boolean;
 }
 
+const PARTY_LETTERS = ['A','B','C','D','E','F','G','H','I','J'] as const;
+
 interface StudentEditDialogProps {
   student: Student | null;
   isOpen: boolean;
   onClose: () => void;
   onSave: () => void;
+  /** Derived from live student data: [party_number, party_name | null][] */
+  parties?: [number, string | null][];
+  constituencies?: string[];
+  committees?: string[];
+  partyNames?: string[];
 }
 
-export const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentEditDialogProps) => {
+export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = [], constituencies = [], committees = [], partyNames = [] }: StudentEditDialogProps) => {
   const [formData, setFormData] = useState<Partial<Student>>({});
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -186,324 +187,166 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave }: StudentE
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpen}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <Users className="w-6 h-6 text-blue-600" />
-            Edit Student Details
-          </DialogTitle>
-          <DialogDescription>
-            Update student information and profile details
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-surface-container-lowest max-w-2xl max-h-[92vh] overflow-y-auto p-0">
+        <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary to-primary-container rounded-t-[2.5rem]" />
 
-        <div className="space-y-6">
-          {/* Profile Section */}
-          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-            <CardContent className="p-6">
-              <div className="flex items-center gap-6">
-                <div className="relative">
-                  <Avatar className="w-24 h-24 border-4 border-white shadow-lg">
-                    <AvatarImage 
-                      src={formData.photo_url} 
-                      alt={formData.name}
-                      className="object-cover"
-                    />
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-2xl font-bold">
-                      {formData.name?.split(' ').map(n => n[0]).join('') || 'ST'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <label className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center cursor-pointer shadow-lg transition-colors">
-                    <Camera className="w-4 h-4 text-white" />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-                
-                <div className="flex-1 space-y-2">
-                  <div className="flex items-center gap-3">
-                    <Badge variant="outline" className="bg-white border-blue-300 text-blue-700">
-                      #{formData.serial_number}
-                    </Badge>
-                    <PartyBadge partyNumber={formData.party_number || 1} size="sm" />
-                    {formData.party_name && (
-                      <Badge variant="secondary" className="bg-white/80 text-slate-700 text-xs">
-                        {formData.party_name}
-                      </Badge>
-                    )}
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-800">{formData.name}</h3>
-                  <p className="text-slate-600 font-medium">{formData.position}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Form Fields */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <Label htmlFor="name" className="text-sm font-medium text-slate-700">
-                Full Name *
-              </Label>
-              <Input
-                id="name"
-                value={formData.name || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                placeholder="Enter full name"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="position" className="text-sm font-medium text-slate-700">
-                Position/Role
-              </Label>
-              <Select 
-                value={formData.position || ''} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}
-              >
-                <SelectTrigger id="position" className="mt-1">
-                  <SelectValue placeholder="Select position/role" />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50 max-h-60 overflow-y-auto">
-                  <SelectItem value="Speaker">Speaker</SelectItem>
-                  <SelectItem value="Deputy Speaker">Deputy Speaker</SelectItem>
-                  <SelectItem value="Member of Parliament">Member of Parliament</SelectItem>
-                  <SelectItem value="MP">MP</SelectItem>
-                  <SelectItem value="Minister">Minister</SelectItem>
-                  <SelectItem value="Prime Minister">Prime Minister</SelectItem>
-                  <SelectItem value="President">President</SelectItem>
-                  <SelectItem value="Opposition Leader">Opposition Leader</SelectItem>
-                  <SelectItem value="Leader of Opposition">Leader of Opposition</SelectItem>
-                  <SelectItem value="Administrator">Administrator</SelectItem>
-                  <SelectItem value="Admin">Admin</SelectItem>
-                  <SelectItem value="Chief Minister">Chief Minister</SelectItem>
-                  <SelectItem value="Cabinet Minister">Cabinet Minister</SelectItem>
-                  <SelectItem value="State Minister">State Minister</SelectItem>
-                  <SelectItem value="Parliamentary Secretary">Parliamentary Secretary</SelectItem>
-                  <SelectItem value="Shadow Minister of Finance">Shadow Minister of Finance</SelectItem>
-                  <SelectItem value="Shadow Minister of Home Affairs">Shadow Minister of Home Affairs</SelectItem>
-                  <SelectItem value="Shadow Minister of Defence">Shadow Minister of Defence</SelectItem>
-                  <SelectItem value="Shadow Minister of External Affairs">Shadow Minister of External Affairs</SelectItem>
-                  <SelectItem value="Shadow Minister of Information Technology">Shadow Minister of Information Technology</SelectItem>
-                  <SelectItem value="Shadow Minister of Information, Broadcasting & Technology">Shadow Minister of Information, Broadcasting & Technology</SelectItem>
-                  <SelectItem value="Shadow Minister of Education">Shadow Minister of Education</SelectItem>
-                  <SelectItem value="Shadow Minister of Women & Child Development">Shadow Minister of Women & Child Development</SelectItem>
-                  <SelectItem value="Shadow Minister of Youth Affairs & Sports">Shadow Minister of Youth Affairs & Sports</SelectItem>
-                  <SelectItem value="Shadow Minister of Health & Family Welfare">Shadow Minister of Health & Family Welfare</SelectItem>
-                  <SelectItem value="Shadow Minister of Social Justice & Empowerment">Shadow Minister of Social Justice & Empowerment</SelectItem>
-                  <SelectItem value="Shadow Minister of Environment, Forest & Climate Change">Shadow Minister of Environment, Forest & Climate Change</SelectItem>
-                  <SelectItem value="Shadow Minister of Labour & Employment">Shadow Minister of Labour & Employment</SelectItem>
-                  <SelectItem value="Shadow Minister of Road Transport and Highways">Shadow Minister of Road Transport and Highways</SelectItem>
-                  <SelectItem value="Shadow Minister of Tourism and Culture">Shadow Minister of Tourism and Culture</SelectItem>
-                  {/* Cabinet Ministers */}
-                  <SelectItem value="Minister of Finance">Minister of Finance</SelectItem>
-                  <SelectItem value="Minister of Home Affairs">Minister of Home Affairs</SelectItem>
-                  <SelectItem value="Minister of Defence">Minister of Defence</SelectItem>
-                  <SelectItem value="Minister of External Affairs">Minister of External Affairs</SelectItem>
-                  <SelectItem value="Minister of Information, Broadcasting & Technology">Minister of Information, Broadcasting & Technology</SelectItem>
-                  <SelectItem value="Minister of Education">Minister of Education</SelectItem>
-                  <SelectItem value="Minister of Women & Child Development">Minister of Women & Child Development</SelectItem>
-                  <SelectItem value="Minister of Youth Affairs & Sports">Minister of Youth Affairs & Sports</SelectItem>
-                  <SelectItem value="Minister of Health & Family Welfare">Minister of Health & Family Welfare</SelectItem>
-                  <SelectItem value="Minister of Social Justice & Empowerment">Minister of Social Justice & Empowerment</SelectItem>
-                  <SelectItem value="Minister of Environment, Forest & Climate Change">Minister of Environment, Forest & Climate Change</SelectItem>
-                  <SelectItem value="Minister of Labour & Employment">Minister of Labour & Employment</SelectItem>
-                  <SelectItem value="Minister of Road Transport and Highways">Minister of Road Transport and Highways</SelectItem>
-                  <SelectItem value="Minister of Tourism and Culture">Minister of Tourism and Culture</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="serial" className="text-sm font-medium text-slate-700">
-                Serial Number
-              </Label>
-              <div className="relative mt-1">
-                <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  id="serial"
-                  type="number"
-                  value={formData.serial_number || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, serial_number: parseInt(e.target.value) || 0 }))}
-                  placeholder="Serial number"
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="party" className="text-sm font-medium text-slate-700">
-                Party Number
-              </Label>
-              <Select 
-                value={formData.party_number?.toString() || ''} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, party_number: parseInt(value) }))}
-              >
-                <SelectTrigger id="party" className="mt-1">
-                  <SelectValue placeholder="Select party" />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => {
-                    const partyLetter = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'][num - 1];
-                    return (
-                      <SelectItem key={num} value={num.toString()}>Party {partyLetter}</SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="party_name" className="text-sm font-medium text-slate-700">
-                Custom Party Name
-              </Label>
-              <Input
-                id="party_name"
-                value={formData.party_name || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, party_name: e.target.value }))}
-                placeholder="Enter party name"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="email" className="text-sm font-medium text-slate-700">
-                Login ID
-              </Label>
-              <Input
-                id="email"
-                type="text"
-                value={formData.email?.split('@')[0] || ''}
-                onChange={(e) => {
-                  const loginId = e.target.value;
-                  const domain = formData.email?.includes('@') ? formData.email.split('@')[1] : 'yip.parliament';
-                  setFormData(prev => ({ ...prev, email: `${loginId}@${domain}` }));
-                }}
-                placeholder="YIP0001"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="constituency" className="text-sm font-medium text-slate-700">
-                Constituency
-              </Label>
-              <Input
-                id="constituency"
-                value={formData.constituency || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, constituency: e.target.value }))}
-                placeholder="Enter constituency"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="committee" className="text-sm font-medium text-slate-700">
-                Parliamentary Committee
-              </Label>
-              <Input
-                id="committee"
-                value={formData.committee || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, committee: e.target.value }))}
-                placeholder="Enter committee name"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="state" className="text-sm font-medium text-slate-700">
-                State
-              </Label>
-              <Select 
-                value={formData.state || ''} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, state: value }))}
-              >
-                <SelectTrigger id="state" className="mt-1">
-                  <SelectValue placeholder="Select state" />
-                </SelectTrigger>
-                <SelectContent className="bg-background z-50 max-h-60 overflow-y-auto">
-                  <SelectItem value="Andhra Pradesh">Andhra Pradesh</SelectItem>
-                  <SelectItem value="Arunachal Pradesh">Arunachal Pradesh</SelectItem>
-                  <SelectItem value="Assam">Assam</SelectItem>
-                  <SelectItem value="Bihar">Bihar</SelectItem>
-                  <SelectItem value="Chhattisgarh">Chhattisgarh</SelectItem>
-                  <SelectItem value="Goa">Goa</SelectItem>
-                  <SelectItem value="Gujarat">Gujarat</SelectItem>
-                  <SelectItem value="Haryana">Haryana</SelectItem>
-                  <SelectItem value="Himachal Pradesh">Himachal Pradesh</SelectItem>
-                  <SelectItem value="Jharkhand">Jharkhand</SelectItem>
-                  <SelectItem value="Karnataka">Karnataka</SelectItem>
-                  <SelectItem value="Kerala">Kerala</SelectItem>
-                  <SelectItem value="Madhya Pradesh">Madhya Pradesh</SelectItem>
-                  <SelectItem value="Maharashtra">Maharashtra</SelectItem>
-                  <SelectItem value="Manipur">Manipur</SelectItem>
-                  <SelectItem value="Meghalaya">Meghalaya</SelectItem>
-                  <SelectItem value="Mizoram">Mizoram</SelectItem>
-                  <SelectItem value="Nagaland">Nagaland</SelectItem>
-                  <SelectItem value="Odisha">Odisha</SelectItem>
-                  <SelectItem value="Punjab">Punjab</SelectItem>
-                  <SelectItem value="Rajasthan">Rajasthan</SelectItem>
-                  <SelectItem value="Sikkim">Sikkim</SelectItem>
-                  <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
-                  <SelectItem value="Telangana">Telangana</SelectItem>
-                  <SelectItem value="Tripura">Tripura</SelectItem>
-                  <SelectItem value="Uttar Pradesh">Uttar Pradesh</SelectItem>
-                  <SelectItem value="Uttarakhand">Uttarakhand</SelectItem>
-                  <SelectItem value="West Bengal">West Bengal</SelectItem>
-                  <SelectItem value="Delhi">Delhi</SelectItem>
-                  <SelectItem value="Jammu and Kashmir">Jammu and Kashmir</SelectItem>
-                  <SelectItem value="Ladakh">Ladakh</SelectItem>
-                  <SelectItem value="Puducherry">Puducherry</SelectItem>
-                  <SelectItem value="Chandigarh">Chandigarh</SelectItem>
-                  <SelectItem value="Andaman and Nicobar Islands">Andaman and Nicobar Islands</SelectItem>
-                  <SelectItem value="Dadra and Nagar Haveli and Daman and Diu">Dadra and Nagar Haveli and Daman and Diu</SelectItem>
-                  <SelectItem value="Lakshadweep">Lakshadweep</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="city" className="text-sm font-medium text-slate-700">
-                Home City
-              </Label>
-              <div className="relative mt-1">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input
-                  id="city"
-                  value={formData.city || ''}
-                  onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-                  placeholder="Enter home city"
-                  className="pl-10"
-                />
-              </div>
+        {/* Compact header */}
+        <div className="flex items-center gap-4 px-8 pt-8 pb-5">
+          <div className="relative shrink-0">
+            <Avatar className="w-14 h-14 rounded-2xl ring-4 ring-surface-container">
+              <AvatarImage src={formData.photo_url} alt={formData.name} className="object-cover" />
+              <AvatarFallback className="bg-primary-fixed/30 text-primary font-black rounded-2xl font-headline text-lg">
+                {formData.name?.split(' ').map(n => n[0]).join('') || 'ST'}
+              </AvatarFallback>
+            </Avatar>
+            <label className="absolute -bottom-1 -right-1 w-6 h-6 bg-primary rounded-full flex items-center justify-center cursor-pointer shadow-md hover:bg-primary/80 transition-colors">
+              <Camera className="w-3 h-3 text-white" />
+              <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" />
+            </label>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h2 className="text-xl font-black text-on-surface font-headline truncate">{formData.name || 'Edit Student'}</h2>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="font-mono text-[10px] font-bold text-primary bg-primary/8 px-2 py-0.5 rounded-md">#{(formData.serial_number ?? 0).toString().padStart(3, '0')}</span>
+              <span className="text-[10px] font-bold text-on-surface-variant font-body truncate">{formData.position || 'Delegate'}</span>
             </div>
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-3 justify-end pt-4">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              disabled={loading}
-              className="flex items-center gap-2"
-            >
-              <X className="w-4 h-4" />
-              Cancel
-            </Button>
-            <Button
-              onClick={handleSave}
-              disabled={loading}
-              className="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-            >
-              <Save className="w-4 h-4" />
-              {loading ? 'Saving...' : 'Save Changes'}
-            </Button>
+        {/* Fields */}
+        <div className="grid grid-cols-2 gap-3 px-8 pb-2">
+
+          {/* Row 1: Name (full width) */}
+          <div className="col-span-2 space-y-1">
+            <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Full Name *</label>
+            <Input
+              value={formData.name || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="Full name"
+              className="h-11 bg-surface-container border-none rounded-2xl font-bold px-4 focus:ring-2 focus:ring-primary/20"
+            />
           </div>
+
+          {/* Row 2: Role + Login ID */}
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Role</label>
+            <Select value={formData.position || ''} onValueChange={(v) => setFormData(prev => ({ ...prev, position: v }))}>
+              <SelectTrigger className="h-11 bg-surface-container border-none rounded-2xl font-bold px-4 focus:ring-2 focus:ring-primary/20 text-sm">
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent className="bg-surface-container-lowest border-none rounded-2xl shadow-elevated z-50 max-h-56 overflow-y-auto">
+                {["Speaker","Deputy Speaker","Member of Parliament","MP","Minister","Prime Minister","President","Opposition Leader","Leader of Opposition","Administrator","Admin","Chief Minister","Cabinet Minister","State Minister","Parliamentary Secretary","Journalist","Shadow Minister of Finance","Shadow Minister of Home Affairs","Shadow Minister of Defence","Shadow Minister of External Affairs","Shadow Minister of Education","Shadow Minister of Women & Child Development","Shadow Minister of Youth Affairs & Sports","Shadow Minister of Health & Family Welfare","Shadow Minister of Social Justice & Empowerment","Shadow Minister of Environment, Forest & Climate Change","Shadow Minister of Labour & Employment","Shadow Minister of Road Transport and Highways","Shadow Minister of Tourism and Culture","Minister of Finance","Minister of Home Affairs","Minister of Defence","Minister of External Affairs","Minister of Education","Minister of Women & Child Development","Minister of Youth Affairs & Sports","Minister of Health & Family Welfare","Minister of Social Justice & Empowerment","Minister of Environment, Forest & Climate Change","Minister of Labour & Employment","Minister of Road Transport and Highways","Minister of Tourism and Culture"].map(r => (
+                  <SelectItem key={r} value={r}>{r}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Login ID</label>
+            <Input
+              value={formData.email?.split('@')[0] || ''}
+              onChange={(e) => {
+                const domain = formData.email?.includes('@') ? formData.email.split('@')[1] : 'yip.parliament';
+                setFormData(prev => ({ ...prev, email: `${e.target.value}@${domain}` }));
+              }}
+              placeholder="login.id"
+              className="h-11 bg-surface-container border-none rounded-2xl font-bold px-4 focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+          {/* Row 3: Party + Party Name */}
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Party</label>
+            <Select value={formData.party_number?.toString() || '0'} onValueChange={(v) => setFormData(prev => ({ ...prev, party_number: parseInt(v) }))}>
+              <SelectTrigger className="h-11 bg-surface-container border-none rounded-2xl font-bold px-4 focus:ring-2 focus:ring-primary/20 text-sm">
+                <SelectValue placeholder="Select party" />
+              </SelectTrigger>
+              <SelectContent className="bg-surface-container-lowest border-none rounded-2xl shadow-elevated z-50">
+                <SelectItem value="0">No Party</SelectItem>
+                {parties.length > 0
+                  ? parties.map(([num, name]) => {
+                      const letter = PARTY_LETTERS[num - 1] ?? num.toString();
+                      return <SelectItem key={num} value={num.toString()}>{name ? `${name} (${letter})` : `Party ${letter}`}</SelectItem>;
+                    })
+                  : PARTY_LETTERS.map((letter, idx) => (
+                      <SelectItem key={letter} value={(idx + 1).toString()}>Party {letter}</SelectItem>
+                    ))
+                }
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Party Name</label>
+            <input
+              list="edit-party-names"
+              value={formData.party_name || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, party_name: e.target.value }))}
+              placeholder="Type or select"
+              className="w-full h-11 bg-surface-container border-none rounded-2xl font-bold px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
+            />
+            <datalist id="edit-party-names">{partyNames.map(n => <option key={n} value={n} />)}</datalist>
+          </div>
+
+          {/* Row 4: Committee + Constituency */}
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Committee</label>
+            <input
+              list="edit-committees"
+              value={formData.committee || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, committee: e.target.value }))}
+              placeholder="Type or select committee"
+              className="w-full h-11 bg-surface-container border-none rounded-2xl font-bold px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
+            />
+            <datalist id="edit-committees">{committees.map(c => <option key={c} value={c} />)}</datalist>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Constituency</label>
+            <input
+              list="edit-constituencies"
+              value={formData.constituency || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, constituency: e.target.value }))}
+              placeholder="Type or select constituency"
+              className="w-full h-11 bg-surface-container border-none rounded-2xl font-bold px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
+            />
+            <datalist id="edit-constituencies">{constituencies.map(c => <option key={c} value={c} />)}</datalist>
+          </div>
+
+          {/* Row 5: State + City */}
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">State</label>
+            <Select value={formData.state || ''} onValueChange={(v) => setFormData(prev => ({ ...prev, state: v }))}>
+              <SelectTrigger className="h-11 bg-surface-container border-none rounded-2xl font-bold px-4 focus:ring-2 focus:ring-primary/20 text-sm">
+                <SelectValue placeholder="Select state" />
+              </SelectTrigger>
+              <SelectContent className="bg-surface-container-lowest border-none rounded-2xl shadow-elevated z-50 max-h-56 overflow-y-auto">
+                {["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Ladakh","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Jammu and Kashmir","Puducherry","Chandigarh","Andaman and Nicobar Islands","Dadra and Nagar Haveli and Daman and Diu","Lakshadweep"].map(s => (
+                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">City</label>
+            <Input
+              value={formData.city || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
+              placeholder="Home city"
+              className="h-11 bg-surface-container border-none rounded-2xl font-bold px-4 focus:ring-2 focus:ring-primary/20"
+            />
+          </div>
+
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-3 px-8 py-6">
+          <button type="button" onClick={onClose} className="flex-1 py-3.5 text-[10px] font-black uppercase tracking-widest text-on-surface-variant font-body">Cancel</button>
+          <button
+            onClick={handleSave}
+            disabled={loading}
+            className="flex-1 py-3.5 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-[0_8px_24px_rgba(19,41,143,0.25)] hover:scale-[1.02] active:scale-95 transition-all font-body disabled:opacity-60"
+          >
+            {loading ? 'Saving…' : 'Save Changes'}
+          </button>
         </div>
       </DialogContent>
     </Dialog>
