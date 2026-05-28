@@ -1,13 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertTriangle, LogOut, Filter, Search, Clock, FileText, Eye, Activity, Shield } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface DuplicateLogin {
@@ -65,648 +58,411 @@ export const SecurityLogsManager = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("audit");
+  const [activeTab, setActiveTab] = useState<'audit' | 'access'>("audit");
 
   useEffect(() => {
     fetchAllData();
-    
-    // Set up real-time subscriptions
-    const loginSubscription = supabase
-      .channel('login_audit_changes')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'login_audit' },
-        () => {
-          fetchDuplicateLogins();
-          fetchActiveUsers();
-          fetchLoginAuditEntries();
-        }
-      )
-      .subscribe();
-
-    const auditSubscription = supabase
-      .channel('audit_logs_changes')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'audit_logs' },
-        () => {
-          fetchAuditLogs();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      loginSubscription.unsubscribe();
-      auditSubscription.unsubscribe();
-    };
+    const loginSubscription = supabase.channel('login_audit_changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'login_audit' }, () => {
+        fetchDuplicateLogins(); fetchActiveUsers(); fetchLoginAuditEntries();
+      }).subscribe();
+    const auditSubscription = supabase.channel('audit_logs_changes')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, () => {
+        fetchAuditLogs();
+      }).subscribe();
+    return () => { loginSubscription.unsubscribe(); auditSubscription.unsubscribe(); };
   }, []);
 
   const fetchAllData = async () => {
     setLoading(true);
-    await Promise.all([
-      fetchDuplicateLogins(),
-      fetchAuditLogs(),
-      fetchActiveUsers(),
-      fetchLoginAuditEntries()
-    ]);
+    await Promise.all([fetchDuplicateLogins(), fetchAuditLogs(), fetchActiveUsers(), fetchLoginAuditEntries()]);
     setLoading(false);
   };
 
   const fetchDuplicateLogins = async () => {
     try {
-      // Get all users with active sessions
       const { data: activeSessionUsers, error: activeError } = await supabase
-        .from('profiles')
-        .select('user_id, name, email, position, session_id, last_login_at')
-        .not('session_id', 'is', null)
-        .eq('is_active', true);
-
+        .from('profiles').select('user_id, name, email, position, session_id, last_login_at')
+        .not('session_id', 'is', null).eq('is_active', true);
       if (activeError) throw activeError;
-
-      if (!activeSessionUsers || activeSessionUsers.length === 0) {
-        setDuplicateLogins([]);
-        return;
-      }
-
+      if (!activeSessionUsers || activeSessionUsers.length === 0) { setDuplicateLogins([]); return; }
       const activeUserIds = activeSessionUsers.map(u => u.user_id);
-      const windowStart = new Date(Date.now() - 10 * 60 * 1000).toISOString(); // last 10 minutes
-
-      // Fetch recent login activity for these users (both normal and duplicate)
+      const windowStart = new Date(Date.now() - 10 * 60 * 1000).toISOString();
       const { data: recentLogins, error: loginErr } = await supabase
-        .from('login_audit')
-        .select(`
-          user_id,
-          is_duplicate_session,
-          session_id,
-          previous_session_id,
-          login_attempt_at,
-          ip_address,
-          user_agent
-        `)
-        .in('user_id', activeUserIds)
-        .gte('login_attempt_at', windowStart)
-        .order('login_attempt_at', { ascending: false })
-        .limit(300);
-
+        .from('login_audit').select('user_id, is_duplicate_session, session_id, previous_session_id, login_attempt_at, ip_address, user_agent')
+        .in('user_id', activeUserIds).gte('login_attempt_at', windowStart)
+        .order('login_attempt_at', { ascending: false }).limit(300);
       if (loginErr) throw loginErr;
-
       const incidents: DuplicateLogin[] = [];
-
-      // Group by user
       const byUser: Record<string, typeof recentLogins> = {} as any;
-      (recentLogins || []).forEach((row) => {
+      (recentLogins || []).forEach(row => {
         if (!byUser[row.user_id]) byUser[row.user_id] = [] as any;
         (byUser[row.user_id] as any).push(row);
       });
-
       Object.entries(byUser).forEach(([userId, rows]) => {
         const activeUser = activeSessionUsers.find(u => u.user_id === userId);
         if (!activeUser) return;
-
-        // Find any duplicate within last 2 minutes where the duplicate session is different from the current active session
-        const nowWindowStart = Date.now() - 2 * 60 * 1000; // 2 minutes
-        const hasActiveAndDuplicate = (rows as any[]).some((r) => {
+        const nowWindowStart = Date.now() - 2 * 60 * 1000;
+        const hasActiveAndDuplicate = (rows as any[]).some(r => {
           const t = new Date(r.login_attempt_at).getTime();
           return r.is_duplicate_session === true && r.session_id && r.session_id !== activeUser.session_id && t >= nowWindowStart;
         });
-
-        // Confirm there was also a login with the currently active session within the 10-minute window (indicates two distinct sessions recently)
-        const hasCurrentSessionSeen = (rows as any[]).some((r) => r.session_id && r.session_id === activeUser.session_id);
-
+        const hasCurrentSessionSeen = (rows as any[]).some(r => r.session_id && r.session_id === activeUser.session_id);
         if (hasActiveAndDuplicate && hasCurrentSessionSeen) {
-          const latestDup = (rows as any[]).find((r) => r.is_duplicate_session);
-          incidents.push({
-            user_id: userId,
-            name: activeUser.name || 'Unknown',
-            email: activeUser.email || 'Unknown',
-            position: activeUser.position || 'Unknown',
-            is_duplicate_session: true,
-            session_id: latestDup?.session_id,
-            previous_session_id: latestDup?.previous_session_id,
-            last_login_at: latestDup?.login_attempt_at || activeUser.last_login_at,
-          });
+          const latestDup = (rows as any[]).find(r => r.is_duplicate_session);
+          incidents.push({ user_id: userId, name: activeUser.name || 'Unknown', email: activeUser.email || 'Unknown', position: activeUser.position || 'Unknown', is_duplicate_session: true, session_id: latestDup?.session_id, previous_session_id: latestDup?.previous_session_id, last_login_at: latestDup?.login_attempt_at || activeUser.last_login_at });
         }
       });
-
       setDuplicateLogins(incidents);
-    } catch (error) {
-      console.error('Error fetching duplicate logins:', error);
-      setDuplicateLogins([]);
-    }
+    } catch (error) { setDuplicateLogins([]); }
   };
 
   const fetchAuditLogs = async () => {
     try {
       const { data: auditData, error: auditError } = await supabase
-        .from('audit_logs')
-        .select(`
-          id,
-          user_id,
-          action,
-          resource_type,
-          resource_id,
-          details,
-          created_at,
-          ip_address,
-          user_agent
-        `)
-        .order('created_at', { ascending: false })
-        .limit(100);
-
+        .from('audit_logs').select('id, user_id, action, resource_type, resource_id, details, created_at, ip_address, user_agent')
+        .order('created_at', { ascending: false }).limit(100);
       if (auditError) throw auditError;
-
       if (auditData && auditData.length > 0) {
         const userIds = [...new Set(auditData.map(item => item.user_id).filter(Boolean))];
-        
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('user_id, name')
-          .in('user_id', userIds);
-
-        if (profileError) throw profileError;
-
-        const combinedData: AuditLogEntry[] = auditData.map(audit => {
-          const profile = profileData?.find(p => p.user_id === audit.user_id);
-          return {
-            ...audit,
-            user_name: profile?.name || 'System'
-          };
-        });
-
-        setAuditLogs(combinedData);
+        const { data: profileData } = await supabase.from('profiles').select('user_id, name').in('user_id', userIds);
+        setAuditLogs(auditData.map(audit => ({ ...audit, user_name: profileData?.find(p => p.user_id === audit.user_id)?.name || 'System' })));
       }
-    } catch (error) {
-      console.error('Error fetching audit logs:', error);
-    }
+    } catch (error) { console.error('Error fetching audit logs:', error); }
   };
 
   const fetchActiveUsers = async () => {
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select(`
-          user_id,
-          name,
-          email,
-          position,
-          user_type,
-          last_login_at,
-          session_id,
-          is_active
-        `)
-        .eq('is_active', true)
-        .not('last_login_at', 'is', null)
-        .order('last_login_at', { ascending: false });
-
-      if (profileError) throw profileError;
-
-      // Filter for recently active users (within last 4 hours) or those with active sessions
+      const { data: profileData, error } = await supabase
+        .from('profiles').select('user_id, name, email, position, user_type, last_login_at, session_id, is_active')
+        .eq('is_active', true).not('last_login_at', 'is', null).order('last_login_at', { ascending: false });
+      if (error) throw error;
       const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
-      const recentlyActive = profileData?.filter(user => 
-        new Date(user.last_login_at) > fourHoursAgo || user.session_id !== null
-      ) || [];
-
-      setActiveUsers(recentlyActive);
-    } catch (error) {
-      console.error('Error fetching active users:', error);
-    }
+      setActiveUsers(profileData?.filter(u => new Date(u.last_login_at) > fourHoursAgo || u.session_id !== null) || []);
+    } catch (error) { console.error(error); }
   };
 
   const fetchLoginAuditEntries = async () => {
     try {
-      const { data: loginData, error: loginError } = await supabase
-        .from('login_audit')
-        .select(`
-          id,
-          user_id,
-          ip_address,
-          user_agent,
-          session_id,
-          is_duplicate_session,
-          previous_session_id,
-          login_attempt_at
-        `)
-        .order('login_attempt_at', { ascending: false })
-        .limit(50);
-
-      if (loginError) throw loginError;
-
+      const { data: loginData, error } = await supabase
+        .from('login_audit').select('id, user_id, ip_address, user_agent, session_id, is_duplicate_session, previous_session_id, login_attempt_at')
+        .order('login_attempt_at', { ascending: false }).limit(50);
+      if (error) throw error;
       if (loginData && loginData.length > 0) {
         const userIds = [...new Set(loginData.map(item => item.user_id))];
-        
-        const { data: profileData, error: profileError } = await supabase
-          .from('profiles')
-          .select('user_id, name')
-          .in('user_id', userIds);
-
-        if (profileError) throw profileError;
-
-        const combinedData: LoginAuditEntry[] = loginData.map(login => {
-          const profile = profileData?.find(p => p.user_id === login.user_id);
-          return {
-            ...login,
-            user_name: profile?.name || 'Unknown User'
-          };
-        });
-
-        setLoginAuditEntries(combinedData);
-      } else {
-        setLoginAuditEntries([]);
-      }
-    } catch (error) {
-      console.error('Error fetching login audit entries:', error);
-    }
+        const { data: profileData } = await supabase.from('profiles').select('user_id, name').in('user_id', userIds);
+        setLoginAuditEntries(loginData.map(login => ({ ...login, user_name: profileData?.find(p => p.user_id === login.user_id)?.name || 'Unknown User' })));
+      } else { setLoginAuditEntries([]); }
+    } catch (error) { console.error(error); }
   };
 
   const forceLogoutUser = async (userId: string, userName: string) => {
     try {
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ session_id: null })
-        .eq('user_id', userId);
-
-      if (profileError) throw profileError;
-
-      await supabase.rpc('log_audit_event', {
-        p_user_id: userId,
-        p_action: 'force_logout',
-        p_resource_type: 'user_session',
-        p_resource_id: userId,
-        p_details: { forced_by_organizer: true }
-      });
-
-      toast({
-        title: "User Logged Out",
-        description: `${userName} has been forcefully logged out from all sessions`
-      });
-
-      fetchActiveUsers();
-      fetchDuplicateLogins();
+      const { error } = await supabase.from('profiles').update({ session_id: null }).eq('user_id', userId);
+      if (error) throw error;
+      await supabase.rpc('log_audit_event', { p_user_id: userId, p_action: 'force_logout', p_resource_type: 'user_session', p_resource_id: userId, p_details: { forced_by_organizer: true } });
+      toast({ title: "User Logged Out", description: `${userName} has been forcefully logged out from all sessions` });
+      fetchActiveUsers(); fetchDuplicateLogins();
     } catch (error) {
-      console.error('Error forcing logout:', error);
-      toast({
-        title: "Error",
-        description: "Failed to logout user",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: "Failed to logout user", variant: "destructive" });
     }
+  };
+
+  const filteredUsers = activeUsers.filter(user => {
+    const matchesSearch = searchTerm === '' || user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.position.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = statusFilter === 'all' || (statusFilter === 'active_session' && user.session_id) || (statusFilter === 'recent' && !user.session_id) || statusFilter === user.user_type;
+    return matchesSearch && matchesFilter;
+  });
+
+  const userTypeMeta: Record<string, { label: string; cls: string }> = {
+    student:   { label: 'Student',   cls: 'bg-primary-fixed text-on-primary-fixed' },
+    jury:      { label: 'Jury',      cls: 'bg-secondary-fixed text-on-secondary-fixed' },
+    organizer: { label: 'Organizer', cls: 'bg-primary-container text-on-primary-container' },
+    admin:     { label: 'Admin',     cls: 'bg-surface-container-high text-on-surface-variant border border-outline-variant/20' },
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-32">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center py-20">
+        <span className="material-symbols-outlined text-[40px] text-primary animate-spin block mx-auto">refresh</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 gap-1 mb-6 bg-surface-container p-1 rounded-2xl h-14">
-          <TabsTrigger
-            value="audit"
-            className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold font-body transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary data-[state=active]:font-bold text-on-surface-variant hover:text-on-surface"
-          >
-            <FileText className="w-4 h-4" />
-            Audit Logs
-          </TabsTrigger>
-          <TabsTrigger
-            value="access"
-            className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold font-body transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary data-[state=active]:font-bold text-on-surface-variant hover:text-on-surface"
-          >
-            <Eye className="w-4 h-4" />
-            Access Logs
-          </TabsTrigger>
-        </TabsList>
+    <div className="space-y-6 animate-in fade-in duration-700">
 
-        <TabsContent value="audit" className="space-y-6">
-          <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
-            <CardHeader className="border-b border-border/10">
-              <CardTitle className="flex items-center gap-2 text-xl font-extrabold font-headline text-primary">
-                <FileText className="w-5 h-5 text-primary" />
-                System <span className="text-secondary">Audit Logs</span>
-                <span className="text-xs font-black px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-headline">{auditLogs.length} entries</span>
-              </CardTitle>
-              <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-1 font-headline">
-                Monitor all system activities and administrative actions
-              </p>
-            </CardHeader>
-            <CardContent className="p-6">
-              {auditLogs.length > 0 ? (
-                <div className="space-y-4">
-                  {auditLogs.map((log) => (
-                    <Card key={log.id} className="overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5">
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-3">
-                              <Badge variant="outline" className="border-primary/30 text-primary bg-primary/5 font-medium">
-                                {log.action}
-                              </Badge>
-                              <Badge variant="secondary" className="border-muted text-muted-foreground bg-muted/50">
-                                {log.resource_type}
-                              </Badge>
-                            </div>
-                            <div className="space-y-2 text-sm">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-foreground min-w-16">User:</span>
-                                <span className="text-muted-foreground">{log.user_name}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-foreground min-w-16">Time:</span>
-                                <span className="text-muted-foreground">{new Date(log.created_at).toLocaleString()}</span>
-                              </div>
-                              {log.resource_id && (
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-foreground min-w-16">Resource:</span>
-                                  <span className="text-muted-foreground font-mono text-xs">{log.resource_id}</span>
-                                </div>
-                              )}
-                              {log.ip_address && (
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-foreground min-w-16">IP:</span>
-                                  <span className="text-muted-foreground font-mono">{log.ip_address}</span>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          <Activity className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
-                        </div>
-                      </CardContent>
-                    </Card>
+      {/* Security incidents alert */}
+      {duplicateLogins.length > 0 && (
+        <div className="bg-error/5 border border-error/20 rounded-2xl overflow-hidden">
+          <div className="px-6 py-4 border-b border-error/15 flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-error animate-pulse block shrink-0" />
+            <div className="flex items-center gap-2 flex-1">
+              <span className="material-symbols-outlined text-[18px] text-error" style={{ fontVariationSettings: "'FILL' 1" }}>gpp_bad</span>
+              <p className="font-headline font-extrabold text-error text-sm">Active Security Threats</p>
+              <span className="px-2 py-0.5 bg-error text-on-error text-[11px] font-black rounded-full font-headline">{duplicateLogins.length}</span>
+            </div>
+            <p className="text-[10px] text-error/60 font-black uppercase tracking-widest font-headline">Users with concurrent sessions on multiple devices</p>
+          </div>
+          <div className="divide-y divide-error/10">
+            {duplicateLogins.map((login, i) => (
+              <div key={`${login.user_id}-${i}`} className="px-6 py-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-error/10 flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[18px] text-error" style={{ fontVariationSettings: "'FILL' 1" }}>person_alert</span>
+                  </div>
+                  <div>
+                    <p className="font-headline font-bold text-on-surface">{login.name}</p>
+                    <p className="text-xs text-on-surface-variant font-body">{login.position}</p>
+                    <p className="text-[11px] text-error font-bold font-body mt-0.5">
+                      Multiple active sessions · {new Date(login.last_login_at).toLocaleTimeString()}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => forceLogoutUser(login.user_id, login.name)}
+                  className="flex items-center gap-1.5 px-4 py-2 bg-error text-on-error rounded-xl font-bold text-sm font-body hover:bg-error/90 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">logout</span>
+                  Force Logout
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Stats cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
+        {[
+          { label: 'Active Sessions', value: String(activeUsers.filter(u => u.session_id).length).padStart(2, '0'), icon: 'sensors',     color: 'text-primary',   iconColor: 'text-primary' },
+          { label: 'Recent Activity', value: String(activeUsers.filter(u => !u.session_id).length).padStart(2, '0'), icon: 'schedule',   color: 'text-secondary', iconColor: 'text-secondary' },
+          { label: 'Audit Entries',   value: String(auditLogs.length).padStart(2, '0'),             icon: 'inventory',    color: 'text-tertiary',  iconColor: 'text-tertiary' },
+          { label: 'Login Events',    value: String(loginAuditEntries.length).padStart(2, '0'),     icon: 'lock_clock',   color: 'text-on-surface',iconColor: 'text-on-surface-variant' },
+        ].map((card, i) => (
+          <div key={i} className="bg-surface-container-lowest p-6 rounded-2xl shadow-sm border border-outline-variant/10 relative overflow-hidden group">
+            <div className="relative z-10">
+              <p className="text-on-surface-variant font-bold text-xs uppercase tracking-widest mb-1 font-body">{card.label}</p>
+              <h4 className={`text-3xl font-headline font-extrabold ${card.color}`}>{card.value}</h4>
+            </div>
+            <span className={`material-symbols-outlined absolute -bottom-2 -right-2 ${card.iconColor} opacity-10 text-7xl group-hover:scale-110 transition-transform select-none`} style={{ fontVariationSettings: "'FILL' 1" }}>{card.icon}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Tab switcher */}
+      <div className="flex gap-2">
+        {(['audit', 'access'] as const).map(tab => (
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm font-body transition-all ${activeTab === tab ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-[0_4px_12px_rgba(19,41,143,0.25)]' : 'bg-surface-container-lowest border border-outline-variant/20 text-on-surface-variant hover:bg-surface-container-high'}`}
+          >
+            <span className="material-symbols-outlined text-[18px]">{tab === 'audit' ? 'inventory' : 'manage_accounts'}</span>
+            {tab === 'audit' ? 'Audit Logs' : 'Access Logs'}
+          </button>
+        ))}
+        <div className="ml-auto">
+          <button onClick={fetchAllData} className="flex items-center gap-2 px-4 py-2.5 bg-surface-container-lowest border border-outline-variant/20 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors font-semibold text-sm font-body">
+            <span className="material-symbols-outlined text-[18px]">refresh</span>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {/* Audit Logs tab */}
+      {activeTab === 'audit' && (
+        <div className="bg-surface-container-lowest rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(19,41,143,0.1)] overflow-hidden">
+          <div className="px-8 py-6 border-b border-outline-variant/10 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>inventory</span>
+            </div>
+            <div>
+              <h3 className="font-headline font-extrabold text-on-surface">System Audit Logs</h3>
+              <p className="text-xs text-on-surface-variant font-body">{auditLogs.length} entries · monitor all system activities and administrative actions</p>
+            </div>
+          </div>
+          {auditLogs.length === 0 ? (
+            <div className="px-8 py-16 text-center">
+              <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 block mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>inventory</span>
+              <p className="text-sm text-on-surface-variant/50 font-body">No audit logs available. System activity will appear here.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-surface-container-low/30">
+                    <th className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">Action</th>
+                    <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">User</th>
+                    <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">Resource</th>
+                    <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">IP</th>
+                    <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">Time</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/5">
+                  {auditLogs.map(log => (
+                    <tr key={log.id} className="hover:bg-primary-container/[0.02] transition-colors">
+                      <td className="px-8 py-4">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary text-[11px] font-bold rounded-full font-body">{log.action}</span>
+                        <span className="ml-2 text-[11px] text-on-surface-variant font-body">{log.resource_type}</span>
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-on-surface font-body">{log.user_name}</td>
+                      <td className="px-6 py-4 text-xs font-mono text-on-surface-variant">{log.resource_id ? log.resource_id.slice(0, 12) + '…' : '—'}</td>
+                      <td className="px-6 py-4 text-xs font-mono text-on-surface-variant">{log.ip_address || '—'}</td>
+                      <td className="px-6 py-4 text-sm text-on-surface-variant font-body whitespace-nowrap">{new Date(log.created_at).toLocaleString()}</td>
+                    </tr>
                   ))}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <FileText className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                  <h3 className="text-xl font-semibold text-muted-foreground mb-2">No audit logs available</h3>
-                  <p className="text-muted-foreground">System activity will appear here when available</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
 
-        <TabsContent value="access" className="space-y-6">
-          <div className="grid grid-cols-1 gap-6">
-            {/* Login Activity Log */}
-            <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
-              <CardHeader className="border-b border-border/10">
-                <CardTitle className="flex items-center gap-2 text-xl font-extrabold font-headline text-primary">
-                  <Activity className="w-5 h-5 text-primary" />
-                  Login <span className="text-secondary">Activity Log</span>
-                  <span className="text-xs font-black px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-headline">{loginAuditEntries.length} entries</span>
-                </CardTitle>
-                <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-1 font-headline">
-                  Complete log of all user login attempts and session activities
-                </p>
-              </CardHeader>
-              <CardContent className="p-6">
-                {loginAuditEntries.length > 0 ? (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {loginAuditEntries.map((entry) => (
-                      <Card key={entry.id} className={`overflow-hidden border transition-all duration-200 hover:shadow-md ${
-                        entry.is_duplicate_session 
-                          ? 'border-destructive/20 hover:border-destructive/40 bg-gradient-to-r from-destructive/5 to-destructive/10' 
-                          : 'border-border/20 hover:border-primary/30 bg-gradient-to-r from-background to-accent/5'
-                      }`}>
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="font-bold text-foreground">{entry.user_name}</span>
-                                {entry.is_duplicate_session && (
-                                  <Badge variant="destructive" className="text-xs">
-                                    <AlertTriangle className="w-3 h-3 mr-1" />
-                                    Duplicate Session
-                                  </Badge>
-                                )}
-                              </div>
-                              <div className="space-y-1 text-sm">
-                                <div className="flex items-center gap-2">
-                                  <Clock className="w-3 h-3 text-muted-foreground" />
-                                  <span className="text-muted-foreground">{new Date(entry.login_attempt_at).toLocaleString()}</span>
-                                </div>
-                                {entry.ip_address && (
-                                  <div className="flex items-center gap-2">
-                                    <Shield className="w-3 h-3 text-muted-foreground" />
-                                    <span className="text-muted-foreground font-mono text-xs">{entry.ip_address}</span>
-                                  </div>
-                                )}
-                                {entry.session_id && (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-muted-foreground">Session:</span>
-                                    <span className="text-xs font-mono text-muted-foreground">{entry.session_id.slice(0, 8)}...</span>
-                                  </div>
-                                )}
-                                {entry.previous_session_id && (
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-destructive">Previous session:</span>
-                                    <span className="text-xs font-mono text-destructive">{entry.previous_session_id.slice(0, 8)}...</span>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                            <Badge 
-                              variant={entry.is_duplicate_session ? "destructive" : "default"}
-                              className={entry.is_duplicate_session ? "" : "bg-green-100 text-green-700 border-green-200"}
-                            >
-                              {entry.is_duplicate_session ? "Security Alert" : "Normal Login"}
-                            </Badge>
+      {/* Access Logs tab */}
+      {activeTab === 'access' && (
+        <div className="space-y-6">
+          {/* Active Users */}
+          <div className="bg-surface-container-lowest rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(19,41,143,0.1)] overflow-hidden">
+            <div className="px-8 py-5 border-b border-outline-variant/10 flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-tertiary/10 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[20px] text-tertiary-fixed-dim" style={{ fontVariationSettings: "'FILL' 1" }}>sensors</span>
+                </div>
+                <div>
+                  <h3 className="font-headline font-extrabold text-on-surface">Active Users</h3>
+                  <p className="text-xs text-on-surface-variant font-body">{activeUsers.length} users logged in within last 4 hours</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative">
+                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[16px] text-on-surface-variant/50">search</span>
+                  <input
+                    placeholder="Search users…"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="h-9 bg-surface-container border-none rounded-xl pl-9 pr-4 text-sm font-body text-on-surface focus:ring-2 focus:ring-primary/20 outline-none w-48"
+                  />
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="h-9 bg-surface-container border-none rounded-xl font-body text-sm w-44">
+                    <SelectValue placeholder="Filter" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-2xl border-none bg-surface-container-lowest shadow-xl">
+                    <SelectItem value="all">All Users</SelectItem>
+                    <SelectItem value="active_session">Active Sessions</SelectItem>
+                    <SelectItem value="recent">Recent Only</SelectItem>
+                    <SelectItem value="student">Students</SelectItem>
+                    <SelectItem value="jury">Jury</SelectItem>
+                    <SelectItem value="organizer">Organizers</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            {filteredUsers.length === 0 ? (
+              <div className="px-8 py-12 text-center">
+                <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 block mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>group_off</span>
+                <p className="text-sm text-on-surface-variant/50 font-body">No active users found.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-outline-variant/5 max-h-[480px] overflow-y-auto">
+                {filteredUsers.map(user => {
+                  const meta = userTypeMeta[user.user_type] || userTypeMeta['student'];
+                  return (
+                    <div key={user.user_id} className="px-8 py-4 flex items-center justify-between gap-4 hover:bg-primary-container/[0.02] transition-colors">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${user.session_id ? 'bg-tertiary-fixed-dim' : 'bg-outline-variant'}`} />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-headline font-bold text-on-surface truncate">{user.name}</p>
+                            <span className={`inline-flex px-2 py-0.5 text-[10px] font-bold rounded-full font-body shrink-0 ${meta.cls}`}>{meta.label}</span>
                           </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Activity className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-xl font-semibold text-muted-foreground mb-2">No login activity</h3>
-                    <p className="text-muted-foreground">Login attempts will appear here when they occur</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Active Users - Scalable Design */}
-            <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
-              <CardHeader className="border-b border-border/10">
-                <CardTitle className="flex items-center gap-2 text-xl font-extrabold font-headline text-primary">
-                  <Eye className="w-5 h-5 text-primary" />
-                  Active <span className="text-secondary">Users</span>
-                  <span className="text-xs font-black px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed border border-tertiary-container/30 font-headline">{activeUsers.length} online</span>
-                </CardTitle>
-                <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-1 font-headline">
-                  Users currently logged into the system
-                </p>
-                
-                {/* Quick Stats */}
-                <div className="flex items-center gap-4 mt-4 p-3 bg-muted/30 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium">
-                      {activeUsers.filter(u => u.session_id).length} Active Sessions
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                    <span className="text-sm font-medium">
-                      {activeUsers.filter(u => !u.session_id).length} Recent Activity
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-                    <span className="text-sm font-medium">
-                      {activeUsers.filter(u => u.user_type === 'student').length} Students
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-                    <span className="text-sm font-medium">
-                      {activeUsers.filter(u => u.user_type === 'jury').length} Jury
-                    </span>
-                  </div>
-                </div>
-
-                {/* Search and Filter */}
-                <div className="flex items-center gap-3 mt-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input
-                      placeholder="Search active users..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Users</SelectItem>
-                      <SelectItem value="active_session">Active Sessions Only</SelectItem>
-                      <SelectItem value="recent">Recent Activity Only</SelectItem>
-                      <SelectItem value="student">Students Only</SelectItem>
-                      <SelectItem value="jury">Jury Only</SelectItem>
-                      <SelectItem value="organizer">Organizers Only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                {activeUsers.length > 0 ? (
-                  <div className="max-h-96 overflow-y-auto">
-                    {/* Compact Table View for Large Scale */}
-                    <div className="divide-y divide-border/10">
-                      {activeUsers
-                        .filter(user => {
-                          const matchesSearch = searchTerm === '' || 
-                            user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                            user.position.toLowerCase().includes(searchTerm.toLowerCase());
-                          
-                          const matchesFilter = statusFilter === 'all' ||
-                            (statusFilter === 'active_session' && user.session_id) ||
-                            (statusFilter === 'recent' && !user.session_id) ||
-                            (statusFilter === 'student' && user.user_type === 'student') ||
-                            (statusFilter === 'jury' && user.user_type === 'jury') ||
-                            (statusFilter === 'organizer' && user.user_type === 'organizer');
-                          
-                          return matchesSearch && matchesFilter;
-                        })
-                        .map((user) => (
-                          <div key={user.user_id} className="flex items-center justify-between p-4 hover:bg-muted/20 transition-colors">
-                            <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div className={`w-3 h-3 rounded-full flex-shrink-0 ${
-                                user.session_id ? 'bg-green-500' : 'bg-blue-400'
-                              }`}></div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-semibold text-foreground truncate">{user.name}</span>
-                                  <Badge variant="outline" className="text-xs flex-shrink-0">
-                                    {user.user_type}
-                                  </Badge>
-                                </div>
-                                <div className="text-sm text-muted-foreground truncate">{user.position}</div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3 flex-shrink-0">
-                              <div className="text-xs text-muted-foreground">
-                                {new Date(user.last_login_at).toLocaleTimeString()}
-                              </div>
-                              <Badge 
-                                variant={user.session_id ? "default" : "secondary"}
-                                className={`text-xs ${user.session_id ? "bg-green-100 text-green-700 border-green-200" : "bg-blue-100 text-blue-700 border-blue-200"}`}
-                              >
-                                {user.session_id ? "Live" : "Recent"}
-                              </Badge>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => forceLogoutUser(user.user_id, user.name)}
-                                className="hover:bg-destructive/10 hover:text-destructive h-8 w-8 p-0"
-                              >
-                                <LogOut className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Eye className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                    <h3 className="text-xl font-semibold text-muted-foreground mb-2">No active users</h3>
-                    <p className="text-muted-foreground">Active users will appear here when available</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Security Incidents - Compact Critical View */}
-            {duplicateLogins.length > 0 && (
-              <Card className="bg-gradient-to-r from-destructive/5 to-destructive/10 border-destructive/20 rounded-3xl shadow-lg">
-                <CardHeader className="border-b border-destructive/20">
-                  <CardTitle className="flex items-center gap-2 text-xl font-extrabold font-headline text-error">
-                    <AlertTriangle className="w-5 h-5 text-error" />
-                    Active <span className="text-error/70">Security Threats</span>
-                    <span className="text-xs font-black px-2 py-0.5 rounded-full bg-error text-on-error animate-pulse font-headline">{duplicateLogins.length}</span>
-                  </CardTitle>
-                  <p className="text-[10px] text-error/50 font-black uppercase tracking-[0.4em] mt-1 font-headline">
-                    Critical: Users with concurrent sessions on multiple devices
-                  </p>
-                </CardHeader>
-                <CardContent className="p-4">
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {duplicateLogins.map((login, index) => (
-                      <div key={`${login.user_id}-${index}`} className="flex items-center justify-between p-3 bg-white/50 rounded-lg border border-destructive/30">
-                        <div className="flex items-center gap-3">
-                          <div className="w-2 h-2 bg-destructive rounded-full animate-pulse"></div>
-                          <div>
-                            <div className="font-bold text-foreground">{login.name}</div>
-                            <div className="text-sm text-muted-foreground">{login.position}</div>
-                            <div className="text-xs text-destructive font-medium">
-                              Multiple active sessions • {new Date(login.last_login_at).toLocaleTimeString()}
-                            </div>
-                          </div>
+                          <p className="text-xs text-on-surface-variant font-body truncate">{user.position}</p>
                         </div>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => forceLogoutUser(login.user_id, login.name)}
-                          className="font-semibold"
-                        >
-                          <LogOut className="w-3 h-3 mr-1" />
-                          Force Logout
-                        </Button>
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-xs text-on-surface-variant font-body">{new Date(user.last_login_at).toLocaleTimeString()}</span>
+                        <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full font-body ${user.session_id ? 'bg-tertiary/10 text-tertiary-fixed-dim' : 'bg-surface-container text-on-surface-variant'}`}>
+                          {user.session_id ? 'Live' : 'Recent'}
+                        </span>
+                        <button
+                          onClick={() => forceLogoutUser(user.user_id, user.name)}
+                          className="p-1.5 text-on-surface-variant hover:text-error transition-colors rounded-lg hover:bg-surface-container"
+                          title="Force logout"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">logout</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
-        </TabsContent>
-      </Tabs>
+
+          {/* Login Audit */}
+          <div className="bg-surface-container-lowest rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(19,41,143,0.1)] overflow-hidden">
+            <div className="px-8 py-6 border-b border-outline-variant/10 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>lock_clock</span>
+              </div>
+              <div>
+                <h3 className="font-headline font-extrabold text-on-surface">Login Activity Log</h3>
+                <p className="text-xs text-on-surface-variant font-body">{loginAuditEntries.length} entries · all login attempts and session activities</p>
+              </div>
+            </div>
+            {loginAuditEntries.length === 0 ? (
+              <div className="px-8 py-12 text-center">
+                <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 block mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>lock_clock</span>
+                <p className="text-sm text-on-surface-variant/50 font-body">No login activity yet.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-outline-variant/5 max-h-[480px] overflow-y-auto">
+                {loginAuditEntries.map(entry => (
+                  <div key={entry.id} className={`px-8 py-4 flex items-start justify-between gap-4 transition-colors ${entry.is_duplicate_session ? 'bg-error/[0.03] hover:bg-error/[0.06]' : 'hover:bg-primary-container/[0.02]'}`}>
+                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                      <div className={`w-2.5 h-2.5 rounded-full mt-1.5 shrink-0 ${entry.is_duplicate_session ? 'bg-error' : 'bg-tertiary-fixed-dim'}`} />
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-headline font-bold text-on-surface">{entry.user_name}</p>
+                          {entry.is_duplicate_session && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-error/10 text-error text-[11px] font-bold rounded-full font-body">
+                              <span className="material-symbols-outlined text-[12px]">warning</span>
+                              Duplicate Session
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                          <span className="text-xs text-on-surface-variant font-body flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[12px]">schedule</span>
+                            {new Date(entry.login_attempt_at).toLocaleString()}
+                          </span>
+                          {entry.ip_address && (
+                            <span className="text-xs font-mono text-on-surface-variant">
+                              {entry.ip_address}
+                            </span>
+                          )}
+                          {entry.session_id && (
+                            <span className="text-xs font-mono text-on-surface-variant/60">
+                              Session: {entry.session_id.slice(0, 8)}…
+                            </span>
+                          )}
+                        </div>
+                        {entry.previous_session_id && (
+                          <span className="text-[11px] font-mono text-error font-bold">
+                            Prev: {entry.previous_session_id.slice(0, 8)}…
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full font-body shrink-0 mt-1 ${entry.is_duplicate_session ? 'bg-error/10 text-error' : 'bg-tertiary/10 text-tertiary-fixed-dim'}`}>
+                      {entry.is_duplicate_session ? 'Security Alert' : 'Normal Login'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

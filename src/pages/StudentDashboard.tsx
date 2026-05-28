@@ -9,6 +9,7 @@ import { ParliamentTree } from '@/components/student/ParliamentTree';
 import { PollVoting } from '@/components/student/PollVoting';
 import { QuestionHourHub } from '@/components/student/QuestionHourHub';
 import { GlobalSquare } from '@/components/student/GlobalSquare';
+import { BreakingNewsTicker } from '@/components/display/BreakingNewsTicker';
 import { Loader2, User, LayoutDashboard, Network, Vote, MessageSquare, LogOut, MessagesSquare } from 'lucide-react';
 
 type TabId = 'profile' | 'civic-wall' | 'tree' | 'ballot' | 'question-hour' | 'messages';
@@ -669,6 +670,8 @@ const StudentDashboard = () => {
         </div>
         {activeTab !== 'messages' && renderTabContent()}
       </main>
+
+      <BreakingNewsTicker />
     </div>
   );
 };
