@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -39,10 +39,12 @@ export const useAdminSpeechTracking = () => {
     partyNumber: null,
   });
   const { toast } = useToast();
+  const initialLoadDone = useRef(false);
 
-  const fetchStudents = useCallback(async () => {
+  // silent=true skips the loading spinner (used for background re-syncs)
+  const fetchStudents = useCallback(async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const { data, error } = await supabase
         .from('admin_student_dashboard')
         .select('*')
@@ -50,6 +52,7 @@ export const useAdminSpeechTracking = () => {
 
       if (error) throw error;
       setStudents(data || []);
+      initialLoadDone.current = true;
     } catch (error: any) {
       console.error('Error fetching students:', error);
       toast({
@@ -58,7 +61,7 @@ export const useAdminSpeechTracking = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [toast]);
 
@@ -107,27 +110,13 @@ export const useAdminSpeechTracking = () => {
       .channel('admin-speech-tracking')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'student_speeches',
-        },
-        () => {
-          // Refresh data when speeches change
-          fetchStudents();
-        }
+        { event: '*', schema: 'public', table: 'student_speeches' },
+        () => fetchStudents(true)   // silent — don't show spinner
       )
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'assessments',
-        },
-        () => {
-          // Refresh data when assessments change
-          fetchStudents();
-        }
+        { event: '*', schema: 'public', table: 'assessments' },
+        () => fetchStudents(true)   // silent — don't show spinner
       )
       .subscribe();
 
@@ -138,6 +127,13 @@ export const useAdminSpeechTracking = () => {
 
   const recordSpeech = useCallback(
     async (studentId: string, notes?: string) => {
+      // Optimistic update — increment immediately
+      setStudents(prev => prev.map(s =>
+        s.user_id === studentId
+          ? { ...s, speech_count: s.speech_count + 1, last_speech_at: new Date().toISOString() }
+          : s
+      ));
+
       try {
         const { error } = await supabase.from('student_speeches').insert({
           student_id: studentId,
@@ -147,17 +143,16 @@ export const useAdminSpeechTracking = () => {
 
         if (error) throw error;
 
-        toast({
-          title: "Speech Recorded",
-          description: "Speech count updated successfully",
-        });
+        toast({ title: "Speech Recorded", description: "Speech count updated successfully" });
       } catch (error: any) {
+        // Revert on failure
+        setStudents(prev => prev.map(s =>
+          s.user_id === studentId
+            ? { ...s, speech_count: Math.max(0, s.speech_count - 1) }
+            : s
+        ));
         console.error('Error recording speech:', error);
-        toast({
-          title: "Error",
-          description: "Failed to record speech",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "Failed to record speech", variant: "destructive" });
       }
     },
     [toast]
@@ -165,6 +160,13 @@ export const useAdminSpeechTracking = () => {
 
   const undoLastSpeech = useCallback(
     async (studentId: string) => {
+      // Optimistic update — decrement immediately
+      setStudents(prev => prev.map(s =>
+        s.user_id === studentId
+          ? { ...s, speech_count: Math.max(0, s.speech_count - 1) }
+          : s
+      ));
+
       try {
         const { data: lastSpeech, error: fetchError } = await supabase
           .from('student_speeches')
@@ -175,11 +177,11 @@ export const useAdminSpeechTracking = () => {
           .single();
 
         if (fetchError || !lastSpeech) {
-          toast({
-            title: "Error",
-            description: "No speech found to undo",
-            variant: "destructive",
-          });
+          // Revert
+          setStudents(prev => prev.map(s =>
+            s.user_id === studentId ? { ...s, speech_count: s.speech_count + 1 } : s
+          ));
+          toast({ title: "Error", description: "No speech found to undo", variant: "destructive" });
           return;
         }
 
@@ -190,17 +192,14 @@ export const useAdminSpeechTracking = () => {
 
         if (deleteError) throw deleteError;
 
-        toast({
-          title: "Speech Removed",
-          description: "Last speech entry removed successfully",
-        });
+        toast({ title: "Speech Removed", description: "Last speech entry removed successfully" });
       } catch (error: any) {
+        // Revert
+        setStudents(prev => prev.map(s =>
+          s.user_id === studentId ? { ...s, speech_count: s.speech_count + 1 } : s
+        ));
         console.error('Error undoing speech:', error);
-        toast({
-          title: "Error",
-          description: "Failed to undo speech",
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: "Failed to undo speech", variant: "destructive" });
       }
     },
     [toast]

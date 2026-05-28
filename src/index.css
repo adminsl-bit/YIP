@@ -302,4 +302,21 @@ All colors MUST be HSL.
   .no-line-card {
     @apply border-none shadow-none;
   }
+
+  .civic-mesh-bg {
+    background-color: hsl(var(--surface));
+    background-image:
+      radial-gradient(ellipse 60% 50% at 0% 0%, hsla(229, 76%, 31.8%, 0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 100% 0%, hsla(16, 90%, 35.1%, 0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 40% at 0% 100%, hsla(160, 100%, 12.2%, 0.05) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 50% at 100% 100%, hsla(229, 76%, 31.8%, 0.06) 0%, transparent 70%);
+  }
+
+  .winner-glow {
+    box-shadow: 0 0 0 4px rgba(254, 111, 66, 0.15), 0 0 40px rgba(254, 111, 66, 0.2);
+  }
+
+  .award-gradient {
+    background: linear-gradient(135deg, #ffdbd0 0%, #ffffff 100%);
+  }
 }

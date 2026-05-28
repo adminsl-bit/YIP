@@ -1,17 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { PartyBadge } from "@/components/ui/party-badge";
-import { ChevronLeft, ChevronRight, Trophy, MapPin, Users, ArrowLeft, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
-import Navbar from "@/components/Navbar";
 
 interface Awardee {
   student_id: string;
@@ -44,7 +36,6 @@ export const AwardShowcase = () => {
 
   const fetchAwardees = async () => {
     try {
-      // Fetch all student awards with related data
       const { data: studentAwardsData, error: studentAwardsError } = await supabase
         .from('student_awards')
         .select(`
@@ -56,10 +47,8 @@ export const AwardShowcase = () => {
 
       if (studentAwardsError) throw studentAwardsError;
 
-      // Get unique student IDs
       const studentIds = [...new Set(studentAwardsData?.map(sa => sa.student_id) || [])];
 
-      // Fetch student details
       const { data: studentsData, error: studentsError } = await supabase
         .from('profiles')
         .select('user_id, name, position, party_number, constituency, state, city, photo_url')
@@ -68,7 +57,6 @@ export const AwardShowcase = () => {
 
       if (studentsError) throw studentsError;
 
-      // Group awards by student
       const awardeesMap = new Map<string, Awardee>();
 
       studentAwardsData?.forEach(sa => {
@@ -98,15 +86,10 @@ export const AwardShowcase = () => {
         }
       });
 
-      const awardeesArray = Array.from(awardeesMap.values());
-      setAwardees(awardeesArray);
+      setAwardees(Array.from(awardeesMap.values()));
     } catch (error) {
       console.error('Error fetching awardees:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load awardees data",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to load awardees data", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -115,172 +98,287 @@ export const AwardShowcase = () => {
   const setupRealtimeSubscriptions = () => {
     const channel = supabase
       .channel('award-showcase-updates')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'student_awards'
-      }, () => {
-        fetchAwardees();
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'awards'
-      }, () => {
-        fetchAwardees();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_awards' }, fetchAwardees)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'awards' }, fetchAwardees)
       .subscribe();
-
     return () => supabase.removeChannel(channel);
   };
 
-  const nextSlide = () => {
-    setCurrentIndex((prev) => (prev + 1) % awardees.length);
-  };
-
-  const previousSlide = () => {
-    setCurrentIndex((prev) => (prev - 1 + awardees.length) % awardees.length);
-  };
-
-  const goToSlide = (index: number) => {
-    setCurrentIndex(index);
-  };
+  const nextSlide = () => setCurrentIndex(prev => (prev + 1) % awardees.length);
+  const previousSlide = () => setCurrentIndex(prev => (prev - 1 + awardees.length) % awardees.length);
+  const goToSlide = (index: number) => setCurrentIndex(index);
 
   const downloadPDF = async () => {
     try {
-      toast({
-        title: "Generating PDF",
-        description: "Creating award showcase PDF...",
-      });
+      toast({ title: "Generating PDF", description: "Creating award showcase PDF..." });
 
       const pdf = new jsPDF('p', 'mm', 'a4');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 20;
-      let yPosition = margin;
+      const W = pdf.internal.pageSize.getWidth();   // 210
+      const H = pdf.internal.pageSize.getHeight();  // 297
+      const mg = 14; // margin
+      const cW = W - mg * 2; // content width 182
 
-      // Add title page
-      pdf.setFontSize(28);
-      pdf.setFont('helvetica', 'bold');
-      pdf.text('Award Showcase', pageWidth / 2, 40, { align: 'center' });
-      
-      pdf.setFontSize(18);
-      pdf.setFont('helvetica', 'normal');
-      pdf.text('Young Indians Parliament', pageWidth / 2, 55, { align: 'center' });
-      
-      pdf.setFontSize(14);
-      pdf.text('Recognizing Excellence', pageWidth / 2, 70, { align: 'center' });
+      // ── Color palette ──────────────────────────────────────────
+      const col = {
+        primary:    [19, 41, 143]   as [number,number,number],
+        primaryFg:  [255,255,255]   as [number,number,number],
+        primaryMid: [48, 66, 166]   as [number,number,number],
+        primaryTint:[222,224,255]   as [number,number,number],
+        secondary:  [172, 53, 9]    as [number,number,number],
+        peach:      [255,219,208]   as [number,number,number],
+        peachDark:  [255,181,159]   as [number,number,number],
+        surface:    [247,249,251]   as [number,number,number],
+        surfaceLow: [242,244,246]   as [number,number,number],
+        onSurface:  [25, 28, 30]    as [number,number,number],
+        onVariant:  [69, 70, 83]    as [number,number,number],
+        white:      [255,255,255]   as [number,number,number],
+        divider:    [210,212,220]   as [number,number,number],
+      };
 
-      pdf.setFontSize(12);
-      pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, 90, { align: 'center' });
+      const fill  = (c: [number,number,number]) => pdf.setFillColor(c[0],c[1],c[2]);
+      const text  = (c: [number,number,number]) => pdf.setTextColor(c[0],c[1],c[2]);
+      const draw  = (c: [number,number,number]) => pdf.setDrawColor(c[0],c[1],c[2]);
 
-      // Add each awardee
-      for (let i = 0; i < awardees.length; i++) {
-        const awardee = awardees[i];
-        
-        pdf.addPage();
-        yPosition = margin;
-
-        // Participant name
-        pdf.setFontSize(24);
+      // ── Helper: top bar for every page ─────────────────────────
+      const drawTopBar = (label: string) => {
+        fill(col.primary);
+        pdf.rect(0, 0, W, 13, 'F');
+        // subtle gradient strip
+        fill(col.primaryMid);
+        pdf.rect(0, 11, W, 2, 'F');
+        text(col.white);
+        pdf.setFontSize(7.5);
         pdf.setFont('helvetica', 'bold');
-        pdf.text(awardee.student_name, pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 12;
+        pdf.text('AWARD SHOWCASE  ·  YOUNG INDIANS PARLIAMENT', mg, 8.5);
+        pdf.text(label, W - mg, 8.5, { align: 'right' });
+      };
+
+      // ── Helper: footer ──────────────────────────────────────────
+      const drawFooter = (pageNum: string) => {
+        fill(col.surface);
+        pdf.rect(0, H - 10, W, 10, 'F');
+        text(col.onVariant);
+        pdf.setFontSize(7);
+        pdf.setFont('helvetica', 'normal');
+        pdf.text(pageNum, W / 2, H - 4, { align: 'center' });
+        pdf.text('Young Indians Parliament — Award Showcase', mg, H - 4);
+        pdf.text(new Date().toLocaleDateString(), W - mg, H - 4, { align: 'right' });
+      };
+
+      // ══════════════════════════════════════════════════════════
+      // TITLE PAGE
+      // ══════════════════════════════════════════════════════════
+      // Hero band
+      fill(col.primary);
+      pdf.rect(0, 0, W, 90, 'F');
+      fill(col.primaryMid);
+      pdf.rect(0, 85, W, 5, 'F');
+
+      // Gold accent bar
+      fill(col.peachDark);
+      pdf.rect(mg, 30, 6, 40, 'F');
+
+      // Title
+      text(col.white);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(34);
+      pdf.text('AWARD SHOWCASE', mg + 12, 52, {});
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Young Indians Parliament', mg + 12, 64, {});
+      pdf.setFontSize(10);
+      text([200, 210, 255] as [number,number,number]);
+      pdf.text('Recognizing Excellence in Youth Leadership', mg + 12, 74, {});
+
+      // Stats card
+      fill(col.surfaceLow);
+      pdf.roundedRect(mg, 102, cW, 38, 4, 4, 'F');
+      text(col.onSurface);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(28);
+      pdf.text(`${awardees.length}`, W / 2, 122, { align: 'center' });
+      text(col.onVariant);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(11);
+      pdf.text('Awardees Recognised', W / 2, 132, { align: 'center' });
+
+      // Date
+      text(col.onVariant);
+      pdf.setFontSize(9);
+      pdf.text(`Generated on ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}`, W / 2, 155, { align: 'center' });
+
+      // Awardee index list
+      text(col.primary);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.text('PARTICIPANTS', mg, 170);
+      draw(col.divider);
+      pdf.setLineWidth(0.3);
+      pdf.line(mg, 172, W - mg, 172);
+
+      let idxY = 179;
+      awardees.forEach((a, i) => {
+        if (idxY > H - 18) return; // skip overflow on title page
+        text(col.onSurface);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.text(`${i + 1}.  ${a.student_name}`, mg, idxY);
+        text(col.onVariant);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.text(a.position, W - mg, idxY, { align: 'right' });
+        draw(col.divider);
+        pdf.setLineWidth(0.2);
+        pdf.line(mg, idxY + 2.5, W - mg, idxY + 2.5);
+        idxY += 8;
+      });
+
+      drawFooter(`Page 1 of ${awardees.length + 1}`);
+
+      // ══════════════════════════════════════════════════════════
+      // PER-AWARDEE PAGES
+      // ══════════════════════════════════════════════════════════
+      for (let i = 0; i < awardees.length; i++) {
+        const aw = awardees[i];
+        pdf.addPage();
+        drawTopBar(`${i + 1} of ${awardees.length}`);
+
+        let y = 18;
+
+        // ── Profile card ────────────────────────────────────────
+        fill(col.surfaceLow);
+        pdf.roundedRect(mg, y, cW, 50, 4, 4, 'F');
+
+        // Accent left strip
+        fill(col.primary);
+        pdf.roundedRect(mg, y, 4, 50, 2, 2, 'F');
+
+        // Name
+        text(col.onSurface);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(22);
+        pdf.text(aw.student_name, mg + 11, y + 14);
 
         // Position
-        pdf.setFontSize(14);
+        text(col.onVariant);
         pdf.setFont('helvetica', 'normal');
-        pdf.text(awardee.position, pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 8;
-
-        // Party
         pdf.setFontSize(12);
-        pdf.text(`Party: ${awardee.party_number}`, pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 8;
+        pdf.text(aw.position, mg + 11, y + 23);
 
-        // Location
-        pdf.text(`${awardee.city}, ${awardee.constituency}`, pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 15;
-
-        // Separator line
-        pdf.setDrawColor(200, 200, 200);
-        pdf.line(margin, yPosition, pageWidth - margin, yPosition);
-        yPosition += 15;
-
-        // Awards heading
-        pdf.setFontSize(16);
+        // Party pill
+        const partyTxt = `Party ${aw.party_number}`;
+        fill(col.peach);
+        pdf.roundedRect(mg + 11, y + 28, 28, 7, 2, 2, 'F');
+        text(col.secondary);
         pdf.setFont('helvetica', 'bold');
-        pdf.text('Awards:', margin, yPosition);
-        yPosition += 10;
+        pdf.setFontSize(8);
+        pdf.text(partyTxt, mg + 11 + 14, y + 33, { align: 'center' });
 
-        // List each award
-        awardee.awards.forEach((award, index) => {
-          // Check if we need a new page
-          if (yPosition > pageHeight - 40) {
-            pdf.addPage();
-            yPosition = margin;
-          }
+        // Location chips
+        const locParts: string[] = [];
+        if (aw.city) locParts.push(aw.city);
+        if (aw.constituency) locParts.push(aw.constituency);
+        if (aw.state) locParts.push(aw.state);
+        if (locParts.length > 0) {
+          text(col.onVariant);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(9);
+          pdf.text(locParts.join('  ·  '), mg + 11, y + 44);
+        }
 
-          // Award number
-          pdf.setFontSize(14);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text(`${index + 1}. ${award.name}`, margin, yPosition);
-          yPosition += 7;
-          
-          // Award description
-          if (award.description) {
-            pdf.setFontSize(11);
-            pdf.setFont('helvetica', 'normal');
-            const splitDescription = pdf.splitTextToSize(award.description, pageWidth - margin * 2 - 5);
-            pdf.text(splitDescription, margin + 5, yPosition);
-            yPosition += splitDescription.length * 5 + 2;
-          }
-          
-          // Award type
-          pdf.setFontSize(10);
-          pdf.setFont('helvetica', 'italic');
-          pdf.text(
-            award.assigned_by_jury_consensus ? 'Award Received' : 'Recognition Given', 
-            margin + 5, 
-            yPosition
-          );
-          yPosition += 10;
-        });
+        // Awards count badge (top-right of profile card)
+        fill(col.primary);
+        pdf.roundedRect(W - mg - 32, y + 8, 32, 12, 3, 3, 'F');
+        text(col.white);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(8);
+        pdf.text(`${aw.awards.length} AWARD${aw.awards.length !== 1 ? 'S' : ''}`, W - mg - 16, y + 15.5, { align: 'center' });
 
-        // Page number
+        y += 56;
+
+        // ── Awards heading ──────────────────────────────────────
+        text(col.primary);
+        pdf.setFont('helvetica', 'bold');
         pdf.setFontSize(10);
-        pdf.setFont('helvetica', 'normal');
-        pdf.text(
-          `Page ${i + 2} of ${awardees.length + 1}`, 
-          pageWidth / 2, 
-          pageHeight - 10, 
-          { align: 'center' }
-        );
+        pdf.text('AWARDS RECEIVED', mg, y);
+        draw(col.primary);
+        pdf.setLineWidth(0.5);
+        pdf.line(mg, y + 2, mg + 38, y + 2);
+        y += 8;
+
+        // ── Award cards ─────────────────────────────────────────
+        for (let j = 0; j < aw.awards.length; j++) {
+          const award = aw.awards[j];
+          const descLines = award.description
+            ? pdf.splitTextToSize(award.description, cW - 26)
+            : [];
+          const descH = descLines.length * 4.5;
+          const cardH = 10 + descH + (descLines.length > 0 ? 5 : 0) + 10; // icon row + desc + badge row
+
+          // Page overflow
+          if (y + cardH > H - 18) {
+            drawFooter(`Page ${i + 2} of ${awardees.length + 1}`);
+            pdf.addPage();
+            drawTopBar(`${i + 1} of ${awardees.length} (cont.)`);
+            y = 18;
+          }
+
+          // Card background
+          fill(col.peach);
+          pdf.roundedRect(mg, y, cW, cardH, 3, 3, 'F');
+
+          // Icon square
+          fill(col.secondary);
+          pdf.roundedRect(mg + 4, y + 4, 10, 10, 2, 2, 'F');
+          text(col.white);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(8);
+          pdf.text('★', mg + 9, y + 10.5, { align: 'center' });
+
+          // Award name
+          text(col.onSurface);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(13);
+          pdf.text(award.name.toUpperCase(), mg + 17, y + 10);
+
+          // Description
+          if (descLines.length > 0) {
+            text(col.onVariant);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            pdf.text(descLines, mg + 17, y + 17);
+          }
+
+          // Recognition badge
+          const badgeTxt = award.assigned_by_jury_consensus ? 'AWARD RECEIVED' : 'RECOGNITION GIVEN';
+          const badgeY = y + cardH - 7;
+          fill(col.primaryTint);
+          pdf.roundedRect(mg + 17, badgeY - 3.5, 40, 6, 2, 2, 'F');
+          text(col.primary);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(7);
+          pdf.text(badgeTxt, mg + 37, badgeY + 0.5, { align: 'center' });
+
+          y += cardH + 4;
+        }
+
+        drawFooter(`Page ${i + 2} of ${awardees.length + 1}`);
       }
 
-      // Save the PDF
-      pdf.save('award-showcase.pdf');
-      
-      toast({
-        title: "PDF Downloaded",
-        description: "Award showcase PDF has been downloaded successfully!",
-      });
+      pdf.save('yip-award-showcase.pdf');
+      toast({ title: "PDF Downloaded", description: "Award showcase PDF has been downloaded successfully!" });
     } catch (error) {
       console.error('Error generating PDF:', error);
-      toast({
-        title: "Error",
-        description: "Failed to generate PDF. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to generate PDF. Please try again.", variant: "destructive" });
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center px-4">
+      <div className="min-h-screen civic-mesh-bg flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-base sm:text-xl text-muted-foreground">Loading award showcase...</p>
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm font-headline font-bold text-on-surface-variant uppercase tracking-widest">Loading Awards…</p>
         </div>
       </div>
     );
@@ -288,225 +386,197 @@ export const AwardShowcase = () => {
 
   if (awardees.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-orange-50 flex items-center justify-center px-4">
-        <Card className="bg-white/80 backdrop-blur-lg border border-white/25 shadow-xl p-6 sm:p-8 lg:p-12 text-center max-w-md">
-          <CardContent className="space-y-4">
-            <Trophy className="w-12 h-12 sm:w-16 sm:h-16 text-yellow-500 mx-auto" />
-            <h2 className="text-xl sm:text-2xl font-bold text-slate-800">No Awards Yet</h2>
-            <p className="text-sm sm:text-base text-slate-600">No awards have been assigned yet. Check back later!</p>
-            <Button onClick={() => navigate('/organizer')} className="mt-4">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to Dashboard
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen civic-mesh-bg flex items-center justify-center px-4">
+        <div className="bg-surface-container-lowest rounded-[2rem] p-12 text-center max-w-sm shadow-[0_32px_64px_-16px_rgba(19,41,143,0.1)]">
+          <div className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center mx-auto mb-4">
+            <span className="material-symbols-outlined text-primary/30" style={{ fontSize: '2.5rem', fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+          </div>
+          <h2 className="text-lg font-headline font-black text-on-surface mb-2">No Awards Yet</h2>
+          <p className="text-sm text-on-surface-variant mb-6">No awards have been assigned yet. Check back later!</p>
+          <button
+            onClick={() => navigate('/organizer')}
+            className="flex items-center gap-2 mx-auto bg-gradient-to-r from-primary to-primary-container text-white px-6 py-2.5 rounded-xl font-headline font-bold text-sm"
+          >
+            <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+            Back to Dashboard
+          </button>
+        </div>
       </div>
     );
   }
 
   const currentAwardee = awardees[currentIndex];
+  const initials = currentAwardee.student_name.split(' ').map(n => n[0]).join('').slice(0, 2);
 
   return (
-    <div className="min-h-screen bg-surface relative overflow-hidden flex flex-col font-body antialiased">
-      <Navbar />
-      <div className="pt-16">
-        <BreakingNewsTicker />
-      </div>
-      {/* Animated background */}
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_1px_1px,_rgba(59,130,246,0.15)_1px,_transparent_0)] bg-[length:40px_40px] animate-pulse"></div>
-        <div className="absolute top-10 left-10 w-48 h-48 sm:w-72 sm:h-72 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full mix-blend-multiply filter blur-xl animate-bounce"></div>
-        <div className="absolute top-10 right-10 w-48 h-48 sm:w-72 sm:h-72 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full mix-blend-multiply filter blur-xl animate-bounce delay-1000"></div>
-        <div className="absolute bottom-10 left-1/2 w-48 h-48 sm:w-72 sm:h-72 bg-gradient-to-r from-yellow-400/20 to-orange-400/20 rounded-full mix-blend-multiply filter blur-xl animate-bounce delay-500"></div>
+    <div className="h-screen civic-mesh-bg flex flex-col font-body antialiased overflow-hidden">
+
+      {/* ── Top bar ── */}
+      <div className="shrink-0 px-8 pt-6 pb-4 flex items-center justify-between gap-6">
+        <button
+          onClick={() => navigate('/organizer')}
+          className="flex items-center gap-2.5 bg-surface-container-lowest border border-outline-variant/20 rounded-2xl px-6 py-3 text-base font-headline font-bold text-on-surface hover:bg-surface-container transition-colors shadow-sm"
+        >
+          <span className="material-symbols-outlined text-[22px]">arrow_back</span>
+          Back
+        </button>
+
+        <div className="flex items-center gap-3 bg-surface-container-lowest border border-outline-variant/20 rounded-full px-8 py-3 shadow-sm">
+          <span className="text-xl font-headline font-black text-primary">{currentIndex + 1}</span>
+          <span className="text-base text-on-surface-variant font-medium">of {awardees.length} Awardees</span>
+        </div>
+
+        <button
+          onClick={downloadPDF}
+          className="flex items-center gap-2.5 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl px-6 py-3 text-base font-headline font-bold shadow-[0_4px_16px_rgba(19,41,143,0.3)] hover:opacity-90 transition-opacity"
+        >
+          <span className="material-symbols-outlined text-[22px]">download</span>
+          Download PDF
+        </button>
       </div>
 
-      {/* Header */}
-      <div className="relative z-10 p-2 sm:p-3 flex-shrink-0">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 mb-2 sm:mb-3">
-          <Button 
-            onClick={() => navigate('/organizer')}
-            variant="outline"
-            className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 w-full sm:w-auto h-7 text-[10px]"
-          >
-            <ArrowLeft className="w-3 h-3 mr-1.5" />
-            Back to Dashboard
-          </Button>
-          
-          <div className="text-center flex-1">
-            <h1 className="text-title-sm font-headline font-extrabold text-primary leading-tight -tracking-[0.03em] mb-0.5">
-              🏆 Award Showcase
-            </h1>
-            <p className="text-[9px] text-on-surface-variant font-medium">
-              Recognizing Excellence in Young Indians Parliament
-            </p>
+      {/* ── Section header ── */}
+      <div className="shrink-0 px-8 pb-4 text-center flex flex-col items-center gap-2">
+        <div className="flex items-center gap-3">
+          <span className="material-symbols-outlined text-primary" style={{ fontSize: '2.5rem', fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+          <h1 className="text-4xl font-headline font-black text-on-surface -tracking-[0.03em]">Award Showcase</h1>
+        </div>
+        <p className="text-base text-on-surface-variant font-medium flex items-center gap-2">
+          Recognizing Excellence in Young Indians Parliament
+          <span className="w-1.5 h-1.5 rounded-full bg-secondary-container inline-block" />
+        </p>
+      </div>
+
+      {/* ── Main bento card ── */}
+      <div className="flex-1 px-8 pb-6 flex items-stretch min-h-0">
+        <div className="w-full bg-surface-container-lowest rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(19,41,143,0.12)] overflow-hidden flex flex-col md:flex-row">
+
+          {/* Left: Profile (1/3) */}
+          <div className="md:w-[38%] bg-surface-container-low flex flex-col items-center justify-center gap-6 p-10 md:p-14">
+            {/* Avatar */}
+            {currentAwardee.photo_url ? (
+              <img
+                src={currentAwardee.photo_url}
+                alt={currentAwardee.student_name}
+                className="w-48 h-48 md:w-64 md:h-64 rounded-full object-cover winner-glow"
+              />
+            ) : (
+              <div className="w-48 h-48 md:w-64 md:h-64 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center winner-glow">
+                <span className="text-6xl md:text-7xl font-headline font-black text-white">{initials}</span>
+              </div>
+            )}
+
+            {/* Name & meta */}
+            <div className="text-center space-y-3">
+              <h2 className="text-3xl md:text-4xl font-headline font-black text-on-surface -tracking-[0.02em] leading-tight">
+                {currentAwardee.student_name}
+              </h2>
+              <p className="text-lg md:text-xl font-medium text-on-surface-variant">{currentAwardee.position}</p>
+
+              {/* Party pill */}
+              <div className="inline-flex items-center gap-2 bg-secondary-fixed/30 text-secondary rounded-full px-6 py-2.5">
+                <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>flag</span>
+                <span className="text-base font-headline font-bold">Party {currentAwardee.party_number}</span>
+              </div>
+
+              {/* Location */}
+              <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 pt-1">
+                {currentAwardee.city && (
+                  <div className="flex items-center gap-1.5 text-on-surface-variant">
+                    <span className="material-symbols-outlined text-[20px]">location_on</span>
+                    <span className="text-base font-medium">{currentAwardee.city}</span>
+                  </div>
+                )}
+                {currentAwardee.constituency && (
+                  <div className="flex items-center gap-1.5 text-on-surface-variant">
+                    <span className="material-symbols-outlined text-[20px]">apartment</span>
+                    <span className="text-base font-medium">{currentAwardee.constituency}</span>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="text-center sm:text-right w-full sm:w-auto">
-            <Button
-              onClick={downloadPDF}
-              variant="outline"
-              className="bg-white/20 backdrop-blur-sm border-white/30 text-slate-800 hover:bg-white/35 mb-1.5 w-full sm:w-auto h-7 text-[9px]"
-            >
-              <Download className="w-2.5 h-2.5 mr-1.5" />
-              Download PDF
-            </Button>
-            <div className="flex items-center justify-center sm:justify-end gap-2">
-              <span className="text-xs font-bold text-slate-800">
-                {currentIndex + 1} of {awardees.length}
-              </span>
-              <span className="text-[9px] text-slate-600">Awardees</span>
+          {/* Right: Awards (2/3) */}
+          <div className="md:w-[62%] flex flex-col p-10 md:p-14 gap-6">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-primary" style={{ fontSize: '2rem', fontVariationSettings: "'FILL' 1" }}>military_tech</span>
+              <h3 className="text-2xl md:text-3xl font-headline font-black text-on-surface -tracking-[0.02em]">
+                Awards Received
+              </h3>
+            </div>
+
+            <div className="space-y-4 overflow-y-auto flex-1 min-h-0 pr-2">
+              {currentAwardee.awards.map((award, index) => (
+                <div
+                  key={award.id}
+                  className="award-gradient rounded-2xl p-5 flex items-start gap-4"
+                >
+                  <div className="w-14 h-14 rounded-2xl bg-secondary-container flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-on-secondary-container" style={{ fontSize: '1.75rem', fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-xl md:text-2xl font-headline font-black text-on-surface mb-1 leading-tight uppercase tracking-wide">
+                      {award.name}
+                    </h4>
+                    {award.description && (
+                      <p className="text-base text-on-surface-variant font-medium leading-snug mb-3">
+                        {award.description}
+                      </p>
+                    )}
+                    <span className="inline-block bg-primary-container text-on-primary-container text-sm font-headline font-black uppercase tracking-widest px-4 py-1.5 rounded-full">
+                      {award.assigned_by_jury_consensus ? 'Award Received' : 'Recognition Given'}
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
-
-        {/* Navigation dots */}
-        <div className="flex justify-center space-x-1 sm:space-x-1.5 mb-2 sm:mb-3 overflow-x-auto py-1">
-          {awardees.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all duration-300 flex-shrink-0 ${
-                index === currentIndex 
-                  ? 'bg-yellow-500 scale-125 shadow-lg' 
-                  : 'bg-white/50 hover:bg-white/75'
-              }`}
-            />
-          ))}
-        </div>
       </div>
 
-      {/* Main showcase - flexible height */}
-      <div className="relative z-10 px-4 flex-1 flex items-center">
-        <div className="max-w-6xl mx-auto w-full">
-          <Card className="bg-white/25 backdrop-blur-xl border border-white/30 shadow-2xl overflow-hidden animate-fade-in">
-            <CardContent className="p-6 lg:p-8">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-                {/* Photo and Basic Info */}
-                <div className="text-center">
-                  <div className="relative inline-block mb-2">
-                    <div className="absolute -inset-1 bg-gradient-to-r from-yellow-400 via-orange-400 to-red-400 rounded-full blur-sm opacity-75 animate-pulse"></div>
-                    <Avatar className="relative w-20 h-20 lg:w-24 lg:h-24 border-2 border-white shadow-xl">
-                      <AvatarImage 
-                        src={currentAwardee.photo_url} 
-                        alt={currentAwardee.student_name}
-                        className="object-cover"
-                      />
-                      <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-600 text-white text-lg lg:text-2xl font-bold">
-                        {currentAwardee.student_name.split(' ').map(n => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                  </div>
-                  
-                  <h2 className="text-lg md:text-xl font-black text-slate-800 mb-1">
-                    {currentAwardee.student_name}
-                  </h2>
-                  
-                  <div className="space-y-1.5">
-                    <Badge 
-                      variant="outline" 
-                      className="text-[8px] px-2 py-0.5 bg-white/30 border-white/40 text-slate-700 font-bold"
-                    >
-                      {currentAwardee.position}
-                    </Badge>
-                    
-                    <div className="flex justify-center scale-90">
-                      <PartyBadge partyNumber={currentAwardee.party_number} size="sm" />
-                    </div>
-                    
-                    <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 text-slate-600">
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-3 h-3" />
-                        <span className="font-medium text-[9px]">{currentAwardee.city}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <Users className="w-3 h-3" />
-                        <span className="font-medium text-[9px]">{currentAwardee.constituency}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Awards */}
-                <div className="space-y-3">
-                  <div className="text-center">
-                    <h3 className="text-base lg:text-lg font-headline font-bold text-primary mb-0.5">
-                      🏆 Awards Received
-                    </h3>
-                    <p className="text-on-surface-variant font-medium text-[8px]">Recognition for Outstanding Performance</p>
-                  </div>
-                  
-                  <div className="space-y-2 max-h-56 lg:max-h-72 overflow-y-auto pr-2">
-                    {currentAwardee.awards.map((award, index) => (
-                      <div 
-                        key={award.id}
-                        className="bg-gradient-to-r from-yellow-100/80 to-orange-100/80 backdrop-blur-sm rounded-lg p-3 border border-yellow-200/50 shadow-md animate-scale-in"
-                        style={{ animationDelay: `${index * 0.1}s` }}
-                      >
-                        <div className="flex items-start gap-2.5">
-                          <div className="w-6 h-6 bg-gradient-to-br from-yellow-500 to-orange-500 rounded flex items-center justify-center shadow-md flex-shrink-0">
-                            <Trophy className="w-3 h-3 text-white" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="text-[11px] font-black text-slate-800 mb-0.5 leading-tight uppercase">
-                              {award.name}
-                            </h4>
-                            {award.description && (
-                              <p className="text-slate-600 mb-1.5 font-medium text-[9px] leading-tight">
-                                {award.description}
-                              </p>
-                            )}
-                            <Badge 
-                              variant={award.assigned_by_jury_consensus ? "default" : "secondary"}
-                              className={`font-black text-[7px] uppercase tracking-wider h-4 ${
-                                award.assigned_by_jury_consensus 
-                                  ? "bg-blue-500/20 text-blue-700 border border-blue-500/30" 
-                                  : "bg-purple-500/20 text-purple-700 border border-purple-500/30"
-                              }`}
-                            >
-                              {award.assigned_by_jury_consensus ? "Award Received" : "Recognition Given"}
-                            </Badge>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Navigation controls */}
-      <div className="relative z-10 p-4 flex-shrink-0">
-        <div className="flex items-center justify-center gap-4 bg-white/20 backdrop-blur-lg rounded-2xl border border-white/25 shadow-xl p-3 max-w-md mx-auto">
-          <Button 
-            onClick={previousSlide}
-            variant="outline"
-            size="lg"
-            disabled={awardees.length <= 1}
-            className="bg-white/20 border-white/30 text-slate-800 hover:bg-white/35 hover:scale-105 transition-all duration-300"
-          >
-            <ChevronLeft className="w-6 h-6" />
-          </Button>
-          
-          <div className="px-6 py-2 bg-white/30 rounded-xl">
-            <span className="text-lg font-bold text-slate-800">
-              {currentIndex + 1} / {awardees.length}
-            </span>
+      {/* ── Bottom carousel pill ── */}
+      <div className="shrink-0 flex flex-col items-center gap-3 pb-6">
+        {/* Dot indicators */}
+        {awardees.length > 1 && (
+          <div className="flex items-center gap-2">
+            {awardees.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => goToSlide(i)}
+                className={`rounded-full transition-all duration-300 ${
+                  i === currentIndex
+                    ? 'w-7 h-3 bg-primary'
+                    : 'w-3 h-3 bg-outline-variant hover:bg-primary/40'
+                }`}
+              />
+            ))}
           </div>
-          
-          <Button 
-            onClick={nextSlide}
-            variant="outline"
-            size="lg"
+        )}
+
+        {/* Prev / count / Next pill */}
+        <div className="flex items-center gap-3 bg-surface-container-lowest shadow-lg rounded-full px-3 py-3">
+          <button
+            onClick={previousSlide}
             disabled={awardees.length <= 1}
-            className="bg-white/20 border-white/30 text-slate-800 hover:bg-white/35 hover:scale-105 transition-all duration-300"
+            className="w-14 h-14 flex items-center justify-center rounded-full hover:bg-surface-container text-on-surface disabled:opacity-30 transition-colors"
           >
-            <ChevronRight className="w-6 h-6" />
-          </Button>
+            <span className="material-symbols-outlined text-[28px]">chevron_left</span>
+          </button>
+          <span className="px-6 text-xl font-headline font-black text-on-surface tabular-nums">
+            {currentIndex + 1} / {awardees.length}
+          </span>
+          <button
+            onClick={nextSlide}
+            disabled={awardees.length <= 1}
+            className="w-14 h-14 flex items-center justify-center rounded-full hover:bg-surface-container text-on-surface disabled:opacity-30 transition-colors"
+          >
+            <span className="material-symbols-outlined text-[28px]">chevron_right</span>
+          </button>
         </div>
       </div>
+
+      <BreakingNewsTicker />
     </div>
   );
 };
