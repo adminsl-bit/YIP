@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import TimerDisplay from "./TimerDisplay";
 import { DetailedPollResults } from "@/components/student/DetailedPollResults";
+import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
 
 type Tab = 'timer' | 'polls';
 
@@ -130,6 +131,7 @@ const CombinedDisplay = () => {
         )}
       </div>
 
+      <BreakingNewsTicker />
     </div>
   );
 };
