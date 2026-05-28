@@ -294,15 +294,15 @@ export const PollManagement = () => {
                 <span className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest border shadow-sm ${activePolls.length > 0 ? 'bg-secondary/10 text-secondary border-secondary/20' : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant/10'}`}>
                   {activePolls.length} Live
                 </span>
-                <button
-                  onClick={async () => {
-                    const { error } = await supabase.from('system_settings').update({ setting_value: true }).eq('setting_key', 'voting_enabled');
-                    if (!error) toast({ title: "Voting Enabled", description: "All participant devices unfrozen." });
-                  }}
-                  className="px-3 py-1.5 bg-tertiary/10 text-tertiary border border-tertiary/20 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-tertiary/20 transition-colors font-headline"
+                <a
+                  href="/display/combined"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-primary-container transition-colors font-headline shadow-sm shadow-primary/20"
                 >
-                  Force Unfreeze
-                </button>
+                  <span className="material-symbols-outlined text-sm">open_in_new</span>
+                  Open Display
+                </a>
               </div>
             </div>
 

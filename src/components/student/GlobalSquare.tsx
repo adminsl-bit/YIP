@@ -72,9 +72,11 @@ export const GlobalSquare = () => {
 
   useEffect(() => {
     if (!isOrganizer) return;
-    supabase.from('profiles').select('party_name').not('party_name', 'is', null)
+    supabase.from('profiles').select('party_name').eq('user_type', 'student')
       .then(({ data }) => {
-        const unique = [...new Set((data || []).map((p: any) => p.party_name).filter(Boolean))] as string[];
+        // Map null/empty to 'Independent' so the organizer can monitor those delegates too
+        const names = (data || []).map((p: any) => p.party_name?.trim() || 'Independent');
+        const unique = [...new Set(names)].sort() as string[];
         setParties(unique);
         setSelectedParty(prev => prev || unique[0] || '');
       });

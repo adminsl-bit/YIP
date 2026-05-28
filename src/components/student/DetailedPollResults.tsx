@@ -131,6 +131,41 @@ export const DetailedPollResults = ({ pollId, pollTitle, pollHeading, options, i
     );
   }
 
+  const downloadCSV = () => {
+    try {
+      const rows: string[][] = [
+        ['Option', 'Delegate Name', 'Position', 'Party', 'State', 'Constituency'],
+      ];
+      [...options, { id: 'did_not_vote', text: 'Did Not Vote' }].forEach(option => {
+        const opt = getOptionDisplay(option);
+        getVotesForOption(opt.id).forEach(vote => {
+          const partyLabel = vote.student.party_number
+            ? `Party ${['None', 'A', 'B', 'C', 'D', 'E'][vote.student.party_number] ?? vote.student.party_number}`
+            : 'N/A';
+          rows.push([
+            opt.text,
+            vote.student.name,
+            vote.student.position,
+            partyLabel,
+            vote.student.state || '',
+            vote.student.constituency || '',
+          ]);
+        });
+      });
+      const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `poll-results-${pollTitle.replace(/[^a-zA-Z0-9]/g, '-')}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success("CSV downloaded");
+    } catch {
+      toast.error("CSV export failed");
+    }
+  };
+
   const downloadPDF = () => {
     try {
       const pdf = new jsPDF();
@@ -214,12 +249,20 @@ export const DetailedPollResults = ({ pollId, pollTitle, pollHeading, options, i
         </div>
         
         {isOrganizer && (
-            <button 
-            onClick={downloadPDF}
-            className="flex items-center gap-5 px-12 py-6 bg-white text-primary hover:bg-primary hover:text-on-primary rounded-[2rem] font-bold shadow-xl hover:shadow-primary/20 transition-all text-label-lg uppercase tracking-[0.1em] shrink-0 relative z-10 border border-primary/10 active:scale-95"
-          >
-            <Download className="w-7 h-7" /> Export Report
-          </button>
+          <div className="flex items-center gap-3 shrink-0 relative z-10">
+            <button
+              onClick={downloadCSV}
+              className="flex items-center gap-3 px-8 py-5 bg-white text-primary hover:bg-primary hover:text-on-primary rounded-[2rem] font-bold shadow-xl hover:shadow-primary/20 transition-all text-label-md uppercase tracking-[0.1em] border border-primary/10 active:scale-95"
+            >
+              <Download className="w-5 h-5" /> CSV
+            </button>
+            <button
+              onClick={downloadPDF}
+              className="flex items-center gap-3 px-8 py-5 bg-primary text-white hover:bg-primary-container rounded-[2rem] font-bold shadow-xl hover:shadow-primary/20 transition-all text-label-md uppercase tracking-[0.1em] active:scale-95"
+            >
+              <Download className="w-5 h-5" /> PDF
+            </button>
+          </div>
         )}
       </div>
 

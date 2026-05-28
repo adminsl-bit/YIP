@@ -14,6 +14,7 @@ import OrganizerDashboard from "./pages/OrganizerDashboard";
 import TimerDisplay from "./pages/TimerDisplay";
 import SessionDisplay from "./pages/SessionDisplay";
 import PollDisplay from "./pages/PollDisplay";
+import CombinedDisplay from "./pages/CombinedDisplay";
 import LeaderboardDisplay from "./pages/LeaderboardDisplay";
 import NotFound from "./pages/NotFound";
 import { AwardShowcase } from "./pages/AwardShowcase";
@@ -70,6 +71,7 @@ const App = () => (
             <Route path="/display/timer" element={<TimerDisplay />} />
             <Route path="/display/session" element={<SessionDisplay />} />
             <Route path="/display/polls" element={<PollDisplay />} />
+            <Route path="/display/combined" element={<CombinedDisplay />} />
             <Route path="/display/leaderboard" element={<LeaderboardDisplay />} />
             <Route path="/display/awards" element={<AwardShowcase />} />
             <Route path="/awards" element={<AwardShowcase />} />
