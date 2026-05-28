@@ -52,19 +52,15 @@ Deno.serve(async (req) => {
       throw new Error('User ID and new password are required')
     }
 
-    // Verify the target user is a student
+    // Verify the target user exists
     const { data: targetProfile, error: targetProfileError } = await supabaseAdmin
       .from('profiles')
       .select('user_type, name')
       .eq('user_id', userId)
       .single()
 
-    if (targetProfileError) {
-      throw new Error('Student not found')
-    }
-
-    if (targetProfile.user_type !== 'student') {
-      throw new Error('Can only reset passwords for students')
+    if (targetProfileError || !targetProfile) {
+      throw new Error('User not found')
     }
 
     // Reset the password
@@ -77,7 +73,7 @@ Deno.serve(async (req) => {
       throw new Error(`Failed to reset password: ${updateError.message}`)
     }
 
-    console.log(`Password reset for student ${targetProfile.name} by organizer ${user.id}`)
+    console.log(`Password reset for ${targetProfile.name} (${targetProfile.user_type}) by organizer ${user.id}`)
 
     return new Response(
       JSON.stringify({ 

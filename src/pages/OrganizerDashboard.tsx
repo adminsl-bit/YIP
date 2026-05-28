@@ -29,8 +29,6 @@ import { SecurityLogsManager } from "@/components/organizer/SecurityLogsManager"
 import { OrganizerStudentList } from "@/components/organizer/OrganizerStudentList";
 import { StudentBulkImport } from "@/components/organizer/StudentBulkImport";
 import { DynamicRoleCreator } from "@/components/organizer/DynamicRoleCreator";
-import { CreateAdminUsers } from "@/components/organizer/CreateAdminUsers";
-import { CreateJuryUsers } from "@/components/organizer/CreateJuryUsers";
 import { DuplicateLoginMonitor } from "@/components/organizer/DuplicateLoginMonitor";
 import PhotoUploadManager from "@/components/organizer/PhotoUploadManager";
 import PhotoMigration from "@/components/organizer/PhotoMigration";
@@ -311,19 +309,7 @@ const OrganizerDashboard = () => {
 
               <TabsContent value="role-creator" className="m-0 space-y-8">
                 <PageHeader primary="Role" secondary="Creator" icon={<span className="material-symbols-outlined text-[12px]">manage_accounts</span>} subtitle="Dynamic Parliamentary Role Mapping" />
-                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
-                  <DynamicRoleCreator />
-                </div>
-                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
-                  <div className="mb-6">
-                    <h2 className="text-xl font-extrabold font-headline text-primary">Quick Account <span className="text-secondary">Creation</span></h2>
-                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Provision admin and jury accounts via edge function</p>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    <CreateAdminUsers />
-                    <CreateJuryUsers />
-                  </div>
-                </div>
+                <DynamicRoleCreator />
               </TabsContent>
 
               <TabsContent value="security" className="m-0 space-y-10">

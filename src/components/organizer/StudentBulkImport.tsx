@@ -269,17 +269,6 @@ export const StudentBulkImport = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-700">
 
-      {/* Page heading */}
-      <div>
-        <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
-          Registry <span className="text-secondary">Sync</span>
-        </h1>
-        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
-          <span className="material-symbols-outlined text-[12px]">upload_file</span>
-          Bulk Import &amp; Data Management
-        </p>
-      </div>
-
       {/* Main import card */}
       <section className="bg-surface-container-low rounded-[2rem] p-8 space-y-8">
 

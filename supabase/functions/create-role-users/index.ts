@@ -6,13 +6,13 @@ const corsHeaders = {
 }
 
 interface RoleUserConfig {
-  roleType: 'jury' | 'admin' | 'journalist';
+  roleType: 'jury' | 'admin' | 'journalist' | 'organizer';
   count: number;
   password: string;
 }
 
 interface RoleDefinition {
-  userType: 'jury' | 'student';
+  userType: 'jury' | 'student' | 'organizer';
   appRole?: 'admin_student' | 'journalist';
   position: string;
   serialStart: number;
@@ -43,6 +43,13 @@ const roleDefinitions: Record<string, RoleDefinition> = {
     serialStart: 8001,
     emailDomain: '@yip.com',
     namePrefix: 'Journalist',
+  },
+  organizer: {
+    userType: 'organizer',
+    position: 'Event Organizer',
+    serialStart: 5001,
+    emailDomain: '@yip.com',
+    namePrefix: 'Organizer',
   },
 };
 
