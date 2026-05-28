@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Send, Loader2, Trash2, Paperclip, Smile, User, MessagesSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
@@ -63,69 +63,181 @@ export const GlobalSquare = () => {
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [activeChannel, setActiveChannel] = useState<Channel>('global');
-  const [parties, setParties] = useState<string[]>([]);
-  const [selectedParty, setSelectedParty] = useState<string>('');
+  const [parties, setParties] = useState<number[]>([]);
+  const [selectedParty, setSelectedParty] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const rtChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const channelRefsMap = useRef<Map<string, ReturnType<typeof supabase.channel>>>(new Map());
+  const messagesCacheRef = useRef<Map<string, Message[]>>(new Map());
+  const channelKeyRef = useRef('global_square');
+  const presenceChRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const profileRef = useRef<typeof profile>(null);
 
   const isOrganizer = (profile as any)?.user_type === 'organizer';
+  const myPartyNumber = (profile as any)?.party_number ?? 0;
 
+  // Load distinct party numbers from active students (organizer only)
   useEffect(() => {
     if (!isOrganizer) return;
-    supabase.from('profiles').select('party_name').eq('user_type', 'student')
+    supabase.from('profiles')
+      .select('party_number')
+      .eq('user_type', 'student')
+      .eq('is_active', true)
       .then(({ data }) => {
-        // Map null/empty to 'Independent' so the organizer can monitor those delegates too
-        const names = (data || []).map((p: any) => p.party_name?.trim() || 'Independent');
-        const unique = [...new Set(names)].sort() as string[];
-        setParties(unique);
-        setSelectedParty(prev => prev || unique[0] || '');
+        const nums = [...new Set((data || []).map((p: any) => p.party_number).filter((n: any) => n != null))]
+          .sort((a: any, b: any) => a - b) as number[];
+        setParties(nums);
+        setSelectedParty((prev: number | null) => prev ?? nums[0] ?? null);
       });
   }, [isOrganizer]);
 
-  const getChannelName = (ch: Channel = activeChannel) => {
-    if (ch === 'global') return 'global_square';
-    if (ch === 'party') {
-      if (isOrganizer && selectedParty) return `party_${selectedParty.toLowerCase().replace(/\s+/g, '_')}`;
-      return `party_${profile?.party_name?.toLowerCase().replace(/\s+/g, '_') || 'independent'}`;
+  // Derive the actual channel key — only changes when the real channel changes
+  const channelKey = useMemo(() => {
+    if (activeChannel === 'global') return 'global_square';
+    if (activeChannel === 'party') {
+      const partyNum = isOrganizer ? (selectedParty ?? 0) : myPartyNumber;
+      return `party_${partyNum}`;
     }
     return 'organizer_direct';
-  };
+  }, [activeChannel, isOrganizer, selectedParty, myPartyNumber]);
+
+  // Keep refs current (avoid stale closures in broadcast/presence callbacks)
+  useEffect(() => { channelKeyRef.current = channelKey; }, [channelKey]);
+  useEffect(() => { profileRef.current = profile; }, [profile]);
+
+  // Presence channel — tracks who is currently online in real-time
+  useEffect(() => {
+    if (!user) return;
+
+    const ch = supabase.channel('yip:presence');
+
+    const syncPresence = () => {
+      const state = ch.presenceState<{
+        id: string; name: string; photo_url: string | null;
+        user_type: string; city: string; party_name?: string; position?: string;
+      }>();
+      const seen = new Set<string>();
+      const users: Participant[] = [];
+      for (const presences of Object.values(state)) {
+        for (const p of presences as any[]) {
+          if (!seen.has(p.id)) {
+            seen.add(p.id);
+            users.push({ id: p.id, name: p.name, photo_url: p.photo_url, user_type: p.user_type, city: p.city, party_name: p.party_name, position: p.position });
+          }
+        }
+      }
+      setActiveProfiles(users);
+    };
+
+    ch.on('presence', { event: 'sync' }, syncPresence);
+
+    ch.subscribe(async (status) => {
+      if (status === 'SUBSCRIBED') {
+        const p = profileRef.current;
+        if (p) {
+          await ch.track({
+            id: user.id,
+            name: (p as any).name || 'Delegate',
+            photo_url: (p as any).photo_url || null,
+            user_type: (p as any).user_type || 'student',
+            city: (p as any).city || '',
+            party_name: (p as any).party_name,
+            position: (p as any).position,
+          });
+        }
+      }
+    });
+
+    presenceChRef.current = ch;
+    return () => { supabase.removeChannel(ch); presenceChRef.current = null; };
+  }, [user]);
+
+  // Re-track when profile data arrives after the channel already subscribed
+  useEffect(() => {
+    const ch = presenceChRef.current;
+    if (!ch || !user || !profile) return;
+    ch.track({
+      id: user.id,
+      name: (profile as any).name || 'Delegate',
+      photo_url: (profile as any).photo_url || null,
+      user_type: (profile as any).user_type || 'student',
+      city: (profile as any).city || '',
+      party_name: (profile as any).party_name,
+      position: (profile as any).position,
+    });
+  }, [profile, user]);
 
   const scrollToBottom = () => {
-    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    requestAnimationFrame(() => {
+      bottomRef.current?.scrollIntoView({ behavior: 'instant' });
+    });
   };
 
-  const fetchActiveParticipants = async () => {
-    try {
-      const { data } = await supabase.from('profiles').select('id, name, photo_url, user_type, city, party_name, position').limit(20);
-      setActiveProfiles((data as any[]) || []);
-    } catch { /* silent */ }
-  };
-
-  useEffect(() => {
-    setMessages([]);
-    fetchActiveParticipants();
-
-    const chName = `yip:chat:${getChannelName()}`;
-    const ch = supabase.channel(chName, { config: { broadcast: { self: true } } });
+  // Subscribe to a channel once and cache its messages
+  const ensureSubscribed = useCallback((ck: string) => {
+    if (channelRefsMap.current.has(ck)) return;
+    const ch = supabase.channel(`yip:chat:${ck}`, { config: { broadcast: { self: true } } });
 
     ch.on('broadcast', { event: 'msg' }, ({ payload }) => {
-      setMessages(prev => [...prev, payload as Message]);
+      const msg = payload as Message;
+      const existing = messagesCacheRef.current.get(ck) || [];
+      const updated = [...existing, msg];
+      messagesCacheRef.current.set(ck, updated);
+      if (channelKeyRef.current === ck) setMessages(updated);
     });
-    ch.on('broadcast', { event: 'del' }, ({ payload }: { payload: { id: string } }) => {
-      setMessages(prev => prev.filter(m => m.id !== payload.id));
-    });
-    ch.subscribe();
-    rtChannelRef.current = ch;
 
-    return () => { supabase.removeChannel(ch); rtChannelRef.current = null; };
-  }, [activeChannel, profile?.party_name, selectedParty]);
+    ch.on('broadcast', { event: 'del' }, ({ payload }) => {
+      const { id } = payload as { id: string };
+      const existing = messagesCacheRef.current.get(ck) || [];
+      const updated = existing.filter(m => m.id !== id);
+      messagesCacheRef.current.set(ck, updated);
+      if (channelKeyRef.current === ck) setMessages(updated);
+    });
+
+    ch.subscribe();
+    channelRefsMap.current.set(ck, ch);
+  }, []);
+
+  // Pre-subscribe all base channels on mount so nothing is ever missed
+  useEffect(() => {
+    if (!user) return;
+    ensureSubscribed('global_square');
+    ensureSubscribed('organizer_direct');
+    if (!isOrganizer && myPartyNumber) ensureSubscribed(`party_${myPartyNumber}`);
+
+    return () => {
+      channelRefsMap.current.forEach(c => supabase.removeChannel(c));
+      channelRefsMap.current.clear();
+      messagesCacheRef.current.clear();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  // Student: subscribe to own party channel once party number is known (profile may load async)
+  useEffect(() => {
+    if (isOrganizer || !user || !myPartyNumber) return;
+    ensureSubscribed(`party_${myPartyNumber}`);
+  }, [myPartyNumber, isOrganizer, user, ensureSubscribed]);
+
+  // Organizer: subscribe to every party channel as soon as party list loads
+  useEffect(() => {
+    if (!isOrganizer || !user || parties.length === 0) return;
+    parties.forEach(p => ensureSubscribed(`party_${p}`));
+  }, [parties, isOrganizer, user, ensureSubscribed]);
+
+  // When the active channel changes: ensure it's subscribed, load its cached messages
+  useEffect(() => {
+    ensureSubscribed(channelKey);
+    setMessages(messagesCacheRef.current.get(channelKey) || []);
+  }, [channelKey, ensureSubscribed]);
 
   useEffect(() => { scrollToBottom(); }, [messages]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !user || !rtChannelRef.current) return;
+    if (!newMessage.trim() || !user) return;
+    const ch = channelRefsMap.current.get(channelKey);
+    if (!ch) return;
     const text = newMessage.trim();
     setNewMessage('');
 
@@ -133,7 +245,7 @@ export const GlobalSquare = () => {
       id: crypto.randomUUID(),
       content: text,
       user_id: user.id,
-      channel: getChannelName(),
+      channel: channelKey,
       created_at: new Date().toISOString(),
       profiles: {
         name: (profile as any)?.name || 'Delegate',
@@ -145,7 +257,7 @@ export const GlobalSquare = () => {
       },
     };
 
-    const result = await rtChannelRef.current.send({ type: 'broadcast', event: 'msg', payload: msg });
+    const result = await ch.send({ type: 'broadcast', event: 'msg', payload: msg });
     if (result !== 'ok') {
       toast.error('Failed to send message');
       setNewMessage(text);
@@ -153,15 +265,17 @@ export const GlobalSquare = () => {
   };
 
   const handleDelete = async (id: string) => {
-    const isOrganizer = (profile as any)?.user_type === 'organizer';
+    const isOrg = (profile as any)?.user_type === 'organizer';
     const isOwn = messages.find(m => m.id === id)?.user_id === user?.id;
-    if (!isOrganizer && !isOwn || !rtChannelRef.current) return;
-    await rtChannelRef.current.send({ type: 'broadcast', event: 'del', payload: { id } });
+    if (!isOrg && !isOwn) return;
+    const ch = channelRefsMap.current.get(channelKey);
+    if (!ch) return;
+    await ch.send({ type: 'broadcast', event: 'del', payload: { id } });
   };
 
   const switchChannel = (ch: Channel) => {
     setActiveChannel(ch);
-    setMessages([]);
+    // messages loaded from cache by the channelKey effect — no clear needed
   };
 
   const leadership = activeProfiles.filter(p => {
@@ -214,17 +328,17 @@ export const GlobalSquare = () => {
       {isOrganizer && activeChannel === 'party' && parties.length > 0 && (
         <div className="px-6 py-3 bg-surface-container-low border-b border-slate-100 flex items-center gap-3 overflow-x-auto shrink-0" style={{ scrollbarWidth: 'none' }}>
           <span className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 shrink-0 font-headline">Monitor Party:</span>
-          {parties.map(party => (
+          {parties.map(partyNum => (
             <button
-              key={party}
-              onClick={() => { setSelectedParty(party); setMessages([]); }}
+              key={partyNum}
+              onClick={() => setSelectedParty(partyNum)}
               className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all font-headline ${
-                selectedParty === party
+                selectedParty === partyNum
                   ? 'bg-primary text-white shadow-sm'
                   : 'bg-white text-on-surface-variant hover:bg-primary/10 hover:text-primary border border-slate-200'
               }`}
             >
-              {party}
+              Party {partyNum}
             </button>
           ))}
         </div>
@@ -323,6 +437,8 @@ export const GlobalSquare = () => {
               })}
             </AnimatePresence>
           )}
+          {/* Scroll anchor — always at the very bottom of the message list */}
+          <div ref={bottomRef} />
         </div>
 
         {/* ── Right sidebar: Active Now ── */}
@@ -389,8 +505,8 @@ export const GlobalSquare = () => {
                   ? 'Open forum for all delegates.'
                   : activeChannel === 'party'
                   ? isOrganizer
-                    ? `Monitoring ${selectedParty || 'party'} wing. Switch parties above.`
-                    : `Caucus channel for ${profile?.party_name || 'your party'}.`
+                    ? `Monitoring Party ${selectedParty ?? '—'} wing. Switch parties above.`
+                    : `Caucus channel for Party ${myPartyNumber}.`
                   : isOrganizer
                   ? 'Student messages arrive here. Reply to broadcast.'
                   : 'Direct channel to the organizing team.'}
@@ -416,7 +532,7 @@ export const GlobalSquare = () => {
               onChange={(e) => setNewMessage(e.target.value)}
               placeholder={
                 activeChannel === 'global' ? 'Broadcast to the floor…' :
-                activeChannel === 'party' ? (isOrganizer ? `Message ${selectedParty || 'party'} wing…` : 'Message your party caucus…') :
+                activeChannel === 'party' ? (isOrganizer ? `Message Party ${selectedParty ?? '?'} wing…` : 'Message your party caucus…') :
                 isOrganizer ? 'Reply to delegates…' : 'Message the organizers…'
               }
               className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-5 pr-14 focus:ring-2 focus:ring-primary/20 focus:bg-white focus:border-primary transition-all text-sm font-medium font-body outline-none"

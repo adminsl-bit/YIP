@@ -191,7 +191,7 @@ const OrganizerDashboard = () => {
         <div className="flex-1 flex flex-col h-full min-w-0">
 
           {/* ── Canvas ──*/}
-          <main className={`flex-1 transition-all duration-200 ${activeTab === 'square' ? 'p-0 overflow-hidden' : activeTab === 'timer' ? 'p-6 lg:p-8 overflow-hidden flex flex-col' : 'p-8 lg:p-10 pb-24 overflow-y-auto'}`}>
+          <main className={`flex-1 transition-all duration-200 ${activeTab === 'square' ? 'p-8 lg:p-10 overflow-hidden' : activeTab === 'timer' ? 'p-6 lg:p-8 overflow-hidden flex flex-col' : 'p-8 lg:p-10 pb-24 overflow-y-auto'}`}>
             <div>
               <TabsContent value="controls" className="m-0 space-y-10">
 
@@ -291,7 +291,7 @@ const OrganizerDashboard = () => {
                 <PollManagement />
               </TabsContent>
 
-              <TabsContent value="square" className="m-0 h-[calc(100vh-80px)] overflow-hidden">
+              <TabsContent value="square" className="m-0">
                 <GlobalSquare />
               </TabsContent>
 

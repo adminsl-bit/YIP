@@ -224,8 +224,8 @@ export const TimerManagement = () => {
             {/* Top bar */}
             <div className="flex items-center justify-between shrink-0">
                 <div>
-                    <h2 className="text-xl font-extrabold font-headline tracking-tight text-primary">Session <span className="text-secondary">Timer</span></h2>
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant/50 font-headline">Countdown &amp; Time Management</p>
+                    <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">Session <span className="text-secondary">Timer</span></h1>
+                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-1 flex items-center gap-2 font-headline">Countdown &amp; Time Management</p>
                 </div>
                 <button
                     onClick={() => window.open('/display/timer', '_blank')}

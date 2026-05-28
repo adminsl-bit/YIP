@@ -450,9 +450,9 @@ export const OrganizerLeaderboard = () => {
       <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
         <CardHeader className="border-b border-border/10">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
+            <CardTitle className="flex items-center gap-2 text-xl font-extrabold font-headline text-primary">
               <Search className="w-5 h-5 text-primary" />
-              Search & Filter Students
+              Search & <span className="text-secondary">Filter</span>
             </CardTitle>
             <div className="flex items-center gap-2">
               <Button
@@ -630,9 +630,10 @@ export const OrganizerLeaderboard = () => {
       {/* Student Cards - Scrollable Container */}
       <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
         <CardHeader className="border-b border-border/10">
-          <CardTitle className="flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-xl font-extrabold font-headline text-primary">
             <Trophy className="w-5 h-5 text-primary" />
-            Overall Leaderboard ({filteredLeaderboard.length} students)
+            Overall <span className="text-secondary">Leaderboard</span>
+            <span className="text-xs font-black px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-headline">{filteredLeaderboard.length} students</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">

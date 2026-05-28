@@ -361,17 +361,17 @@ export const SecurityLogsManager = () => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 gap-1 mb-6 bg-muted p-1 rounded-2xl h-14">
-          <TabsTrigger 
-            value="audit" 
-            className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:text-foreground"
+        <TabsList className="grid w-full grid-cols-2 gap-1 mb-6 bg-surface-container p-1 rounded-2xl h-14">
+          <TabsTrigger
+            value="audit"
+            className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold font-body transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary data-[state=active]:font-bold text-on-surface-variant hover:text-on-surface"
           >
             <FileText className="w-4 h-4" />
             Audit Logs
           </TabsTrigger>
-          <TabsTrigger 
-            value="access" 
-            className="flex items-center gap-2 px-4 py-3 rounded-xl font-semibold transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-foreground text-muted-foreground hover:text-foreground"
+          <TabsTrigger
+            value="access"
+            className="flex items-center gap-2 px-4 py-3 rounded-xl font-bold font-body transition-all duration-300 data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-primary data-[state=active]:font-bold text-on-surface-variant hover:text-on-surface"
           >
             <Eye className="w-4 h-4" />
             Access Logs
@@ -381,12 +381,12 @@ export const SecurityLogsManager = () => {
         <TabsContent value="audit" className="space-y-6">
           <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
             <CardHeader className="border-b border-border/10">
-              <CardTitle className="flex items-center gap-2 text-2xl font-bold">
-                <FileText className="w-6 h-6 text-primary" />
-                System Audit Logs
-                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">{auditLogs.length} entries</Badge>
+              <CardTitle className="flex items-center gap-2 text-xl font-extrabold font-headline text-primary">
+                <FileText className="w-5 h-5 text-primary" />
+                System <span className="text-secondary">Audit Logs</span>
+                <span className="text-xs font-black px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-headline">{auditLogs.length} entries</span>
               </CardTitle>
-              <p className="text-muted-foreground">
+              <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-1 font-headline">
                 Monitor all system activities and administrative actions
               </p>
             </CardHeader>
@@ -451,12 +451,12 @@ export const SecurityLogsManager = () => {
             {/* Login Activity Log */}
             <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
               <CardHeader className="border-b border-border/10">
-                <CardTitle className="flex items-center gap-2 text-xl font-bold">
+                <CardTitle className="flex items-center gap-2 text-xl font-extrabold font-headline text-primary">
                   <Activity className="w-5 h-5 text-primary" />
-                  Login Activity Log
-                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">{loginAuditEntries.length} entries</Badge>
+                  Login <span className="text-secondary">Activity Log</span>
+                  <span className="text-xs font-black px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-headline">{loginAuditEntries.length} entries</span>
                 </CardTitle>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-1 font-headline">
                   Complete log of all user login attempts and session activities
                 </p>
               </CardHeader>
@@ -530,13 +530,13 @@ export const SecurityLogsManager = () => {
             {/* Active Users - Scalable Design */}
             <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
               <CardHeader className="border-b border-border/10">
-                <CardTitle className="flex items-center gap-2 text-xl font-bold">
+                <CardTitle className="flex items-center gap-2 text-xl font-extrabold font-headline text-primary">
                   <Eye className="w-5 h-5 text-primary" />
-                  Active Users
-                  <Badge variant="secondary" className="bg-green-100 text-green-700 border-green-200">{activeUsers.length} online</Badge>
+                  Active <span className="text-secondary">Users</span>
+                  <span className="text-xs font-black px-2 py-0.5 rounded-full bg-tertiary-fixed text-on-tertiary-fixed border border-tertiary-container/30 font-headline">{activeUsers.length} online</span>
                 </CardTitle>
-                <p className="text-muted-foreground text-sm">
-                  Users currently logged into the system (showing up to 170+ concurrent users)
+                <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-1 font-headline">
+                  Users currently logged into the system
                 </p>
                 
                 {/* Quick Stats */}
@@ -666,12 +666,12 @@ export const SecurityLogsManager = () => {
             {duplicateLogins.length > 0 && (
               <Card className="bg-gradient-to-r from-destructive/5 to-destructive/10 border-destructive/20 rounded-3xl shadow-lg">
                 <CardHeader className="border-b border-destructive/20">
-                  <CardTitle className="flex items-center gap-2 text-xl font-bold">
-                    <AlertTriangle className="w-5 h-5 text-destructive" />
-                    🚨 Active Security Threats
-                    <Badge variant="destructive" className="bg-destructive text-white animate-pulse">{duplicateLogins.length}</Badge>
+                  <CardTitle className="flex items-center gap-2 text-xl font-extrabold font-headline text-error">
+                    <AlertTriangle className="w-5 h-5 text-error" />
+                    Active <span className="text-error/70">Security Threats</span>
+                    <span className="text-xs font-black px-2 py-0.5 rounded-full bg-error text-on-error animate-pulse font-headline">{duplicateLogins.length}</span>
                   </CardTitle>
-                  <p className="text-muted-foreground text-sm">
+                  <p className="text-[10px] text-error/50 font-black uppercase tracking-[0.4em] mt-1 font-headline">
                     Critical: Users with concurrent sessions on multiple devices
                   </p>
                 </CardHeader>

@@ -8,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
+import jsPDF from "jspdf";
 
 interface Poll {
   id: string;
@@ -230,7 +231,7 @@ export const PollVoting = () => {
                             className={`flex-1 group/btn flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${
                               selectedOptions[poll.id] === getKey(options[0])
                                 ? 'border-primary-container bg-primary-container/10'
-                                : 'bg-surface-container border-transparent hover:border-primary-container hover:bg-primary-container/5'
+                                : 'bg-surface-container border-outline-variant/40 hover:border-primary-container hover:bg-primary-container/5'
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
                             <ThumbsUp className={`w-7 h-7 mb-1 group-hover/btn:scale-110 transition-transform text-primary-container ${selectedOptions[poll.id] === getKey(options[0]) ? 'scale-110' : ''}`} strokeWidth={1.5} />
@@ -242,7 +243,7 @@ export const PollVoting = () => {
                             className={`flex-1 group/btn flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${
                               selectedOptions[poll.id] === getKey(options[1])
                                 ? 'border-secondary-container bg-secondary-container/10'
-                                : 'bg-surface-container border-transparent hover:border-secondary-container hover:bg-secondary-container/5'
+                                : 'bg-surface-container border-outline-variant/40 hover:border-secondary-container hover:bg-secondary-container/5'
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
                             <ThumbsDown className={`w-7 h-7 mb-1 group-hover/btn:scale-110 transition-transform text-secondary-container ${selectedOptions[poll.id] === getKey(options[1]) ? 'scale-110' : ''}`} strokeWidth={1.5} />
@@ -262,7 +263,7 @@ export const PollVoting = () => {
                                 className={`w-full text-left px-5 py-4 rounded-2xl border-2 transition-all font-body font-semibold text-sm ${
                                   isSelected
                                     ? 'border-primary-container bg-primary-container/10 text-primary'
-                                    : 'bg-surface-container border-transparent hover:border-primary-container hover:bg-primary-container/5 text-on-surface'
+                                    : 'bg-surface-container border-outline-variant/40 hover:border-primary-container hover:bg-primary-container/5 text-on-surface'
                                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                               >
                                 {getText(opt)}
@@ -306,7 +307,7 @@ export const PollVoting = () => {
                 </div>
 
                 {/* ── Analytics Bento ── */}
-                <AnalyticsBento pollId={poll.id} options={options} refreshTrigger={refreshTrigger} votingEnabled={settings.voting_enabled} />
+                <AnalyticsBento pollId={poll.id} options={options} refreshTrigger={refreshTrigger} votingEnabled={settings.voting_enabled} pollTitle={poll.title} />
 
                 {pollIdx === polls.length - 1 && lastPassed && <LastPassedBanner poll={lastPassed} />}
               </div>
@@ -407,13 +408,277 @@ const VoteBars = ({ pollId, options, refreshTrigger }: { pollId: string; options
 /* ── Analytics Bento ── compact single-row bar */
 export const AnalyticsBento = ({
   pollId, options, refreshTrigger, votingEnabled,
+  pollTitle, pollHeading, outcome,
+  expanded: controlledExpanded, onToggleExpand,
+  onResetVotes, onDeletePoll,
 }: {
   pollId: string; options: any[]; refreshTrigger: number; votingEnabled: boolean;
+  pollTitle?: string; pollHeading?: string; outcome?: 'passed' | 'failed' | null;
+  expanded?: boolean; onToggleExpand?: () => void;
+  onResetVotes?: () => void; onDeletePoll?: () => void;
 }) => {
   const [totalDelegates, setTotalDelegates] = useState(0);
   const [votedCount, setVotedCount] = useState(0);
   const [optionCounts, setOptionCounts] = useState<Record<string, number>>({});
   const [recentVoters, setRecentVoters] = useState<any[]>([]);
+  const [internalExpanded, setInternalExpanded] = useState(false);
+  const [isDownloading, setIsDownloading] = useState<'csv' | 'pdf' | null>(null);
+  const isExpanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded;
+  const handleToggle = onToggleExpand ?? (() => setInternalExpanded(e => !e));
+
+  const fetchDetailedVotes = async () => {
+    const [{ data: votes }, { data: profiles }] = await Promise.all([
+      supabase.from('poll_votes').select('voter_id, option_id').eq('poll_id', pollId),
+      supabase.from('profiles').select('user_id, name, position, party_number, constituency, state').eq('user_type', 'student').eq('is_active', true),
+    ]);
+    const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
+    return { votes: (votes || []) as any[], profileMap, profiles: profiles || [] };
+  };
+
+  const partyStr = (num: number | null | undefined) => {
+    if (num == null) return '';
+    return `P${(['NONE','A','B','C','D','E'] as string[])[num] ?? num}`;
+  };
+
+  const handleDownloadCSV = async () => {
+    setIsDownloading('csv');
+    try {
+      const { votes, profileMap, profiles } = await fetchDetailedVotes();
+      const voterSet = new Set(votes.map((v: any) => v.voter_id));
+      const rows: string[][] = [['Option', 'Delegate Name', 'Position', 'Party', 'State', 'Constituency']];
+      options.forEach(opt => {
+        const key = getKey(opt); const text = getText(opt);
+        votes.filter((v: any) => v.option_id === key).forEach((v: any) => {
+          const p = profileMap.get(v.voter_id);
+          if (p) rows.push([text, p.name, p.position || '', partyStr(p.party_number), p.state || '', p.constituency || '']);
+        });
+      });
+      profiles.filter((p: any) => !voterSet.has(p.user_id)).forEach((p: any) => {
+        rows.push(['Did Not Vote', p.name, p.position || '', partyStr(p.party_number), p.state || '', p.constituency || '']);
+      });
+      const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+      const a = Object.assign(document.createElement('a'), { href: url, download: `poll-${(pollTitle || 'results').replace(/[^a-zA-Z0-9]/g, '-')}.csv` });
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast({ title: 'CSV downloaded' });
+    } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
+    finally { setIsDownloading(null); }
+  };
+
+  const handleDownloadPDF = async () => {
+    setIsDownloading('pdf');
+    try {
+      const { votes, profileMap, profiles } = await fetchDetailedVotes();
+      const voterSet = new Set(votes.map((v: any) => v.voter_id));
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const W = 210, M = 18;
+      let y = 0;
+
+      // ── Primary blue header bar ──
+      pdf.setFillColor(19, 41, 143);
+      pdf.rect(0, 0, W, 20, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.setTextColor(255, 255, 255);
+      pdf.text('NATIONAL YOUTH PARLIAMENT', M, 8);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(7.5);
+      pdf.text('POLL RESULTS — OFFICIAL LEGISLATIVE RECORD', M, 14);
+      pdf.setFontSize(7);
+      pdf.text(new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(), W - M, 11, { align: 'right' });
+      y = 30;
+
+      // ── Poll title ──
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(18);
+      pdf.setTextColor(19, 41, 143);
+      const titleLines = pdf.splitTextToSize(pollTitle || 'Poll Results', W - 2 * M);
+      pdf.text(titleLines, M, y);
+      y += titleLines.length * 9 + 2;
+
+      if (pollHeading) {
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(10);
+        pdf.setTextColor(69, 70, 83);
+        pdf.text(pollHeading, M, y);
+        y += 7;
+      }
+
+      // Accent line
+      pdf.setDrawColor(19, 41, 143);
+      pdf.setLineWidth(0.5);
+      pdf.line(M, y, W - M, y);
+      y += 8;
+
+      // ── Summary stats row ──
+      pdf.setFillColor(242, 244, 246);
+      pdf.roundedRect(M, y, W - 2 * M, 24, 2, 2, 'F');
+      const statsData = [
+        { label: 'TOTAL DELEGATES', value: String(totalDelegates) },
+        { label: 'VOTES CAST', value: String(votedCount) },
+        { label: 'TURNOUT', value: `${(totalDelegates > 0 ? (votedCount / totalDelegates * 100) : 0).toFixed(1)}%` },
+        { label: 'STATUS', value: votingEnabled ? 'LIVE' : 'CLOSED' },
+      ];
+      const colW = (W - 2 * M) / 4;
+      statsData.forEach((s, i) => {
+        const cx = M + i * colW + colW / 2;
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(13);
+        pdf.setTextColor(19, 41, 143);
+        pdf.text(s.value, cx, y + 10, { align: 'center' });
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(6);
+        pdf.setTextColor(100, 100, 120);
+        pdf.text(s.label, cx, y + 18, { align: 'center' });
+        if (i < 3) {
+          pdf.setDrawColor(197, 197, 213);
+          pdf.setLineWidth(0.2);
+          pdf.line(M + (i + 1) * colW, y + 4, M + (i + 1) * colW, y + 20);
+        }
+      });
+      y += 32;
+
+      // ── Results breakdown header ──
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(7.5);
+      pdf.setTextColor(100, 100, 120);
+      pdf.text('RESULTS BREAKDOWN', M, y);
+      y += 6;
+
+      // ── Per-option bars + delegate lists ──
+      options.forEach((opt) => {
+        if (y > 250) { pdf.addPage(); y = 20; }
+        const key = getKey(opt); const text = getText(opt);
+        const count = optionCounts[key] || 0;
+        const pct = totalDelegates > 0 ? count / totalDelegates * 100 : 0;
+        const optVotes = votes.filter((v: any) => v.option_id === key);
+        const t = text.toLowerCase();
+        const [r, g, b] = t === 'yes' || t === 'aye' ? [0, 88, 59] : t === 'no' || t === 'nay' ? [172, 53, 9] : [19, 41, 143];
+
+        // Option accent swatch
+        pdf.setFillColor(r, g, b);
+        pdf.roundedRect(M, y, 3, 6, 0.5, 0.5, 'F');
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(10);
+        pdf.setTextColor(r, g, b);
+        pdf.text(text.toUpperCase(), M + 6, y + 5);
+
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(50, 50, 70);
+        pdf.text(`${count} vote${count !== 1 ? 's' : ''}`, M + 45, y + 5);
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(11);
+        pdf.setTextColor(r, g, b);
+        pdf.text(`${pct.toFixed(1)}%`, W - M, y + 5, { align: 'right' });
+
+        y += 9;
+
+        // Progress bar track + fill
+        const barW = W - 2 * M;
+        pdf.setFillColor(228, 230, 234);
+        pdf.roundedRect(M, y, barW, 5, 1.5, 1.5, 'F');
+        if (pct > 0) {
+          pdf.setFillColor(r, g, b);
+          pdf.roundedRect(M, y, Math.max(barW * pct / 100, 3), 5, 1.5, 1.5, 'F');
+        }
+        y += 10;
+
+        // Delegate list
+        if (optVotes.length > 0) {
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(6.5);
+          pdf.setTextColor(r, g, b);
+          pdf.text(`DELEGATES (${optVotes.length})`, M, y);
+          y += 5;
+
+          const delegates = optVotes.map((v: any) => {
+            const p = profileMap.get(v.voter_id);
+            return p ? `${p.name}${p.position ? ` · ${p.position}` : ''}${partyStr(p.party_number) ? ` · ${partyStr(p.party_number)}` : ''}` : null;
+          }).filter(Boolean) as string[];
+
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(7);
+          pdf.setTextColor(60, 60, 80);
+          const perRow = 2;
+          for (let i = 0; i < delegates.length; i += perRow) {
+            if (y > 270) { pdf.addPage(); y = 20; }
+            const pair = delegates.slice(i, i + perRow);
+            pair.forEach((name, j) => {
+              pdf.text(`• ${name}`, M + j * ((W - 2 * M) / 2), y);
+            });
+            y += 5;
+          }
+          y += 4;
+        }
+        y += 2;
+      });
+
+      // ── Did Not Vote section ──
+      const dnvDelegates = profiles.filter((p: any) => !voterSet.has(p.user_id));
+      if (dnvDelegates.length > 0) {
+        if (y > 245) { pdf.addPage(); y = 20; }
+        const dnvPct = totalDelegates > 0 ? dnvDelegates.length / totalDelegates * 100 : 0;
+
+        pdf.setFillColor(197, 197, 213);
+        pdf.roundedRect(M, y, 3, 6, 0.5, 0.5, 'F');
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(10);
+        pdf.setTextColor(100, 100, 120);
+        pdf.text('DID NOT VOTE', M + 6, y + 5);
+        pdf.text(`${dnvDelegates.length}`, M + 55, y + 5);
+        pdf.setTextColor(100, 100, 120);
+        pdf.text(`${dnvPct.toFixed(1)}%`, W - M, y + 5, { align: 'right' });
+        y += 9;
+
+        const barW = W - 2 * M;
+        pdf.setFillColor(228, 230, 234);
+        pdf.roundedRect(M, y, barW, 5, 1.5, 1.5, 'F');
+        if (dnvPct > 0) {
+          pdf.setFillColor(160, 160, 175);
+          pdf.roundedRect(M, y, barW * dnvPct / 100, 5, 1.5, 1.5, 'F');
+        }
+        y += 10;
+
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(6.5);
+        pdf.setTextColor(100, 100, 120);
+        pdf.text(`ABSENT DELEGATES (${dnvDelegates.length})`, M, y);
+        y += 5;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7);
+        pdf.setTextColor(100, 100, 120);
+        const perRow = 2;
+        for (let i = 0; i < dnvDelegates.length; i += perRow) {
+          if (y > 270) { pdf.addPage(); y = 20; }
+          dnvDelegates.slice(i, i + perRow).forEach((p: any, j: number) => {
+            pdf.text(`• ${p.name}${p.position ? ` · ${p.position}` : ''}`, M + j * ((W - 2 * M) / 2), y);
+          });
+          y += 5;
+        }
+      }
+
+      // ── Footer on every page ──
+      const pageCount = (pdf as any).getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFillColor(19, 41, 143);
+        pdf.rect(0, 287, W, 10, 'F');
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(6.5);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text('YIP PARLIAMENT HUB · LEGISLATIVE ANALYTICS RECORD', M, 293);
+        pdf.text(`Page ${i} of ${pageCount}`, W - M, 293, { align: 'right' });
+      }
+
+      pdf.save(`poll-${(pollTitle || 'results').replace(/[^a-zA-Z0-9]/g, '-')}.pdf`);
+      toast({ title: 'PDF downloaded' });
+    } catch (e) { console.error(e); toast({ title: 'Export failed', variant: 'destructive' }); }
+    finally { setIsDownloading(null); }
+  };
 
   const fetchAnalytics = async () => {
     const [{ count: total }, { data: votes }] = await Promise.all([
@@ -478,91 +743,228 @@ export const AnalyticsBento = ({
   ];
 
   return (
-    <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl shadow-sm p-4 flex flex-col md:flex-row items-center gap-6 overflow-hidden">
+    <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl shadow-sm overflow-hidden">
 
-      {/* ── Left: branded header ── */}
-      <div className="flex flex-col border-r border-outline-variant/20 pr-6 min-w-fit shrink-0">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-6 h-6 bg-primary rounded flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-white" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>account_balance</span>
-          </div>
-          <span className="text-[10px] font-black uppercase tracking-widest text-primary/70 font-headline">National Youth Parliament</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-xl font-extrabold text-on-surface font-headline">House Turnout</span>
-          <span className="bg-tertiary-fixed text-on-tertiary-fixed text-[10px] px-2 py-0.5 rounded-full font-black font-headline flex items-center gap-1">
-            <span className="w-1.5 h-1.5 bg-tertiary-container rounded-full animate-pulse inline-block" />
-            {votingEnabled ? 'LIVE' : 'FINAL'} {turnoutPct.toFixed(1)}%
-          </span>
-        </div>
-      </div>
+      {/* ── Main row ── */}
+      <div className="p-4 flex flex-col md:flex-row items-center gap-6">
 
-      {/* ── Middle: icon-centric per-option metrics ── */}
-      <div className="flex items-center gap-8 flex-grow flex-wrap">
-        {options.map((opt, idx) => {
-          const key = getKey(opt);
-          const text = getText(opt);
-          const count = optionCounts[key] || 0;
-          const pct = totalDelegates > 0 ? (count / totalDelegates * 100).toFixed(1) : '0.0';
-          const style = getStyle(text, idx);
-          return (
-            <div key={key} className="flex items-center gap-3 group">
-              <div className={`w-10 h-10 rounded-full ${style.bg} flex items-center justify-center ${style.text} group-hover:scale-110 transition-transform shrink-0`}>
-                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>{style.icon}</span>
-              </div>
-              <div>
-                <div className="text-xs text-on-surface-variant font-medium font-body">{text}</div>
-                <div className="text-lg font-black leading-none font-headline">{pct}%</div>
-              </div>
+        {/* ── Left: branded header ── */}
+        <div className="flex flex-col border-r border-outline-variant/20 pr-6 min-w-fit shrink-0">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-6 h-6 bg-primary rounded flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-white" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>account_balance</span>
             </div>
-          );
-        })}
-        {/* Abstain / Did Not Vote */}
-        <div className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant/60 group-hover:scale-110 transition-transform shrink-0">
-            <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>pending</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary/70 font-headline">National Youth Parliament</span>
           </div>
-          <div>
-            <div className="text-xs text-on-surface-variant font-medium font-body">Abstain</div>
-            <div className="text-lg font-black leading-none text-on-surface-variant font-headline">{abstainPct.toFixed(1)}%</div>
+          <div className="flex items-center gap-3">
+            <span className="text-base font-extrabold text-on-surface font-headline max-w-[160px] truncate" title={pollTitle || pollHeading}>
+              {pollTitle || pollHeading || 'Poll Analytics'}
+            </span>
+            <span className="bg-tertiary-fixed text-on-tertiary-fixed text-[10px] px-2 py-0.5 rounded-full font-black font-headline flex items-center gap-1 shrink-0">
+              <span className="w-1.5 h-1.5 bg-tertiary-container rounded-full animate-pulse inline-block" />
+              {votingEnabled ? 'LIVE' : 'FINAL'} {turnoutPct.toFixed(1)}%
+            </span>
           </div>
         </div>
-      </div>
 
-      {/* ── Right: recent voter avatars ── */}
-      <div className="flex items-center gap-3 border-l border-outline-variant/20 pl-6 shrink-0">
-        <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-tighter w-10 leading-tight font-headline">Recent Votes</span>
-        <div className="flex -space-x-2">
-          {recentVoters.slice(0, 5).map((voter: any, idx: number) => {
-            const initials = voter.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || '?';
-            return voter.photo_url ? (
-              <img
-                key={voter.user_id}
-                src={voter.photo_url}
-                alt={voter.name}
-                title={voter.name}
-                className="w-8 h-8 rounded-full border-2 border-surface-container-lowest object-cover cursor-help hover:-translate-y-1 transition-transform"
-              />
-            ) : (
-              <div
-                key={voter.user_id}
-                title={voter.name}
-                className={`w-8 h-8 rounded-full border-2 border-surface-container-lowest flex items-center justify-center text-[10px] font-bold cursor-help hover:-translate-y-1 transition-transform ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
-              >
-                {initials}
+        {/* ── Middle: icon-centric per-option metrics ── */}
+        <div className="flex items-center gap-8 flex-grow flex-wrap">
+          {options.map((opt, idx) => {
+            const key = getKey(opt);
+            const text = getText(opt);
+            const count = optionCounts[key] || 0;
+            const pct = totalDelegates > 0 ? (count / totalDelegates * 100).toFixed(1) : '0.0';
+            const style = getStyle(text, idx);
+            return (
+              <div key={key} className="flex items-center gap-3 group">
+                <div className={`w-10 h-10 rounded-full ${style.bg} flex items-center justify-center ${style.text} group-hover:scale-110 transition-transform shrink-0`}>
+                  <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>{style.icon}</span>
+                </div>
+                <div>
+                  <div className="text-xs text-on-surface-variant font-medium font-body">{text}</div>
+                  <div className="text-lg font-black leading-none font-headline">{pct}%</div>
+                </div>
               </div>
             );
           })}
-          {votedCount > 5 && (
-            <div className="w-8 h-8 rounded-full border-2 border-surface-container-lowest bg-surface-container-high flex items-center justify-center text-[8px] font-bold text-on-surface-variant">
-              +{votedCount - 5}
-            </div>
-          )}
         </div>
-        <button className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container transition-colors">
-          <span className="material-symbols-outlined text-primary">chevron_right</span>
-        </button>
+
+        {/* ── Outcome badge (between options and recent votes) ── */}
+        {outcome && (
+          <div className={`shrink-0 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest font-headline flex items-center gap-1.5 ${
+            outcome === 'passed'
+              ? 'bg-tertiary/15 text-tertiary border border-tertiary/20'
+              : 'bg-error/10 text-error border border-error/20'
+          }`}>
+            <span className="material-symbols-outlined" style={{ fontSize: '12px', fontVariationSettings: "'FILL' 1" }}>
+              {outcome === 'passed' ? 'check_circle' : 'cancel'}
+            </span>
+            {outcome}
+          </div>
+        )}
+
+        {/* ── Right: recent voter avatars + action buttons ── */}
+        <div className="flex items-center gap-3 border-l border-outline-variant/20 pl-6 shrink-0">
+          <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-tighter w-10 leading-tight font-headline">Recent Votes</span>
+          <div className="flex -space-x-2">
+            {recentVoters.slice(0, 5).map((voter: any, idx: number) => {
+              const initials = voter.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || '?';
+              return voter.photo_url ? (
+                <img
+                  key={voter.user_id}
+                  src={voter.photo_url}
+                  alt={voter.name}
+                  title={voter.name}
+                  className="w-8 h-8 rounded-full border-2 border-surface-container-lowest object-cover cursor-help hover:-translate-y-1 transition-transform"
+                />
+              ) : (
+                <div
+                  key={voter.user_id}
+                  title={voter.name}
+                  className={`w-8 h-8 rounded-full border-2 border-surface-container-lowest flex items-center justify-center text-[10px] font-bold cursor-help hover:-translate-y-1 transition-transform ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
+                >
+                  {initials}
+                </div>
+              );
+            })}
+            {votedCount > 5 && (
+              <div className="w-8 h-8 rounded-full border-2 border-surface-container-lowest bg-surface-container-high flex items-center justify-center text-[8px] font-bold text-on-surface-variant">
+                +{votedCount - 5}
+              </div>
+            )}
+          </div>
+
+          {/* CSV + PDF downloads (organizer) */}
+          {(onResetVotes || onDeletePoll) && (
+            <>
+              <button
+                onClick={handleDownloadCSV}
+                disabled={!!isDownloading}
+                title="Download CSV"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant/60 hover:bg-surface-container hover:text-primary transition-colors disabled:opacity-40"
+              >
+                {isDownloading === 'csv'
+                  ? <span className="material-symbols-outlined animate-spin" style={{ fontSize: '16px' }}>progress_activity</span>
+                  : <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>table_view</span>}
+              </button>
+              <button
+                onClick={handleDownloadPDF}
+                disabled={!!isDownloading}
+                title="Download PDF"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant/60 hover:bg-primary hover:text-white transition-colors disabled:opacity-40"
+              >
+                {isDownloading === 'pdf'
+                  ? <span className="material-symbols-outlined animate-spin" style={{ fontSize: '16px' }}>progress_activity</span>
+                  : <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>picture_as_pdf</span>}
+              </button>
+            </>
+          )}
+
+          {/* Reset & Delete (organizer actions) */}
+          {onResetVotes && (
+            <button
+              onClick={onResetVotes}
+              title="Reset votes"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant/60 hover:bg-warning/10 hover:text-warning transition-colors"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>restart_alt</span>
+            </button>
+          )}
+          {onDeletePoll && (
+            <button
+              onClick={onDeletePoll}
+              title="Delete poll"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant/60 hover:bg-error/10 hover:text-error transition-colors"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>delete</span>
+            </button>
+          )}
+
+          {/* Expand chevron */}
+          <button
+            onClick={handleToggle}
+            className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container transition-colors"
+          >
+            <span
+              className="material-symbols-outlined text-primary transition-transform duration-200"
+              style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+            >
+              chevron_right
+            </span>
+          </button>
+        </div>
+
       </div>
+
+      {/* ── Accordion: single compact row ── */}
+      {isExpanded && (
+        <div className="border-t border-outline-variant/10 px-4 py-2 bg-surface-container-low/40 flex items-center gap-3 overflow-hidden">
+
+          {/* Option tiles */}
+          {options.map((opt, idx) => {
+            const key = getKey(opt);
+            const text = getText(opt);
+            const count = optionCounts[key] || 0;
+            const pct = totalDelegates > 0 ? (count / totalDelegates * 100) : 0;
+            const style = getStyle(text, idx);
+            const BAR_COLORS = ['bg-tertiary-fixed', 'bg-error-container', 'bg-primary-container', 'bg-secondary-container'];
+            return (
+              <div key={key} className="flex items-center gap-1.5 shrink-0">
+                <span className={`text-[9px] font-black uppercase tracking-wide font-headline ${style.text}`}>{text}</span>
+                <div className="w-12 h-1 bg-surface-container-high rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                    className={`h-full rounded-full ${BAR_COLORS[idx % BAR_COLORS.length]}`}
+                  />
+                </div>
+                <span className={`text-[9px] font-black font-headline ${style.text}`}>{pct.toFixed(0)}%</span>
+                <span className="text-[8px] text-on-surface-variant/40 font-body">({count})</span>
+              </div>
+            );
+          })}
+
+          <div className="w-px h-3 bg-outline-variant/30 shrink-0" />
+
+          {/* Turnout */}
+          <span className="text-[9px] font-bold text-on-surface-variant/50 font-headline whitespace-nowrap shrink-0">
+            {votedCount}/{totalDelegates} · {turnoutPct.toFixed(0)}%
+          </span>
+
+          {/* Recent voters */}
+          {recentVoters.length > 0 && (
+            <>
+              <div className="w-px h-3 bg-outline-variant/30 shrink-0" />
+              <div className="flex items-center gap-1.5 overflow-hidden">
+                <div className="flex -space-x-1">
+                  {recentVoters.slice(0, 5).map((voter: any, idx: number) => {
+                    const initials = voter.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || '?';
+                    return voter.photo_url ? (
+                      <img key={voter.user_id} src={voter.photo_url} alt={voter.name} title={voter.name}
+                        className="w-4 h-4 rounded-full border border-surface-container-lowest object-cover" />
+                    ) : (
+                      <div key={voter.user_id} title={voter.name}
+                        className={`w-4 h-4 rounded-full border border-surface-container-lowest flex items-center justify-center text-[6px] font-bold shrink-0 ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}>
+                        {initials}
+                      </div>
+                    );
+                  })}
+                </div>
+                {recentVoters.slice(0, 3).map((voter: any) => (
+                  <span key={voter.user_id} className="text-[9px] text-on-surface-variant/50 font-body whitespace-nowrap hidden sm:inline">
+                    {voter.name?.split(' ')[0]}
+                  </span>
+                ))}
+                {votedCount > recentVoters.length && (
+                  <span className="text-[8px] font-bold text-on-surface-variant/30 font-headline shrink-0">+{votedCount - recentVoters.length}</span>
+                )}
+              </div>
+            </>
+          )}
+
+        </div>
+      )}
 
     </div>
   );

@@ -597,8 +597,6 @@ const StudentDashboard = () => {
         return <PollVoting />;
       case 'question-hour':
         return <QuestionHourHub />;
-      case 'messages':
-        return <GlobalSquare />;
       default:
         return renderProfileTab();
     }
@@ -666,7 +664,10 @@ const StudentDashboard = () => {
 
       {/* ── Main Content ── */}
       <main className="flex-1 md:ml-64 p-8 pb-24 md:pb-8">
-        {renderTabContent()}
+        <div className={activeTab === 'messages' ? '' : 'hidden'}>
+          <GlobalSquare />
+        </div>
+        {activeTab !== 'messages' && renderTabContent()}
       </main>
     </div>
   );
