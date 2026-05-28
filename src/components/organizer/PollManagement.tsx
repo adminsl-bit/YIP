@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Plus, Trash, Play, Pause, MoreVertical, ExternalLink,
   Eye, RotateCcw, Users,
-  CheckCircle2, XCircle, Clock
+  CheckCircle2, XCircle
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -50,6 +50,9 @@ export const PollManagement = () => {
   const [pollToDelete, setPollToDelete] = useState<Poll | null>(null);
   const [pollToReset, setPollToReset] = useState<Poll | null>(null);
   const [isResetting, setIsResetting] = useState(false);
+  const [expandedPolls, setExpandedPolls] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpandedPolls(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
 
   const [formData, setFormData] = useState({
     heading: "",
@@ -330,80 +333,49 @@ export const PollManagement = () => {
             </div>
           </div>
 
-          {/* ── Always-visible Analytics ── */}
-          {(() => {
-            const featuredPoll = activePolls[0] || pastPolls[0] || null;
-            return (
-              <div className="bg-surface-container rounded-3xl p-7 border border-outline-variant/10">
-                <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <h2 className="text-base font-black font-headline text-on-surface tracking-tight">Poll Analytics</h2>
-                    <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline mt-1">
-                      {featuredPoll
-                        ? featuredPoll.is_active ? 'Live data' : `Final snapshot · ${featuredPoll.title}`
-                        : 'No polls yet'}
-                    </p>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="text-right">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline">Delegates</p>
-                      <p className="text-xl font-black text-on-surface font-headline">{totalParticipants}</p>
-                    </div>
-                    <div className="w-px bg-outline-variant/20" />
-                    <div className="text-right">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline">Total Votes</p>
-                      <p className="text-xl font-black text-on-surface font-headline">{totalVotesAcrossAll}</p>
-                    </div>
-                    <div className="w-px bg-outline-variant/20" />
-                    <div className="text-right">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline">Rate</p>
-                      <p className="text-xl font-black text-primary font-headline">{participationRate}%</p>
-                    </div>
-                  </div>
-                </div>
-
-                {featuredPoll ? (
-                  <AnalyticsBento
-                    pollId={featuredPoll.id}
-                    options={Array.isArray(featuredPoll.options) ? featuredPoll.options : []}
-                    refreshTrigger={0}
-                    votingEnabled={featuredPoll.is_active}
-                  />
-                ) : (
-                  <div className="bg-surface-container-lowest border-2 border-dashed border-outline-variant/20 rounded-3xl p-14 text-center flex flex-col items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center">
-                      <span className="material-symbols-outlined text-primary/20 text-3xl">bar_chart</span>
-                    </div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 font-headline">Analytics appear once a poll is created</p>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
-          {/* Past polls */}
+          {/* Recently Completed */}
           {pastPolls.length > 0 && (
             <div className="bg-surface-container rounded-3xl p-7 border border-outline-variant/10">
-              <h3 className="text-[10px] font-black uppercase tracking-[0.25em] text-on-surface-variant/40 font-headline mb-6">Recently Completed</h3>
-              <div className="space-y-8">
-                {pastPolls.slice(0, 4).map(poll => (
-                  <div key={poll.id} className="relative">
-                    {poll.outcome && (
-                      <span className={`absolute -top-2 right-4 z-10 px-3 py-1 text-[8px] font-black uppercase tracking-widest rounded-full ${poll.outcome === 'passed' ? 'bg-tertiary/20 text-tertiary' : 'bg-error/10 text-error'}`}>
-                        {poll.outcome}
-                      </span>
-                    )}
-                    <PollItem
-                      poll={poll}
-                      results={pollResults[poll.id] || []}
-                      onToggle={(outcome?: 'passed' | 'failed') => togglePollStatus(poll, outcome)}
-                      onReset={() => setPollToReset(poll)}
-                      onDelete={() => setPollToDelete(poll)}
-                      onOpenStage={() => openStageView(poll.id)}
-                      onShowResults={() => setShowDetailedResults(showDetailedResults === poll.id ? null : poll.id)}
-                      showDetails={showDetailedResults === poll.id}
-                    />
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h2 className="text-base font-black font-headline text-on-surface tracking-tight">Recently Completed</h2>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline mt-1">
+                    Final snapshots · {pastPolls.length} poll{pastPolls.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <div className="text-right">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline">Delegates</p>
+                    <p className="text-xl font-black text-on-surface font-headline">{totalParticipants}</p>
                   </div>
+                  <div className="w-px bg-outline-variant/20" />
+                  <div className="text-right">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline">Total Votes</p>
+                    <p className="text-xl font-black text-on-surface font-headline">{totalVotesAcrossAll}</p>
+                  </div>
+                  <div className="w-px bg-outline-variant/20" />
+                  <div className="text-right">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline">Rate</p>
+                    <p className="text-xl font-black text-primary font-headline">{participationRate}%</p>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {pastPolls.map(poll => (
+                  <AnalyticsBento
+                    key={poll.id}
+                    pollId={poll.id}
+                    options={Array.isArray(poll.options) ? poll.options : []}
+                    refreshTrigger={0}
+                    votingEnabled={false}
+                    pollTitle={poll.title}
+                    pollHeading={poll.heading}
+                    outcome={poll.outcome}
+                    expanded={expandedPolls.has(poll.id)}
+                    onToggleExpand={() => toggleExpanded(poll.id)}
+                    onResetVotes={() => setPollToReset(poll)}
+                    onDeletePoll={() => setPollToDelete(poll)}
+                  />
                 ))}
               </div>
             </div>

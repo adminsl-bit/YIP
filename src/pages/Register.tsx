@@ -17,6 +17,7 @@ const Register = () => {
   const [fullName, setFullName] = useState('');
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   
   const { user, profile, signInWithOtp, verifyOtp, getSystemSetting, signUp, signIn } = useAuth();
   const { toast } = useToast();
@@ -427,14 +428,24 @@ const Register = () => {
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Secret Password</label>
-                        <input 
-                          type="password"
-                          className="w-full px-5 py-3.5 bg-slate-50 border-none rounded-2xl focus:bg-white focus:ring-2 focus:ring-primary/10 transition-all font-bold text-slate-800 placeholder:text-slate-300 shadow-inner"
-                          placeholder="••••••••"
-                          required
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                        />
+                        <div className="relative group">
+                          <input 
+                            type={showPassword ? "text" : "password"}
+                            className="w-full pl-5 pr-11 py-3.5 bg-slate-50 border-none rounded-2xl focus:bg-white focus:ring-2 focus:ring-primary/10 transition-all font-bold text-slate-800 placeholder:text-slate-300 shadow-inner"
+                            placeholder="••••••••"
+                            required
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                          />
+                          <button 
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-primary transition-colors focus:outline-none"
+                            aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          >
+                            <span className="material-symbols-outlined text-lg">{showPassword ? "visibility_off" : "visibility"}</span>
+                          </button>
+                        </div>
                       </div>
                     </div>
 

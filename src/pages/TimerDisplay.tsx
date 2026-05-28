@@ -249,7 +249,7 @@ const TimerDisplay = () => {
       <Header timerTitle={timer.title} status={timer.status} />
 
       {/* Main Canvas */}
-      <main className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 py-2 relative overflow-hidden">
+      <main className="flex-1 min-h-0 flex flex-col items-center justify-center px-6 py-2 pb-20 relative overflow-hidden">
 
         {/* Background watermark */}
         <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none select-none">
@@ -324,28 +324,7 @@ const TimerDisplay = () => {
         </div>
       </main>
 
-      {/* Progress bar footer */}
-      <footer className="shrink-0 w-full px-10 py-5">
-        <div className="max-w-5xl mx-auto space-y-3">
-          <div className="flex justify-between items-end px-1">
-            <div className="flex flex-col">
-              <span className="font-label font-bold text-primary uppercase tracking-tighter text-xs">Parliamentary Protocol</span>
-              <span className="font-body text-xs text-on-surface-variant">{timer.title}</span>
-            </div>
-            <div className={`font-display font-extrabold text-3xl italic ${timerColorClass} opacity-20`}>{pct}%</div>
-          </div>
-          <div className="w-full h-6 bg-surface-container-high rounded-full overflow-hidden p-1 shadow-inner">
-            <div
-              className={`h-full bg-gradient-to-r ${progressGradient} rounded-full shadow-lg relative overflow-hidden`}
-              style={{ width: `${pct}%`, transition: 'width 1s linear' }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent w-40 skew-x-12 animate-[shimmer_3s_infinite]" />
-            </div>
-          </div>
-        </div>
-      </footer>
-
-      <style>{`
+<style>{`
         .glass-panel {
           background: rgba(255,255,255,0.7);
           backdrop-filter: blur(20px);
