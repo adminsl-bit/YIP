@@ -29,7 +29,6 @@ import { SecurityLogsManager } from "@/components/organizer/SecurityLogsManager"
 import { OrganizerStudentList } from "@/components/organizer/OrganizerStudentList";
 import { StudentBulkImport } from "@/components/organizer/StudentBulkImport";
 import { DynamicRoleCreator } from "@/components/organizer/DynamicRoleCreator";
-import { DuplicateLoginMonitor } from "@/components/organizer/DuplicateLoginMonitor";
 import PhotoUploadManager from "@/components/organizer/PhotoUploadManager";
 import PhotoMigration from "@/components/organizer/PhotoMigration";
 import { OrganizerLeaderboard } from "@/components/organizer/OrganizerLeaderboard";
@@ -314,13 +313,6 @@ const OrganizerDashboard = () => {
 
               <TabsContent value="security" className="m-0 space-y-10">
                 <PageHeader primary="Security" secondary="Monitor" icon={<ShieldCheck className="w-3 h-3" />} subtitle="Login Audit & Session Control" />
-                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
-                  <div className="mb-6">
-                    <h2 className="text-xl font-extrabold font-headline text-primary">Duplicate <span className="text-secondary">Login Monitor</span></h2>
-                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Real-time concurrent session detection</p>
-                  </div>
-                  <DuplicateLoginMonitor />
-                </div>
                 <SecurityLogsManager />
               </TabsContent>
 
