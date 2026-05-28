@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Vote, CheckCircle, ThumbsUp, ThumbsDown, Loader2, Lock,
-  Landmark, Users, BarChart3, User, Building2, ShieldCheck
+  Landmark, User, Building2, ShieldCheck
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
@@ -404,7 +404,7 @@ const VoteBars = ({ pollId, options, refreshTrigger }: { pollId: string; options
   );
 };
 
-/* ── Analytics Bento ── */
+/* ── Analytics Bento ── compact single-row bar */
 export const AnalyticsBento = ({
   pollId, options, refreshTrigger, votingEnabled,
 }: {
@@ -413,187 +413,155 @@ export const AnalyticsBento = ({
   const [totalDelegates, setTotalDelegates] = useState(0);
   const [votedCount, setVotedCount] = useState(0);
   const [optionCounts, setOptionCounts] = useState<Record<string, number>>({});
-  const [momentumBuckets, setMomentumBuckets] = useState<number[]>(new Array(15).fill(0));
-  const [votesPerMin, setVotesPerMin] = useState(0);
+  const [recentVoters, setRecentVoters] = useState<any[]>([]);
 
   const fetchAnalytics = async () => {
     const [{ count: total }, { data: votes }] = await Promise.all([
-      supabase.from('profiles').select('id', { count: 'exact', head: true }),
-      supabase.from('poll_votes').select('option_id, created_at, voter_id').eq('poll_id', pollId),
+      supabase.from('profiles').select('user_id', { count: 'exact', head: true }).eq('user_type', 'student').eq('is_active', true),
+      supabase.from('poll_votes').select('option_id, voter_id').eq('poll_id', pollId).order('created_at', { ascending: false }),
     ]);
     const allVotes = (votes || []) as any[];
-    setTotalDelegates(total || 0);
-    setVotedCount(new Set(allVotes.map(v => v.voter_id)).size);
+    const delegates = total || 0;
+    setTotalDelegates(delegates);
+    setVotedCount(new Set(allVotes.map((v: any) => v.voter_id)).size);
 
     const counts: Record<string, number> = {};
     options.forEach(o => { counts[getKey(o)] = 0; });
-    allVotes.forEach(v => { if (counts[v.option_id] !== undefined) counts[v.option_id]++; });
+    allVotes.forEach((v: any) => { if (counts[v.option_id] !== undefined) counts[v.option_id]++; });
     setOptionCounts(counts);
 
-    const now = Date.now();
-    const buckets = new Array(15).fill(0);
-    allVotes.forEach(v => {
-      const minsAgo = Math.floor((now - new Date(v.created_at).getTime()) / 60000);
-      if (minsAgo >= 0 && minsAgo < 15) buckets[14 - minsAgo]++;
-    });
-    setMomentumBuckets(buckets);
-    setVotesPerMin(buckets[14]);
+    // Fetch profiles for the 6 most recent unique voters
+    const recentIds = [...new Set(allVotes.map((v: any) => v.voter_id))].slice(0, 6) as string[];
+    if (recentIds.length > 0) {
+      const { data: profileData } = await supabase
+        .from('profiles').select('user_id, name, photo_url').in('user_id', recentIds);
+      // Preserve recency order
+      const profileMap = new Map((profileData || []).map((p: any) => [p.user_id, p]));
+      setRecentVoters(recentIds.map(id => profileMap.get(id)).filter(Boolean));
+    } else {
+      setRecentVoters([]);
+    }
   };
 
   useEffect(() => { fetchAnalytics(); }, [pollId, refreshTrigger]);
   useEffect(() => {
     const ch = supabase.channel(`analytics_${pollId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes', filter: `poll_id=eq.${pollId}` }, fetchAnalytics)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes', filter: `poll_id=eq.${pollId}` } as any, fetchAnalytics)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [pollId]);
 
-  const isBinary = options.length === 2;
-  const totalVotes = Object.values(optionCounts).reduce((s, n) => s + n, 0);
-  const keys = options.map(getKey);
-  const yesCount = optionCounts[keys[0]] || 0;
-  const noCount = optionCounts[keys[1]] || 0;
-  const yesPct = totalVotes > 0 ? Math.round((yesCount / totalVotes) * 100) : 0;
-  const noPct = totalVotes > 0 ? (100 - yesPct) : 0;
   const turnoutPct = totalDelegates > 0 ? (votedCount / totalDelegates) * 100 : 0;
-  const hasActivity = momentumBuckets.some(v => v > 0);
+  const abstainCount = Math.max(0, totalDelegates - votedCount);
+  const abstainPct = totalDelegates > 0 ? (abstainCount / totalDelegates * 100) : 0;
 
-  const sparkline = (() => {
-    const max = Math.max(...momentumBuckets, 1);
-    const pts = momentumBuckets.map((val, i) => ({
-      x: Math.round((i / (momentumBuckets.length - 1)) * 1000),
-      y: Math.round(90 - (val / max) * 75),
-    }));
-    const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x},${p.y}`).join(' ');
-    const lastY = pts[pts.length - 1]?.y ?? 90;
-    return { path, lastY };
-  })();
+  const OPTION_STYLES = [
+    { icon: 'check_circle',  bg: 'bg-tertiary-fixed/30',      text: 'text-on-tertiary-container' },
+    { icon: 'cancel',        bg: 'bg-error-container/30',     text: 'text-error' },
+    { icon: 'how_to_vote',   bg: 'bg-primary/10',             text: 'text-primary' },
+    { icon: 'pending',       bg: 'bg-surface-container-high', text: 'text-on-surface-variant' },
+  ];
+
+  const getStyle = (text: string, idx: number) => {
+    const t = text.toLowerCase();
+    if (t === 'yes' || t === 'aye') return OPTION_STYLES[0];
+    if (t === 'no'  || t === 'nay') return OPTION_STYLES[1];
+    return OPTION_STYLES[2 + (idx % 2)];
+  };
+
+  const AVATAR_COLORS = [
+    'bg-primary-fixed text-on-primary-fixed',
+    'bg-secondary-fixed text-on-secondary-fixed',
+    'bg-tertiary-fixed text-on-tertiary-fixed',
+    'bg-surface-variant text-on-surface-variant',
+    'bg-primary-container text-on-primary-container',
+  ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl shadow-sm p-4 flex flex-col md:flex-row items-center gap-6 overflow-hidden">
 
-      {/* House Turnout */}
-      <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm border border-outline-variant/10 flex flex-col justify-between">
-        <div>
-          <div className="flex justify-between items-start mb-6">
-            <h3 className="font-headline font-bold text-lg text-on-surface">House Turnout</h3>
-            <Users className="w-5 h-5 text-primary" />
+      {/* ── Left: branded header ── */}
+      <div className="flex flex-col border-r border-outline-variant/20 pr-6 min-w-fit shrink-0">
+        <div className="flex items-center gap-2 mb-1">
+          <div className="w-6 h-6 bg-primary rounded flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-white" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>account_balance</span>
           </div>
-          <div className="flex items-baseline gap-2 mb-3">
-            <span className="text-4xl font-black text-on-surface font-headline">{votedCount}</span>
-            <span className="text-lg text-on-surface-variant font-semibold font-body">/ {totalDelegates} Delegates</span>
-          </div>
-          <div className="w-full h-3 bg-surface-container-high rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-primary rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: `${turnoutPct}%` }}
-              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
-            />
-          </div>
+          <span className="text-[10px] font-black uppercase tracking-widest text-primary/70 font-headline">National Youth Parliament</span>
         </div>
-        <p className="mt-4 text-sm font-semibold text-on-tertiary-container flex items-center gap-1.5 font-body">
-          <span className="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse inline-block" />
-          {turnoutPct >= 50 ? `Quorum Met (${turnoutPct.toFixed(1)}%)` : `Turnout: ${turnoutPct.toFixed(1)}%`}
-        </p>
+        <div className="flex items-center gap-3">
+          <span className="text-xl font-extrabold text-on-surface font-headline">House Turnout</span>
+          <span className="bg-tertiary-fixed text-on-tertiary-fixed text-[10px] px-2 py-0.5 rounded-full font-black font-headline flex items-center gap-1">
+            <span className="w-1.5 h-1.5 bg-tertiary-container rounded-full animate-pulse inline-block" />
+            {votingEnabled ? 'LIVE' : 'FINAL'} {turnoutPct.toFixed(1)}%
+          </span>
+        </div>
       </div>
 
-      {/* Live Alignment */}
-      <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm border border-outline-variant/10">
-        <div className="flex justify-between items-start mb-6">
-          <h3 className="font-headline font-bold text-lg text-on-surface">Live Alignment</h3>
-          <BarChart3 className="w-5 h-5 text-primary" />
-        </div>
-        {totalVotes === 0 ? (
-          <p className="text-on-surface-variant text-sm font-body py-4">No votes cast yet.</p>
-        ) : isBinary ? (
-          <>
-            <div className="flex h-10 rounded-xl overflow-hidden mb-4 gap-0.5">
-              {yesPct > 0 && (
-                <motion.div
-                  className="bg-primary h-full flex items-center justify-center text-white text-xs font-black font-headline"
-                  initial={{ width: 0 }} animate={{ width: `${yesPct}%` }}
-                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  {yesPct > 15 ? `${yesPct}% YES` : ''}
-                </motion.div>
-              )}
-              {noPct > 0 && (
-                <motion.div
-                  className="bg-secondary-container h-full flex items-center justify-center text-white text-xs font-black font-headline"
-                  initial={{ width: 0 }} animate={{ width: `${noPct}%` }}
-                  transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  {noPct > 15 ? `${noPct}% NO` : ''}
-                </motion.div>
-              )}
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-primary rounded-full" />
-                <span className="text-xs font-bold text-on-surface-variant font-body">{yesCount} Affirmative</span>
+      {/* ── Middle: icon-centric per-option metrics ── */}
+      <div className="flex items-center gap-8 flex-grow flex-wrap">
+        {options.map((opt, idx) => {
+          const key = getKey(opt);
+          const text = getText(opt);
+          const count = optionCounts[key] || 0;
+          const pct = totalDelegates > 0 ? (count / totalDelegates * 100).toFixed(1) : '0.0';
+          const style = getStyle(text, idx);
+          return (
+            <div key={key} className="flex items-center gap-3 group">
+              <div className={`w-10 h-10 rounded-full ${style.bg} flex items-center justify-center ${style.text} group-hover:scale-110 transition-transform shrink-0`}>
+                <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>{style.icon}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 bg-secondary-container rounded-full" />
-                <span className="text-xs font-bold text-on-surface-variant font-body">{noCount} Dissenting</span>
+              <div>
+                <div className="text-xs text-on-surface-variant font-medium font-body">{text}</div>
+                <div className="text-lg font-black leading-none font-headline">{pct}%</div>
               </div>
             </div>
-          </>
-        ) : (
-          <div className="space-y-3">
-            {options.map((opt, idx) => {
-              const k = getKey(opt);
-              const count = optionCounts[k] || 0;
-              const pct = totalVotes > 0 ? Math.round((count / totalVotes) * 100) : 0;
-              const colors = ['bg-primary', 'bg-secondary-container', 'bg-tertiary', 'bg-outline-variant'];
-              return (
-                <div key={k}>
-                  <div className="flex justify-between text-xs font-bold mb-1 font-headline">
-                    <span className="text-on-surface-variant">{getText(opt).toUpperCase()}</span>
-                    <span className="text-on-surface">{pct}%</span>
-                  </div>
-                  <div className="w-full h-2.5 bg-surface-container-high rounded-full overflow-hidden">
-                    <motion.div className={`h-full rounded-full ${colors[idx % colors.length]}`} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }} />
-                  </div>
-                </div>
-              );
-            })}
+          );
+        })}
+        {/* Abstain / Did Not Vote */}
+        <div className="flex items-center gap-3 group">
+          <div className="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-on-surface-variant/60 group-hover:scale-110 transition-transform shrink-0">
+            <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>pending</span>
           </div>
-        )}
-      </div>
-
-      {/* Voting Momentum */}
-      <div className="bg-surface-container-lowest p-8 rounded-3xl shadow-sm border border-outline-variant/10 md:col-span-2">
-        <div className="flex justify-between items-center mb-6">
           <div>
-            <h3 className="font-headline font-bold text-lg text-on-surface">Voting Momentum</h3>
-            <p className="text-sm text-on-surface-variant font-medium font-body">Activity over the last 15 minutes</p>
-          </div>
-          <div className="text-right">
-            <p className="text-2xl font-black text-primary font-headline">+{votesPerMin}</p>
-            <p className="text-[10px] uppercase font-bold text-on-tertiary-container font-headline">Votes / Min</p>
+            <div className="text-xs text-on-surface-variant font-medium font-body">Abstain</div>
+            <div className="text-lg font-black leading-none text-on-surface-variant font-headline">{abstainPct.toFixed(1)}%</div>
           </div>
         </div>
-        <div className="w-full h-28">
-          {hasActivity ? (
-            <svg className="w-full h-full" viewBox="0 0 1000 100" preserveAspectRatio="none">
-              <defs>
-                <linearGradient id={`spark-${pollId}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="hsl(229,76%,32%)" stopOpacity="0.18" />
-                  <stop offset="100%" stopColor="hsl(229,76%,32%)" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <path d={`${sparkline.path} L1000,100 L0,100 Z`} fill={`url(#spark-${pollId})`} />
-              <path d={sparkline.path} fill="none" stroke="hsl(229,76%,32%)" strokeOpacity="0.3" strokeWidth="2" />
-              <path d={sparkline.path} fill="none" stroke="hsl(229,76%,32%)" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-              <circle cx="1000" cy={sparkline.lastY} r="5" fill="hsl(229,76%,32%)" />
-            </svg>
-          ) : (
-            <div className="flex items-center justify-center h-full">
-              <p className="text-on-surface-variant text-sm font-body">No activity in the last 15 minutes.</p>
+      </div>
+
+      {/* ── Right: recent voter avatars ── */}
+      <div className="flex items-center gap-3 border-l border-outline-variant/20 pl-6 shrink-0">
+        <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-tighter w-10 leading-tight font-headline">Recent Votes</span>
+        <div className="flex -space-x-2">
+          {recentVoters.slice(0, 5).map((voter: any, idx: number) => {
+            const initials = voter.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || '?';
+            return voter.photo_url ? (
+              <img
+                key={voter.user_id}
+                src={voter.photo_url}
+                alt={voter.name}
+                title={voter.name}
+                className="w-8 h-8 rounded-full border-2 border-surface-container-lowest object-cover cursor-help hover:-translate-y-1 transition-transform"
+              />
+            ) : (
+              <div
+                key={voter.user_id}
+                title={voter.name}
+                className={`w-8 h-8 rounded-full border-2 border-surface-container-lowest flex items-center justify-center text-[10px] font-bold cursor-help hover:-translate-y-1 transition-transform ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
+              >
+                {initials}
+              </div>
+            );
+          })}
+          {votedCount > 5 && (
+            <div className="w-8 h-8 rounded-full border-2 border-surface-container-lowest bg-surface-container-high flex items-center justify-center text-[8px] font-bold text-on-surface-variant">
+              +{votedCount - 5}
             </div>
           )}
         </div>
+        <button className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container transition-colors">
+          <span className="material-symbols-outlined text-primary">chevron_right</span>
+        </button>
       </div>
 
     </div>
