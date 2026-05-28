@@ -1,13 +1,6 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Download, RefreshCw, CheckCircle, AlertCircle, Image as ImageIcon, Search } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import heic2any from 'heic2any';
 
 interface Student {
@@ -25,264 +18,199 @@ const PhotoUploadManager = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
-  // Filter students based on search term
   React.useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredStudents(students);
     } else {
-      const filtered = students.filter(student =>
-        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.serial_number.toString().includes(searchTerm)
+      const filtered = students.filter(s =>
+        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.serial_number.toString().includes(searchTerm)
       );
       setFilteredStudents(filtered);
     }
   }, [students, searchTerm]);
 
   const fetchStudents = async () => {
+    setLoading(true);
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('id, serial_number, name, photo_url, updated_at')
         .eq('user_type', 'student')
         .order('serial_number');
-
       if (error) throw error;
       setStudents(data || []);
     } catch (error) {
-      console.error('Error fetching students:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch students',
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to fetch students', variant: 'destructive' });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleFileUpload = async (file: File, studentId: string, serialNumber: number) => {
     try {
-      console.log('Starting file upload for student:', serialNumber, 'File:', file.name, 'Type:', file.type);
-      
       let processedFile = file;
-      let fileName = `${serialNumber}.jpg`; // Always save as JPG
+      let fileName = `${serialNumber}.jpg`;
 
-      // Convert HEIC to JPEG if needed
       if (file.type === 'image/heic' || file.name.toLowerCase().endsWith('.heic')) {
-        console.log('Converting HEIC to JPEG...');
-        toast({
-          title: 'Converting HEIC',
-          description: 'Converting HEIC image to JPEG format...',
-        });
-
-        const convertedBlob = await heic2any({
-          blob: file,
-          toType: 'image/jpeg',
-          quality: 0.8
-        }) as Blob;
-
+        toast({ title: 'Converting HEIC', description: 'Converting HEIC image to JPEG format…' });
+        const convertedBlob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.8 }) as Blob;
         processedFile = new File([convertedBlob], fileName, { type: 'image/jpeg' });
-        console.log('HEIC conversion completed');
       }
 
-      console.log('Uploading to storage bucket...');
-      const { error: uploadError, data: uploadData } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('student-photos')
-        .upload(fileName, processedFile, {
-          cacheControl: '3600',
-          upsert: true
-        });
+        .upload(fileName, processedFile, { cacheControl: '3600', upsert: true });
+      if (uploadError) throw uploadError;
 
-      if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        throw uploadError;
-      }
-
-      console.log('Upload successful:', uploadData);
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('student-photos')
-        .getPublicUrl(fileName);
-
+      const { data: { publicUrl } } = supabase.storage.from('student-photos').getPublicUrl(fileName);
       const updatedUrl = `${publicUrl}?v=${Date.now()}`;
-      console.log('Generated photo URL:', updatedUrl);
 
-      console.log('Updating database...');
-      const { error: updateError, data: updateData } = await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({ photo_url: updatedUrl })
         .eq('id', studentId)
         .select();
+      if (updateError) throw updateError;
 
-      if (updateError) {
-        console.error('Database update error:', updateError);
-        throw updateError;
-      }
-
-      console.log('Database update successful:', updateData);
-
-      toast({
-        title: 'Success',
-        description: `Photo uploaded successfully for student ${serialNumber}`,
-      });
-
+      toast({ title: 'Success', description: `Photo uploaded for student ${serialNumber}` });
       await fetchStudents();
-      console.log('Students list refreshed');
-    } catch (error) {
-      console.error('Error uploading photo:', error);
-      toast({
-        title: 'Error',
-        description: `Failed to upload photo: ${error.message}`,
-        variant: 'destructive',
-      });
+    } catch (error: any) {
+      toast({ title: 'Error', description: `Failed to upload photo: ${error.message}`, variant: 'destructive' });
     }
   };
 
-  React.useEffect(() => {
-    fetchStudents();
-  }, []);
+  React.useEffect(() => { fetchStudents(); }, []);
+
+  const initials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   return (
-    <div className="space-y-6">
-      <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
-        <CardHeader className="border-b border-border/10">
-          <CardTitle className="flex items-center gap-2 text-2xl font-bold">
-            <ImageIcon className="w-6 h-6 text-primary" />
-            Student Photo Management
-          </CardTitle>
-          <p className="text-muted-foreground">
-            Upload and manage individual student photos. Use the search to quickly find specific students.
-          </p>
-        </CardHeader>
-        <CardContent className="p-6">
-          {/* Search Bar */}
-          <div className="mb-6">
-            <div className="relative max-w-md">
-              <Input
-                type="text"
-                placeholder="Search by name or serial number..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 h-12 text-base border-2 border-border/20 rounded-xl focus:border-primary transition-colors"
-              />
-              <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                <Search className="w-5 h-5 text-muted-foreground" />
-              </div>
-            </div>
-            {searchTerm && (
-              <p className="mt-2 text-sm text-muted-foreground">
-                Found {filteredStudents.length} student{filteredStudents.length !== 1 ? 's' : ''}
-              </p>
-            )}
-          </div>
+    <div className="space-y-6 animate-in fade-in duration-700">
 
-          {/* Students Grid */}
-          <div className="grid gap-4">
-            {filteredStudents.map((student) => (
-              <div key={student.id} className="group">
-                <Card className="overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="relative w-16 h-16 bg-accent/20 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-border/10">
-                          {student.photo_url ? (
-                            <>
-                              <img
-                                src={`${student.photo_url}${student.photo_url.includes('?') ? '&' : '?'}cb=${student.updated_at ? new Date(student.updated_at).getTime() : ''}`}
-                                data-src={student.photo_url}
-                                alt={student.name}
-                                loading="lazy"
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  const target = e.currentTarget as HTMLImageElement;
-                                  const original = target.getAttribute('data-src') || target.src;
-                                  const retried = target.getAttribute('data-retried') === 'true';
-                                  if (!retried) {
-                                    target.setAttribute('data-retried', 'true');
-                                    target.src = `${original}${original.includes('?') ? '&' : '?'}cb=${Date.now()}`;
-                                    return;
-                                  }
-                                  target.style.display = 'none';
-                                  const parent = target.parentElement;
-                                  if (parent) {
-                                    const fallback = parent.querySelector('.fallback-icon') as HTMLElement;
-                                    const noImageText = parent.querySelector('.no-image-text') as HTMLElement;
-                                    if (fallback) fallback.style.display = 'flex';
-                                    if (noImageText) noImageText.style.display = 'block';
-                                  }
-                                }}
-                              />
-                              <div className="fallback-icon hidden w-full h-full items-center justify-center flex-col bg-red-50 border-2 border-red-200 rounded-2xl">
-                                <ImageIcon className="w-6 h-6 text-red-400" />
-                                <div className="no-image-text text-xs text-red-500 mt-1">Failed</div>
-                              </div>
-                            </>
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center flex-col">
-                              <ImageIcon className="w-6 h-6 text-muted-foreground" />
-                              <div className="text-xs text-muted-foreground mt-1">No Photo</div>
-                            </div>
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <h3 className="font-bold text-lg text-foreground">{student.name}</h3>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline" className="text-xs font-medium px-2 py-1">
-                              Serial: {student.serial_number}
-                            </Badge>
-                            {student.photo_url && (
-                              <Badge 
-                                variant={student.photo_url.includes('drive.google.com') ? 'destructive' : 'default'} 
-                                className="text-xs font-medium px-2 py-1"
-                              >
-                                {student.photo_url.includes('drive.google.com') ? 'Google Drive' : 'Supabase'}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
+      {/* Search + Refresh bar */}
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1 max-w-md">
+          <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-on-surface-variant/50">search</span>
+          <input
+            type="text"
+            placeholder="Search by name or serial number…"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="w-full h-12 bg-surface-container-lowest border border-outline-variant/20 rounded-2xl pl-11 pr-5 text-sm font-body text-on-surface focus:ring-2 focus:ring-primary/20 outline-none"
+          />
+        </div>
+        <button
+          onClick={fetchStudents}
+          disabled={loading}
+          className="flex items-center gap-2 px-5 py-2.5 bg-surface-container-lowest border border-outline-variant/20 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors font-semibold text-sm font-body disabled:opacity-50"
+        >
+          <span className={`material-symbols-outlined text-[20px] ${loading ? 'animate-spin' : ''}`}>refresh</span>
+          Refresh
+        </button>
+        {searchTerm && (
+          <p className="text-xs text-on-surface-variant font-body shrink-0">
+            {filteredStudents.length} result{filteredStudents.length !== 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
+
+      {/* Students table */}
+      <div className="bg-surface-container-lowest rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(19,41,143,0.1)] overflow-hidden">
+        <div className="px-8 py-6 border-b border-outline-variant/10 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>photo_library</span>
+          </div>
+          <div>
+            <h3 className="font-headline font-extrabold text-on-surface">Student Photos</h3>
+            <p className="text-xs text-on-surface-variant font-body">{students.length} student{students.length !== 1 ? 's' : ''} · upload or replace profile photos</p>
+          </div>
+        </div>
+
+        {filteredStudents.length === 0 ? (
+          <div className="px-8 py-16 text-center">
+            <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 block mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>
+              {searchTerm ? 'search_off' : 'photo_library'}
+            </span>
+            <p className="text-sm text-on-surface-variant/50 font-body">
+              {searchTerm ? 'No students match your search.' : 'No students available.'}
+            </p>
+          </div>
+        ) : (
+          <div className="divide-y divide-outline-variant/5">
+            {filteredStudents.map(student => (
+              <div key={student.id} className="px-8 py-5 flex items-center gap-5 hover:bg-primary-container/[0.02] transition-colors group">
+                {/* Avatar */}
+                <div className="relative w-14 h-14 rounded-2xl bg-surface-container overflow-hidden border-2 border-primary/10 shrink-0">
+                  {student.photo_url ? (
+                    <>
+                      <img
+                        src={`${student.photo_url}${student.photo_url.includes('?') ? '&' : '?'}cb=${student.updated_at ? new Date(student.updated_at).getTime() : ''}`}
+                        data-src={student.photo_url}
+                        alt={student.name}
+                        loading="lazy"
+                        className="w-full h-full object-cover"
+                        onError={e => {
+                          const t = e.currentTarget as HTMLImageElement;
+                          const orig = t.getAttribute('data-src') || t.src;
+                          if (!t.getAttribute('data-retried')) {
+                            t.setAttribute('data-retried', 'true');
+                            t.src = `${orig}${orig.includes('?') ? '&' : '?'}cb=${Date.now()}`;
+                          } else {
+                            t.style.display = 'none';
+                          }
+                        }}
+                      />
+                      <div className="fallback-icon hidden absolute inset-0 items-center justify-center bg-error/10">
+                        <span className="material-symbols-outlined text-[20px] text-error">broken_image</span>
                       </div>
-                      
-                      <div className="flex flex-col gap-2">
-                        <div className="relative">
-                          <Input
-                            type="file"
-                            accept="image/*,.heic,.HEIC"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                handleFileUpload(file, student.id, student.serial_number);
-                              }
-                            }}
-                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                            id={`file-${student.id}`}
-                          />
-                          <label 
-                            htmlFor={`file-${student.id}`}
-                            className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 shadow-md hover:shadow-lg h-11 px-6 py-2 cursor-pointer group-hover:scale-105 transform"
-                          >
-                            <Upload className="w-4 h-4" />
-                            Choose Photo
-                          </label>
-                        </div>
-                      </div>
+                    </>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="font-headline font-bold text-sm text-on-surface-variant">{initials(student.name)}</span>
                     </div>
-                  </CardContent>
-                </Card>
+                  )}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-headline font-bold text-on-surface truncate">{student.name}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[11px] font-bold px-2 py-0.5 bg-surface-container text-on-surface-variant rounded-full font-body">
+                      #{student.serial_number}
+                    </span>
+                    {student.photo_url && (
+                      <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full font-body ${student.photo_url.includes('drive.google.com') ? 'bg-error/10 text-error' : 'bg-tertiary/10 text-tertiary-fixed-dim'}`}>
+                        {student.photo_url.includes('drive.google.com') ? 'Google Drive' : 'Supabase'}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Upload */}
+                <div className="relative shrink-0">
+                  <input
+                    type="file"
+                    accept="image/*,.heic,.HEIC"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file, student.id, student.serial_number);
+                    }}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    id={`photo-${student.id}`}
+                  />
+                  <label
+                    htmlFor={`photo-${student.id}`}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-primary-container text-white rounded-xl font-bold text-sm font-body shadow-[0_4px_12px_rgba(19,41,143,0.25)] hover:shadow-[0_6px_16px_rgba(19,41,143,0.35)] transition-all cursor-pointer group-hover:scale-[1.02]"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">upload</span>
+                    {student.photo_url ? 'Replace' : 'Upload'}
+                  </label>
+                </div>
               </div>
             ))}
-            
-            {filteredStudents.length === 0 && (
-              <div className="text-center py-12">
-                <ImageIcon className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
-                <h3 className="text-xl font-semibold text-muted-foreground mb-2">
-                  {searchTerm ? 'No students found' : 'No students available'}
-                </h3>
-                <p className="text-muted-foreground">
-                  {searchTerm ? 'Try adjusting your search terms' : 'Students will appear here when available'}
-                </p>
-              </div>
-            )}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   );
 };

@@ -1,11 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Newspaper, Send, Edit2, Trash2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   AlertDialog,
@@ -32,16 +28,11 @@ export const BreakingNewsPublisher = () => {
   const { data: myHeadlines } = useQuery({
     queryKey: ['journalist-headlines', user?.id, isOrganizer],
     queryFn: async () => {
-      // Organizers see all headlines, journalists see only their own
       const query = supabase
         .from('breaking_news')
         .select('*')
         .order('created_at', { ascending: false });
-      
-      if (!isOrganizer) {
-        query.eq('journalist_id', user?.id);
-      }
-      
+      if (!isOrganizer) query.eq('journalist_id', user?.id);
       const { data, error } = await query;
       if (error) throw error;
       return data;
@@ -52,36 +43,23 @@ export const BreakingNewsPublisher = () => {
   const publishMutation = useMutation({
     mutationFn: async (text: string) => {
       if (editingId) {
-        // Update existing headline
         const { error } = await supabase
           .from('breaking_news')
-          .update({
-            headline: text,
-            updated_at: new Date().toISOString(),
-          })
+          .update({ headline: text, updated_at: new Date().toISOString() })
           .eq('id', editingId);
-        
         if (error) throw error;
       } else {
-        // Insert new headline
-        // Organizers creating news need to specify a journalist name
-        const { error } = await supabase
-          .from('breaking_news')
-          .insert({
-            journalist_id: user?.id,
-            journalist_name: isOrganizer ? 'Organizer' : (profile?.name || 'Anonymous'),
-            headline: text,
-            is_active: true,
-          });
-        
+        const { error } = await supabase.from('breaking_news').insert({
+          journalist_id: user?.id,
+          journalist_name: isOrganizer ? 'Organizer' : (profile?.name || 'Anonymous'),
+          headline: text,
+          is_active: true,
+        });
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      toast({
-        title: editingId ? 'Headline Updated!' : 'Breaking News Published!',
-        description: editingId ? 'Your headline has been updated.' : 'Your headline is now live on stage displays.',
-      });
+      toast({ title: editingId ? 'Headline Updated!' : 'Breaking News Published!', description: editingId ? 'Your headline has been updated.' : 'Your headline is now live on stage displays.' });
       setHeadline('');
       setWordCount(0);
       setEditingId(null);
@@ -89,21 +67,13 @@ export const BreakingNewsPublisher = () => {
       queryClient.invalidateQueries({ queryKey: ['active-breaking-news'] });
     },
     onError: (error: any) => {
-      toast({
-        title: editingId ? 'Failed to update' : 'Failed to publish',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: editingId ? 'Failed to update' : 'Failed to publish', description: error.message, variant: 'destructive' });
     },
   });
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
-      const { error } = await supabase
-        .from('breaking_news')
-        .update({ is_active: !isActive })
-        .eq('id', id);
-      
+      const { error } = await supabase.from('breaking_news').update({ is_active: !isActive }).eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -114,45 +84,26 @@ export const BreakingNewsPublisher = () => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('breaking_news')
-        .delete()
-        .eq('id', id);
-      
+      const { error } = await supabase.from('breaking_news').delete().eq('id', id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast({
-        title: 'Headline Deleted',
-        description: 'Your headline has been permanently deleted.',
-      });
+      toast({ title: 'Headline Deleted', description: 'Your headline has been permanently deleted.' });
       queryClient.invalidateQueries({ queryKey: ['journalist-headlines'] });
       queryClient.invalidateQueries({ queryKey: ['active-breaking-news'] });
     },
     onError: (error: any) => {
-      toast({
-        title: 'Failed to delete',
-        description: error.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Failed to delete', description: error.message, variant: 'destructive' });
     },
   });
 
   const handleTextChange = (text: string) => {
-    const count = text.length;
-    
-    // Enforce 1000 character limit by truncating
-    if (count > 1000) {
-      const truncatedText = text.slice(0, 1000);
-      setHeadline(truncatedText);
+    if (text.length > 1000) {
+      setHeadline(text.slice(0, 1000));
       setWordCount(1000);
-      toast({
-        title: 'Character limit reached',
-        description: 'Maximum 1000 characters allowed. Text has been truncated.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Character limit reached', description: 'Maximum 1000 characters allowed.', variant: 'destructive' });
     } else {
-      setWordCount(count);
+      setWordCount(text.length);
       setHeadline(text);
     }
   };
@@ -164,209 +115,191 @@ export const BreakingNewsPublisher = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleCancelEdit = () => {
-    setHeadline('');
-    setWordCount(0);
-    setEditingId(null);
-  };
+  const handleCancelEdit = () => { setHeadline(''); setWordCount(0); setEditingId(null); };
 
   const handlePublish = () => {
-    if (wordCount === 0) {
-      toast({
-        title: 'Empty headline',
-        description: 'Please enter a headline before publishing.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (wordCount > 1000) {
-      toast({
-        title: 'Too long',
-        description: 'Headline cannot exceed 1000 characters.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
+    if (wordCount === 0) { toast({ title: 'Empty headline', description: 'Please enter a headline before publishing.', variant: 'destructive' }); return; }
+    if (wordCount > 1000) { toast({ title: 'Too long', description: 'Headline cannot exceed 1000 characters.', variant: 'destructive' }); return; }
     publishMutation.mutate(headline);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Organizer Info Banner */}
+    <div className="space-y-6 animate-in fade-in duration-700">
+
+      {/* Organizer override banner */}
       {isOrganizer && (
-        <Card className="p-4 bg-orange-50 border-orange-200">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-orange-500 rounded-lg flex-shrink-0">
-              <Newspaper className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm mb-1">Organizer Override Mode</h3>
-              <p className="text-xs text-muted-foreground">
-                You can view and manage ALL breaking news headlines from journalists. 
-                Edit, activate/deactivate, or delete any headline regardless of who published it.
-              </p>
-            </div>
+        <div className="flex items-start gap-4 p-5 bg-primary-container/30 rounded-2xl">
+          <div className="w-9 h-9 rounded-xl bg-primary/20 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-[18px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>campaign</span>
           </div>
-        </Card>
+          <div>
+            <p className="font-headline font-bold text-on-surface text-sm">Organizer Override Mode</p>
+            <p className="text-xs text-on-surface-variant font-body mt-0.5">
+              You can view and manage all breaking news headlines from journalists — edit, activate/deactivate, or delete any headline.
+            </p>
+          </div>
+        </div>
       )}
 
-      <Card className="bg-white/80 backdrop-blur-sm border-2 border-orange-200 shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-2xl">
-            <Newspaper className="w-6 h-6 text-orange-600" />
-            {editingId ? 'Edit Breaking News' : 'Publish Breaking News'}
-          </CardTitle>
-          <CardDescription>
-            {editingId 
-              ? 'Update this headline' 
-              : isOrganizer 
-                ? 'Publish breaking news to all displays (as Organizer)'
-                : 'Share live updates from inside the Parliament to stage displays'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Textarea
-              placeholder="Example: The parliament is trying to pass the security bill, opposition minister is in a heated debate against it..."
-              value={headline}
-              onChange={(e) => handleTextChange(e.target.value)}
-              className="min-h-[150px] resize-none text-2xl font-medium"
-            />
-            <div className="flex justify-between items-center">
-              <span className={`text-sm font-medium ${wordCount > 1000 ? 'text-red-600' : 'text-slate-600'}`}>
-                {wordCount} / 1000 characters
-              </span>
-              <div className="flex gap-2">
-                {editingId && (
-                  <Button
-                    onClick={handleCancelEdit}
-                    variant="outline"
-                    disabled={publishMutation.isPending}
-                  >
-                    Cancel
-                  </Button>
-                )}
-                <Button
-                  onClick={handlePublish}
-                  disabled={publishMutation.isPending || wordCount === 0 || wordCount > 1000}
-                  className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+      {/* Compose card */}
+      <div className="bg-surface-container-lowest rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(19,41,143,0.1)] overflow-hidden">
+        <div className="h-1.5 bg-gradient-to-r from-primary to-primary-container" />
+        <div className="p-8 space-y-5">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>campaign</span>
+              <h3 className="font-headline font-extrabold text-on-surface text-lg">
+                {editingId ? 'Edit Breaking News' : 'Publish Breaking News'}
+              </h3>
+            </div>
+            <p className="text-xs text-on-surface-variant font-body">
+              {editingId
+                ? 'Update this headline'
+                : isOrganizer
+                  ? 'Publish breaking news to all displays (as Organizer)'
+                  : 'Share live updates from inside the Parliament to stage displays'
+              }
+            </p>
+          </div>
+
+          <textarea
+            placeholder="Example: The parliament is trying to pass the security bill, opposition minister is in a heated debate…"
+            value={headline}
+            onChange={e => handleTextChange(e.target.value)}
+            rows={5}
+            className="w-full bg-surface-container border-none rounded-2xl px-5 py-4 text-xl font-medium text-on-surface font-body focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+          />
+
+          <div className="flex justify-between items-center">
+            <span className={`text-xs font-bold font-body ${wordCount > 950 ? 'text-error' : 'text-on-surface-variant'}`}>
+              {wordCount} / 1000 characters
+            </span>
+            <div className="flex gap-3">
+              {editingId && (
+                <button
+                  onClick={handleCancelEdit}
+                  disabled={publishMutation.isPending}
+                  className="px-5 py-2.5 bg-surface-container text-on-surface-variant rounded-xl font-bold text-sm font-body hover:bg-surface-container-high transition-colors"
                 >
-                  <Send className={`w-4 h-4 mr-2 ${publishMutation.isPending ? 'animate-spin' : ''}`} />
-                  {publishMutation.isPending 
-                    ? (editingId ? 'Updating...' : 'Publishing...') 
-                    : (editingId ? 'Update Headline' : 'Publish Breaking News')
-                  }
-                </Button>
-              </div>
+                  Cancel
+                </button>
+              )}
+              <button
+                onClick={handlePublish}
+                disabled={publishMutation.isPending || wordCount === 0 || wordCount > 1000}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-primary-container text-white rounded-xl font-bold text-sm font-body shadow-[0_4px_12px_rgba(19,41,143,0.25)] hover:shadow-[0_6px_16px_rgba(19,41,143,0.35)] transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className={`material-symbols-outlined text-[18px] ${publishMutation.isPending ? 'animate-spin' : ''}`}>
+                  {publishMutation.isPending ? 'refresh' : 'send'}
+                </span>
+                {publishMutation.isPending
+                  ? (editingId ? 'Updating…' : 'Publishing…')
+                  : (editingId ? 'Update Headline' : 'Publish Breaking News')
+                }
+              </button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card className="bg-white/80 backdrop-blur-sm border-2 border-slate-200 shadow-xl">
-        <CardHeader>
-          <CardTitle>{isOrganizer ? 'All Published Headlines' : 'Your Published Headlines'}</CardTitle>
-          <CardDescription>
-            {isOrganizer 
-              ? 'Manage all breaking news headlines from journalists and organizers'
-              : 'Manage your active and past headlines'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {myHeadlines && myHeadlines.length > 0 ? (
-            <div className="space-y-3">
-              {myHeadlines.map((item) => (
-                <div
-                  key={item.id}
-                  className={`p-4 rounded-lg border-2 ${
-                    item.is_active
-                      ? 'bg-green-50 border-green-300'
-                      : 'bg-slate-50 border-slate-300'
-                  }`}
-                >
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <p className="text-sm font-medium text-slate-900 flex-1">{item.headline}</p>
-                        {isOrganizer && item.journalist_id !== user?.id && (
-                          <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
-                            Can Override
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-xs text-slate-500">
-                          Published by {item.journalist_name} • {new Date(item.published_at).toLocaleString()}
-                        </p>
-                      </div>
-                      {item.is_active && (
-                        <span className="inline-block mt-1 px-2 py-0.5 bg-green-500 text-white text-xs rounded-full">
-                          Live
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(item)}
-                        disabled={deleteMutation.isPending || toggleActiveMutation.isPending}
-                      >
-                        <Edit2 className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        variant={item.is_active ? "destructive" : "default"}
-                        size="sm"
-                        onClick={() => toggleActiveMutation.mutate({ id: item.id, isActive: item.is_active })}
-                        disabled={toggleActiveMutation.isPending}
-                      >
-                        {toggleActiveMutation.isPending 
-                          ? 'Processing...' 
-                          : (item.is_active ? 'Deactivate' : 'Activate')
-                        }
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            disabled={deleteMutation.isPending}
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Headline?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete your headline.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => deleteMutation.mutate(item.id)}
-                              className="bg-red-600 hover:bg-red-700"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
+      {/* Headlines list */}
+      <div className="bg-surface-container-lowest rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(19,41,143,0.1)] overflow-hidden">
+        <div className="px-8 py-6 border-b border-outline-variant/10 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>newspaper</span>
+          </div>
+          <div>
+            <h3 className="font-headline font-extrabold text-on-surface">
+              {isOrganizer ? 'All Published Headlines' : 'Your Published Headlines'}
+            </h3>
+            <p className="text-xs text-on-surface-variant font-body">
+              {isOrganizer ? 'Manage all breaking news from journalists and organizers' : 'Manage your active and past headlines'}
+            </p>
+          </div>
+        </div>
+
+        {!myHeadlines || myHeadlines.length === 0 ? (
+          <div className="px-8 py-16 text-center">
+            <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 block mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>newspaper</span>
+            <p className="text-sm text-on-surface-variant/50 font-body">No headlines published yet.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-outline-variant/5">
+            {myHeadlines.map(item => (
+              <div key={item.id} className="px-8 py-5 flex items-start gap-4 hover:bg-primary-container/[0.02] transition-colors group">
+                {/* Live indicator */}
+                <div className="mt-1 shrink-0">
+                  {item.is_active
+                    ? <span className="w-2.5 h-2.5 rounded-full bg-tertiary-fixed-dim block animate-pulse" />
+                    : <span className="w-2.5 h-2.5 rounded-full bg-outline-variant block" />
+                  }
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-on-surface font-body leading-relaxed">{item.headline}</p>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    {item.is_active && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-tertiary/10 text-tertiary-fixed-dim text-[11px] font-bold rounded-full font-body uppercase tracking-wider">
+                        <span className="material-symbols-outlined text-[11px]" style={{ fontVariationSettings: "'FILL' 1" }}>fiber_manual_record</span>
+                        Live
+                      </span>
+                    )}
+                    {isOrganizer && item.journalist_id !== user?.id && (
+                      <span className="px-2.5 py-0.5 bg-primary-fixed text-on-primary-fixed text-[11px] font-bold rounded-full font-body">
+                        Can Override
+                      </span>
+                    )}
+                    <span className="text-[11px] text-on-surface-variant font-body">
+                      By {item.journalist_name} · {new Date(item.published_at).toLocaleString()}
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-slate-500 py-8">No headlines published yet</p>
-          )}
-        </CardContent>
-      </Card>
+
+                {/* Actions */}
+                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                  <button
+                    onClick={() => handleEdit(item)}
+                    disabled={deleteMutation.isPending || toggleActiveMutation.isPending}
+                    className="p-2 text-on-surface-variant hover:text-primary transition-colors rounded-lg hover:bg-surface-container"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                  </button>
+                  <button
+                    onClick={() => toggleActiveMutation.mutate({ id: item.id, isActive: item.is_active })}
+                    disabled={toggleActiveMutation.isPending}
+                    className={`p-2 transition-colors rounded-lg hover:bg-surface-container ${item.is_active ? 'text-error hover:text-error' : 'text-tertiary-fixed-dim hover:text-tertiary-fixed-dim'}`}
+                  >
+                    <span className="material-symbols-outlined text-[18px]">{item.is_active ? 'pause_circle' : 'play_circle'}</span>
+                  </button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button disabled={deleteMutation.isPending} className="p-2 text-on-surface-variant hover:text-error transition-colors rounded-lg hover:bg-surface-container">
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-[2rem] border-none bg-surface-container-lowest shadow-2xl overflow-hidden p-0">
+                      <div className="h-1.5 bg-error" />
+                      <div className="p-8 space-y-4">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle className="text-xl font-extrabold font-headline text-error">Delete Headline?</AlertDialogTitle>
+                          <AlertDialogDescription className="text-sm text-on-surface-variant font-body">
+                            This action cannot be undone. This headline will be permanently deleted.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="flex gap-3 pt-2">
+                          <AlertDialogCancel className="flex-1 h-12 bg-surface-container border-none rounded-2xl font-bold text-sm text-on-surface-variant font-body">Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={() => deleteMutation.mutate(item.id)} className="flex-1 h-12 bg-error text-on-error border-none rounded-2xl font-bold text-sm font-body">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </div>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

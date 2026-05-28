@@ -1,11 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -20,8 +14,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Award, Plus, Trophy, Users, Edit, Trash2, UserCheck, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -73,56 +65,36 @@ export const AwardManagement = () => {
 
   const fetchData = async () => {
     try {
-      // Fetch awards
       const { data: awardsData, error: awardsError } = await supabase
         .from('awards')
         .select('*')
         .order('created_at', { ascending: false });
-
       if (awardsError) throw awardsError;
 
-      // Fetch students
       const { data: studentsData, error: studentsError } = await supabase
         .from('profiles')
         .select('user_id, name, position, party_number, constituency, photo_url')
         .eq('user_type', 'student')
         .order('name');
-
       if (studentsError) throw studentsError;
 
-      // Fetch student awards with related data
       const { data: studentAwardsData, error: studentAwardsError } = await supabase
         .from('student_awards')
-        .select(`
-          id,
-          award_id,
-          student_id,
-          assigned_at,
-          assigned_by_jury_consensus,
-          assigned_by_organizer,
-          awards (name)
-        `)
+        .select(`id, award_id, student_id, assigned_at, assigned_by_jury_consensus, assigned_by_organizer, awards (name)`)
         .order('assigned_at', { ascending: false });
-
       if (studentAwardsError) throw studentAwardsError;
 
-      // Fetch student details for awards
       const studentIds = studentAwardsData?.map(sa => sa.student_id) || [];
       const { data: awardStudentsData, error: awardStudentsError } = await supabase
         .from('profiles')
         .select('user_id, name, position, party_number, photo_url')
         .in('user_id', studentIds);
-
       if (awardStudentsError) throw awardStudentsError;
 
-      // Combine student awards with student data
       const enrichedStudentAwards = studentAwardsData?.map(sa => ({
         ...sa,
-        profiles: awardStudentsData?.find(student => student.user_id === sa.student_id) || {
-          name: 'Unknown',
-          position: 'Unknown',
-          party_number: 0,
-          photo_url: null
+        profiles: awardStudentsData?.find(s => s.user_id === sa.student_id) || {
+          name: 'Unknown', position: 'Unknown', party_number: 0, photo_url: null
         }
       })) || [];
 
@@ -131,11 +103,7 @@ export const AwardManagement = () => {
       setStudentAwards(enrichedStudentAwards);
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load data",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to load data", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -144,62 +112,33 @@ export const AwardManagement = () => {
   const setupRealtimeSubscriptions = () => {
     const channel = supabase
       .channel('award-management-updates')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'awards'
-      }, () => {
-        fetchData();
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'student_awards'
-      }, () => {
-        fetchData();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'awards' }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_awards' }, () => fetchData())
       .subscribe();
-
     return () => supabase.removeChannel(channel);
   };
 
   const createAward = async () => {
     if (!newAward.name.trim()) {
-      toast({
-        title: "Error",
-        description: "Award name is required",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Award name is required", variant: "destructive" });
       return;
     }
-
     try {
-      const { error } = await supabase
-        .from('awards')
-        .insert([{
-          name: newAward.name.trim(),
-          description: newAward.description.trim() || null,
-          visible_to_jury: newAward.visibleToJury
-        }]);
-
+      const { error } = await supabase.from('awards').insert([{
+        name: newAward.name.trim(),
+        description: newAward.description.trim() || null,
+        visible_to_jury: newAward.visibleToJury
+      }]);
       if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Award created successfully",
-      });
-
+      toast({ title: "Success", description: "Award created successfully" });
       setNewAward({ name: '', description: '', visibleToJury: true });
       setIsCreateDialogOpen(false);
       fetchData();
     } catch (error: any) {
-      console.error('Error creating award:', error);
       const isDuplicate = error?.code === '23505';
       toast({
         title: "Error",
-        description: isDuplicate 
-          ? "An award with this name already exists. Please use a different name."
-          : "Failed to create award",
+        description: isDuplicate ? "An award with this name already exists." : "Failed to create award",
         variant: "destructive",
       });
     }
@@ -207,66 +146,36 @@ export const AwardManagement = () => {
 
   const assignAward = async () => {
     if (!selectedAward || !selectedStudent) {
-      toast({
-        title: "Error",
-        description: "Please select both an award and a student",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Please select both an award and a student", variant: "destructive" });
       return;
     }
-
-    // Check if this award is already assigned to this student
-    const existingAssignment = studentAwards.find(
-      sa => sa.award_id === selectedAward && sa.student_id === selectedStudent
-    );
-
+    const existingAssignment = studentAwards.find(sa => sa.award_id === selectedAward && sa.student_id === selectedStudent);
     if (existingAssignment) {
-      toast({
-        title: "Error",
-        description: "This award is already assigned to the selected student",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "This award is already assigned to the selected student", variant: "destructive" });
       return;
     }
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      
-      const { error } = await supabase
-        .from('student_awards')
-        .insert([{
-          award_id: selectedAward,
-          student_id: selectedStudent,
-          assigned_by_jury_consensus: false,
-          assigned_by_organizer: true,
-          assigned_by_user_id: user?.id
-        }]);
-
+      const { error } = await supabase.from('student_awards').insert([{
+        award_id: selectedAward,
+        student_id: selectedStudent,
+        assigned_by_jury_consensus: false,
+        assigned_by_organizer: true,
+        assigned_by_user_id: user?.id
+      }]);
       if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Award assigned successfully",
-      });
-
+      toast({ title: "Success", description: "Award assigned successfully" });
       setSelectedAward('');
       setSelectedStudent('');
       setIsAssignDialogOpen(false);
       fetchData();
     } catch (error) {
-      console.error('Error assigning award:', error);
-      toast({
-        title: "Error",
-        description: "Failed to assign award",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to assign award", variant: "destructive" });
     }
   };
 
   const deleteAward = async (awardId: string) => {
-    // Check if award is assigned to any students
     const assignedStudents = studentAwards.filter(sa => sa.award_id === awardId);
-    
     if (assignedStudents.length > 0) {
       toast({
         title: "Cannot Delete Award",
@@ -275,28 +184,13 @@ export const AwardManagement = () => {
       });
       return;
     }
-
     try {
-      const { error } = await supabase
-        .from('awards')
-        .delete()
-        .eq('id', awardId);
-
+      const { error } = await supabase.from('awards').delete().eq('id', awardId);
       if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Award deleted successfully",
-      });
-
+      toast({ title: "Success", description: "Award deleted successfully" });
       fetchData();
     } catch (error) {
-      console.error('Error deleting award:', error);
-      toast({
-        title: "Error",
-        description: "Failed to delete award",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to delete award", variant: "destructive" });
     } finally {
       setDeleteAwardId(null);
     }
@@ -304,173 +198,136 @@ export const AwardManagement = () => {
 
   const removeAward = async (studentAwardId: string) => {
     try {
-      const { error } = await supabase
-        .from('student_awards')
-        .delete()
-        .eq('id', studentAwardId);
-
+      const { error } = await supabase.from('student_awards').delete().eq('id', studentAwardId);
       if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Award assignment removed successfully",
-      });
-
+      toast({ title: "Success", description: "Award assignment removed successfully" });
       fetchData();
     } catch (error) {
-      console.error('Error removing award assignment:', error);
-      toast({
-        title: "Error",
-        description: "Failed to remove award assignment",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to remove award assignment", variant: "destructive" });
     }
   };
 
+  const initials = (name: string) => name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-muted-foreground">Loading award management...</p>
+          <span className="material-symbols-outlined text-[40px] text-primary animate-spin block mx-auto">refresh</span>
+          <p className="text-sm text-on-surface-variant font-body">Loading awards…</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Actions */}
-      <div className="flex gap-4">
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+    <div className="space-y-6 animate-in fade-in duration-700">
+
+      {/* Action bar */}
+      <div className="flex justify-end gap-3">
+        <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Award
-            </Button>
+            <button className="flex items-center gap-2 px-5 py-2.5 bg-surface-container-lowest border border-outline-variant/20 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors font-semibold text-sm font-body">
+              <span className="material-symbols-outlined text-[20px]">person_add</span>
+              Assign Award
+            </button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Award</DialogTitle>
-              <DialogDescription>
-                Create a new award that can be assigned to outstanding students.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
+          <DialogContent className="rounded-[2rem] border-none bg-surface-container-lowest shadow-2xl overflow-hidden p-0 max-w-md [&>button]:hidden">
+            <div className="h-1.5 bg-gradient-to-r from-secondary to-secondary-container" />
+            <div className="p-8 space-y-5">
               <div>
-                <Label htmlFor="award-name" className="text-sm font-medium text-slate-700">Award Name</Label>
-                <Input
-                  id="award-name"
-                  value={newAward.name}
-                  onChange={(e) => setNewAward(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Enter award name"
-                  className="mt-1"
-                />
+                <h2 className="text-xl font-extrabold font-headline text-primary">Assign Award</h2>
+                <p className="text-xs text-on-surface-variant/60 font-body mt-1">Select an award and a student to create a manual assignment</p>
               </div>
-              <div>
-                <Label htmlFor="award-description" className="text-sm font-medium text-slate-700">Description (Optional)</Label>
-                <Textarea
-                  id="award-description"
-                  value={newAward.description}
-                  onChange={(e) => setNewAward(prev => ({ ...prev, description: e.target.value }))}
-                  placeholder="Enter award description"
-                  className="mt-1"
-                  rows={3}
-                />
-              </div>
-              <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-slate-50/80 to-blue-50/80 backdrop-blur-sm rounded-xl border border-white/40 shadow-sm">
-                <Switch
-                  id="visible-to-jury"
-                  checked={newAward.visibleToJury}
-                  onCheckedChange={(checked) => setNewAward(prev => ({ ...prev, visibleToJury: checked }))}
-                  className="data-[state=checked]:bg-green-500"
-                />
-                <div className="flex items-center gap-2">
-                  {newAward.visibleToJury ? (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-green-100/80 to-emerald-100/80 backdrop-blur-sm border border-green-200/50 rounded-full shadow-sm">
-                      <Eye className="w-4 h-4 text-green-600" />
-                      <span className="text-sm font-semibold text-green-700">Jury Visible</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-slate-100/80 to-gray-100/80 backdrop-blur-sm border border-slate-200/50 rounded-full shadow-sm">
-                      <EyeOff className="w-4 h-4 text-slate-500" />
-                      <span className="text-sm font-semibold text-slate-600">Organizer Only</span>
-                    </div>
-                  )}
+              <div className="space-y-3">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 font-headline mb-2">Award</p>
+                  <Select value={selectedAward} onValueChange={setSelectedAward}>
+                    <SelectTrigger className="h-12 bg-surface-container border-none rounded-2xl font-bold text-sm font-body">
+                      <SelectValue placeholder="Choose an award" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-none bg-surface-container-lowest shadow-xl">
+                      {awards.map(a => <SelectItem key={a.id} value={a.id} className="font-body">{a.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 font-headline mb-2">Student</p>
+                  <Select value={selectedStudent} onValueChange={setSelectedStudent}>
+                    <SelectTrigger className="h-12 bg-surface-container border-none rounded-2xl font-bold text-sm font-body">
+                      <SelectValue placeholder="Choose a student" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl border-none bg-surface-container-lowest shadow-xl">
+                      {students.map(s => <SelectItem key={s.user_id} value={s.user_id} className="font-body">{s.name} — {s.position}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-              <div className="bg-blue-50/50 border-l-4 border-blue-400 p-3 rounded-r-lg">
-                <p className="text-sm text-blue-700 font-medium">
-                  {newAward.visibleToJury 
-                    ? "🗳️ Jury members can see and vote on this award" 
-                    : "🔒 Only organizers can assign this award (hidden from jury)"
-                  }
-                </p>
-              </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={createAward}>
-                  Create Award
-                </Button>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setIsAssignDialogOpen(false)} className="flex-1 h-12 bg-surface-container rounded-2xl font-bold text-sm text-on-surface-variant font-body hover:bg-surface-container-high transition-colors">Cancel</button>
+                <button onClick={assignAward} className="flex-1 h-12 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl font-bold text-sm font-body shadow-[0_4px_12px_rgba(19,41,143,0.25)]">Assign</button>
               </div>
             </div>
           </DialogContent>
         </Dialog>
 
-        <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button variant="outline" className="border-blue-200 text-blue-700 hover:bg-blue-50">
-              <UserCheck className="w-4 h-4 mr-2" />
-              Assign Award
-            </Button>
+            <button className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary to-primary-container text-white rounded-xl font-bold text-sm font-body shadow-[0_4px_12px_rgba(19,41,143,0.25)] hover:shadow-[0_6px_16px_rgba(19,41,143,0.35)] transition-all active:scale-[0.98]">
+              <span className="material-symbols-outlined text-[20px]">add</span>
+              Create Award
+            </button>
           </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Assign Award to Student</DialogTitle>
-              <DialogDescription>
-                Select an award and a student to create a manual award assignment.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-                <div>
-                  <Label htmlFor="select-award" className="text-sm font-medium text-slate-700">Select Award</Label>
-                <Select value={selectedAward} onValueChange={setSelectedAward}>
-                  <SelectTrigger id="select-student" className="mt-1">
-                    <SelectValue placeholder="Choose an award" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {awards.map((award) => (
-                      <SelectItem key={award.id} value={award.id}>
-                        {award.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <DialogContent className="rounded-[2rem] border-none bg-surface-container-lowest shadow-2xl overflow-hidden p-0 max-w-md [&>button]:hidden">
+            <div className="h-1.5 bg-gradient-to-r from-primary to-primary-container" />
+            <div className="p-8 space-y-5">
+              <div>
+                <h2 className="text-xl font-extrabold font-headline text-primary">Create Award</h2>
+                <p className="text-xs text-on-surface-variant/60 font-body mt-1">Define a new recognition that can be assigned to outstanding students</p>
               </div>
+              <div className="space-y-3">
                 <div>
-                  <Label htmlFor="select-student" className="text-sm font-medium text-slate-700">Select Student</Label>
-                <Select value={selectedStudent} onValueChange={setSelectedStudent}>
-                  <SelectTrigger id="select-award" className="mt-1">
-                    <SelectValue placeholder="Choose a student" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {students.map((student) => (
-                      <SelectItem key={student.user_id} value={student.user_id}>
-                        {student.name} - {student.position}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 font-headline mb-2">Award Name</p>
+                  <input
+                    value={newAward.name}
+                    onChange={e => setNewAward(p => ({ ...p, name: e.target.value }))}
+                    placeholder="e.g. Best Delegate"
+                    className="w-full h-12 bg-surface-container border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body outline-none"
+                  />
+                </div>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 font-headline mb-2">Description <span className="normal-case font-medium opacity-60">(optional)</span></p>
+                  <textarea
+                    value={newAward.description}
+                    onChange={e => setNewAward(p => ({ ...p, description: e.target.value }))}
+                    placeholder="Describe the criteria for this award…"
+                    rows={3}
+                    className="w-full bg-surface-container border-none rounded-2xl font-body px-5 py-3 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 outline-none resize-none"
+                  />
+                </div>
+                <div className="flex items-center justify-between p-4 bg-surface-container rounded-2xl">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px] text-on-surface-variant">
+                      {newAward.visibleToJury ? 'visibility' : 'visibility_off'}
+                    </span>
+                    <div>
+                      <p className="text-sm font-bold text-on-surface font-body">
+                        {newAward.visibleToJury ? 'Jury Visible' : 'Organizer Only'}
+                      </p>
+                      <p className="text-xs text-on-surface-variant font-body">
+                        {newAward.visibleToJury ? 'Jury members can vote on this award' : 'Hidden from jury, assigned by organizer'}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={newAward.visibleToJury}
+                    onCheckedChange={checked => setNewAward(p => ({ ...p, visibleToJury: checked }))}
+                  />
+                </div>
               </div>
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={assignAward}>
-                  Assign Award
-                </Button>
+              <div className="flex gap-3 pt-2">
+                <button onClick={() => setIsCreateDialogOpen(false)} className="flex-1 h-12 bg-surface-container rounded-2xl font-bold text-sm text-on-surface-variant font-body hover:bg-surface-container-high transition-colors">Cancel</button>
+                <button onClick={createAward} className="flex-1 h-12 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl font-bold text-sm font-body shadow-[0_4px_12px_rgba(19,41,143,0.25)]">Create Award</button>
               </div>
             </div>
           </DialogContent>
@@ -478,173 +335,191 @@ export const AwardManagement = () => {
       </div>
 
       {/* Available Awards */}
-      <Card className="bg-white/20 backdrop-blur-lg border border-white/25 shadow-lg">
-        <CardHeader>
+      <div className="bg-surface-container-lowest rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(19,41,143,0.1)] overflow-hidden">
+        <div className="px-8 py-6 border-b border-outline-variant/10 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl flex items-center justify-center">
-              <Award className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
             </div>
-            <CardTitle className="text-slate-800">Available Awards and recognitions</CardTitle>
+            <div>
+              <h3 className="font-headline font-extrabold text-on-surface">Available Awards</h3>
+              <p className="text-xs text-on-surface-variant font-body">{awards.length} recognition{awards.length !== 1 ? 's' : ''} created</p>
+            </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          {awards.length === 0 ? (
-            <p className="text-slate-600 text-center py-8">No awards created yet. Create your first award!</p>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {awards.map((award) => {
-                const assignedCount = studentAwards.filter(sa => sa.award_id === award.id).length;
-                
-                return (
-                  <div key={award.id} className="bg-white/15 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-bold text-slate-800">{award.name}</h4>
-                          {award.visible_to_jury ? (
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-green-100/80 to-emerald-100/80 backdrop-blur-sm border border-green-200/50 rounded-full shadow-sm">
-                              <Eye className="w-3.5 h-3.5 text-green-600" />
-                              <span className="text-xs font-semibold text-green-700">Jury Visible</span>
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-slate-100/80 to-gray-100/80 backdrop-blur-sm border border-slate-200/50 rounded-full shadow-sm">
-                              <EyeOff className="w-3.5 h-3.5 text-slate-500" />
-                              <span className="text-xs font-semibold text-slate-600">Organizer Only</span>
-                            </div>
-                          )}
-                        </div>
-                        {award.description && (
-                          <p className="text-sm text-slate-600 mt-1">{award.description}</p>
-                        )}
-                        <div className="flex items-center justify-between mt-2">
-                          <p className="text-xs text-slate-500">
-                            Created {new Date(award.created_at).toLocaleDateString()}
-                          </p>
-                          <p className="text-xs text-slate-600 font-medium">
-                            {assignedCount} assignment{assignedCount !== 1 ? 's' : ''}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 ml-2">
-                        <Trophy className="w-5 h-5 text-yellow-600" />
-                        <AlertDialog open={deleteAwardId === award.id} onOpenChange={(open) => !open && setDeleteAwardId(null)}>
-                          <AlertDialogTrigger asChild>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setDeleteAwardId(award.id)}
-                              className="text-red-600 border-red-200 hover:bg-red-50 ml-2"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Award?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this award? This action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteAward(award.id)} className="bg-red-600 hover:bg-red-700">
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Assigned Awards */}
-      <Card className="bg-white/20 backdrop-blur-lg border border-white/25 shadow-lg">
-        <CardHeader>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-xl flex items-center justify-center">
-              <Users className="w-5 h-5 text-white" />
-            </div>
-            <CardTitle className="text-slate-800">Assigned Awards</CardTitle>
+        </div>
+        {awards.length === 0 ? (
+          <div className="px-8 py-16 text-center">
+            <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 block mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+            <p className="text-sm text-on-surface-variant/50 font-body">No awards created yet. Click "Create Award" to get started.</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          {studentAwards.length === 0 ? (
-            <p className="text-slate-600 text-center py-8">No awards assigned yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-white/25">
-                    <TableHead className="text-slate-700 font-semibold">Student</TableHead>
-                    <TableHead className="text-slate-700 font-semibold">Award</TableHead>
-                    <TableHead className="text-slate-700 font-semibold">Assignment Type</TableHead>
-                    <TableHead className="text-slate-700 font-semibold">Date</TableHead>
-                    <TableHead className="text-slate-700 font-semibold">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {studentAwards.map((studentAward) => (
-                    <TableRow key={studentAward.id} className="border-white/25 hover:bg-white/10">
-                      <TableCell>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface-container-low/30">
+                  <th className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">Award</th>
+                  <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">Visibility</th>
+                  <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">Assigned</th>
+                  <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">Created</th>
+                  <th className="px-8 py-5 text-right text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/5">
+                {awards.map(award => {
+                  const assignedCount = studentAwards.filter(sa => sa.award_id === award.id).length;
+                  return (
+                    <tr key={award.id} className="hover:bg-primary-container/[0.02] transition-colors group">
+                      <td className="px-8 py-5">
                         <div className="flex items-center gap-3">
-                          <Avatar className="w-8 h-8">
-                            <AvatarImage src={studentAward.profiles.photo_url} />
-                            <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-600 text-white text-xs">
-                              {studentAward.profiles.name.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <div className="font-medium text-slate-800">{studentAward.profiles.name}</div>
-                            <div className="text-sm text-slate-600">{studentAward.profiles.position}</div>
+                          <div className="w-10 h-10 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-headline font-bold text-on-surface">{award.name}</p>
+                            {award.description && <p className="text-xs text-on-surface-variant font-body mt-0.5 line-clamp-1">{award.description}</p>}
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className="bg-yellow-500/20 text-yellow-700 border border-yellow-500/30">
-                          <Trophy className="w-3 h-3 mr-1" />
-                          {studentAward.awards.name}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={studentAward.assigned_by_jury_consensus ? "default" : "secondary"}
-                          className={studentAward.assigned_by_jury_consensus 
-                            ? "bg-blue-500/20 text-blue-700 border border-blue-500/30" 
-                            : "bg-purple-500/20 text-purple-700 border border-purple-500/30"
-                          }
-                        >
-                          {studentAward.assigned_by_jury_consensus ? "Jury Consensus" : "Organizer"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-slate-600">
-                        {new Date(studentAward.assigned_at).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell>
-                        {studentAward.assigned_by_organizer && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeAward(studentAward.id)}
-                            className="text-red-600 border-red-200 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                      </td>
+                      <td className="px-6 py-5">
+                        {award.visible_to_jury ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-tertiary/10 text-tertiary-fixed-dim text-[11px] font-bold rounded-full font-body">
+                            <span className="material-symbols-outlined text-[13px]">visibility</span>
+                            Jury Visible
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-container text-on-surface-variant text-[11px] font-bold rounded-full font-body">
+                            <span className="material-symbols-outlined text-[13px]">visibility_off</span>
+                            Organizer Only
+                          </span>
                         )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className="text-sm font-bold text-on-surface font-body">{assignedCount}</span>
+                        <span className="text-xs text-on-surface-variant font-body ml-1">student{assignedCount !== 1 ? 's' : ''}</span>
+                      </td>
+                      <td className="px-6 py-5 text-sm font-medium text-on-surface-variant font-body whitespace-nowrap">
+                        {new Date(award.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-8 py-5 text-right">
+                        <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                          <AlertDialog open={deleteAwardId === award.id} onOpenChange={open => !open && setDeleteAwardId(null)}>
+                            <AlertDialogTrigger asChild>
+                              <button onClick={() => setDeleteAwardId(award.id)} className="p-2 text-on-surface-variant hover:text-error transition-colors rounded-lg hover:bg-surface-container">
+                                <span className="material-symbols-outlined text-[20px]">delete</span>
+                              </button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="rounded-[2rem] border-none bg-surface-container-lowest shadow-2xl overflow-hidden p-0">
+                              <div className="h-1.5 bg-error" />
+                              <div className="p-8 space-y-4">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="text-xl font-extrabold font-headline text-error">Delete Award?</AlertDialogTitle>
+                                  <AlertDialogDescription className="text-sm text-on-surface-variant font-body">
+                                    This will permanently delete "{award.name}". This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="flex gap-3 pt-2">
+                                  <AlertDialogCancel className="flex-1 h-12 bg-surface-container border-none rounded-2xl font-bold text-sm text-on-surface-variant font-body">Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => deleteAward(award.id)} className="flex-1 h-12 bg-error text-on-error border-none rounded-2xl font-bold text-sm font-body">Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </div>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Assigned Awards */}
+      <div className="bg-surface-container-lowest rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(19,41,143,0.1)] overflow-hidden">
+        <div className="px-8 py-6 border-b border-outline-variant/10 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-secondary/10 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[20px] text-secondary" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div>
+              <h3 className="font-headline font-extrabold text-on-surface">Assigned Awards</h3>
+              <p className="text-xs text-on-surface-variant font-body">{studentAwards.length} assignment{studentAwards.length !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+        </div>
+        {studentAwards.length === 0 ? (
+          <div className="px-8 py-16 text-center">
+            <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 block mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+            <p className="text-sm text-on-surface-variant/50 font-body">No awards assigned yet.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-surface-container-low/30">
+                  <th className="px-8 py-5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">Student</th>
+                  <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">Award</th>
+                  <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">Source</th>
+                  <th className="px-6 py-5 text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">Date</th>
+                  <th className="px-8 py-5 text-right text-[10px] font-bold uppercase tracking-widest text-on-surface-variant font-body">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/5">
+                {studentAwards.map(sa => (
+                  <tr key={sa.id} className="hover:bg-primary-container/[0.02] transition-colors group">
+                    <td className="px-8 py-5">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-10 h-10 border-2 border-primary/10">
+                          <AvatarImage src={sa.profiles.photo_url} />
+                          <AvatarFallback className="bg-primary/10 text-primary font-headline font-bold text-xs">
+                            {initials(sa.profiles.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-headline font-bold text-on-surface">{sa.profiles.name}</p>
+                          <p className="text-xs text-on-surface-variant font-body">{sa.profiles.position}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary-fixed text-on-primary-fixed text-[11px] font-bold rounded-full font-body">
+                        <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                        {sa.awards.name}
+                      </span>
+                    </td>
+                    <td className="px-6 py-5">
+                      {sa.assigned_by_jury_consensus ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-secondary-fixed text-on-secondary-fixed text-[11px] font-bold rounded-full font-body">
+                          <span className="material-symbols-outlined text-[13px]">gavel</span>
+                          Jury Consensus
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-surface-container text-on-surface-variant text-[11px] font-bold rounded-full font-body">
+                          <span className="material-symbols-outlined text-[13px]">person</span>
+                          Organizer
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-6 py-5 text-sm font-medium text-on-surface-variant font-body whitespace-nowrap">
+                      {new Date(sa.assigned_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-8 py-5 text-right">
+                      {sa.assigned_by_organizer && (
+                        <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => removeAward(sa.id)} className="p-2 text-on-surface-variant hover:text-error transition-colors rounded-lg hover:bg-surface-container">
+                            <span className="material-symbols-outlined text-[20px]">remove_circle</span>
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
