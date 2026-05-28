@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import TimerDisplay from "./TimerDisplay";
-import { AnalyticsBento } from "@/components/student/PollVoting";
 import { DetailedPollResults } from "@/components/student/DetailedPollResults";
 
 type Tab = 'timer' | 'polls';
@@ -104,60 +103,30 @@ const CombinedDisplay = () => {
 
       {/* ── Poll Results tab ── */}
       <div
-        className={`overflow-y-auto ${tab !== 'polls' ? 'hidden' : ''}`}
+        className={`overflow-hidden ${tab !== 'polls' ? 'hidden' : ''}`}
         style={{ height: `calc(100vh - ${TAB_H}px)` }}
       >
         {!activePoll ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4">
-            <div className="w-20 h-20 rounded-3xl bg-primary/5 flex items-center justify-center">
+          <div className="flex flex-col items-center justify-center h-full gap-4 bg-slate-50">
+            <div className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center">
               <span
                 className="material-symbols-outlined text-primary/20"
-                style={{ fontSize: '3rem', fontVariationSettings: "'FILL' 1" }}
+                style={{ fontSize: '2.5rem', fontVariationSettings: "'FILL' 1" }}
               >how_to_vote</span>
             </div>
-            <p className="text-[10px] font-headline font-black uppercase tracking-[0.4em] text-on-surface-variant/40">
+            <p className="text-[10px] font-headline font-black uppercase tracking-[0.4em] text-slate-400">
               No Active Poll
             </p>
           </div>
         ) : (
-          <div className="max-w-5xl mx-auto px-6 py-8 pb-16 space-y-8">
-
-            {/* Poll header */}
-            <div className="text-center space-y-2">
-              {activePoll.heading && (
-                <p className="text-[10px] font-headline font-black uppercase tracking-[0.4em] text-primary">
-                  {activePoll.heading}
-                </p>
-              )}
-              <h1 className="text-4xl font-headline font-extrabold text-on-surface tracking-tight">
-                {activePoll.title}
-              </h1>
-              <div className="flex items-center justify-center gap-2 pt-1">
-                <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-                <span className="text-[10px] font-headline font-black uppercase tracking-[0.35em] text-secondary">
-                  {activePoll.is_active ? 'Live Voting' : 'Voting Closed'}
-                </span>
-              </div>
-            </div>
-
-            {/* AnalyticsBento — same component as student ballot tab */}
-            <AnalyticsBento
-              pollId={activePoll.id}
-              options={pollOptions}
-              refreshTrigger={0}
-              votingEnabled={activePoll.is_active}
-            />
-
-            {/* Full delegate-level vote breakdown */}
-            <DetailedPollResults
-              pollId={activePoll.id}
-              pollTitle={activePoll.title}
-              pollHeading={activePoll.heading}
-              options={pollOptions}
-              isOrganizer={false}
-            />
-
-          </div>
+          <DetailedPollResults
+            pollId={activePoll.id}
+            pollTitle={activePoll.title}
+            pollHeading={activePoll.heading}
+            options={pollOptions}
+            isOrganizer={false}
+            isActive={activePoll.is_active}
+          />
         )}
       </div>
 
