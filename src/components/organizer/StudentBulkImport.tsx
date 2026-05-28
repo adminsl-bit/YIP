@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Upload, FileSpreadsheet, Download, CheckCircle, AlertCircle, Info, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
@@ -272,201 +267,255 @@ export const StudentBulkImport = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Upload className="w-5 h-5" />
-            Bulk Student Import
-          </CardTitle>
-          <CardDescription>
-            Upload an Excel file to import multiple students with their photos and details
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Import Mode Selection */}
-          <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
-            <label className="text-sm font-semibold">Import Mode:</label>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                type="button"
-                variant={importMode === 'full' ? 'default' : 'outline'}
-                onClick={() => setImportMode('full')}
-                className="flex-1"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Full Import (Override All Data)
-              </Button>
-              <Button
-                type="button"
-                variant={importMode === 'scores-only' ? 'default' : 'outline'}
-                onClick={() => setImportMode('scores-only')}
-                className="flex-1"
-              >
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
-                Pre-Event Scores Only
-              </Button>
+    <div className="space-y-6 animate-in fade-in duration-700">
+
+      {/* Page heading */}
+      <div>
+        <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+          Registry <span className="text-secondary">Sync</span>
+        </h1>
+        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+          <span className="material-symbols-outlined text-[12px]">upload_file</span>
+          Bulk Import &amp; Data Management
+        </p>
+      </div>
+
+      {/* Main import card */}
+      <section className="bg-surface-container-low rounded-[2rem] p-8 space-y-8">
+
+        {/* Mode selector */}
+        <div>
+          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 font-headline mb-3">Import Mode</p>
+          <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => setImportMode('full')}
+              className={`flex items-center gap-2 py-2.5 px-5 rounded-full text-sm font-bold transition-all active:scale-95 font-body ${importMode === 'full' ? 'bg-primary text-white shadow-[0_4px_12px_rgba(19,41,143,0.25)]' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}
+            >
+              <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>database</span>
+              Full Import
+            </button>
+            <button
+              onClick={() => setImportMode('scores-only')}
+              className={`flex items-center gap-2 py-2.5 px-5 rounded-full text-sm font-bold transition-all active:scale-95 font-body ${importMode === 'scores-only' ? 'bg-primary text-white shadow-[0_4px_12px_rgba(19,41,143,0.25)]' : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}`}
+            >
+              <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>score</span>
+              Pre-Event Scores Only
+            </button>
+          </div>
+        </div>
+
+        {/* Column reference card */}
+        <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-[0_32px_32px_-12px_rgba(19,41,143,0.06)]">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>info</span>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant font-headline">
+              {importMode === 'full' ? 'Full Import — Column Reference' : 'Scores Only — Column Reference'}
+            </p>
+          </div>
+          {importMode === 'full' ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-body">
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-error mb-2 font-headline">Required</p>
+                {['Serial no', 'Name', 'seat role', 'Login', 'password'].map(col => (
+                  <div key={col} className="flex items-center gap-2 py-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-error shrink-0" />
+                    <span className="font-mono text-xs text-on-surface">{col}</span>
+                  </div>
+                ))}
+              </div>
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/60 mb-2 font-headline">Optional</p>
+                {['Alliance', 'Party', 'Party Name', 'Committee', 'constituency', 'state', 'home city', 'Preevent scores'].map(col => (
+                  <div key={col} className="flex items-center gap-2 py-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-outline shrink-0" />
+                    <span className="font-mono text-xs text-on-surface-variant">{col}</span>
+                  </div>
+                ))}
+              </div>
+              <div className="md:col-span-2 mt-1 pt-3 border-t border-outline-variant/10 space-y-1 text-xs text-on-surface-variant font-body">
+                <p><span className="font-bold text-on-surface">Role logic:</span> "Administrator" → admin access · "Journalist" → publishing access · others → student</p>
+                <p><span className="font-bold text-on-surface">Re-upload safe:</span> Existing students are updated, not duplicated</p>
+              </div>
             </div>
-            {importMode === 'scores-only' && (
-              <Alert>
-                <Info className="w-4 h-4" />
-                <AlertDescription className="text-xs">
-                  In this mode, only <strong>Serial Number</strong> and <strong>Preevent Scores</strong> columns are required. 
-                  All other student data will remain unchanged.
-                </AlertDescription>
-              </Alert>
+          ) : (
+            <div className="space-y-3 text-sm font-body">
+              <div className="flex gap-6">
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-error mb-2 font-headline">Required</p>
+                  {['Serial no', 'Preevent scores'].map(col => (
+                    <div key={col} className="flex items-center gap-2 py-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-error shrink-0" />
+                      <span className="font-mono text-xs text-on-surface">{col}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <p className="text-xs text-on-surface-variant pt-1 border-t border-outline-variant/10">Updates pre-event scores only. All other student data remains unchanged. Students must already exist (run Full Import first).</p>
+            </div>
+          )}
+        </div>
+
+        {/* File upload + download row */}
+        <div className="flex flex-col sm:flex-row gap-4">
+          <button
+            onClick={downloadTemplate}
+            disabled={isDownloadingTemplate}
+            className="flex items-center gap-2 py-3.5 px-6 rounded-2xl bg-surface-container text-on-surface-variant hover:bg-surface-container-high font-bold text-sm transition-all active:scale-95 font-body disabled:opacity-50 shrink-0"
+          >
+            <span className="material-symbols-outlined text-[20px]">download</span>
+            {isDownloadingTemplate ? 'Downloading…' : 'Download Template'}
+          </button>
+
+          <div className="flex-1">
+            <input
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="hidden"
+              id="excel-upload"
+            />
+            <label
+              htmlFor="excel-upload"
+              className={`flex items-center justify-center gap-3 p-5 rounded-2xl cursor-pointer transition-all border border-dashed font-body ${
+                file
+                  ? 'bg-primary/5 border-primary/30 text-primary'
+                  : 'bg-surface-container border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high hover:border-outline-variant/60'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                {file ? 'table_chart' : 'upload_file'}
+              </span>
+              <div>
+                <p className="font-bold text-sm">{file ? file.name : 'Select Excel file (.xlsx / .xls)'}</p>
+                {!file && <p className="text-[11px] text-on-surface-variant/60 mt-0.5">Click to browse</p>}
+              </div>
+              {file && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); setFile(null); }}
+                  className="ml-auto p-1 rounded-full hover:bg-primary/10 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">close</span>
+                </button>
+              )}
+            </label>
+          </div>
+        </div>
+
+        {/* Import CTA */}
+        {file && (
+          <button
+            onClick={handleFileUpload}
+            disabled={isUploading}
+            className="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-[0_8px_24px_rgba(19,41,143,0.25)] hover:scale-[1.01] active:scale-98 transition-all font-body disabled:opacity-60 flex items-center justify-center gap-2"
+          >
+            <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+              {isUploading ? 'sync' : 'cloud_upload'}
+            </span>
+            {isUploading ? 'Importing…' : `Import ${importMode === 'scores-only' ? 'Pre-Event Scores' : 'Students'}`}
+          </button>
+        )}
+
+        {/* Results */}
+        {results && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-tertiary-container/10 rounded-2xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 bg-on-tertiary-container/20 rounded-xl flex items-center justify-center">
+                  <span className="material-symbols-outlined text-on-tertiary-container text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                </div>
+                <div>
+                  <p className="text-2xl font-black text-on-surface font-headline">{results.success}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant font-body">Successful</p>
+                </div>
+              </div>
+              <div className="bg-error/8 rounded-2xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 bg-error/15 rounded-xl flex items-center justify-center">
+                  <span className="material-symbols-outlined text-error text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>cancel</span>
+                </div>
+                <div>
+                  <p className="text-2xl font-black text-on-surface font-headline">{results.failed}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant font-body">Failed</p>
+                </div>
+              </div>
+            </div>
+
+            {results.errors.length > 0 && (
+              <div className="bg-error/5 rounded-2xl p-5 space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-error font-headline flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[14px]">warning</span>
+                  Import Errors
+                </p>
+                <ul className="space-y-1">
+                  {results.errors.slice(0, 5).map((err, i) => (
+                    <li key={i} className="text-xs text-on-surface-variant font-body flex items-start gap-2">
+                      <span className="text-error/60 shrink-0 mt-0.5">·</span>{err}
+                    </li>
+                  ))}
+                  {results.errors.length > 5 && (
+                    <li className="text-xs text-on-surface-variant/60 font-body">…and {results.errors.length - 5} more</li>
+                  )}
+                </ul>
+              </div>
             )}
           </div>
+        )}
+      </section>
 
-          <Alert>
-            <Info className="w-4 h-4" />
-            <AlertDescription>
-              {importMode === 'full' ? (
-                <>
-                  <strong>Required columns:</strong> Serial no, Name, seat role, Login, password
-                  <br />
-                  <strong>Optional columns:</strong> Alliance, Party, Party Name, Committee, constituency, state, home city, Preevent scores
-                  <br />
-                  <strong>Role Assignment:</strong> "Administrator" → Admin access, "Journalist" → Publishing access, Others → Student access
-                  <br />
-                  <strong>Re-upload support:</strong> Existing students will be updated with new data
-                </>
-              ) : (
-                <>
-                  <strong>Required columns:</strong> Serial no, Preevent scores
-                  <br />
-                  <strong>Mode:</strong> Updates pre-event scores only. All other data remains unchanged.
-                  <br />
-                  <strong>Note:</strong> Students must already exist in the system (use Full Import first)
-                </>
-              )}
-            </AlertDescription>
-          </Alert>
-
-          <div className="flex justify-between items-center">
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button 
-                  variant="destructive" 
-                  disabled={isDeleting}
-                  className="flex items-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  {isDeleting ? "Deleting..." : "Delete All Students"}
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>⚠️ Delete All Students?</AlertDialogTitle>
-                  <AlertDialogDescription className="space-y-2">
-                    <p>This will permanently delete:</p>
-                    <ul className="list-disc list-inside text-sm space-y-1">
-                      <li>All student login credentials</li>
-                      <li>All student profiles and data</li>
-                      <li>All assessments, votes, and related records</li>
-                    </ul>
-                    <p className="text-red-600 font-semibold mt-4">
-                      This action cannot be undone!
-                    </p>
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction 
-                    onClick={handleDeleteAllStudents}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    Yes, Delete All Students
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+      {/* Danger zone */}
+      <section className="bg-error/5 rounded-[2rem] p-8">
+        <div className="flex items-start justify-between gap-6">
+          <div>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-error/70 font-headline mb-1">Danger Zone</p>
+            <p className="font-bold text-on-surface font-headline">Delete All Students</p>
+            <p className="text-sm text-on-surface-variant font-body mt-1">Permanently removes all student accounts, profiles, assessments and votes. This cannot be undone.</p>
           </div>
-
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Button
-              onClick={downloadTemplate}
-              variant="outline"
-              disabled={isDownloadingTemplate}
-              className="flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              {isDownloadingTemplate ? 'Downloading...' : 'Download Template'}
-            </Button>
-            
-            <div className="flex-1">
-              <input
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={(e) => setFile(e.target.files?.[0] || null)}
-                className="hidden"
-                id="excel-upload"
-              />
-              <label
-                htmlFor="excel-upload"
-                className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 transition-colors"
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                disabled={isDeleting}
+                className="shrink-0 flex items-center gap-2 py-3 px-5 rounded-2xl bg-error text-white font-bold text-sm transition-all hover:bg-error/90 active:scale-95 font-body disabled:opacity-50 shadow-[0_4px_12px_rgba(186,26,26,0.25)]"
               >
-                <FileSpreadsheet className="w-5 h-5" />
-                {file ? file.name : "Select Excel file"}
-              </label>
-            </div>
-          </div>
+                <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>delete_forever</span>
+                {isDeleting ? 'Deleting…' : 'Delete All'}
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-[2rem] border-none bg-surface-container-lowest shadow-2xl">
+              <div className="absolute top-0 inset-x-0 h-1.5 bg-error rounded-t-[2rem]" />
+              <AlertDialogHeader className="pt-4">
+                <AlertDialogTitle className="text-xl font-black text-on-surface font-headline flex items-center gap-2">
+                  <span className="material-symbols-outlined text-error text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+                  Delete All Students?
+                </AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="space-y-3 text-sm text-on-surface-variant font-body">
+                    <p>This will permanently delete:</p>
+                    <ul className="space-y-1 ml-2">
+                      {['All student login credentials', 'All student profiles and data', 'All assessments, votes, and related records'].map(item => (
+                        <li key={item} className="flex items-center gap-2">
+                          <span className="w-1 h-1 rounded-full bg-error/60 shrink-0" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="font-bold text-error">This action cannot be undone.</p>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="gap-3">
+                <AlertDialogCancel className="rounded-xl border-none bg-surface-container font-bold">Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleDeleteAllStudents}
+                  className="rounded-xl bg-error text-white font-bold hover:bg-error/90"
+                >
+                  Yes, Delete All
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      </section>
 
-          {file && (
-            <Button
-              onClick={handleFileUpload}
-              disabled={isUploading}
-              className="w-full"
-            >
-              {isUploading ? "Importing..." : "Import Students"}
-            </Button>
-          )}
-
-          {isUploading && (
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Importing students...</span>
-                <span>{progress.toFixed(0)}%</span>
-              </div>
-              <Progress value={progress} className="w-full" />
-            </div>
-          )}
-
-          {results && (
-            <div className="space-y-4">
-              <div className="flex gap-4">
-                <div className="flex items-center gap-2 text-green-600">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>{results.success} successful</span>
-                </div>
-                <div className="flex items-center gap-2 text-red-600">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{results.failed} failed</span>
-                </div>
-              </div>
-
-              {results.errors.length > 0 && (
-                <Alert variant="destructive">
-                  <AlertCircle className="w-4 h-4" />
-                  <AlertDescription>
-                    <div className="space-y-1">
-                      <p className="font-semibold">Import errors:</p>
-                      <ul className="list-disc list-inside text-sm space-y-1">
-                        {results.errors.slice(0, 5).map((error, index) => (
-                          <li key={index}>{error}</li>
-                        ))}
-                        {results.errors.length > 5 && (
-                          <li>... and {results.errors.length - 5} more errors</li>
-                        )}
-                      </ul>
-                    </div>
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 };
