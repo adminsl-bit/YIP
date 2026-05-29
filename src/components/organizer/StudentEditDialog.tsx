@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera } from "lucide-react";
@@ -27,6 +27,14 @@ interface Student {
 }
 
 const PARTY_LETTERS = ['A','B','C','D','E','F','G','H','I','J'] as const;
+
+const COMMITTEES = [
+  'IT & Education',
+  'Women and Child Safety',
+  'Health & Sports',
+  'Environment & Road Transport',
+  'Tourism and Culture',
+] as const;
 
 interface StudentEditDialogProps {
   student: Student | null;
@@ -234,10 +242,47 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = 
               <SelectTrigger className="h-11 bg-surface-container border-none rounded-2xl font-bold px-4 focus:ring-2 focus:ring-primary/20 text-sm">
                 <SelectValue placeholder="Select role" />
               </SelectTrigger>
-              <SelectContent className="bg-surface-container-lowest border-none rounded-2xl shadow-elevated z-50 max-h-56 overflow-y-auto">
-                {["Speaker","Deputy Speaker","Member of Parliament","MP","Minister","Prime Minister","President","Opposition Leader","Leader of Opposition","Administrator","Admin","Chief Minister","Cabinet Minister","State Minister","Parliamentary Secretary","Journalist","Shadow Minister of Finance","Shadow Minister of Home Affairs","Shadow Minister of Defence","Shadow Minister of External Affairs","Shadow Minister of Education","Shadow Minister of Women & Child Development","Shadow Minister of Youth Affairs & Sports","Shadow Minister of Health & Family Welfare","Shadow Minister of Social Justice & Empowerment","Shadow Minister of Environment, Forest & Climate Change","Shadow Minister of Labour & Employment","Shadow Minister of Road Transport and Highways","Shadow Minister of Tourism and Culture","Minister of Finance","Minister of Home Affairs","Minister of Defence","Minister of External Affairs","Minister of Education","Minister of Women & Child Development","Minister of Youth Affairs & Sports","Minister of Health & Family Welfare","Minister of Social Justice & Empowerment","Minister of Environment, Forest & Climate Change","Minister of Labour & Employment","Minister of Road Transport and Highways","Minister of Tourism and Culture"].map(r => (
-                  <SelectItem key={r} value={r}>{r}</SelectItem>
-                ))}
+              <SelectContent className="bg-surface-container-lowest border-none rounded-2xl shadow-elevated z-50 max-h-64 overflow-y-auto">
+                <SelectGroup>
+                  <SelectLabel className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/50 px-3 pt-2 pb-1">Default</SelectLabel>
+                  <SelectItem value="Member of Parliament">Member of Parliament</SelectItem>
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/50 px-3 pt-2 pb-1">Presiding Officers</SelectLabel>
+                  <SelectItem value="Speaker">Speaker <span className="text-on-surface-variant/40 text-[10px] ml-1">(max 1)</span></SelectItem>
+                  <SelectItem value="Deputy Speaker">Deputy Speaker <span className="text-on-surface-variant/40 text-[10px] ml-1">(max 2)</span></SelectItem>
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/50 px-3 pt-2 pb-1">Cabinet — Ruling Party</SelectLabel>
+                  <SelectItem value="Minister of Road Transport & Highways">Minister of Road Transport & Highways</SelectItem>
+                  <SelectItem value="Minister of Finance">Minister of Finance</SelectItem>
+                  <SelectItem value="Minister of Defence">Minister of Defence</SelectItem>
+                  <SelectItem value="Minister of Social Justice & Empowerment">Minister of Social Justice & Empowerment</SelectItem>
+                  <SelectItem value="Minister of Women & Child Development">Minister of Women & Child Development</SelectItem>
+                  <SelectItem value="Minister of Tourism & Culture">Minister of Tourism & Culture</SelectItem>
+                  <SelectItem value="Minister of Labour & Employment">Minister of Labour & Employment</SelectItem>
+                  <SelectItem value="Minister of Information and Broadcasting">Minister of Information and Broadcasting</SelectItem>
+                  <SelectItem value="Minister of Youth Affairs & Sports">Minister of Youth Affairs & Sports</SelectItem>
+                  <SelectItem value="Minister of Home Affairs">Minister of Home Affairs</SelectItem>
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/50 px-3 pt-2 pb-1">Shadow Cabinet — Opposition</SelectLabel>
+                  <SelectItem value="Shadow Minister of Road Transport & Highways">Shadow Minister of Road Transport & Highways</SelectItem>
+                  <SelectItem value="Shadow Minister of Finance">Shadow Minister of Finance</SelectItem>
+                  <SelectItem value="Shadow Minister of Defence">Shadow Minister of Defence</SelectItem>
+                  <SelectItem value="Shadow Minister of Social Justice & Empowerment">Shadow Minister of Social Justice & Empowerment</SelectItem>
+                  <SelectItem value="Shadow Minister of Women & Child Development">Shadow Minister of Women & Child Development</SelectItem>
+                  <SelectItem value="Shadow Minister of Tourism & Culture">Shadow Minister of Tourism & Culture</SelectItem>
+                  <SelectItem value="Shadow Minister of Labour & Employment">Shadow Minister of Labour & Employment</SelectItem>
+                  <SelectItem value="Shadow Minister of Information and Broadcasting">Shadow Minister of Information and Broadcasting</SelectItem>
+                  <SelectItem value="Shadow Minister of Youth Affairs & Sports">Shadow Minister of Youth Affairs & Sports</SelectItem>
+                  <SelectItem value="Shadow Minister of Home Affairs">Shadow Minister of Home Affairs</SelectItem>
+                </SelectGroup>
+                <SelectGroup>
+                  <SelectLabel className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/50 px-3 pt-2 pb-1">Special Roles</SelectLabel>
+                  <SelectItem value="Journalist">Journalist</SelectItem>
+                  <SelectItem value="Admin Student">Admin Student</SelectItem>
+                </SelectGroup>
               </SelectContent>
             </Select>
           </div>
@@ -290,14 +335,14 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = 
           {/* Row 4: Committee + Constituency */}
           <div className="space-y-1">
             <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Committee</label>
-            <input
-              list="edit-committees"
-              value={formData.committee || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, committee: e.target.value }))}
-              placeholder="Type or select committee"
-              className="w-full h-11 bg-surface-container border-none rounded-2xl font-bold px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
-            />
-            <datalist id="edit-committees">{committees.map(c => <option key={c} value={c} />)}</datalist>
+            <Select value={formData.committee || ''} onValueChange={(v) => setFormData(prev => ({ ...prev, committee: v }))}>
+              <SelectTrigger className="h-11 bg-surface-container border-none rounded-2xl font-bold px-4 focus:ring-2 focus:ring-primary/20 text-sm">
+                <SelectValue placeholder="Select committee" />
+              </SelectTrigger>
+              <SelectContent className="bg-surface-container-lowest border-none rounded-2xl shadow-elevated z-50">
+                {COMMITTEES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-1">
             <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Constituency</label>
@@ -327,12 +372,16 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = 
           </div>
           <div className="space-y-1">
             <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">City</label>
-            <Input
-              value={formData.city || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, city: e.target.value }))}
-              placeholder="Home city"
-              className="h-11 bg-surface-container border-none rounded-2xl font-bold px-4 focus:ring-2 focus:ring-primary/20"
-            />
+            <Select value={formData.city || ''} onValueChange={(v) => setFormData(prev => ({ ...prev, city: v }))}>
+              <SelectTrigger className="h-11 bg-surface-container border-none rounded-2xl font-bold px-4 focus:ring-2 focus:ring-primary/20 text-sm">
+                <SelectValue placeholder="Select city" />
+              </SelectTrigger>
+              <SelectContent className="bg-surface-container-lowest border-none rounded-2xl shadow-elevated z-50 max-h-56 overflow-y-auto">
+                {["Agartala","Agra","Ahmedabad","Aizawl","Ajmer","Akola","Aligarh","Alwar","Ambala","Amravati","Amritsar","Anantapur","Asansol","Aurangabad","Bareilly","Belgaum","Bengaluru","Bhopal","Bhubaneswar","Bikaner","Bilaspur","Bokaro","Bongaigaon","Chandigarh","Chennai","Coimbatore","Cuttack","Dahod","Davangere","Dehradun","Dhanbad","Dharwad","Dibrugarh","Durgapur","Erode","Faridabad","Fatehpur","Gandhinagar","Gaya","Ghaziabad","Gorakhpur","Gulbarga","Guntur","Gurgaon","Guwahati","Gwalior","Howrah","Hubli","Hyderabad","Imphal","Indore","Itanagar","Jabalpur","Jaipur","Jalandhar","Jammu","Jamnagar","Jamshedpur","Jhansi","Jodhpur","Jorhat","Kakinada","Kalyan-Dombivli","Kanpur","Karimnagar","Karnal","Kochi","Kohima","Kolhapur","Kolkata","Kollam","Kota","Kozhikode","Kurnool","Latur","Lucknow","Ludhiana","Madurai","Mangalore","Meerut","Moradabad","Mumbai","Mysore","Nagpur","Nanded","Nashik","Navi Mumbai","New Delhi","Noida","Panaji","Patna","Pimpri-Chinchwad","Port Blair","Puducherry","Pune","Raipur","Rajahmundry","Rajkot","Ranchi","Rohtak","Salem","Shillong","Shimla","Siliguri","Silvassa","Solapur","Srinagar","Surat","Surendranagar","Thane","Thiruvananthapuram","Thrissur","Tiruchirapalli","Tirunelveli","Tirupati","Tirupur","Tumkur","Udaipur","Ujjain","Ulhasnagar","Vadodara","Varanasi","Vasai-Virar","Vijayawada","Visakhapatnam","Warangal"].map(c => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
         </div>

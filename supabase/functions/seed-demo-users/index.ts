@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
         profile: {
           serial_number: 9998,
           name: 'Demo Admin Student',
-          position: 'Speaker',
+          position: 'Admin Student',
           party_number: 2,
           constituency: 'Demo Constituency',
           state: 'Demo State',

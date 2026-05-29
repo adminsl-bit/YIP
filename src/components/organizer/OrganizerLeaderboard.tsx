@@ -64,7 +64,7 @@ const PARTY_COLORS: Record<number, string> = {
 const partyColor = (n: number) => PARTY_COLORS[n] ?? 'bg-surface-container text-on-surface-variant';
 const partyLabel = (n: number) => (['No Party', 'A', 'B', 'C', 'D', 'E'] as const)[n] ?? String(n);
 const isSpecialRole = (position: string) =>
-  position.toLowerCase().includes('administrator') || position.toLowerCase().includes('journalist');
+  position.toLowerCase().includes('admin') || position.toLowerCase().includes('journalist');
 
 const ITEMS_PER_PAGE = 20;
 
@@ -205,10 +205,12 @@ export const OrganizerLeaderboard = () => {
   const [sessionOptions, setSessionOptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [specialRoleIds, setSpecialRoleIds] = useState<Set<string>>(new Set());
 
   // Award modal state
   const [awardModalStudent, setAwardModalStudent] = useState<LeaderboardEntry | null>(null);
   const [isAssigningAward, setIsAssigningAward] = useState(false);
+  const [orgSelectedAwardId, setOrgSelectedAwardId] = useState<string>('');
 
   // Filter panel visibility
   const [showFilters, setShowFilters] = useState(false);
@@ -220,8 +222,9 @@ export const OrganizerLeaderboard = () => {
     setCurrentPage(1);
   }, [searchTerm, cityFilter, partyFilter, positionFilter, assessmentStatusFilter, sessionFilter]);
 
-  // ESC to close award modal
+  // ESC to close award modal + reset selection on open
   useEffect(() => {
+    setOrgSelectedAwardId('');
     if (!awardModalStudent) return;
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setAwardModalStudent(null); };
     document.addEventListener('keydown', handler);
@@ -330,6 +333,9 @@ export const OrganizerLeaderboard = () => {
       });
       setLeaderboard(processedLeaderboard);
 
+      const { data: specialIds } = await supabase.rpc('get_non_scoreable_student_ids');
+      setSpecialRoleIds(new Set<string>((specialIds as string[] | null) || []));
+
       const { data: awardsData, error: awardsError } = await supabase
         .from('awards').select('*').order('name');
       if (awardsError) throw awardsError;
@@ -432,9 +438,25 @@ export const OrganizerLeaderboard = () => {
   };
 
   // ── Derived values ────────────────────────────────────────────────────────────
-  const uniqueCities = [...new Set(leaderboard.map(e => e.city).filter(Boolean))].sort();
+  // Normalize positions so "Delegate" and "Member of Parliament" merge into one bucket
+  // and any admin-role position shows as "Admin Student"
+  const normalizePosition = (pos: string) => {
+    const p = (pos || '').toLowerCase().trim();
+    if (p === 'delegate' || p === 'member of parliament' || p === 'mp') return 'Member of Parliament';
+    if (p.includes('admin')) return 'Admin Student';
+    return pos;
+  };
+
+  const getDisplayPosition = (entry: LeaderboardEntry) =>
+    specialRoleIds.has(entry.user_id) ? 'Admin Student' : normalizePosition(entry.position);
+
+  // Normalize city: trim + title-case so "madurai" and "Madurai" merge into one bucket
+  const normalizeCity = (city: string) =>
+    (city || '').trim().replace(/\b\w/g, c => c.toUpperCase());
+
+  const uniqueCities = [...new Set(leaderboard.map(e => normalizeCity(e.city)).filter(Boolean))].sort();
   const uniqueParties = [...new Set(leaderboard.map(e => e.party_number))].sort((a, b) => a - b);
-  const uniquePositions = [...new Set(leaderboard.map(e => e.position))].sort();
+  const uniquePositions = [...new Set(leaderboard.map(e => getDisplayPosition(e)))].sort();
   const hasRealScores = leaderboard.some(e => (e.final_total_score ?? 0) > 0);
 
   const filteredLeaderboard = leaderboard.filter(entry => {
@@ -446,9 +468,9 @@ export const OrganizerLeaderboard = () => {
       entry.city?.toLowerCase().includes(q) ||
       entry.serial_number.toString().includes(q)
     );
-    const matchesCity = !cityFilter || entry.city === cityFilter;
+    const matchesCity = !cityFilter || normalizeCity(entry.city) === cityFilter;
     const matchesParty = !partyFilter || entry.party_number.toString() === partyFilter;
-    const matchesPosition = !positionFilter || entry.position === positionFilter;
+    const matchesPosition = !positionFilter || getDisplayPosition(entry) === positionFilter;
     const matchesSession = !sessionFilter || (entry.session_names && entry.session_names.includes(sessionFilter));
     const matchesStatus = !assessmentStatusFilter || getAssessmentStatus(entry) === assessmentStatusFilter;
     return matchesSearch && matchesCity && matchesParty && matchesPosition && matchesSession && matchesStatus;
@@ -883,6 +905,7 @@ export const OrganizerLeaderboard = () => {
                   <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline w-16">Rank</th>
                   <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">Student</th>
                   <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">Constituency</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">City</th>
                   <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">Pre (60)</th>
                   <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">Jury (40)</th>
                   <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">
@@ -961,9 +984,11 @@ export const OrganizerLeaderboard = () => {
                       {/* Constituency */}
                       <td className="px-5 py-3.5">
                         <span className="text-sm font-body text-on-surface-variant">{entry.constituency || '—'}</span>
-                        {entry.city && (
-                          <p className="text-[10px] text-outline font-body mt-0.5">{entry.city}</p>
-                        )}
+                      </td>
+
+                      {/* City */}
+                      <td className="px-5 py-3.5">
+                        <span className="text-sm font-body text-on-surface-variant">{entry.city ? normalizeCity(entry.city) : '—'}</span>
                       </td>
 
                       {/* Pre (60) */}
@@ -1032,6 +1057,18 @@ export const OrganizerLeaderboard = () => {
                             {entryAwards.length > 0 ? entryAwards.length : '+'}
                           </span>
                         </button>
+                        {/* Jury nomination count */}
+                        {(() => {
+                          const nominations = awardVotes.filter(v => v.student_id === entry.user_id);
+                          if (nominations.length === 0) return null;
+                          const totalJury = juryMembers.length || 1;
+                          const isConsensus = nominations.length >= totalJury && totalJury > 1;
+                          return (
+                            <div className={`mt-1 text-[10px] font-bold font-body ${isConsensus ? 'text-[#2bb87c]' : 'text-primary/60'}`}>
+                              {nominations.length}/{totalJury} jury
+                            </div>
+                          );
+                        })()}
                       </td>
                     </tr>
                   );
@@ -1098,108 +1135,102 @@ export const OrganizerLeaderboard = () => {
           onClick={() => setAwardModalStudent(null)}
         >
           <div
-            className="bg-surface-container-lowest rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-md"
+            className="bg-surface-container-lowest w-full max-w-2xl max-h-[90vh] rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
-            {/* Gradient top bar */}
-            <div className="h-1.5 bg-gradient-to-r from-amber-400 to-orange-400" />
-
-            <div className="p-8 space-y-6">
-              {/* Student header */}
+            {/* Header */}
+            <div className="p-7 pb-5 border-b border-outline-variant/10 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-primary/10 shrink-0 flex items-center justify-center">
-                  {awardModalStudent.photo_url ? (
-                    <img src={awardModalStudent.photo_url} alt={awardModalStudent.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-lg font-headline font-bold text-primary">
-                      {awardModalStudent.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                    </span>
-                  )}
+                <div className="w-11 h-11 rounded-2xl bg-[#FFD700]/20 flex items-center justify-center shrink-0">
+                  <span
+                    className="material-symbols-outlined text-[22px] text-[#A67C00]"
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >workspace_premium</span>
                 </div>
-                <div className="min-w-0">
-                  <h2 className="text-xl font-extrabold font-headline text-on-surface leading-tight">{awardModalStudent.name}</h2>
-                  <p className="text-xs text-on-surface-variant font-body mt-0.5">{awardModalStudent.position}</p>
-                  <span className={`mt-1.5 inline-block px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md font-headline ${partyColor(awardModalStudent.party_number)}`}>
-                    Party {partyLabel(awardModalStudent.party_number)}
-                  </span>
+                <div>
+                  <h2 className="font-headline font-extrabold text-lg text-on-surface">Manage Awards</h2>
+                  <p className="text-xs text-on-surface-variant/60 font-body mt-0.5">
+                    for <span className="font-bold text-primary">{awardModalStudent.name}</span>
+                  </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setAwardModalStudent(null)}
-                  className="ml-auto shrink-0 p-2 rounded-xl hover:bg-surface-container text-outline hover:text-on-surface transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[20px]">close</span>
-                </button>
               </div>
+              <button
+                type="button"
+                onClick={() => setAwardModalStudent(null)}
+                className="p-2 rounded-full hover:bg-surface-container transition-colors"
+              >
+                <span className="material-symbols-outlined text-on-surface-variant">close</span>
+              </button>
+            </div>
 
-              {/* Current awards */}
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-7 space-y-6" style={{ scrollbarWidth: 'none' }}>
+
+              {/* Award selection grid */}
               <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 font-headline mb-3">
-                  Current Awards
-                  {modalStudentAwards.length > 0 && (
-                    <span className="ml-2 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[9px]">{modalStudentAwards.length}</span>
-                  )}
+                <p className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest mb-3 font-body">
+                  Select Award to Assign
                 </p>
-                {modalStudentAwards.length === 0 ? (
-                  <div className="flex items-center gap-2 py-3 px-4 bg-surface-container rounded-2xl text-sm text-on-surface-variant/50 font-body">
-                    <span className="material-symbols-outlined text-[18px] text-on-surface-variant/30">workspace_premium</span>
-                    No awards assigned yet
-                  </div>
-                ) : (
-                  <div className="flex flex-wrap gap-2">
-                    {modalStudentAwards.map(award => (
-                      <div
-                        key={award.recordId}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full group/chip"
-                      >
-                        <span className="material-symbols-outlined text-[13px] text-amber-600" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
-                        <span className="text-xs font-black font-headline text-amber-700 uppercase tracking-wide">{award.name}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeAwardFromStudent(award.recordId)}
-                          className="ml-0.5 text-amber-400 hover:text-red-500 transition-colors opacity-0 group-hover/chip:opacity-100"
-                        >
-                          <span className="material-symbols-outlined text-[14px]">close</span>
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Available awards to assign */}
-              <div>
-                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 font-headline mb-3">Assign Award</p>
                 {awards.length === 0 ? (
-                  <p className="text-sm text-on-surface-variant/50 font-body py-2">No awards created yet. Go to Award Management to create awards.</p>
+                  <p className="text-sm text-on-surface-variant/50 font-body py-2">No awards created yet.</p>
                 ) : (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {awards.map(award => {
-                      const alreadyAssigned = modalStudentAwards.some(a => a.awardId === award.id);
-                      const voteCount = getVoteCount(award.id, awardModalStudent.user_id);
+                      const isAssigned = modalStudentAwards.some(a => a.awardId === award.id);
+                      const isSelected = orgSelectedAwardId === award.id;
                       return (
                         <button
                           key={award.id}
                           type="button"
-                          disabled={alreadyAssigned || isAssigningAward}
-                          onClick={() => assignAwardToStudent(awardModalStudent.user_id, award.id)}
-                          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-black font-headline uppercase tracking-wide transition-all ${
-                            alreadyAssigned
-                              ? 'bg-surface-container text-on-surface-variant/30 cursor-not-allowed'
-                              : 'bg-surface-container-lowest border border-outline-variant/20 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 text-on-surface-variant'
+                          onClick={() => setOrgSelectedAwardId(isSelected ? '' : award.id)}
+                          disabled={isAssigningAward}
+                          className={`flex items-start gap-3 p-3.5 rounded-2xl text-left transition-all border ${
+                            isAssigned
+                              ? 'bg-[#FFD700]/10 border-[#FFD700]/40'
+                              : isSelected
+                              ? 'bg-primary/8 border-primary/30'
+                              : 'bg-surface-container-low border-outline-variant/15 hover:border-primary/20 hover:bg-primary/5'
                           }`}
                         >
                           <span
-                            className="material-symbols-outlined text-[12px]"
-                            style={{ fontVariationSettings: alreadyAssigned ? "'FILL' 1" : "'FILL' 0" }}
-                          >
-                            {alreadyAssigned ? 'check_circle' : 'add_circle'}
-                          </span>
-                          {award.name}
-                          {voteCount > 0 && !alreadyAssigned && (
-                            <span className="ml-0.5 px-1.5 py-0.5 bg-primary/10 text-primary rounded-full text-[9px]">
-                              {voteCount} vote{voteCount !== 1 ? 's' : ''}
-                            </span>
+                            className={`material-symbols-outlined text-[18px] shrink-0 mt-0.5 ${
+                              isAssigned ? 'text-[#A67C00]' : isSelected ? 'text-primary' : 'text-on-surface-variant/40'
+                            }`}
+                            style={(isAssigned || isSelected) ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                          >workspace_premium</span>
+                          <div className="flex-1 min-w-0">
+                            <div className={`text-sm font-bold font-headline leading-tight ${
+                              isAssigned ? 'text-[#A67C00]' : isSelected ? 'text-primary' : 'text-on-surface'
+                            }`}>
+                              {award.name}
+                            </div>
+                            {award.description && (
+                              <div className="text-[11px] text-on-surface-variant/50 font-body mt-0.5 leading-relaxed line-clamp-2">
+                                {award.description}
+                              </div>
+                            )}
+                            {isAssigned && (
+                              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-[#A67C00] font-body">
+                                <span className="material-symbols-outlined text-[11px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                                Assigned
+                              </span>
+                            )}
+                            {(() => {
+                              const vc = getVoteCount(award.id, awardModalStudent.user_id);
+                              if (!vc || isAssigned) return null;
+                              return (
+                                <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-bold text-primary/70 font-body">
+                                  <span className="material-symbols-outlined text-[11px]">how_to_vote</span>
+                                  {vc} jury vote{vc !== 1 ? 's' : ''}
+                                </span>
+                              );
+                            })()}
+                          </div>
+                          {isSelected && !isAssigned && (
+                            <span
+                              className="material-symbols-outlined text-primary text-[18px] shrink-0"
+                              style={{ fontVariationSettings: "'FILL' 1" }}
+                            >check_circle</span>
                           )}
                         </button>
                       );
@@ -1208,13 +1239,102 @@ export const OrganizerLeaderboard = () => {
                 )}
               </div>
 
-              <div className="flex justify-end pt-1">
+              {/* Jury Nominations */}
+              {juryMembers.length > 0 && (() => {
+                const studentVotes = awardVotes.filter(v => v.student_id === awardModalStudent.user_id);
+                const totalJury = juryMembers.length;
+                return (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="text-[10px] font-bold text-on-surface-variant/50 uppercase tracking-widest font-body">
+                        Jury Nominations
+                      </p>
+                      <span className={`text-[11px] font-bold font-body px-2 py-0.5 rounded-full ${
+                        studentVotes.length === totalJury && totalJury > 1
+                          ? 'bg-[#42d59a]/15 text-[#2bb87c]'
+                          : studentVotes.length > 0
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-surface-container text-on-surface-variant/50'
+                      }`}>
+                        {studentVotes.length}/{totalJury} juries
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {juryMembers.map(member => {
+                        const vote = studentVotes.find(v => v.jury_id === member.user_id);
+                        const initials = member.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
+                        return (
+                          <div
+                            key={member.user_id}
+                            className="flex items-center justify-between px-4 py-3 rounded-2xl bg-surface-container-low border border-transparent"
+                          >
+                            <div className="flex items-center gap-2.5">
+                              <div className="w-7 h-7 rounded-full bg-outline-variant/20 flex items-center justify-center text-[11px] font-bold font-headline text-on-surface-variant shrink-0">
+                                {initials}
+                              </div>
+                              <span className="text-sm font-bold font-headline text-on-surface">{member.name}</span>
+                            </div>
+                            {vote ? (
+                              <span className="flex items-center gap-1 text-[11px] font-bold font-body text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                                <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+                                <span className="truncate max-w-[160px]">{vote.award_name}</span>
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-body text-on-surface-variant/30 italic">Not nominated</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Footer */}
+            <div className="px-7 py-5 border-t border-outline-variant/10 flex items-center justify-between shrink-0">
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!orgSelectedAwardId) return;
+                  const entry = modalStudentAwards.find(a => a.awardId === orgSelectedAwardId);
+                  if (entry) {
+                    await removeAwardFromStudent(entry.recordId);
+                    setOrgSelectedAwardId('');
+                  }
+                }}
+                disabled={!orgSelectedAwardId || !modalStudentAwards.some(a => a.awardId === orgSelectedAwardId)}
+                className="text-sm font-bold text-error/70 hover:text-error transition-colors disabled:opacity-30 font-body flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[16px]">remove_circle</span>
+                Remove Award
+              </button>
+              <div className="flex items-center gap-3">
                 <button
                   type="button"
                   onClick={() => setAwardModalStudent(null)}
-                  className="px-6 py-2.5 bg-surface-container rounded-2xl font-bold text-sm text-on-surface-variant font-body hover:bg-surface-container-high transition-colors"
+                  className="px-5 py-2 rounded-full text-sm font-bold text-on-surface-variant hover:bg-surface-container font-body transition-all"
                 >
-                  Done
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!orgSelectedAwardId) return;
+                    await assignAwardToStudent(awardModalStudent.user_id, orgSelectedAwardId);
+                    setOrgSelectedAwardId('');
+                  }}
+                  disabled={
+                    !orgSelectedAwardId ||
+                    modalStudentAwards.some(a => a.awardId === orgSelectedAwardId) ||
+                    isAssigningAward
+                  }
+                  className="px-6 py-2 bg-primary text-on-primary rounded-full text-sm font-bold font-body shadow-[0_4px_12px_rgba(19,41,143,0.25)] hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isAssigningAward && (
+                    <span className="w-3.5 h-3.5 border-2 border-on-primary border-t-transparent rounded-full animate-spin" />
+                  )}
+                  Assign Award
                 </button>
               </div>
             </div>

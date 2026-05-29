@@ -44,13 +44,44 @@ const Onboarding = () => {
   const prevStep = () => setStep(s => s - 1);
 
   const states = [
-    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", 
-    "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", 
-    "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", 
-    "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", 
-    "Uttarakhand", "West Bengal", "Delhi", "Jammu and Kashmir", "Ladakh", "Puducherry", 
-    "Chandigarh", "Andaman and Nicobar Islands", "Dadra and Nagar Haveli and Daman and Diu", 
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
+    "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh",
+    "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+    "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
+    "Uttarakhand", "West Bengal", "Delhi", "Jammu and Kashmir", "Ladakh", "Puducherry",
+    "Chandigarh", "Andaman and Nicobar Islands", "Dadra and Nagar Haveli and Daman and Diu",
     "Lakshadweep"
+  ];
+
+  const cities = [
+    "Agartala", "Agra", "Ahmedabad", "Aizawl", "Ajmer", "Akola", "Aligarh", "Alwar",
+    "Ambala", "Amravati", "Amritsar", "Anantapur", "Asansol", "Aurangabad",
+    "Bareilly", "Belgaum", "Bengaluru", "Bhopal", "Bhubaneswar", "Bikaner",
+    "Bilaspur", "Bokaro", "Bongaigaon",
+    "Chandigarh", "Chennai", "Coimbatore", "Cuttack",
+    "Dahod", "Davangere", "Dehradun", "Dhanbad", "Dharwad", "Dibrugarh", "Durgapur",
+    "Erode",
+    "Faridabad", "Fatehpur",
+    "Gandhinagar", "Gaya", "Ghaziabad", "Gorakhpur", "Gulbarga", "Guntur", "Gurgaon",
+    "Guwahati", "Gwalior",
+    "Howrah", "Hubli", "Hyderabad",
+    "Imphal", "Indore", "Itanagar",
+    "Jabalpur", "Jaipur", "Jalandhar", "Jammu", "Jamnagar", "Jamshedpur", "Jhansi",
+    "Jodhpur", "Jorhat",
+    "Kakinada", "Kalyan-Dombivli", "Kanpur", "Karimnagar", "Karnal", "Kochi",
+    "Kohima", "Kolhapur", "Kolkata", "Kollam", "Kota", "Kozhikode", "Kurnool",
+    "Latur", "Lucknow", "Ludhiana",
+    "Madurai", "Mangalore", "Meerut", "Moradabad", "Mumbai", "Mysore",
+    "Nagpur", "Nanded", "Nashik", "Navi Mumbai", "New Delhi", "Noida",
+    "Panaji", "Patna", "Pimpri-Chinchwad", "Port Blair", "Puducherry", "Pune",
+    "Raipur", "Rajahmundry", "Rajkot", "Ranchi", "Rohtak",
+    "Salem", "Shillong", "Shimla", "Siliguri", "Silvassa", "Solapur", "Srinagar",
+    "Surat", "Surendranagar",
+    "Thane", "Thiruvananthapuram", "Thrissur", "Tiruchirapalli", "Tirunelveli",
+    "Tirupati", "Tirupur", "Tumkur",
+    "Udaipur", "Ujjain", "Ulhasnagar",
+    "Vadodara", "Varanasi", "Vasai-Virar", "Vijayawada", "Visakhapatnam",
+    "Warangal",
   ];
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -83,17 +114,27 @@ const Onboarding = () => {
         'tamil nadu', 'tamilnadu', 'kerala', 'karnataka', 'andhra pradesh', 'telangana', 'puducherry'
       ];
 
-      // 2. Get current student count for balanced distribution
-      // Using a deterministic but fair distribution based on existing count
-      const { count: studentCount, error: countError } = await supabase
+      // 2. Count ALL students for serial number (includes admin/journalist)
+      const { count: totalStudentCount, error: totalCountError } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
+        .select('user_id', { count: 'exact', head: true })
         .eq('user_type', 'student');
+
+      if (totalCountError) throw totalCountError;
+
+      // Count only parliamentary members for party/alignment distribution
+      // Excludes Admin Student and Journalist so their registrations don't skew the cycle
+      const { count: mpCount, error: countError } = await supabase
+        .from('profiles')
+        .select('user_id', { count: 'exact', head: true })
+        .eq('user_type', 'student')
+        .neq('position', 'Admin Student')
+        .neq('position', 'Journalist');
 
       if (countError) throw countError;
 
-      const currentCount = studentCount || 0;
-      const nextSerial = 1001 + currentCount;
+      const currentCount = mpCount || 0;           // drives party/committee/constituency/alignment
+      const nextSerial = 1001 + (totalStudentCount || 0); // serial still based on all students
 
       // Special Exemption for Demo Accounts
       const isDemoAccount = ['demo admin', 'demo journalist'].includes(formData.name.toLowerCase().trim());
@@ -113,19 +154,11 @@ const Onboarding = () => {
       // Select constituency based on modulo of current count to ensure distribution
       const constituency = availableConstituencies[currentCount % availableConstituencies.length].name;
 
-      // 4. Determine Parliamentary Alignment (Proportional Split)
+      // 4. Determine Parliamentary Alignment — strict 50/50 split, no non_aligned
       let partyAlignment: 'ruling_party' | 'opposition' | 'non_aligned' = 'non_aligned';
       if (!isDemoAccount) {
-        const rulingThreshold = Math.ceil(parties.length * 0.4);
-        const oppositionThreshold = Math.ceil(parties.length * 0.8);
-
-        if (partyNumber <= rulingThreshold) {
-          partyAlignment = 'ruling_party';
-        } else if (partyNumber <= oppositionThreshold) {
-          partyAlignment = 'opposition';
-        } else {
-          partyAlignment = 'non_aligned';
-        }
+        const rulingThreshold = Math.ceil(parties.length / 2);
+        partyAlignment = partyNumber <= rulingThreshold ? 'ruling_party' : 'opposition';
       }
 
       // 4. Create or Update Profile
@@ -281,13 +314,21 @@ const Onboarding = () => {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Current City</label>
                 <div className="relative group">
                   <Landmark className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-primary transition-colors z-10" />
-                  <input 
+                  <select
                     name="city"
-                    className="w-full pl-16 pr-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-primary/10 transition-all font-bold text-slate-800 shadow-inner z-10"
-                    placeholder="e.g. Chennai"
+                    className="w-full pl-16 pr-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-primary/10 transition-all font-bold text-slate-800 shadow-inner z-10 appearance-none cursor-pointer"
                     value={formData.city}
                     onChange={handleInputChange}
-                  />
+                    required
+                  >
+                    <option value="" disabled>Select your city</option>
+                    {cities.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+                    <ArrowRight className="w-4 h-4 text-slate-300 rotate-90" />
+                  </div>
                 </div>
               </div>
             </div>
