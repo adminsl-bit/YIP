@@ -1,17 +1,17 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { EventsManager } from '@/components/superadmin/EventsManager';
-import { OrganizerManager } from '@/components/superadmin/OrganizerManager';
 import { GlobalOverview } from '@/components/superadmin/GlobalOverview';
 import { PromoteParticipants } from '@/components/superadmin/PromoteParticipants';
+import { SuperAdminRoleCreator } from '@/components/superadmin/SuperAdminRoleCreator';
 
-type TabId = 'overview' | 'events' | 'organizers' | 'promote';
+type TabId = 'overview' | 'events' | 'promote' | 'roles';
 
 const navItems: { id: TabId; label: string; icon: string }[] = [
-  { id: 'overview',   label: 'Global Overview',   icon: 'public' },
-  { id: 'events',     label: 'Events',             icon: 'event' },
-  { id: 'organizers', label: 'Organizers',         icon: 'manage_accounts' },
-  { id: 'promote',    label: 'Promote to Next Level', icon: 'arrow_upward' },
+  { id: 'overview', label: 'Global Overview',      icon: 'public' },
+  { id: 'events',   label: 'Events',                icon: 'event' },
+  { id: 'roles',    label: 'Organizers & Roles',    icon: 'manage_accounts' },
+  { id: 'promote',  label: 'Promote to Next Level', icon: 'arrow_upward' },
 ];
 
 const SuperAdminDashboard = () => {
@@ -20,11 +20,11 @@ const SuperAdminDashboard = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'overview':   return <GlobalOverview />;
-      case 'events':     return <EventsManager />;
-      case 'organizers': return <OrganizerManager />;
-      case 'promote':    return <PromoteParticipants />;
-      default:           return <GlobalOverview />;
+      case 'overview': return <GlobalOverview onNavigateToEvents={() => setActiveTab('events')} />;
+      case 'events':   return <EventsManager />;
+      case 'roles':    return <SuperAdminRoleCreator />;
+      case 'promote':  return <PromoteParticipants />;
+      default:         return <GlobalOverview />;
     }
   };
 

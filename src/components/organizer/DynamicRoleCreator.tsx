@@ -8,8 +8,8 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type RoleType = 'jury' | 'admin' | 'journalist' | 'organizer';
-type DisplayRole = 'jury' | 'admin' | 'journalist' | 'student' | 'organizer';
+type RoleType = 'jury' | 'admin' | 'journalist';
+type DisplayRole = 'jury' | 'admin' | 'journalist' | 'student';
 type RoleFilter = 'all' | DisplayRole;
 
 interface RoleConfig {
@@ -27,11 +27,10 @@ const roleConfigs: Record<RoleType, RoleConfig> = {
   jury:       { type: 'jury',       label: 'Jury',          defaultPassword: 'jury2025',       userType: 'jury',      position: 'Senior Evaluator', serialStart: 1001, emailDomain: '@yip.com' },
   admin:      { type: 'admin',      label: 'Admin Student', defaultPassword: 'admin2025',      userType: 'student',   appRole: 'admin_student', position: 'Admin Student',  serialStart: 9001, emailDomain: '@yip.com' },
   journalist: { type: 'journalist', label: 'Journalist',    defaultPassword: 'journalist2025', userType: 'student',   appRole: 'journalist',    position: 'Journalist',      serialStart: 8001, emailDomain: '@yip.com' },
-  organizer:  { type: 'organizer',  label: 'Organizer',     defaultPassword: 'organizer2025',  userType: 'organizer', position: 'Event Organizer',  serialStart: 5001, emailDomain: '@yip.com' },
 };
 
 const createRoleIcons: Record<string, string> = {
-  jury: 'gavel', admin: 'admin_panel_settings', journalist: 'newspaper', organizer: 'manage_accounts',
+  jury: 'gavel', admin: 'admin_panel_settings', journalist: 'newspaper',
 };
 
 interface UserRow {
@@ -50,7 +49,6 @@ const roleMeta: Record<DisplayRole, { label: string; icon: string; badgeCls: str
   jury:       { label: 'Jury Member',    icon: 'gavel',              badgeCls: 'bg-primary-fixed text-on-primary-fixed',                                          avatarCls: 'bg-primary/10 text-primary',              filterIcon: 'gavel' },
   journalist: { label: 'Journalist',     icon: 'article',            badgeCls: 'bg-secondary-fixed text-on-secondary-fixed',                                      avatarCls: 'bg-secondary/10 text-secondary',          filterIcon: 'article' },
   admin:      { label: 'Admin Student',  icon: 'admin_panel_settings', badgeCls: 'bg-surface-container-high text-on-surface border border-outline-variant/20',    avatarCls: 'bg-surface-container-high text-on-surface', filterIcon: 'admin_panel_settings' },
-  organizer:  { label: 'Organizer',      icon: 'groups',             badgeCls: 'bg-primary-container text-on-primary-container',                                  avatarCls: 'bg-primary-container/60 text-primary',    filterIcon: 'manage_accounts' },
   student:    { label: 'Regular Student',icon: 'school',             badgeCls: 'bg-surface-container text-on-surface-variant border border-outline-variant/30',   avatarCls: 'bg-surface-container-highest text-on-surface-variant', filterIcon: 'school' },
 };
 
@@ -95,16 +93,14 @@ export const DynamicRoleCreator = () => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const [{ data: juryData }, { data: orgData }, { data: rolesData }, { data: studentData }] = await Promise.all([
+      const [{ data: juryData }, { data: rolesData }, { data: studentData }] = await Promise.all([
         supabase.from('profiles').select('user_id, name, email, serial_number, user_type, position, created_at, is_active').eq('user_type', 'jury').order('serial_number'),
-        supabase.from('profiles').select('user_id, name, email, serial_number, user_type, position, created_at, is_active').eq('user_type', 'organizer').order('serial_number'),
         supabase.from('user_roles').select('user_id, role'),
         supabase.from('profiles').select('user_id, name, email, serial_number, user_type, position, created_at, is_active').eq('user_type', 'student').order('serial_number'),
       ]);
 
       const flat: UserRow[] = [];
       (juryData || []).forEach(u => flat.push({ ...u, displayRole: 'jury' }));
-      (orgData || []).forEach(u => flat.push({ ...u, displayRole: 'organizer' }));
       (studentData || []).forEach(u => {
         const r = rolesData?.find(x => x.user_id === u.user_id);
         const dr: DisplayRole = r?.role === 'admin_student' ? 'admin' : r?.role === 'journalist' ? 'journalist' : 'student';
