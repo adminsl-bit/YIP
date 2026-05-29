@@ -1,12 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { PartyBadge } from "@/components/ui/party-badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Search, Trophy, Medal, Award, Star, Users, Users2, Target, Filter, MapPin, Download, FileSpreadsheet, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
@@ -54,11 +46,155 @@ interface AwardVote {
   award_name: string;
 }
 
+// Stores the student_awards row id (for deletion) alongside the award definition id and name
+interface StudentAwardEntry {
+  recordId: string;
+  awardId: string;
+  name: string;
+}
+
+// ── Design helpers ─────────────────────────────────────────────────────────────
+const PARTY_COLORS: Record<number, string> = {
+  0: 'bg-error-container text-on-error-container',
+  1: 'bg-primary-fixed text-on-primary-fixed-variant',
+  2: 'bg-secondary-fixed text-on-secondary-fixed-variant',
+  3: 'bg-tertiary-fixed/30 text-tertiary-container',
+  4: 'bg-primary-fixed-dim/30 text-on-primary-fixed-variant',
+};
+const partyColor = (n: number) => PARTY_COLORS[n] ?? 'bg-surface-container text-on-surface-variant';
+const partyLabel = (n: number) => (['No Party', 'A', 'B', 'C', 'D', 'E'] as const)[n] ?? String(n);
+const isSpecialRole = (position: string) =>
+  position.toLowerCase().includes('administrator') || position.toLowerCase().includes('journalist');
+
+const ITEMS_PER_PAGE = 20;
+
+// ── FilterPill ─────────────────────────────────────────────────────────────────
+const FilterPill = ({
+  active, onClick, icon, label,
+}: {
+  active: boolean; onClick: () => void; icon?: string; label: string;
+}) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-black font-headline uppercase tracking-wide transition-all ${
+      active
+        ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-[0_2px_8px_rgba(19,41,143,0.25)]'
+        : 'bg-surface-container-lowest border border-outline-variant/20 hover:border-primary/20 hover:text-primary text-on-surface-variant'
+    }`}
+  >
+    {icon && <span className="material-symbols-outlined text-[12px]">{icon}</span>}
+    {label}
+  </button>
+);
+
+// ── PodiumCard ─────────────────────────────────────────────────────────────────
+const PODIUM_CONFIG = {
+  1: {
+    icon: 'workspace_premium', iconColor: 'text-amber-500', animate: true,
+    ring: 'ring-4 ring-amber-300/70', bg: 'bg-gradient-to-b from-amber-50 to-white',
+    border: 'border-2 border-amber-200', scoreBg: 'bg-gradient-to-r from-amber-500 to-orange-400',
+    label: '1st Place', labelColor: 'text-amber-600', cardScale: 'scale-105 z-10',
+  },
+  2: {
+    icon: 'military_tech', iconColor: 'text-slate-400', animate: false,
+    ring: 'ring-2 ring-slate-200', bg: 'bg-gradient-to-b from-slate-50 to-white',
+    border: 'border border-slate-200', scoreBg: 'bg-gradient-to-r from-slate-500 to-slate-400',
+    label: '2nd Place', labelColor: 'text-slate-500', cardScale: '',
+  },
+  3: {
+    icon: 'emoji_events', iconColor: 'text-orange-600', animate: false,
+    ring: 'ring-2 ring-orange-200', bg: 'bg-gradient-to-b from-orange-50 to-white',
+    border: 'border border-orange-200', scoreBg: 'bg-gradient-to-r from-orange-600 to-amber-500',
+    label: '3rd Place', labelColor: 'text-orange-600', cardScale: '',
+  },
+} as const;
+
+const PodiumCard = ({
+  entry, rank, awards, onAwardClick,
+}: {
+  entry: LeaderboardEntry;
+  rank: 1 | 2 | 3;
+  awards: StudentAwardEntry[];
+  onAwardClick: () => void;
+}) => {
+  const cfg = PODIUM_CONFIG[rank];
+  const initials = entry.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
+  return (
+    <div className={`${cfg.cardScale} ${cfg.bg} ${cfg.border} rounded-[2rem] p-6 flex flex-col items-center text-center shadow-sm`}>
+      <span
+        className={`material-symbols-outlined ${cfg.iconColor} ${cfg.animate ? 'animate-bounce' : ''}`}
+        style={{ fontSize: '2.5rem', fontVariationSettings: "'FILL' 1" }}
+      >
+        {cfg.icon}
+      </span>
+
+      <div className={`mt-3 w-20 h-20 rounded-[1.5rem] overflow-hidden ${cfg.ring} shrink-0`}>
+        {entry.photo_url ? (
+          <img src={entry.photo_url} alt={entry.name} className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full bg-primary/10 flex items-center justify-center">
+            <span className="text-xl font-headline font-bold text-primary">{initials}</span>
+          </div>
+        )}
+      </div>
+
+      <h3 className="mt-3 text-base font-headline font-black text-on-surface leading-tight">{entry.name}</h3>
+      <p className="text-[11px] text-on-surface-variant font-body mt-0.5">{entry.position}</p>
+
+      <span className={`mt-2 px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md font-headline ${partyColor(entry.party_number)}`}>
+        Party {partyLabel(entry.party_number)}
+      </span>
+
+      {entry.constituency && (
+        <p className="mt-1.5 text-[10px] text-on-surface-variant/60 font-body flex items-center gap-1">
+          <span className="material-symbols-outlined text-[11px]">location_on</span>
+          {entry.constituency}
+        </p>
+      )}
+
+      <div className={`mt-4 ${cfg.scoreBg} text-white rounded-2xl px-6 py-2 shadow-sm`}>
+        <span className="text-2xl font-headline font-black tabular-nums">{entry.final_total_score?.toFixed(1) || '0.0'}</span>
+        <span className="text-[11px] ml-1 opacity-80">/ 100</span>
+      </div>
+      <p className={`mt-1.5 text-[10px] font-black uppercase tracking-widest font-headline ${cfg.labelColor}`}>{cfg.label}</p>
+
+      {/* Assigned awards */}
+      {awards.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1 justify-center">
+          {awards.slice(0, 2).map(award => (
+            <span key={award.recordId} className="px-2 py-0.5 bg-amber-100 text-amber-700 text-[9px] font-black uppercase tracking-wide rounded-full font-headline">
+              ★ {award.name}
+            </span>
+          ))}
+          {awards.length > 2 && (
+            <span className="px-2 py-0.5 bg-surface-container text-on-surface-variant text-[9px] font-black rounded-full font-headline">
+              +{awards.length - 2}
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* Award action */}
+      <button
+        type="button"
+        onClick={e => { e.stopPropagation(); onAwardClick(); }}
+        className="mt-3 flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[11px] font-black font-headline uppercase tracking-wide bg-surface-container-lowest border border-outline-variant/20 hover:border-primary/20 hover:text-primary text-on-surface-variant transition-all"
+      >
+        <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+        Manage Awards
+      </button>
+    </div>
+  );
+};
+
+// ── Main ───────────────────────────────────────────────────────────────────────
 export const OrganizerLeaderboard = () => {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [awards, setAwards] = useState<Award[]>([]);
   const [awardVotes, setAwardVotes] = useState<AwardVote[]>([]);
-  const [studentAwards, setStudentAwards] = useState<Record<string, string[]>>({});
+  const [studentAwards, setStudentAwards] = useState<Record<string, StudentAwardEntry[]>>({});
   const [juryMembers, setJuryMembers] = useState<JuryMember[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [cityFilter, setCityFilter] = useState('');
@@ -68,7 +204,29 @@ export const OrganizerLeaderboard = () => {
   const [sessionFilter, setSessionFilter] = useState('');
   const [sessionOptions, setSessionOptions] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Award modal state
+  const [awardModalStudent, setAwardModalStudent] = useState<LeaderboardEntry | null>(null);
+  const [isAssigningAward, setIsAssigningAward] = useState(false);
+
+  // Filter panel visibility
+  const [showFilters, setShowFilters] = useState(false);
+
   const { toast } = useToast();
+
+  // Reset to page 1 whenever filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, cityFilter, partyFilter, positionFilter, assessmentStatusFilter, sessionFilter]);
+
+  // ESC to close award modal
+  useEffect(() => {
+    if (!awardModalStudent) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setAwardModalStudent(null); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [awardModalStudent]);
 
   useEffect(() => {
     fetchData();
@@ -77,80 +235,56 @@ export const OrganizerLeaderboard = () => {
 
   const fetchData = async () => {
     try {
-      // Fetch leaderboard data from organizer view
       const { data: leaderboardData, error: leaderboardError } = await supabase
         .from('organizer_leaderboard')
         .select('*');
-
       if (leaderboardError) throw leaderboardError;
-      
-      // Fetch organizer_manual_score for admin/journalist students
+
       const { data: manualScoreData, error: manualScoreError } = await supabase
         .from('profiles')
         .select('user_id, organizer_manual_score')
         .in('user_id', leaderboardData?.map(entry => entry.user_id) || []);
-      
       if (manualScoreError) throw manualScoreError;
-      
-      // Create map for user_id to organizer_manual_score
+
       const manualScoreMap = new Map();
       manualScoreData?.forEach(profile => {
         manualScoreMap.set(profile.user_id, profile.organizer_manual_score);
       });
 
-      // Fetch jury members
       const { data: juryData, error: juryError } = await supabase
         .from('profiles')
         .select('user_id, name')
         .eq('user_type', 'jury');
-
       if (juryError) throw juryError;
       setJuryMembers(juryData || []);
 
-      // Fetch all assessments for students in the leaderboard
-      // This is more efficient and ensures we get complete data for all students
       const studentIds = leaderboardData?.map(entry => entry.user_id) || [];
       const { data: assessmentsData, error: assessmentsError } = await supabase
         .from('assessments')
         .select('student_id, jury_id, status, session_id')
         .in('student_id', studentIds);
-
       if (assessmentsError) throw assessmentsError;
 
-      // Fetch ALL session items to get session names
       const { data: sessionsData, error: sessionsError } = await supabase
         .from('session_items')
         .select('id, title');
-
       if (sessionsError) throw sessionsError;
 
-      // EFFICIENT: Query for distinct sessions with submitted assessments
-      // This avoids hitting row limits by using aggregation
       const { data: sessionSubmissionsData, error: sessionSubmissionsError } = await supabase
         .from('assessments')
         .select('session_id')
         .not('session_id', 'is', null);
-
       if (sessionSubmissionsError) throw sessionSubmissionsError;
 
-      // Get unique session IDs that have submissions
       const uniqueSessionIds = [...new Set(sessionSubmissionsData?.map(a => a.session_id))];
-
-      // Create a map of session_id to session title
       const sessionTitleMap = new Map<string, string>();
-      sessionsData?.forEach(session => {
-        sessionTitleMap.set(session.id, session.title);
-      });
+      sessionsData?.forEach(session => { sessionTitleMap.set(session.id, session.title); });
 
-      // Build session options from sessions that have submitted assessments
       const sessionsWithSubmissions = uniqueSessionIds
         .map(id => sessionTitleMap.get(id))
         .filter(Boolean) as string[];
-      
-      const options = sessionsWithSubmissions.sort();
-      setSessionOptions(options);
+      setSessionOptions(sessionsWithSubmissions.sort());
 
-      // Create a map of student_id to their session names
       const studentSessionsMap = new Map<string, Set<string>>();
       assessmentsData?.forEach(assessment => {
         if (assessment.session_id) {
@@ -164,22 +298,16 @@ export const OrganizerLeaderboard = () => {
         }
       });
 
-      // Fetch serial numbers for all students in the leaderboard
       const userIds = leaderboardData?.map(entry => entry.user_id) || [];
       const { data: serialData, error: serialError } = await supabase
         .from('profiles')
         .select('user_id, serial_number')
         .in('user_id', userIds);
-
       if (serialError) throw serialError;
 
-      // Create a map of user_id to serial_number
       const serialNumberMap = new Map();
-      serialData?.forEach(profile => {
-        serialNumberMap.set(profile.user_id, profile.serial_number);
-      });
+      serialData?.forEach(profile => { serialNumberMap.set(profile.user_id, profile.serial_number); });
 
-      // Create a map of submitted assessments
       const submittedAssessments = new Set();
       assessmentsData?.forEach(assessment => {
         if (assessment.status === 'submitted') {
@@ -187,82 +315,59 @@ export const OrganizerLeaderboard = () => {
         }
       });
 
-      // Sort leaderboard by final_total_score (descending) to get correct ranking
       const sortedLeaderboard = leaderboardData?.sort((a, b) => (b.final_total_score || 0) - (a.final_total_score || 0)) || [];
-      
-      // Process leaderboard data to include original rank, missing assessments, and manual scores
       const processedLeaderboard = sortedLeaderboard.map((entry, index) => {
-        const missingJuryAssessments = juryData?.filter(jury => 
+        const missingJuryAssessments = juryData?.filter(jury =>
           !submittedAssessments.has(`${entry.user_id}-${jury.user_id}`)
         ).map(jury => jury.name) || [];
-
         return {
           ...entry,
           original_rank: index + 1,
           missing_jury_assessments: missingJuryAssessments,
           organizer_manual_score: manualScoreMap.get(entry.user_id) || 0,
-          session_names: Array.from(studentSessionsMap.get(entry.user_id) || new Set<string>())
+          session_names: Array.from(studentSessionsMap.get(entry.user_id) || new Set<string>()),
         };
       });
       setLeaderboard(processedLeaderboard);
 
-      // Fetch awards
       const { data: awardsData, error: awardsError } = await supabase
-        .from('awards')
-        .select('*')
-        .order('name');
-
+        .from('awards').select('*').order('name');
       if (awardsError) throw awardsError;
 
-      // Fetch award votes
       const { data: votesData, error: votesError } = await supabase
         .from('award_votes')
-        .select(`
-          award_id,
-          student_id,
-          jury_id,
-          awards (name)
-        `);
-
+        .select('award_id, student_id, jury_id, awards (name)');
       if (votesError) throw votesError;
 
-      // Fetch student awards
+      // Fetch student_awards with both the record id, award_id, and award name
       const { data: studentAwardsData, error: studentAwardsError } = await supabase
         .from('student_awards')
-        .select(`
-          student_id,
-          awards (id, name)
-        `);
-
+        .select('id, award_id, student_id, awards (id, name)');
       if (studentAwardsError) throw studentAwardsError;
 
       setAwards(awardsData || []);
-      
-      const formattedVotes = votesData?.map(vote => ({
+      setAwardVotes(votesData?.map(vote => ({
         award_id: vote.award_id,
         student_id: vote.student_id,
         jury_id: vote.jury_id,
-        award_name: (vote.awards as any)?.name || ''
-      })) || [];
-      setAwardVotes(formattedVotes);
+        award_name: (vote.awards as any)?.name || '',
+      })) || []);
 
-      // Group student awards by student_id
-      const groupedAwards: Record<string, string[]> = {};
+      // Build studentAwards with recordId, awardId, and name for each assignment
+      const groupedAwards: Record<string, StudentAwardEntry[]> = {};
       studentAwardsData?.forEach(sa => {
-        if (!groupedAwards[sa.student_id]) {
-          groupedAwards[sa.student_id] = [];
-        }
-        groupedAwards[sa.student_id].push((sa.awards as any)?.name || '');
+        if (!groupedAwards[sa.student_id]) groupedAwards[sa.student_id] = [];
+        groupedAwards[sa.student_id].push({
+          recordId: sa.id,
+          awardId: sa.award_id,
+          name: (sa.awards as any)?.name || '',
+        });
       });
       setStudentAwards(groupedAwards);
 
     } catch (error) {
       console.error('Error fetching data:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load leaderboard data",
-        variant: "destructive",
-      });
+      toast({ title: 'Error', description: 'Failed to load leaderboard data', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -271,58 +376,16 @@ export const OrganizerLeaderboard = () => {
   const setupRealtimeSubscriptions = () => {
     const channel = supabase
       .channel('organizer-leaderboard-updates')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'assessments'
-      }, () => {
-        fetchData();
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'award_votes'
-      }, () => {
-        fetchData();
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'student_awards'
-      }, () => {
-        fetchData();
-      })
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'awards'
-      }, () => {
-        fetchData();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assessments' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'award_votes' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'student_awards' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'awards' }, fetchData)
       .subscribe();
-
     return () => supabase.removeChannel(channel);
   };
 
-  const getVoteCount = (awardId: string, studentId: string) => {
-    return awardVotes.filter(vote => 
-      vote.award_id === awardId && vote.student_id === studentId
-    ).length;
-  };
-
-  const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Trophy className="w-5 h-5 text-yellow-500" />;
-    if (rank === 2) return <Medal className="w-5 h-5 text-gray-400" />;
-    if (rank === 3) return <Award className="w-5 h-5 text-amber-600" />;
-    return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold">{rank}</span>;
-  };
-
-  // Get unique values for filters
-  const uniqueCities = [...new Set(leaderboard.map(entry => entry.city).filter(Boolean))].sort();
-  const uniqueParties = [...new Set(leaderboard.map(entry => entry.party_number))].sort((a, b) => a - b);
-  const uniquePositions = [...new Set(leaderboard.map(entry => entry.position))].sort();
-
-  const hasRealScores = leaderboard.some(e => (e.final_total_score ?? 0) > 0);
+  const getVoteCount = (awardId: string, studentId: string) =>
+    awardVotes.filter(v => v.award_id === awardId && v.student_id === studentId).length;
 
   const getAssessmentStatus = (entry: LeaderboardEntry) => {
     const totalJury = juryMembers.length;
@@ -331,27 +394,113 @@ export const OrganizerLeaderboard = () => {
     return 'fully-assessed';
   };
 
+  // ── Award actions ─────────────────────────────────────────────────────────────
+  const assignAwardToStudent = async (studentId: string, awardId: string) => {
+    const alreadyAssigned = (studentAwards[studentId] || []).some(a => a.awardId === awardId);
+    if (alreadyAssigned) return;
+    setIsAssigningAward(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from('student_awards').insert([{
+        award_id: awardId,
+        student_id: studentId,
+        assigned_by_jury_consensus: false,
+        assigned_by_organizer: true,
+        assigned_by_user_id: user?.id,
+      }]);
+      if (error) throw error;
+      toast({ title: 'Award Assigned', description: 'Award assigned successfully' });
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Error', description: 'Failed to assign award', variant: 'destructive' });
+    } finally {
+      setIsAssigningAward(false);
+    }
+  };
+
+  const removeAwardFromStudent = async (recordId: string) => {
+    try {
+      const { error } = await supabase.from('student_awards').delete().eq('id', recordId);
+      if (error) throw error;
+      toast({ title: 'Award Removed', description: 'Award assignment removed' });
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Error', description: 'Failed to remove award', variant: 'destructive' });
+    }
+  };
+
+  // ── Derived values ────────────────────────────────────────────────────────────
+  const uniqueCities = [...new Set(leaderboard.map(e => e.city).filter(Boolean))].sort();
+  const uniqueParties = [...new Set(leaderboard.map(e => e.party_number))].sort((a, b) => a - b);
+  const uniquePositions = [...new Set(leaderboard.map(e => e.position))].sort();
+  const hasRealScores = leaderboard.some(e => (e.final_total_score ?? 0) > 0);
+
   const filteredLeaderboard = leaderboard.filter(entry => {
-    const matchesSearch = entry.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.constituency?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.city?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.serial_number.toString().includes(searchTerm);
-    
-    const matchesCity = !cityFilter || cityFilter === 'all' || entry.city === cityFilter;
-    const matchesParty = !partyFilter || partyFilter === 'all' || entry.party_number.toString() === partyFilter;
-    const matchesPosition = !positionFilter || positionFilter === 'all' || entry.position === positionFilter;
-    const matchesSession = !sessionFilter || sessionFilter === 'all' || 
-      (entry.session_names && entry.session_names.includes(sessionFilter));
-    
-    const matchesAssessmentStatus = !assessmentStatusFilter || assessmentStatusFilter === 'all' || 
-      getAssessmentStatus(entry) === assessmentStatusFilter;
-    
-    return matchesSearch && matchesCity && matchesParty && matchesPosition && matchesSession && matchesAssessmentStatus;
+    const q = searchTerm.toLowerCase();
+    const matchesSearch = !searchTerm || (
+      entry.name.toLowerCase().includes(q) ||
+      entry.position.toLowerCase().includes(q) ||
+      entry.constituency?.toLowerCase().includes(q) ||
+      entry.city?.toLowerCase().includes(q) ||
+      entry.serial_number.toString().includes(q)
+    );
+    const matchesCity = !cityFilter || entry.city === cityFilter;
+    const matchesParty = !partyFilter || entry.party_number.toString() === partyFilter;
+    const matchesPosition = !positionFilter || entry.position === positionFilter;
+    const matchesSession = !sessionFilter || (entry.session_names && entry.session_names.includes(sessionFilter));
+    const matchesStatus = !assessmentStatusFilter || getAssessmentStatus(entry) === assessmentStatusFilter;
+    return matchesSearch && matchesCity && matchesParty && matchesPosition && matchesSession && matchesStatus;
   });
 
+  const totalStudents = leaderboard.length;
+  const topScore = leaderboard.length > 0 ? Math.round(leaderboard[0].final_total_score) : 0;
+  const avgPerformance = leaderboard.length > 0
+    ? (leaderboard.reduce((s, e) => s + e.final_total_score, 0) / leaderboard.length).toFixed(1)
+    : '—';
+  const awardsGiven = Object.values(studentAwards).reduce((s, a) => s + a.length, 0);
+
+  const top3 = filteredLeaderboard.slice(0, 3);
+  const totalPages = Math.ceil(filteredLeaderboard.length / ITEMS_PER_PAGE);
+  const paginatedLeaderboard = filteredLeaderboard.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
+
+  const hasActiveFilters = !!(searchTerm || cityFilter || partyFilter || positionFilter || assessmentStatusFilter || sessionFilter);
+  const activeFilterCount = [cityFilter, partyFilter, positionFilter, assessmentStatusFilter, sessionFilter].filter(Boolean).length;
+  const clearFilters = () => {
+    setSearchTerm(''); setCityFilter(''); setPartyFilter('');
+    setPositionFilter(''); setAssessmentStatusFilter(''); setSessionFilter('');
+  };
+
+  const statusBadge = (status: string) => {
+    if (status === 'fully-assessed') return 'bg-tertiary-fixed/30 text-on-tertiary-fixed-variant';
+    if (status === 'partially-assessed') return 'bg-secondary-fixed/30 text-on-secondary-fixed-variant';
+    return 'bg-error-container/30 text-on-error-container';
+  };
+  const statusLabel = (status: string) => {
+    if (status === 'fully-assessed') return 'Validated';
+    if (status === 'partially-assessed') return 'Partial';
+    return 'Pending';
+  };
+
+  // ── Loading ───────────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <div className="text-center space-y-4">
+          <div className="w-14 h-14 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-on-surface-variant font-headline font-black uppercase tracking-widest">Loading Leaderboard…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Export functions ─────────────────────────────────────────────────────────
   const exportToCSV = () => {
-    const exportData = filteredLeaderboard.map((entry) => ({
+    const exportData = filteredLeaderboard.map(entry => ({
       Rank: hasRealScores ? entry.original_rank : '',
       Name: entry.name,
       Position: entry.position,
@@ -365,489 +514,713 @@ export const OrganizerLeaderboard = () => {
       Constituency: entry.constituency || '',
       State: entry.state || '',
       'Home City': entry.city || '',
-      Awards: studentAwards[entry.user_id]?.join(', ') || 'No awards'
+      Awards: (studentAwards[entry.user_id] || []).map(a => a.name).join(', ') || 'No awards',
     }));
-
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Leaderboard');
-    
-    const timestamp = new Date().toISOString().split('T')[0];
-    XLSX.writeFile(wb, `leaderboard-${timestamp}.xlsx`);
-    
-    toast({
-      title: "Export Successful",
-      description: "Leaderboard data exported to Excel file",
-    });
+    XLSX.writeFile(wb, `leaderboard-${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast({ title: 'Export Successful', description: 'Leaderboard data exported to Excel file' });
   };
 
   const exportToPDF = () => {
     const pdf = new jsPDF('p', 'mm', 'a4');
-
-    // Title
     pdf.setFontSize(18);
     pdf.text('Student Leaderboard Report', 14, 16);
-
-    // Metadata
     pdf.setFontSize(11);
-    const timestamp = new Date().toLocaleString();
-    pdf.text(`Generated on: ${timestamp}`, 14, 24);
+    pdf.text(`Generated on: ${new Date().toLocaleString()}`, 14, 24);
     pdf.text(`Total Students: ${leaderboard.length}`, 14, 30);
     pdf.text(`Filtered Results: ${filteredLeaderboard.length}`, 14, 36);
-
-    // Build table data for all rows (no truncation)
-    const body = filteredLeaderboard.map((entry) => {
-      const rank = hasRealScores ? entry.original_rank.toString() : '—';
-      const awards = (studentAwards[entry.user_id]?.length || 0).toString();
-      const preEventScore = entry.preevent_scores?.toFixed(1) || '0';
-      const juryScore = entry.jury_converted_score?.toFixed(1) || '0';
-      const finalScore = entry.final_total_score?.toFixed(1) || '0';
-      return [rank, entry.name, entry.position, `Party ${entry.party_number}`, preEventScore, juryScore, finalScore, awards];
-    });
-
+    const body = filteredLeaderboard.map(entry => [
+      hasRealScores ? entry.original_rank.toString() : '—',
+      entry.name,
+      entry.position,
+      `Party ${entry.party_number}`,
+      entry.preevent_scores?.toFixed(1) || '0',
+      entry.jury_converted_score?.toFixed(1) || '0',
+      entry.final_total_score?.toFixed(1) || '0',
+      (studentAwards[entry.user_id]?.length || 0).toString(),
+    ]);
     autoTable(pdf, {
-      head: [[ 'Rank', 'Name', 'Position', 'Party', 'Pre(60)', 'Jury(40)', 'Total', 'Awards' ]],
+      head: [['Rank', 'Name', 'Position', 'Party', 'Pre(60)', 'Jury(40)', 'Total', 'Awards']],
       body,
       startY: 42,
       styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [33, 150, 243] },
+      headStyles: { fillColor: [19, 41, 143] },
       theme: 'striped',
       margin: { left: 14, right: 14 },
       columnStyles: {
-        0: { cellWidth: 12 },
-        1: { cellWidth: 45 },
-        2: { cellWidth: 32 },
-        3: { cellWidth: 22 },
-        4: { cellWidth: 18, halign: 'right' },
-        5: { cellWidth: 18, halign: 'right' },
-        6: { cellWidth: 18, halign: 'right' },
-        7: { cellWidth: 18, halign: 'right' }
-      }
+        0: { cellWidth: 12 }, 1: { cellWidth: 45 }, 2: { cellWidth: 32 },
+        3: { cellWidth: 22 }, 4: { cellWidth: 18, halign: 'right' },
+        5: { cellWidth: 18, halign: 'right' }, 6: { cellWidth: 18, halign: 'right' },
+        7: { cellWidth: 18, halign: 'right' },
+      },
     });
-
     pdf.save(`leaderboard-${new Date().toISOString().split('T')[0]}.pdf`);
-
-    toast({
-      title: 'Export Successful',
-      description: 'Leaderboard report exported to PDF',
-    });
+    toast({ title: 'Export Successful', description: 'Leaderboard report exported to PDF' });
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-muted-foreground">Loading leaderboard...</p>
-        </div>
-      </div>
-    );
-  }
+  // Award modal student's current awards
+  const modalStudentAwards = awardModalStudent ? (studentAwards[awardModalStudent.user_id] || []) : [];
 
   return (
-    <div className="space-y-8">
-      {/* Search and Filter Section */}
-      <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
-        <CardHeader className="border-b border-border/10">
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-xl font-extrabold font-headline text-primary">
-              <Search className="w-5 h-5 text-primary" />
-              Search & <span className="text-secondary">Filter</span>
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={exportToCSV}
-                className="flex items-center gap-2"
-              >
-                <FileSpreadsheet className="w-4 h-4" />
-                Export CSV
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={exportToPDF}
-                className="flex items-center gap-2"
-              >
-                <FileText className="w-4 h-4" />
-                Export PDF
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Search Bar */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              placeholder="Search by name, position, constituency, city, serial number..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
+    <div className="space-y-8 animate-in fade-in duration-700">
 
-          {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            {/* City Filter */}
-            <Select value={cityFilter} onValueChange={setCityFilter}>
-              <SelectTrigger>
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4" />
-                  <SelectValue placeholder="Filter by city" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Cities</SelectItem>
-                {uniqueCities.map((city) => (
-                  <SelectItem key={city} value={city}>{city}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Party Filter */}
-            <Select value={partyFilter} onValueChange={setPartyFilter}>
-              <SelectTrigger>
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  <SelectValue placeholder="Filter by party" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Parties</SelectItem>
-                {uniqueParties.map((party) => {
-                  const partyLetter = ['No Party', 'A', 'B', 'C', 'D', 'E'][party] || party;
-                  return (
-                    <SelectItem key={party} value={party.toString()}>Party {partyLetter}</SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-
-            {/* Position Filter */}
-            <Select value={positionFilter} onValueChange={setPositionFilter}>
-              <SelectTrigger>
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-4 h-4" />
-                  <SelectValue placeholder="Filter by position" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Positions</SelectItem>
-                {uniquePositions.map((position) => (
-                  <SelectItem key={position} value={position}>{position}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Assessment Status Filter */}
-            <Select value={assessmentStatusFilter} onValueChange={setAssessmentStatusFilter}>
-              <SelectTrigger>
-                <div className="flex items-center gap-2">
-                  <Target className="w-4 h-4" />
-                  <SelectValue placeholder="Filter by assessment status" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Assessment Status</SelectItem>
-                <SelectItem value="not-assessed">Not Assessed</SelectItem>
-                <SelectItem value="partially-assessed">Partially Assessed</SelectItem>
-                <SelectItem value="fully-assessed">Fully Assessed</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Session Filter */}
-            <Select value={sessionFilter} onValueChange={setSessionFilter}>
-              <SelectTrigger>
-                <div className="flex items-center gap-2">
-                  <Users2 className="w-4 h-4" />
-                  <SelectValue placeholder="Filter by session" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Sessions</SelectItem>
-                {sessionOptions.map((session) => (
-                  <SelectItem key={session} value={session}>{session}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-          <CardContent className="p-6 text-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Users className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-3xl font-black text-slate-800 mb-2">{leaderboard.length}</div>
-            <p className="text-slate-600 font-semibold">Total Students</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200">
-          <CardContent className="p-6 text-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Trophy className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-3xl font-black text-slate-800 mb-2">
-              {leaderboard.length > 0 ? Math.round(leaderboard[0].final_total_score) : 0}
-            </div>
-            <p className="text-slate-600 font-semibold">Top Final Score</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-green-50 to-teal-50 border-green-200">
-          <CardContent className="p-6 text-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Award className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-3xl font-black text-slate-800 mb-2">
-              {Object.values(studentAwards).reduce((sum, awards) => sum + awards.length, 0)}
-            </div>
-            <p className="text-slate-600 font-semibold">Awards Given</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
-          <CardContent className="p-6 text-center">
-            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-              <Target className="w-6 h-6 text-white" />
-            </div>
-            <div className="text-3xl font-black text-slate-800 mb-2">
-              {leaderboard.length > 0 
-                ? (leaderboard.reduce((sum, entry) => sum + entry.assessment_count, 0) / leaderboard.length).toFixed(1)
-                : 0}
-            </div>
-            <p className="text-slate-600 font-semibold">Avg Assessments</p>
-          </CardContent>
-        </Card>
+      {/* ── Search + Export ── */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 px-4 py-3 bg-surface-container-lowest rounded-2xl border border-outline-variant/20 flex-1 shadow-sm">
+          <span className="material-symbols-outlined text-outline text-[20px]">search</span>
+          <input
+            type="text"
+            className="flex-1 bg-transparent border-none outline-none text-sm font-medium font-body text-on-surface placeholder:text-on-surface-variant/40"
+            placeholder="Search by name, position, constituency, city, serial..."
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button type="button" onClick={() => setSearchTerm('')} className="text-outline hover:text-on-surface transition-colors">
+              <span className="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={exportToCSV}
+          className="flex items-center gap-2 px-5 py-3 bg-surface-container-lowest border border-outline-variant/20 rounded-2xl text-sm font-bold font-headline text-on-surface-variant hover:border-primary/20 hover:text-primary transition-all shadow-sm shrink-0"
+        >
+          <span className="material-symbols-outlined text-[18px]">table_view</span>
+          CSV
+        </button>
+        <button
+          type="button"
+          onClick={exportToPDF}
+          className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl text-sm font-bold font-headline shadow-[0_4px_12px_rgba(19,41,143,0.2)] hover:shadow-[0_6px_16px_rgba(19,41,143,0.3)] transition-all active:scale-95 shrink-0"
+        >
+          <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
+          PDF
+        </button>
       </div>
 
-      {/* Student Cards - Scrollable Container */}
-      <Card className="bg-white rounded-3xl shadow-lg border border-border/20">
-        <CardHeader className="border-b border-border/10">
-          <CardTitle className="flex items-center gap-2 text-xl font-extrabold font-headline text-primary">
-            <Trophy className="w-5 h-5 text-primary" />
-            Overall <span className="text-secondary">Leaderboard</span>
-            <span className="text-xs font-black px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-headline">{filteredLeaderboard.length} students</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="max-h-[600px] overflow-y-auto pr-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
-              {filteredLeaderboard.map((entry, index) => {
-                const studentVotes = awardVotes.filter(vote => vote.student_id === entry.user_id);
-                const uniqueAwards = [...new Set(studentVotes.map(vote => vote.award_id))];
-                const initials = entry.name.split(' ').map(n => n[0]).join('').toUpperCase();
-                const assignedAwards = studentAwards[entry.user_id] || [];
+      {/* ── Filter bar (compact collapsible) ── */}
+      <div className="bg-surface-container-low rounded-[1.5rem] overflow-hidden">
 
-                return (
-                  <Card
-                    key={entry.user_id}
-                    className="h-full flex flex-col overflow-hidden border border-border/20 hover:border-primary/30 transition-all duration-200 hover:shadow-md bg-gradient-to-r from-background to-accent/5"
-                  >
-                    <CardContent className="p-6 flex flex-col h-full">
-                      {/* Header with Avatar, Rank and Name */}
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="relative">
-                          <Avatar className="w-16 h-16 border-2 border-border/20">
-                            <AvatarImage src={entry.photo_url} alt={entry.name} />
-                            <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white font-bold">
-                              {initials}
-                            </AvatarFallback>
-                          </Avatar>
-                           {hasRealScores && (
-                             <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
-                               <span className="text-white text-xs font-bold">#{entry.original_rank}</span>
-                             </div>
-                           )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-bold text-lg text-foreground truncate mb-1">{entry.name}</h3>
-                          <p className="text-sm text-muted-foreground truncate mb-2">{entry.position}</p>
-                          <div className="flex items-center gap-2">
-                            <PartyBadge partyNumber={entry.party_number} size="sm" />
-                          </div>
-                        </div>
-                      </div>
+        {/* ── Toggle row (always visible) ── */}
+        <div className="flex items-center gap-3 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setShowFilters(f => !f)}
+            className="flex items-center gap-2 shrink-0 hover:text-primary transition-colors"
+          >
+            <span className="material-symbols-outlined text-[18px] text-on-surface-variant">filter_list</span>
+            <span className="text-xs font-black font-headline uppercase tracking-wide text-on-surface-variant">Filters</span>
+            {activeFilterCount > 0 && (
+              <span className="px-1.5 py-0.5 bg-primary text-on-primary text-[9px] font-black rounded-full font-headline leading-none">
+                {activeFilterCount}
+              </span>
+            )}
+          </button>
 
-                      {/* Scoring Breakdown */}
-                      <div className="space-y-3 mb-4">
-                        {/* Final Score - Prominent */}
-                        <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl border-2 border-primary/20">
-                          <div className="text-xs font-medium text-muted-foreground mb-1">Final Total Score</div>
-                          <div className="text-3xl font-black text-primary">{entry.final_total_score?.toFixed(2) || '0.00'}</div>
-                          <div className="text-xs text-muted-foreground">out of 100</div>
-                        </div>
-                        
-                        {/* Score Components */}
-                        <div className="grid grid-cols-2 gap-3 p-3 bg-accent/20 rounded-xl">
-                          <div className="space-y-1">
-                            <div className="text-xs font-medium text-muted-foreground">Pre-Event Score</div>
-                            <div className="text-lg font-bold text-foreground">{entry.preevent_scores?.toFixed(2) || '0.00'}</div>
-                            <div className="text-xs text-muted-foreground">out of 60</div>
-                          </div>
-                          {/* Only show Jury Score for regular students (not administrators or journalists) */}
-                          {!entry.position.toLowerCase().includes('administrator') && 
-                           !entry.position.toLowerCase().includes('journalist') && (
-                            <div className="space-y-1">
-                              <div className="text-xs font-medium text-muted-foreground">Jury Score</div>
-                              <div className="text-lg font-bold text-foreground">{entry.jury_converted_score?.toFixed(2) || '0.00'}</div>
-                              <div className="text-xs text-muted-foreground">out of 40</div>
-                            </div>
-                          )}
-                          {/* Show Live Event Score for administrators and journalists */}
-                          {(entry.position.toLowerCase().includes('administrator') || 
-                            entry.position.toLowerCase().includes('journalist')) && (
-                            <div className="space-y-1">
-                              <div className="text-xs font-medium text-muted-foreground">Live Event Score</div>
-                              <div className="text-lg font-bold text-foreground">{entry.organizer_manual_score?.toFixed(2) || '0.00'}</div>
-                              <div className="text-xs text-muted-foreground">out of 40</div>
-                            </div>
-                          )}
-                        </div>
-                        
-                        {/* Additional Info */}
-                        <div className="grid grid-cols-2 gap-3 p-3 bg-muted/30 rounded-xl">
-                          {/* Only show Assessments count for regular students */}
-                          {!entry.position.toLowerCase().includes('administrator') && 
-                           !entry.position.toLowerCase().includes('journalist') && (
-                            <>
-                              <div className="space-y-1">
-                                <div className="text-xs font-medium text-muted-foreground">Assessments</div>
-                                <div className="text-sm font-bold text-foreground">{entry.assessment_count}</div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                                  <Users className="w-3 h-3" />
-                                  Juries Submitted
-                                </div>
-                                <div className="text-sm font-bold text-foreground">
-                                  {entry.jury_count_submitted || 0} / {juryMembers.length}
-                                </div>
-                              </div>
-                            </>
-                          )}
-                          {/* Show Scoring Type for administrators and journalists */}
-                          {(entry.position.toLowerCase().includes('administrator') || 
-                            entry.position.toLowerCase().includes('journalist')) && (
-                            <>
-                              <div className="space-y-1">
-                                <div className="text-xs font-medium text-muted-foreground">Scoring Type</div>
-                                <div className="text-sm font-bold text-foreground">Organizer Manual</div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-xs font-medium text-muted-foreground">Constituency</div>
-                                <div className="text-sm text-foreground truncate">{entry.constituency || '—'}</div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                        {/* Location info moved to separate section for regular students */}
-                        {!entry.position.toLowerCase().includes('administrator') && 
-                         !entry.position.toLowerCase().includes('journalist') && (
-                          <div className="p-3 bg-muted/30 rounded-xl">
-                            <div className="space-y-1">
-                              <div className="text-xs font-medium text-muted-foreground">Constituency</div>
-                              <div className="text-sm text-foreground truncate">{entry.constituency || '—'}</div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+          {/* Active chips (collapsed view only) */}
+          {!showFilters && activeFilterCount > 0 && (
+            <div className="flex items-center gap-1.5 overflow-x-auto flex-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {partyFilter && (
+                <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-black font-headline uppercase tracking-wide">
+                  Party {partyLabel(Number(partyFilter))}
+                  <button type="button" onClick={() => setPartyFilter('')} className="hover:text-error transition-colors"><span className="material-symbols-outlined text-[11px]">close</span></button>
+                </span>
+              )}
+              {assessmentStatusFilter && (
+                <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-black font-headline uppercase tracking-wide">
+                  {assessmentStatusFilter === 'fully-assessed' ? 'Validated' : assessmentStatusFilter === 'partially-assessed' ? 'Partial' : 'Pending'}
+                  <button type="button" onClick={() => setAssessmentStatusFilter('')} className="hover:text-error transition-colors"><span className="material-symbols-outlined text-[11px]">close</span></button>
+                </span>
+              )}
+              {cityFilter && (
+                <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-black font-headline uppercase tracking-wide">
+                  {cityFilter}
+                  <button type="button" onClick={() => setCityFilter('')} className="hover:text-error transition-colors"><span className="material-symbols-outlined text-[11px]">close</span></button>
+                </span>
+              )}
+              {positionFilter && (
+                <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-black font-headline uppercase tracking-wide">
+                  {positionFilter}
+                  <button type="button" onClick={() => setPositionFilter('')} className="hover:text-error transition-colors"><span className="material-symbols-outlined text-[11px]">close</span></button>
+                </span>
+              )}
+              {sessionFilter && (
+                <span className="shrink-0 inline-flex items-center gap-1 px-2.5 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-black font-headline uppercase tracking-wide">
+                  {sessionFilter}
+                  <button type="button" onClick={() => setSessionFilter('')} className="hover:text-error transition-colors"><span className="material-symbols-outlined text-[11px]">close</span></button>
+                </span>
+              )}
+            </div>
+          )}
 
-                       {/* Assessment Status Section - Only for regular students */}
-                      {!entry.position.toLowerCase().includes('administrator') && 
-                       !entry.position.toLowerCase().includes('journalist') && (
-                        <div className="mb-4 p-3 bg-orange/5 rounded-xl">
-                          <div className="text-xs font-medium text-muted-foreground mb-2">Assessment Status</div>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge 
-                              variant={getAssessmentStatus(entry) === 'fully-assessed' ? 'default' : 
-                                     getAssessmentStatus(entry) === 'partially-assessed' ? 'secondary' : 'destructive'}
-                              className="text-xs"
-                            >
-                              {getAssessmentStatus(entry) === 'not-assessed' ? 'Not Assessed' :
-                               getAssessmentStatus(entry) === 'partially-assessed' ? 'Partially Assessed' :
-                               'Fully Assessed'}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              ({entry.assessment_count}/{juryMembers.length})
-                            </span>
-                          </div>
-                          {entry.missing_jury_assessments && entry.missing_jury_assessments.length > 0 && (
-                            <div className="text-xs text-red-600">
-                              <div className="font-medium mb-1">Missing assessments from:</div>
-                              <div className="space-y-1">
-                                {entry.missing_jury_assessments.map((juryName, idx) => (
-                                  <div key={idx} className="text-xs bg-red-50 px-2 py-1 rounded">
-                                    {juryName}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
+          <div className="ml-auto flex items-center gap-2 shrink-0">
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-[11px] font-bold font-headline text-primary hover:underline flex items-center gap-0.5 transition-all"
+              >
+                <span className="material-symbols-outlined text-[12px]">filter_list_off</span>
+                Clear
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setShowFilters(f => !f)}
+              className="p-1 rounded-lg hover:bg-surface-container transition-colors"
+            >
+              <span
+                className="material-symbols-outlined text-[20px] text-on-surface-variant transition-transform duration-200 block"
+                style={{ transform: showFilters ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              >
+                expand_more
+              </span>
+            </button>
+          </div>
+        </div>
 
-                      {/* Awards Section */}
-                      <div className="mb-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl border border-yellow-200">
-                        <div className="flex items-center gap-2 mb-3">
-                          <Trophy className="w-4 h-4 text-yellow-600" />
-                          <div className="text-sm font-semibold text-yellow-800">Awards & Recognition</div>
-                        </div>
-                        {assignedAwards.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {assignedAwards.map((award, idx) => (
-                              <Badge key={idx} className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-0 shadow-sm font-medium">
-                                <Star className="w-3 h-3 mr-1" />
-                                {award}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-sm text-muted-foreground bg-white px-3 py-2 rounded-lg border border-gray-200">
-                            No awards yet
-                          </div>
-                        )}
-                        
-                        {uniqueAwards.length > 0 && (
-                          <div className="mt-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
-                            <div className="text-xs font-medium text-blue-700 mb-1">
-                              Pending Jury Votes
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                              {uniqueAwards.map((awardId, idx) => {
-                                const awardName = awards.find(a => a.id === awardId)?.name || 'Unknown Award';
-                                const voteCount = getVoteCount(awardId, entry.user_id);
-                                return (
-                                  <Badge key={idx} variant="secondary" className="text-xs bg-blue-100 text-blue-700">
-                                    {awardName} ({voteCount}/3)
-                                  </Badge>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+        {/* ── Expandable filter rows ── */}
+        {showFilters && (
+          <div className="px-4 pb-4 space-y-4 border-t border-outline-variant/10 pt-4">
 
-                      {/* State Info */}
-                      <div className="mt-auto p-2 bg-muted/30 rounded-lg">
-                        <div className="text-xs text-muted-foreground">
-                          State: {entry.state || '—'}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            {/* Party */}
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-widest text-outline font-headline mb-2">Party</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                <FilterPill active={!partyFilter} onClick={() => setPartyFilter('')} icon="flag" label="All Parties" />
+                {uniqueParties.map(party => (
+                  <FilterPill
+                    key={party}
+                    active={partyFilter === party.toString()}
+                    onClick={() => setPartyFilter(party.toString())}
+                    label={`Party ${partyLabel(party)}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Assessment Status */}
+            <div>
+              <p className="text-[9px] font-black uppercase tracking-widest text-outline font-headline mb-2">Assessment Status</p>
+              <div className="flex items-center gap-2 flex-wrap">
+                {([
+                  { value: '', label: 'All', icon: 'grading' },
+                  { value: 'fully-assessed', label: 'Validated', icon: 'verified' },
+                  { value: 'partially-assessed', label: 'Partial', icon: 'pending' },
+                  { value: 'not-assessed', label: 'Pending', icon: 'schedule' },
+                ] as const).map(opt => (
+                  <FilterPill
+                    key={opt.value}
+                    active={assessmentStatusFilter === opt.value}
+                    onClick={() => setAssessmentStatusFilter(opt.value)}
+                    icon={opt.icon}
+                    label={opt.label}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* City */}
+            {uniqueCities.length > 0 && (
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-outline font-headline mb-2">City</p>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <FilterPill active={!cityFilter} onClick={() => setCityFilter('')} icon="location_on" label="All Cities" />
+                  {uniqueCities.map(city => (
+                    <FilterPill key={city} active={cityFilter === city} onClick={() => setCityFilter(city)} label={city} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Position */}
+            {uniquePositions.length > 0 && (
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-outline font-headline mb-2">Position</p>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <FilterPill active={!positionFilter} onClick={() => setPositionFilter('')} icon="badge" label="All Positions" />
+                  {uniquePositions.map(pos => (
+                    <FilterPill key={pos} active={positionFilter === pos} onClick={() => setPositionFilter(pos)} label={pos} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Session */}
+            {sessionOptions.length > 0 && (
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-outline font-headline mb-2">Session</p>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  <FilterPill active={!sessionFilter} onClick={() => setSessionFilter('')} icon="event" label="All Sessions" />
+                  {sessionOptions.map(session => (
+                    <FilterPill key={session} active={sessionFilter === session} onClick={() => setSessionFilter(session)} label={session} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {hasActiveFilters && (
+              <div className="pt-1 border-t border-outline-variant/20">
+                <span className="text-xs text-outline font-body">
+                  Showing <span className="font-bold text-on-surface">{filteredLeaderboard.length}</span> of{' '}
+                  <span className="font-bold text-on-surface">{leaderboard.length}</span> students
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Stats bento ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-surface-container-lowest p-6 rounded-[2rem] shadow-sm flex flex-col justify-between border-b-4 border-primary/10">
+          <div className="flex justify-between items-start">
+            <span className="text-[10px] font-black uppercase tracking-widest text-outline font-headline">Total Students</span>
+            <span className="material-symbols-outlined text-primary/30" style={{ fontVariationSettings: "'FILL' 1" }}>group</span>
+          </div>
+          <div className="mt-4">
+            <span className="text-4xl font-extrabold text-primary font-headline">{String(totalStudents).padStart(2, '0')}</span>
+          </div>
+        </div>
+
+        <div className="bg-surface-container-lowest p-6 rounded-[2rem] shadow-sm flex flex-col justify-between border-b-4 border-amber-500/20">
+          <div className="flex justify-between items-start">
+            <span className="text-[10px] font-black uppercase tracking-widest text-outline font-headline">Top Score</span>
+            <span className="material-symbols-outlined text-amber-500/40" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+          </div>
+          <div className="mt-4">
+            <span className="text-4xl font-extrabold text-amber-600 font-headline">{topScore}</span>
+          </div>
+        </div>
+
+        <div className="bg-surface-container-lowest p-6 rounded-[2rem] shadow-sm flex flex-col justify-between border-b-4 border-secondary-container/20">
+          <div className="flex justify-between items-start">
+            <span className="text-[10px] font-black uppercase tracking-widest text-outline font-headline">Avg Performance</span>
+            <span className="material-symbols-outlined text-secondary/30" style={{ fontVariationSettings: "'FILL' 1" }}>insights</span>
+          </div>
+          <div className="mt-4">
+            <span className="text-4xl font-extrabold text-secondary font-headline">{avgPerformance}</span>
+          </div>
+        </div>
+
+        <div className="bg-surface-container-lowest p-6 rounded-[2rem] shadow-sm flex flex-col justify-between border-b-4 border-tertiary-fixed-dim/20">
+          <div className="flex justify-between items-start">
+            <span className="text-[10px] font-black uppercase tracking-widest text-outline font-headline">Awards Given</span>
+            <span className="material-symbols-outlined text-tertiary-fixed-dim/40" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+          </div>
+          <div className="mt-4">
+            <span className="text-4xl font-extrabold text-tertiary-container font-headline">{String(awardsGiven).padStart(2, '0')}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Top Performers Podium ── */}
+      {hasRealScores && top3.length >= 1 && (
+        <div>
+          <div className="flex items-center gap-3 mb-5">
+            <span className="material-symbols-outlined text-primary text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>workspace_premium</span>
+            <h2 className="text-2xl font-headline font-black text-on-surface -tracking-[0.02em]">Top Performers</h2>
+          </div>
+          {/* Podium: [2nd] [1st] [3rd] */}
+          <div className="grid grid-cols-3 gap-4 items-end">
+            <div>
+              {top3[1] && (
+                <PodiumCard
+                  entry={top3[1]}
+                  rank={2}
+                  awards={studentAwards[top3[1].user_id] || []}
+                  onAwardClick={() => setAwardModalStudent(top3[1])}
+                />
+              )}
+            </div>
+            <div>
+              {top3[0] && (
+                <PodiumCard
+                  entry={top3[0]}
+                  rank={1}
+                  awards={studentAwards[top3[0].user_id] || []}
+                  onAwardClick={() => setAwardModalStudent(top3[0])}
+                />
+              )}
+            </div>
+            <div>
+              {top3[2] && (
+                <PodiumCard
+                  entry={top3[2]}
+                  rank={3}
+                  awards={studentAwards[top3[2].user_id] || []}
+                  onAwardClick={() => setAwardModalStudent(top3[2])}
+                />
+              )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      )}
+
+      {/* ── General Ranking Table ── */}
+      <div className="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-sm">
+        <div className="px-6 py-4 flex items-center gap-3 border-b border-outline-variant/10">
+          <span className="material-symbols-outlined text-primary text-[22px]" style={{ fontVariationSettings: "'FILL' 1" }}>leaderboard</span>
+          <h2 className="text-xl font-headline font-black text-on-surface">General Ranking</h2>
+          <span className="px-2.5 py-0.5 bg-primary/8 text-primary text-[10px] font-black uppercase tracking-widest rounded-full font-headline border border-primary/15">
+            {filteredLeaderboard.length} students
+          </span>
+        </div>
+
+        {filteredLeaderboard.length === 0 ? (
+          <div className="py-20 text-center">
+            <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 block mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>manage_search</span>
+            <p className="text-sm text-on-surface-variant/50 font-body">No students match your filters.</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-surface-container-low/50">
+                  <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline w-16">Rank</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">Student</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">Constituency</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">Pre (60)</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">Jury (40)</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">
+                    <span className="flex items-center justify-end gap-1">
+                      <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>electric_bolt</span>
+                      Live
+                    </span>
+                  </th>
+                  <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">Total</th>
+                  <th className="px-5 py-3 text-center text-[11px] font-black uppercase tracking-widest text-outline font-headline">Status</th>
+                  <th className="px-5 py-3 text-center text-[11px] font-black uppercase tracking-widest text-outline font-headline">Awards</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedLeaderboard.map(entry => {
+                  const initials = entry.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                  const status = getAssessmentStatus(entry);
+                  const special = isSpecialRole(entry.position);
+                  const entryAwards = studentAwards[entry.user_id] || [];
+
+                  return (
+                    <tr
+                      key={entry.user_id}
+                      className="hover:bg-surface-container-low/30 border-b border-outline-variant/5 transition-colors"
+                    >
+                      {/* Rank */}
+                      <td className="px-5 py-3.5">
+                        {hasRealScores ? (
+                          entry.original_rank <= 3 ? (
+                            <span
+                              className="material-symbols-outlined"
+                              style={{
+                                fontSize: '22px',
+                                fontVariationSettings: "'FILL' 1",
+                                color: entry.original_rank === 1 ? '#f59e0b'
+                                  : entry.original_rank === 2 ? '#94a3b8' : '#ea580c',
+                              }}
+                            >
+                              {entry.original_rank === 1 ? 'emoji_events'
+                                : entry.original_rank === 2 ? 'military_tech' : 'workspace_premium'}
+                            </span>
+                          ) : (
+                            <span className="text-sm font-headline font-black text-on-surface-variant/40">#{entry.original_rank}</span>
+                          )
+                        ) : (
+                          <span className="text-sm font-headline font-black text-on-surface-variant/30">—</span>
+                        )}
+                      </td>
+
+                      {/* Student */}
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="shrink-0">
+                            {entry.photo_url ? (
+                              <img src={entry.photo_url} alt={entry.name} className="w-9 h-9 rounded-xl object-cover bg-surface-container" />
+                            ) : (
+                              <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
+                                <span className="text-xs font-headline font-bold text-primary">{initials}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-headline font-bold text-sm text-on-surface">{entry.name}</span>
+                              <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md font-headline ${partyColor(entry.party_number)}`}>
+                                Party {partyLabel(entry.party_number)}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-outline font-body mt-0.5">
+                              {entry.position} · #{entry.serial_number}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Constituency */}
+                      <td className="px-5 py-3.5">
+                        <span className="text-sm font-body text-on-surface-variant">{entry.constituency || '—'}</span>
+                        {entry.city && (
+                          <p className="text-[10px] text-outline font-body mt-0.5">{entry.city}</p>
+                        )}
+                      </td>
+
+                      {/* Pre (60) */}
+                      <td className="px-5 py-3.5 text-right">
+                        <span className="text-sm font-headline font-black tabular-nums text-on-surface">
+                          {entry.preevent_scores?.toFixed(1) || '0.0'}
+                        </span>
+                      </td>
+
+                      {/* Jury (40) */}
+                      <td className="px-5 py-3.5 text-right">
+                        {!special ? (
+                          <span className="text-sm font-headline font-black tabular-nums text-on-surface">
+                            {entry.jury_converted_score?.toFixed(1) || '0.0'}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-on-surface-variant/30 font-body">—</span>
+                        )}
+                      </td>
+
+                      {/* Live (organizer_manual_score for admins/journalists) */}
+                      <td className="px-5 py-3.5 text-right">
+                        {special ? (
+                          <span className="text-sm font-headline font-black tabular-nums text-on-surface">
+                            {entry.organizer_manual_score?.toFixed(1) || '0.0'}
+                          </span>
+                        ) : (
+                          <span className="text-sm text-on-surface-variant/30 font-body">—</span>
+                        )}
+                      </td>
+
+                      {/* Total Score */}
+                      <td className="px-5 py-3.5 text-right">
+                        <span className="inline-block bg-primary text-on-primary font-headline font-black text-sm tabular-nums rounded-lg px-3 py-1">
+                          {entry.final_total_score?.toFixed(1) || '0.0'}
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="px-5 py-3.5 text-center">
+                        {special ? (
+                          <span className="px-3 py-1 bg-primary-fixed/30 text-on-primary-fixed-variant text-[10px] font-black uppercase tracking-wide rounded-full font-headline">
+                            Manual
+                          </span>
+                        ) : (
+                          <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-wide rounded-full font-headline ${statusBadge(status)}`}>
+                            {statusLabel(status)}
+                          </span>
+                        )}
+                      </td>
+
+                      {/* Awards */}
+                      <td className="px-5 py-3.5 text-center">
+                        <button
+                          type="button"
+                          onClick={() => setAwardModalStudent(entry)}
+                          className="group/aw inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl hover:bg-amber-50 hover:border-amber-200 border border-outline-variant/20 bg-surface-container transition-all"
+                        >
+                          <span
+                            className="material-symbols-outlined text-[16px] text-amber-500"
+                            style={{ fontVariationSettings: entryAwards.length > 0 ? "'FILL' 1" : "'FILL' 0" }}
+                          >
+                            workspace_premium
+                          </span>
+                          <span className="text-xs font-headline font-black text-on-surface-variant group-hover/aw:text-amber-700 transition-colors">
+                            {entryAwards.length > 0 ? entryAwards.length : '+'}
+                          </span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="px-6 py-4 border-t border-outline-variant/10 flex items-center justify-between">
+            <span className="text-xs text-outline font-body">
+              Page <span className="font-bold text-on-surface">{currentPage}</span> of{' '}
+              <span className="font-bold text-on-surface">{totalPages}</span>
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="size-8 rounded-lg border border-outline-variant/30 flex items-center justify-center text-on-surface-variant hover:border-primary/20 hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <span className="material-symbols-outlined text-[16px]">chevron_left</span>
+              </button>
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                let page: number;
+                if (totalPages <= 7) page = i + 1;
+                else if (currentPage <= 4) page = i + 1;
+                else if (currentPage >= totalPages - 3) page = totalPages - 6 + i;
+                else page = currentPage - 3 + i;
+                return (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`size-8 rounded-lg text-xs font-black font-headline transition-all ${
+                      currentPage === page
+                        ? 'bg-primary text-on-primary'
+                        : 'border border-outline-variant/30 text-on-surface-variant hover:border-primary/20 hover:text-primary'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="size-8 rounded-lg border border-outline-variant/30 flex items-center justify-center text-on-surface-variant hover:border-primary/20 hover:text-primary transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Award Modal ── */}
+      {awardModalStudent && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={() => setAwardModalStudent(null)}
+        >
+          <div
+            className="bg-surface-container-lowest rounded-[2rem] shadow-2xl overflow-hidden w-full max-w-md"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Gradient top bar */}
+            <div className="h-1.5 bg-gradient-to-r from-amber-400 to-orange-400" />
+
+            <div className="p-8 space-y-6">
+              {/* Student header */}
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl overflow-hidden bg-primary/10 shrink-0 flex items-center justify-center">
+                  {awardModalStudent.photo_url ? (
+                    <img src={awardModalStudent.photo_url} alt={awardModalStudent.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-lg font-headline font-bold text-primary">
+                      {awardModalStudent.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </span>
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <h2 className="text-xl font-extrabold font-headline text-on-surface leading-tight">{awardModalStudent.name}</h2>
+                  <p className="text-xs text-on-surface-variant font-body mt-0.5">{awardModalStudent.position}</p>
+                  <span className={`mt-1.5 inline-block px-2.5 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md font-headline ${partyColor(awardModalStudent.party_number)}`}>
+                    Party {partyLabel(awardModalStudent.party_number)}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAwardModalStudent(null)}
+                  className="ml-auto shrink-0 p-2 rounded-xl hover:bg-surface-container text-outline hover:text-on-surface transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px]">close</span>
+                </button>
+              </div>
+
+              {/* Current awards */}
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 font-headline mb-3">
+                  Current Awards
+                  {modalStudentAwards.length > 0 && (
+                    <span className="ml-2 px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded-full text-[9px]">{modalStudentAwards.length}</span>
+                  )}
+                </p>
+                {modalStudentAwards.length === 0 ? (
+                  <div className="flex items-center gap-2 py-3 px-4 bg-surface-container rounded-2xl text-sm text-on-surface-variant/50 font-body">
+                    <span className="material-symbols-outlined text-[18px] text-on-surface-variant/30">workspace_premium</span>
+                    No awards assigned yet
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {modalStudentAwards.map(award => (
+                      <div
+                        key={award.recordId}
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full group/chip"
+                      >
+                        <span className="material-symbols-outlined text-[13px] text-amber-600" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                        <span className="text-xs font-black font-headline text-amber-700 uppercase tracking-wide">{award.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeAwardFromStudent(award.recordId)}
+                          className="ml-0.5 text-amber-400 hover:text-red-500 transition-colors opacity-0 group-hover/chip:opacity-100"
+                        >
+                          <span className="material-symbols-outlined text-[14px]">close</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Available awards to assign */}
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 font-headline mb-3">Assign Award</p>
+                {awards.length === 0 ? (
+                  <p className="text-sm text-on-surface-variant/50 font-body py-2">No awards created yet. Go to Award Management to create awards.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {awards.map(award => {
+                      const alreadyAssigned = modalStudentAwards.some(a => a.awardId === award.id);
+                      const voteCount = getVoteCount(award.id, awardModalStudent.user_id);
+                      return (
+                        <button
+                          key={award.id}
+                          type="button"
+                          disabled={alreadyAssigned || isAssigningAward}
+                          onClick={() => assignAwardToStudent(awardModalStudent.user_id, award.id)}
+                          className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-black font-headline uppercase tracking-wide transition-all ${
+                            alreadyAssigned
+                              ? 'bg-surface-container text-on-surface-variant/30 cursor-not-allowed'
+                              : 'bg-surface-container-lowest border border-outline-variant/20 hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700 text-on-surface-variant'
+                          }`}
+                        >
+                          <span
+                            className="material-symbols-outlined text-[12px]"
+                            style={{ fontVariationSettings: alreadyAssigned ? "'FILL' 1" : "'FILL' 0" }}
+                          >
+                            {alreadyAssigned ? 'check_circle' : 'add_circle'}
+                          </span>
+                          {award.name}
+                          {voteCount > 0 && !alreadyAssigned && (
+                            <span className="ml-0.5 px-1.5 py-0.5 bg-primary/10 text-primary rounded-full text-[9px]">
+                              {voteCount} vote{voteCount !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={() => setAwardModalStudent(null)}
+                  className="px-6 py-2.5 bg-surface-container rounded-2xl font-bold text-sm text-on-surface-variant font-body hover:bg-surface-container-high transition-colors"
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

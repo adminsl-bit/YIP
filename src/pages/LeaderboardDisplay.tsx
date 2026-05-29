@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Trophy, Medal, Award } from 'lucide-react';
 import { BreakingNewsTicker } from '@/components/display/BreakingNewsTicker';
 
 interface AssessmentResult {
@@ -21,264 +17,314 @@ interface PollResult {
   vote_count: number;
 }
 
+// ── Rank config for top 3 ─────────────────────────────────────────────────────
+const RANK_CONFIG = [
+  { icon: 'emoji_events',     iconColor: 'text-amber-500',  cardBg: 'bg-gradient-to-r from-amber-50 to-white',  ring: 'ring-2 ring-amber-200/60' },
+  { icon: 'military_tech',    iconColor: 'text-slate-400',  cardBg: 'bg-gradient-to-r from-slate-50 to-white',  ring: 'ring-2 ring-slate-200/60' },
+  { icon: 'workspace_premium',iconColor: 'text-orange-500', cardBg: 'bg-gradient-to-r from-orange-50 to-white', ring: 'ring-2 ring-orange-200/60' },
+];
+
+const PARTY_COLORS: Record<number, string> = {
+  0: 'bg-error-container text-on-error-container',
+  1: 'bg-primary-fixed text-on-primary-fixed-variant',
+  2: 'bg-secondary-fixed text-on-secondary-fixed-variant',
+  3: 'bg-tertiary-fixed/30 text-tertiary-container',
+  4: 'bg-primary-fixed-dim/30 text-on-primary-fixed-variant',
+};
+const partyColor = (n: number) => PARTY_COLORS[n] ?? 'bg-surface-container text-on-surface-variant';
+const partyLabel = (n: number) => (['No Party', 'A', 'B', 'C', 'D', 'E'] as const)[n] ?? String(n);
+
+// ── LeaderRow ─────────────────────────────────────────────────────────────────
+const LeaderRow = ({ leader, index }: { leader: AssessmentResult; index: number }) => {
+  const isTop3 = index < 3;
+  const rankCfg = isTop3 ? RANK_CONFIG[index] : null;
+
+  return (
+    <div
+      className={`flex items-center gap-5 px-6 py-4 rounded-[1.5rem] transition-all ${
+        isTop3
+          ? `${rankCfg!.cardBg} ${rankCfg!.ring} shadow-md`
+          : 'bg-surface-container-lowest border border-outline-variant/10 hover:border-primary/10'
+      }`}
+    >
+      {/* Rank */}
+      <div className="shrink-0 w-14 flex items-center justify-center">
+        {isTop3 ? (
+          <span
+            className={`material-symbols-outlined ${rankCfg!.iconColor}`}
+            style={{ fontSize: '2.5rem', fontVariationSettings: "'FILL' 1" }}
+          >
+            {rankCfg!.icon}
+          </span>
+        ) : (
+          <span className="text-2xl font-headline font-black text-on-surface-variant/40">
+            #{index + 1}
+          </span>
+        )}
+      </div>
+
+      {/* Name + meta */}
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h3 className={`font-headline font-black truncate ${isTop3 ? 'text-2xl text-on-surface' : 'text-xl text-on-surface'}`}>
+            {leader.student_name}
+          </h3>
+          <span className={`px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest rounded-md font-headline ${partyColor(leader.party_number)}`}>
+            Party {partyLabel(leader.party_number)}
+          </span>
+        </div>
+        <p className="text-sm text-on-surface-variant font-body mt-0.5">{leader.position}</p>
+      </div>
+
+      {/* Score */}
+      <div className="shrink-0 text-right">
+        <span className={`font-headline font-black tabular-nums ${isTop3 ? 'text-4xl text-primary' : 'text-3xl text-on-surface'}`}>
+          {leader.total_score}
+        </span>
+        <p className="text-[10px] text-on-surface-variant font-headline uppercase tracking-widest">pts</p>
+      </div>
+    </div>
+  );
+};
+
+// ── PollCard ──────────────────────────────────────────────────────────────────
+const PollCard = ({ title, results }: { title: string; results: PollResult[] }) => {
+  const maxVotes = Math.max(...results.map(r => r.vote_count), 1);
+  const totalVotes = results.reduce((sum, r) => sum + r.vote_count, 0);
+
+  return (
+    <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden shadow-[0_16px_40px_-12px_rgba(19,41,143,0.08)]">
+      <div className="h-1.5 bg-gradient-to-r from-primary to-primary-container" />
+      <div className="p-8 space-y-6">
+        <div className="flex items-center gap-3">
+          <span className="material-symbols-outlined text-primary text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_vote</span>
+          <h3 className="text-2xl font-headline font-black text-on-surface -tracking-[0.02em]">{title}</h3>
+          <span className="ml-auto text-sm text-on-surface-variant font-body">{totalVotes} total votes</span>
+        </div>
+        <div className="space-y-4">
+          {results.map((result, i) => {
+            const pct = Math.round((result.vote_count / maxVotes) * 100);
+            const isLeading = i === 0;
+            return (
+              <div key={result.option_id} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className={`text-base font-body font-semibold ${isLeading ? 'text-primary' : 'text-on-surface'}`}>
+                    {result.option_text}
+                  </span>
+                  <span className={`text-lg font-headline font-black tabular-nums ${isLeading ? 'text-primary' : 'text-on-surface-variant'}`}>
+                    {result.vote_count}
+                  </span>
+                </div>
+                <div className="w-full h-3 bg-surface-container rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ease-out ${
+                      isLeading ? 'bg-gradient-to-r from-primary to-primary-container' : 'bg-outline-variant'
+                    }`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 const LeaderboardDisplay = () => {
   const [scoringLeaders, setScoringLeaders] = useState<AssessmentResult[]>([]);
   const [pollResults, setPollResults] = useState<Record<string, PollResult[]>>({});
   const [loading, setLoading] = useState(true);
   const [isLeaderboardVisible, setIsLeaderboardVisible] = useState(true);
+  const [activeTab, setActiveTab] = useState<'scoring' | 'voting'>('scoring');
 
   const fetchScoringLeaders = async () => {
     try {
       const { data, error } = await supabase
         .from('assessments')
-        .select(`
-          student_id,
-          total_score,
-          profiles!inner(name, party_number, position)
-        `)
+        .select('student_id, total_score, profiles!inner(name, party_number, position)')
         .eq('status', 'submitted')
         .order('total_score', { ascending: false })
         .limit(10);
-
       if (error) throw error;
-
-      const leaders = data?.map((assessment: any) => ({
-        student_id: assessment.student_id,
-        student_name: assessment.profiles.name,
-        total_score: assessment.total_score,
-        party_number: assessment.profiles.party_number,
-        position: assessment.profiles.position,
-      })) || [];
-
-      setScoringLeaders(leaders);
-    } catch (error) {
-      console.error('Error fetching scoring leaders:', error);
-    }
+      setScoringLeaders(
+        data?.map((a: any) => ({
+          student_id: a.student_id,
+          student_name: a.profiles.name,
+          total_score: a.total_score,
+          party_number: a.profiles.party_number,
+          position: a.profiles.position,
+        })) || []
+      );
+    } catch (e) { console.error(e); }
   };
 
   const fetchPollResults = async () => {
     try {
-      // Get active polls with public results
       const { data: polls, error: pollsError } = await supabase
-        .from('polls')
-        .select('*')
-        .eq('is_active', true)
-        .eq('show_results_publicly', true);
-
+        .from('polls').select('*').eq('is_active', true).eq('show_results_publicly', true);
       if (pollsError) throw pollsError;
-
       const results: Record<string, PollResult[]> = {};
-
       for (const poll of polls || []) {
-        // Count votes for each option
-        const { data: votes, error: votesError } = await supabase
-          .from('poll_votes')
-          .select('option_id')
-          .eq('poll_id', poll.id);
-
-        if (votesError) throw votesError;
-
-        const voteCounts = votes?.reduce((acc, vote) => {
-          acc[vote.option_id] = (acc[vote.option_id] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>) || {};
-
-        const pollResults = Array.isArray(poll.options) 
-          ? poll.options.map((option: any) => ({
-              poll_title: poll.title,
-              option_id: option.id,
-              option_text: option.text,
-              vote_count: voteCounts[option.id] || 0,
-            }))
-          : [];
-
-        results[poll.id] = pollResults.sort((a, b) => b.vote_count - a.vote_count);
+        const { data: votes } = await supabase.from('poll_votes').select('option_id').eq('poll_id', poll.id);
+        const counts = votes?.reduce((acc, v) => { acc[v.option_id] = (acc[v.option_id] || 0) + 1; return acc; }, {} as Record<string, number>) || {};
+        results[poll.id] = (Array.isArray(poll.options) ? poll.options : [])
+          .map((o: any) => ({ poll_title: poll.title, option_id: o.id, option_text: o.text, vote_count: counts[o.id] || 0 }))
+          .sort((a, b) => b.vote_count - a.vote_count);
       }
-
       setPollResults(results);
-    } catch (error) {
-      console.error('Error fetching poll results:', error);
-    }
+    } catch (e) { console.error(e); }
   };
 
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      
-      // Check if leaderboard is visible
       try {
-        const { data, error } = await supabase
-          .from('system_settings')
-          .select('setting_value')
-          .eq('setting_key', 'leaderboard_visible')
-          .limit(1);
-        
-        if (error) throw error;
-        const isVisible = data && data.length ? (data[0].setting_value === true || data[0].setting_value === 'true') : true;
-        setIsLeaderboardVisible(isVisible);
-        
-        if (isVisible) {
-          await Promise.all([fetchScoringLeaders(), fetchPollResults()]);
-        }
-      } catch (error) {
-        console.error('Error checking leaderboard visibility:', error);
-        setIsLeaderboardVisible(false);
-      }
-      
+        const { data } = await supabase.from('system_settings').select('setting_value').eq('setting_key', 'leaderboard_visible').limit(1);
+        const visible = data?.length ? (data[0].setting_value === true || data[0].setting_value === 'true') : true;
+        setIsLeaderboardVisible(visible);
+        if (visible) await Promise.all([fetchScoringLeaders(), fetchPollResults()]);
+      } catch { setIsLeaderboardVisible(false); }
       setLoading(false);
     };
 
     loadData();
 
-    // Set up real-time subscriptions
-    const assessmentChannel = supabase
-      .channel('assessment-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'assessments' },
-        () => fetchScoringLeaders()
-      )
+    const assessmentCh = supabase.channel('lb-assessments')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'assessments' }, fetchScoringLeaders)
       .subscribe();
-
-    const pollChannel = supabase
-      .channel('poll-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'poll_votes' },
-        () => fetchPollResults()
-      )
+    const pollCh = supabase.channel('lb-polls')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes' }, fetchPollResults)
       .subscribe();
-
-    // Auto-refresh every 30 seconds
     const interval = setInterval(loadData, 30000);
 
     return () => {
-      supabase.removeChannel(assessmentChannel);
-      supabase.removeChannel(pollChannel);
+      supabase.removeChannel(assessmentCh);
+      supabase.removeChannel(pollCh);
       clearInterval(interval);
     };
   }, []);
 
-  const getRankIcon = (index: number) => {
-    switch (index) {
-      case 0:
-        return <Trophy className="w-12 h-12 text-yellow-500" />;
-      case 1:
-        return <Medal className="w-12 h-12 text-gray-400" />;
-      case 2:
-        return <Award className="w-12 h-12 text-amber-600" />;
-      default:
-        return <div className="w-12 h-12 flex items-center justify-center text-4xl font-bold text-muted-foreground">#{index + 1}</div>;
-    }
-  };
-
-  const getPartyColor = (partyNumber: number) => {
-    const colors = [
-      'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
-      'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'
-    ];
-    return colors[partyNumber % colors.length];
-  };
-
-  if (!isLeaderboardVisible) {
+  // ── Loading ────────────────────────────────────────────────────────────────
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center px-4">
+      <div className="h-screen civic-mesh-bg flex items-center justify-center">
         <div className="text-center space-y-4">
-          <div className="text-3xl sm:text-4xl md:text-6xl font-bold text-muted-foreground">Leaderboard Hidden</div>
-          <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground">The leaderboard is currently disabled by the organizer.</p>
+          <div className="w-14 h-14 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-base font-headline font-black text-on-surface-variant uppercase tracking-widest">Loading Leaderboard…</p>
         </div>
       </div>
     );
   }
 
-  if (loading) {
+  // ── Hidden ─────────────────────────────────────────────────────────────────
+  if (!isLeaderboardVisible) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted flex items-center justify-center px-4">
-        <div className="text-3xl sm:text-4xl md:text-6xl font-bold text-primary animate-pulse text-center">Loading Leaderboard...</div>
+      <div className="h-screen civic-mesh-bg flex items-center justify-center px-8">
+        <div className="bg-surface-container-lowest rounded-[2rem] p-16 text-center shadow-[0_32px_64px_-16px_rgba(19,41,143,0.1)] max-w-md">
+          <span className="material-symbols-outlined text-[64px] text-on-surface-variant/20 block mb-4" style={{ fontVariationSettings: "'FILL' 1" }}>leaderboard</span>
+          <h2 className="text-2xl font-headline font-black text-on-surface mb-2">Leaderboard Hidden</h2>
+          <p className="text-sm text-on-surface-variant font-body">The leaderboard is currently disabled by the organizer.</p>
+        </div>
       </div>
     );
   }
 
+  const pollEntries = Object.entries(pollResults);
+
+  // ── Main ───────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4 sm:p-6 lg:p-8">
-      <BreakingNewsTicker />
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold text-center mb-6 sm:mb-8 lg:mb-12 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-          Live Leaderboard
-        </h1>
+    <div className="h-screen civic-mesh-bg flex flex-col font-body antialiased overflow-hidden">
 
-        <Tabs defaultValue="scoring" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 h-12 sm:h-14 lg:h-16 text-sm sm:text-lg lg:text-2xl">
-            <TabsTrigger value="scoring" className="text-sm sm:text-lg lg:text-2xl">Scoring Leaders</TabsTrigger>
-            <TabsTrigger value="voting" className="text-sm sm:text-lg lg:text-2xl">Voting Results</TabsTrigger>
-          </TabsList>
+      {/* ── Top bar ── */}
+      <div className="shrink-0 px-8 pt-6 pb-3 flex items-center justify-between gap-6">
+        <div className="flex items-center gap-3">
+          <span
+            className="material-symbols-outlined text-primary"
+            style={{ fontSize: '2.5rem', fontVariationSettings: "'FILL' 1" }}
+          >
+            leaderboard
+          </span>
+          <div>
+            <h1 className="text-3xl font-headline font-black text-on-surface -tracking-[0.03em] leading-none">Live Leaderboard</h1>
+            <p className="text-xs text-on-surface-variant font-medium mt-0.5">Young Indians Parliament · Real-time rankings</p>
+          </div>
+        </div>
 
-          <TabsContent value="scoring" className="mt-4 sm:mt-6 lg:mt-8">
-            <div className="grid gap-4 sm:gap-6">
-              {scoringLeaders.map((leader, index) => (
-                <Card key={leader.student_id} className="p-4 sm:p-6 bg-card/80 backdrop-blur-sm border-2">
-                  <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8">
-                    {getRankIcon(index)}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4 mb-2">
-                        <h3 className="text-4xl font-bold">{leader.student_name}</h3>
-                        <Badge 
-                          className={`${getPartyColor(leader.party_number)} text-white text-lg px-4 py-2`}
-                        >
-                          Party {leader.party_number}
-                        </Badge>
-                        <Badge variant="outline" className="text-lg px-4 py-2">
-                          {leader.position}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="text-6xl font-bold text-primary">
-                      {leader.total_score}
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="voting" className="mt-8">
-            <div className="space-y-12">
-              {Object.entries(pollResults).map(([pollId, results]) => (
-                <Card key={pollId} className="p-8 bg-card/80 backdrop-blur-sm">
-                  <CardHeader>
-                    <CardTitle className="text-4xl text-center">
-                      {results[0]?.poll_title || 'Poll Results'}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-6">
-                      {results.map((result, index) => {
-                        const maxVotes = Math.max(...results.map(r => r.vote_count));
-                        const percentage = maxVotes > 0 ? (result.vote_count / maxVotes) * 100 : 0;
-                        
-                        return (
-                          <div key={result.option_id} className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-2xl font-semibold">{result.option_text}</span>
-                              <span className="text-3xl font-bold text-primary">{result.vote_count} votes</span>
-                            </div>
-                            <div className="w-full bg-muted rounded-full h-8">
-                              <div
-                                className="bg-gradient-to-r from-primary to-secondary h-8 rounded-full transition-all duration-1000 ease-out"
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
+        {/* Live pulse */}
+        <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/20 rounded-full px-5 py-2.5 shadow-sm">
+          <span className="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse shrink-0" />
+          <span className="text-xs font-headline font-black text-on-surface uppercase tracking-wide">Live</span>
+        </div>
       </div>
+
+      {/* ── Tab switcher ── */}
+      <div className="shrink-0 px-8 pb-4">
+        <div className="flex items-center gap-1 bg-surface-container rounded-2xl p-1 w-fit">
+          <button
+            onClick={() => setActiveTab('scoring')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-headline font-black uppercase tracking-wide transition-all ${
+              activeTab === 'scoring'
+                ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-sm'
+                : 'text-on-surface-variant hover:text-primary'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+            Scoring Leaders
+          </button>
+          <button
+            onClick={() => setActiveTab('voting')}
+            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-headline font-black uppercase tracking-wide transition-all ${
+              activeTab === 'voting'
+                ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-sm'
+                : 'text-on-surface-variant hover:text-primary'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_vote</span>
+            Voting Results
+          </button>
+        </div>
+      </div>
+
+      {/* ── Content ── */}
+      <div className="flex-1 px-8 pb-16 overflow-y-auto min-h-0">
+
+        {/* Scoring Leaders */}
+        {activeTab === 'scoring' && (
+          <div className="max-w-4xl mx-auto space-y-3">
+            {scoringLeaders.length === 0 ? (
+              <div className="bg-surface-container-lowest rounded-[2rem] px-8 py-20 text-center">
+                <span className="material-symbols-outlined text-[56px] text-on-surface-variant/20 block mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                <p className="text-base text-on-surface-variant/50 font-body">No scores submitted yet.</p>
+              </div>
+            ) : (
+              scoringLeaders.map((leader, i) => (
+                <LeaderRow key={leader.student_id} leader={leader} index={i} />
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Voting Results */}
+        {activeTab === 'voting' && (
+          <div className="max-w-4xl mx-auto space-y-6">
+            {pollEntries.length === 0 ? (
+              <div className="bg-surface-container-lowest rounded-[2rem] px-8 py-20 text-center">
+                <span className="material-symbols-outlined text-[56px] text-on-surface-variant/20 block mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_vote</span>
+                <p className="text-base text-on-surface-variant/50 font-body">No active polls with public results.</p>
+              </div>
+            ) : (
+              pollEntries.map(([id, results]) => (
+                <PollCard key={id} title={results[0]?.poll_title || 'Poll'} results={results} />
+              ))
+            )}
+          </div>
+        )}
+      </div>
+
+      <BreakingNewsTicker />
     </div>
   );
 };
