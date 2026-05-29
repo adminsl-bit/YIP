@@ -11,6 +11,7 @@ import AdminStudentDashboard from "./pages/AdminStudentDashboard";
 import JuryDashboard from "./pages/JuryDashboard";
 import JournalistDashboard from "./pages/JournalistDashboard";
 import OrganizerDashboard from "./pages/OrganizerDashboard";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import TimerDisplay from "./pages/TimerDisplay";
 import SessionDisplay from "./pages/SessionDisplay";
 import PollDisplay from "./pages/PollDisplay";
@@ -66,6 +67,11 @@ const App = () => (
             <Route path="/organizer" element={
               <RoleProtectedRoute allowedUserType="organizer">
                 <OrganizerDashboard />
+              </RoleProtectedRoute>
+            } />
+            <Route path="/super-admin" element={
+              <RoleProtectedRoute allowedUserType="super_admin">
+                <SuperAdminDashboard />
               </RoleProtectedRoute>
             } />
             <Route path="/display/timer" element={<TimerDisplay />} />

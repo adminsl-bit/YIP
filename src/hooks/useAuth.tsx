@@ -123,6 +123,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       case 'organizer':
         navigate('/organizer');
         break;
+      case 'super_admin':
+        navigate('/super-admin');
+        break;
       default:
         navigate('/');
     }

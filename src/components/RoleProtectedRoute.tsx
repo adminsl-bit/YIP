@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 
 interface RoleProtectedRouteProps {
   children: React.ReactNode;
-  allowedUserType: 'student' | 'jury' | 'organizer';
+  allowedUserType: 'student' | 'jury' | 'organizer' | 'super_admin';
   allowedRole?: 'admin_student' | 'journalist';
 }
 
