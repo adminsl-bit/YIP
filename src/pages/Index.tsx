@@ -23,6 +23,9 @@ const Index = () => {
         case 'organizer':
           navigate('/organizer');
           break;
+        case 'super_admin':
+          navigate('/super-admin');
+          break;
       }
     }
   }, [user, profile, navigate]);

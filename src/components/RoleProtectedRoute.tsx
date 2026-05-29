@@ -39,7 +39,7 @@ export const RoleProtectedRoute = ({ children, allowedUserType, allowedRole }: R
     }
   }, [loading, profile, user, allowedRole]);
 
-  if (loading) {
+  if (loading || (user && !profile)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/50 to-background">
         <div className="text-center space-y-4">
