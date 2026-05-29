@@ -291,7 +291,7 @@ CREATE OR REPLACE FUNCTION public.get_event_leaderboard(p_event_id UUID)
 RETURNS TABLE (
   user_id         UUID,
   name            TEXT,
-  position        TEXT,
+  "position"      TEXT,
   party_number    INT,
   constituency    TEXT,
   state           TEXT,
@@ -309,7 +309,7 @@ AS $$
   SELECT
     p.user_id,
     p.name,
-    p.position,
+    p."position",
     p.party_number,
     p.constituency,
     p.state,
@@ -326,7 +326,7 @@ AS $$
     ON a.student_id = p.user_id AND a.status = 'submitted' AND a.event_id = p_event_id
   WHERE p.event_id = p_event_id
     AND p.user_type = 'student'
-  GROUP BY p.user_id, p.name, p.position, p.party_number, p.constituency,
+  GROUP BY p.user_id, p.name, p."position", p.party_number, p.constituency,
            p.state, p.serial_number, p.photo_url, p.preevent_scores
   ORDER BY final_score DESC
 $$;
