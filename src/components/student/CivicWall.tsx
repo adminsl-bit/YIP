@@ -1,13 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { 
-  Loader2, 
-  Globe,
-  CheckCircle2,
-  Search,
-  Trash2
-} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -428,7 +421,7 @@ export const CivicWall = () => {
 
   const filteredPosts = posts.filter(p => p.content.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  if (loading) return <div className="flex justify-center py-24"><Loader2 className="w-12 h-12 text-primary animate-spin" /></div>;
+  if (loading) return <div className="flex justify-center py-24"><div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" /></div>;
 
   return (
     <div className="flex flex-col w-full space-y-6">
@@ -437,13 +430,13 @@ export const CivicWall = () => {
         <div>
           <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">Civic <span className="text-secondary">Wall</span></h1>
           <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
-            <Globe className="w-3 h-3" />
+            <span className="material-symbols-outlined text-[12px]">public</span>
             National Legislative Discourse
           </p>
         </div>
         
         <div className="relative group w-full lg:w-80">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-on-surface-variant/30 w-4 h-4 transition-colors group-focus-within:text-primary" />
+          <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-on-surface-variant/30 text-[18px] transition-colors group-focus-within:text-primary">search</span>
           <input 
             className="w-full bg-surface-container-high/50 border-none rounded-xl py-3 pl-12 pr-6 text-sm focus:ring-4 focus:ring-primary/5 focus:bg-surface-container-lowest transition-all outline-none font-medium placeholder:text-on-surface-variant/20 shadow-sm" 
             placeholder="Search the assembly..." 
@@ -590,13 +583,13 @@ export const CivicWall = () => {
                       disabled={isPosting || (!newPost.trim() && !attachedFile && !attachedUrl)}
                       className="bg-gradient-to-br from-primary to-primary-container text-white px-8 py-2 rounded-full font-bold shadow-md hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-40"
                     >
-                      {isPosting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Post'}
+                      {isPosting ? <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> : 'Post'}
                     </button>
                   </div>
                 </motion.div>
 
                 {/* Feed Items */}
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <AnimatePresence>
                     {filteredPosts.map((post) => {
                       const isLiked = !!user && !!post.civic_likes?.some(l => l.user_id === user.id);
@@ -608,29 +601,29 @@ export const CivicWall = () => {
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.95 }}
-                          className="bg-surface-container-lowest rounded-3xl shadow-[0_32px_64px_-12px_rgba(19,41,143,0.06)] overflow-hidden group border-none"
+                          className="bg-surface-container-lowest rounded-[2rem] shadow-[0_4px_24px_-4px_rgba(19,41,143,0.06)] overflow-hidden group border-none"
                         >
-                          <div className="p-6">
+                          <div className="p-4">
                             {/* Card Header */}
                             <div className="flex items-center justify-between mb-3">
                               <div className="flex items-center gap-3">
-                                <div className="w-12 h-12 rounded-full overflow-hidden border border-outline-variant/15 shrink-0">
+                                <div className="w-9 h-9 rounded-full overflow-hidden border border-outline-variant/15 shrink-0">
                                   {post.profiles?.photo_url ? (
-                                    <img 
-                                      src={post.profiles.photo_url} 
-                                      alt={post.profiles.name} 
-                                      className="w-full h-full object-cover" 
+                                    <img
+                                      src={post.profiles.photo_url}
+                                      alt={post.profiles.name}
+                                      className="w-full h-full object-cover"
                                     />
                                   ) : (
-                                    <div className="w-full h-full bg-primary/10 text-primary font-bold flex items-center justify-center text-lg">
+                                    <div className="w-full h-full bg-primary/10 text-primary font-bold flex items-center justify-center text-sm">
                                       {post.profiles?.name?.charAt(0) || 'D'}
                                     </div>
                                   )}
                                 </div>
                                 <div>
-                                  <h4 className="font-display font-bold text-base text-gray-900 leading-tight">{post.profiles?.name}</h4>
+                                  <h4 className="font-headline font-bold text-sm text-on-surface leading-tight">{post.profiles?.name}</h4>
                                   <div className="flex items-center gap-2 mt-0.5">
-                                    <span className="text-body-xs text-on-surface-variant/70">
+                                    <span className="text-xs text-on-surface-variant/60">
                                       {formatDistanceToNow(new Date(post.created_at))} ago
                                     </span>
                                     <span className="w-1 h-1 bg-outline rounded-full opacity-40"></span>
@@ -647,12 +640,12 @@ export const CivicWall = () => {
                               
                               <div className="flex items-center gap-2">
                                 {post.user_id === user?.id && (
-                                  <button 
-                                    onClick={() => setDeleteConfirmId({id: post.id, type: 'post'})} 
-                                    className="p-2 rounded-full hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors"
+                                  <button
+                                    onClick={() => setDeleteConfirmId({id: post.id, type: 'post'})}
+                                    className="p-2 rounded-full hover:bg-error/10 text-error/50 hover:text-error transition-colors"
                                     title="Delete Post"
                                   >
-                                    <Trash2 className="w-4 h-4" />
+                                    <span className="material-symbols-outlined text-[16px]">delete</span>
                                   </button>
                                 )}
                               </div>
@@ -660,7 +653,7 @@ export const CivicWall = () => {
 
                             {/* Card Content */}
                             <div className="py-1">
-                              <p className="text-gray-800 leading-relaxed text-sm font-semibold">{post.content}</p>
+                              <p className="text-on-surface leading-relaxed text-sm font-body">{post.content}</p>
                             </div>
 
                             {/* Media Attachment if present */}
@@ -743,14 +736,14 @@ export const CivicWall = () => {
 
                             {/* Action buttons */}
                             <div className="flex items-center justify-around">
-                              <button 
+                              <button
                                 onClick={() => handleLikePost(post.id)}
-                                className={`flex items-center gap-2 px-6 py-2 rounded-xl hover:bg-surface-container-high/50 font-bold transition-all text-sm ${
+                                className={`flex items-center gap-2 px-4 py-1.5 rounded-xl hover:bg-surface-container-high/50 font-bold transition-all text-sm ${
                                   isLiked ? 'text-primary' : 'text-on-surface-variant'
                                 }`}
                               >
-                                <span 
-                                  className="material-symbols-outlined text-xl"
+                                <span
+                                  className="material-symbols-outlined text-[18px]"
                                   style={{ fontVariationSettings: isLiked ? "'FILL' 1" : "'FILL' 0" }}
                                 >
                                   thumb_up
@@ -758,13 +751,13 @@ export const CivicWall = () => {
                                 <span>{isLiked ? 'Acknowledged' : 'Acknowledge'}</span>
                               </button>
 
-                              <button 
+                              <button
                                 onClick={() => setExpandedPost(isExpanded ? null : post.id)}
-                                className={`flex items-center gap-2 px-6 py-2 rounded-xl hover:bg-surface-container-high/50 font-bold transition-all text-sm ${
+                                className={`flex items-center gap-2 px-4 py-1.5 rounded-xl hover:bg-surface-container-high/50 font-bold transition-all text-sm ${
                                   isExpanded ? 'text-primary' : 'text-on-surface-variant'
                                 }`}
                               >
-                                <span className="material-symbols-outlined text-xl">chat_bubble</span>
+                                <span className="material-symbols-outlined text-[18px]">chat_bubble</span>
                                 <span>Comment</span>
                               </button>
 
@@ -780,7 +773,7 @@ export const CivicWall = () => {
                                   className="overflow-hidden mt-2"
                                 >
                                   <div className="bg-surface-container-low/50 rounded-2xl p-4 space-y-4">
-                                    <div className="text-[10px] font-bold text-gray-400 tracking-widest uppercase mb-2">
+                                    <div className="text-[9px] font-black text-on-surface-variant/50 tracking-widest uppercase mb-2">
                                       Perspectives ({post.civic_comments?.length || 0})
                                     </div>
                                     
@@ -799,27 +792,27 @@ export const CivicWall = () => {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                               <div className="flex items-baseline gap-2 flex-wrap">
-                                                <span className="font-bold text-xs text-gray-900">{comment.profiles?.name}</span>
+                                                <span className="font-bold text-xs text-on-surface">{comment.profiles?.name}</span>
                                                 <span className="text-[9px] font-bold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full uppercase tracking-wider">
                                                   {comment.profiles?.position?.split(' ')[0] || 'Delegate'}
                                                 </span>
                                                 
                                                 <div className="ml-auto flex items-center gap-2">
-                                                  <span className="text-[10px] text-gray-400 font-medium">
+                                                  <span className="text-[9px] text-on-surface-variant/50 font-medium">
                                                     {formatDistanceToNow(new Date(comment.created_at))} ago
                                                   </span>
                                                   {comment.user_id === user?.id && (
-                                                    <button 
+                                                    <button
                                                       onClick={() => handleDeleteComment(comment.id)}
-                                                      className="p-1 rounded-full hover:bg-red-50 text-red-400 hover:text-red-600 transition-colors opacity-0 group-hover/comment:opacity-100 shrink-0"
+                                                      className="p-1 rounded-full hover:bg-error/10 text-error/40 hover:text-error transition-colors opacity-0 group-hover/comment:opacity-100 shrink-0"
                                                       title="Discard Comment"
                                                     >
-                                                      <Trash2 className="w-3 h-3" />
+                                                      <span className="material-symbols-outlined text-[12px]">delete</span>
                                                     </button>
                                                   )}
                                                 </div>
                                               </div>
-                                              <p className="text-xs text-gray-600 mt-1 leading-relaxed">{comment.content}</p>
+                                              <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">{comment.content}</p>
                                             </div>
                                           </div>
                                         ))}
@@ -859,7 +852,7 @@ export const CivicWall = () => {
                                           disabled={isSubmittingComment || !commentInputs[post.id]?.trim()}
                                           className="bg-primary text-white text-xs font-bold px-4 py-2 rounded-full hover:bg-primary-container transition-all active:scale-95 disabled:opacity-40"
                                         >
-                                          {isSubmittingComment ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Send'}
+                                          {isSubmittingComment ? <span className="material-symbols-outlined text-[12px] animate-spin">refresh</span> : 'Send'}
                                         </button>
                                       </div>
                                     </div>
@@ -884,7 +877,7 @@ export const CivicWall = () => {
                   
                   <div className="flex items-center gap-4 mb-8 relative z-10">
                     <div className="w-12 h-12 bg-white/10 backdrop-blur-xl rounded-2xl flex items-center justify-center border border-white/20 shadow-2xl group-hover:rotate-6 transition-transform duration-700">
-                      <CheckCircle2 className="w-6 h-6 text-white" />
+                      <span className="material-symbols-outlined text-[24px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
                     </div>
                     <h4 className="font-display font-bold text-lg tracking-tight uppercase text-white">Rules of the House</h4>
                   </div>
@@ -1100,8 +1093,8 @@ export const CivicWall = () => {
       <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent className="bg-surface-container-lowest border-none rounded-3xl p-8 max-w-sm shadow-2xl">
           <AlertDialogHeader className="space-y-3">
-            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center">
-              <Trash2 className="w-5 h-5 text-red-500" />
+            <div className="w-12 h-12 bg-error/10 rounded-2xl flex items-center justify-center">
+              <span className="material-symbols-outlined text-[20px] text-error">delete</span>
             </div>
             <AlertDialogTitle className="font-headline font-bold text-xl text-gray-900">
               Delete this {deleteConfirmId?.type === 'post' ? 'post' : 'comment'}?

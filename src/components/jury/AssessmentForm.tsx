@@ -1,20 +1,10 @@
-import { Slider } from "@/components/ui/slider";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
-import { Save, Send, Edit, Lock, CheckCircle } from "lucide-react";
+import { Lock } from "lucide-react";
 import { useState, useEffect } from "react";
-import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
-interface RubricCriteria {
-  name: string;
-  maxScore: number;
-  subcriteria?: { [key: string]: number };
-}
+const RING_R = 58;
+const RING_C = 2 * Math.PI * RING_R; // ≈ 364.4
 
 interface StudentProfile {
   id: string;
@@ -29,575 +19,329 @@ interface StudentProfile {
   user_type: string;
 }
 
-interface AssessmentFormProps {
-  student: StudentProfile;
-  sessionId: string;
-  sessionTitle: string;
-  onSubmit: (scores: Record<string, any>, notes: string, status: 'draft' | 'submitted') => void;
-  initialScores?: Record<string, any>;
-  initialNotes?: string;
-  initialStatus?: 'draft' | 'submitted' | 'locked';
-  isLocked?: boolean;
+interface Session {
+  id: string;
+  title: string;
+  description?: string;
+  session_date?: string;
 }
 
-const RUBRICS: Record<string, Record<string, RubricCriteria>> = {
-  speaker: {
-    impartiality: { name: "Impartiality", maxScore: 30 },
-    leadership_control: { name: "Leadership & Control", maxScore: 25 },
-    knowledge_rules: { name: "Knowledge of Rules", maxScore: 20 },
-    clarity_communication: { name: "Clarity of Communication", maxScore: 15 },
-    time_management: { name: "Time Management", maxScore: 10 }
-  },
-  deputy_speaker: {
-    support_speaker: { name: "Support to the Speaker", maxScore: 30 },
-    impartiality: { name: "Impartiality", maxScore: 25 },
-    leadership: { name: "Leadership", maxScore: 20 },
-    communication_skills: { name: "Communication Skills", maxScore: 15 },
-    adaptability: { name: "Adaptability", maxScore: 10 }
-  },
-  administrator: {
-    recording_proceedings: {
-      name: "Recording Proceedings",
-      maxScore: 20,
-      subcriteria: {
-        accuracy: 7,     // Accuracy of notes
-        impartiality: 7, // Impartiality & objectivity
-        clarity: 6       // Clarity & use of templates
-      }
-    },
-    managing_agenda: {
-      name: "Managing the Agenda",
-      maxScore: 20,
-      subcriteria: {
-        adherence: 7,     // Adherence to schedule
-        time_reminders: 7, // Effective time reminders
-        coordination: 6   // Coordination with Speaker
-      }
-    },
-    documenting_bills: {
-      name: "Documenting Bills & Resolutions",
-      maxScore: 20,
-      subcriteria: {
-        registration: 7,   // Registering bills/resolutions
-        amendments: 7,     // Recording amendments
-        documentation: 6   // Timely & neat documentation
-      }
-    },
-    support_leadership: {
-      name: "Support to Speaker & Deputy Speaker",
-      maxScore: 15,
-      subcriteria: {
-        responsiveness: 5, // Responsiveness
-        updates: 5,        // Quick updates/data
-        conduct: 5         // Neutral & professional conduct
-      }
-    },
-    teamwork_support: {
-      name: "Teamwork & Mutual Support",
-      maxScore: 15,
-      subcriteria: {
-        coordination: 5,    // Role division & coordination
-        flexibility: 5,     // Stepping in when needed
-        communication: 5    // Communication & collaboration
-      }
-    },
-    attitude_commitment: {
-      name: "Attitude, Commitment & Presence",
-      maxScore: 10,
-      subcriteria: {
-        punctuality: 4,     // Punctuality & preparedness
-        composure: 3,       // Calm under pressure
-        enthusiasm: 3       // Enthusiasm & ownership
-      }
-    }
-  },
-  mp: {
-    content_substance: { 
-      name: "Content & Substance", 
-      maxScore: 30,
-      subcriteria: { 
-        relevance: 10, // Relevance to the topic
-        research: 10,  // Research  
-        originality: 10 // Originality/Creativity
-      }
-    },
-    communication_delivery: {
-      name: "Communication & Delivery",
-      maxScore: 25,
-      subcriteria: { 
-        clarity: 10,     // Clarity & Articulation
-        confidence: 10,  // Confidence & Pose
-        fluency: 5       // Fluency & Language
-      }
-    },
-    parliamentary_conduct: {
-      name: "Parliamentary Conduct & Decorum",
-      maxScore: 20,
-      subcriteria: { 
-        rules: 10,       // Respect for Rules & Procedures
-        engagement: 5,   // Engagement & Responsiveness
-        respect: 5       // Respect for others
-      }
-    },
-    argumentation_persuasion: {
-      name: "Argumentation & Persuasion",
-      maxScore: 15,
-      subcriteria: { 
-        strength: 10,    // Strength of Argument
-        appeal: 5        // Emotional & Logical Appeal
-      }
-    },
-    teamwork_collaboration: {
-      name: "Teamwork & Collaboration",
-      maxScore: 10,
-      subcriteria: { 
-        coordination: 5,      // Coordination with Team Members
-        active_learning: 5    // Active Learning
-      }
-    }
-  }
+interface ExistingAssessment {
+  student_id: string;
+  scores: any;
+  total_score: number;
+  status: 'draft' | 'submitted' | 'locked';
+  notes?: string;
+  session_id?: string;
+}
+
+export interface SessionScore {
+  sessionId: string;
+  score: number;
+}
+
+interface AssessmentFormProps {
+  student: StudentProfile;
+  sessions: Session[];
+  existingAssessments: ExistingAssessment[];
+  onSubmit: (scores: SessionScore[], notes: string, status: 'draft' | 'submitted') => Promise<void>;
+  isLocked?: boolean;
+  onCancel?: () => void;
+}
+
+const getGrade = (avg: number) => {
+  if (avg >= 9)   return 'Outstanding';
+  if (avg >= 7.5) return 'Excellent';
+  if (avg >= 6)   return 'Good';
+  if (avg >= 4.5) return 'Satisfactory';
+  if (avg > 0)    return 'Needs Improvement';
+  return '—';
 };
 
-// Function to get proper labels for subcriteria
-const getSubcriteriaLabel = (criteriaKey: string, subKey: string): string => {
-  const labels: Record<string, Record<string, string>> = {
-    recording_proceedings: {
-      accuracy: "Accuracy of notes",
-      impartiality: "Impartiality & objectivity",
-      clarity: "Clarity & use of templates"
-    },
-    managing_agenda: {
-      adherence: "Adherence to schedule",
-      time_reminders: "Effective time reminders",
-      coordination: "Coordination with Speaker"
-    },
-    documenting_bills: {
-      registration: "Registering bills/resolutions",
-      amendments: "Recording amendments",
-      documentation: "Timely & neat documentation"
-    },
-    support_leadership: {
-      responsiveness: "Responsiveness",
-      updates: "Quick updates/data",
-      conduct: "Neutral & professional conduct"
-    },
-    teamwork_support: {
-      coordination: "Role division & coordination",
-      flexibility: "Stepping in when needed",
-      communication: "Communication & collaboration"
-    },
-    attitude_commitment: {
-      punctuality: "Punctuality & preparedness",
-      composure: "Calm under pressure",
-      enthusiasm: "Enthusiasm & ownership"
-    },
-    content_substance: {
-      relevance: "Relevance to the topic",
-      research: "Research",
-      originality: "Originality/Creativity"
-    },
-    communication_delivery: {
-      clarity: "Clarity & Articulation",
-      confidence: "Confidence & Pose",
-      fluency: "Fluency & Language"
-    },
-    parliamentary_conduct: {
-      rules: "Respect for Rules & Procedures",
-      engagement: "Engagement & Responsiveness",
-      respect: "Respect for others"
-    },
-    argumentation_persuasion: {
-      strength: "Strength of Argument",
-      appeal: "Emotional & Logical Appeal"
-    },
-    teamwork_collaboration: {
-      coordination: "Coordination with Team Members",
-      active_learning: "Active Learning"
-    }
-  };
-  
-  return labels[criteriaKey]?.[subKey] || subKey.replace('_', ' ');
+const getStars = (avg: number) => {
+  if (avg >= 8)   return 5;
+  if (avg >= 6)   return 4;
+  if (avg >= 4.5) return 3;
+  if (avg >= 2.5) return 2;
+  if (avg > 0)    return 1;
+  return 0;
 };
 
-export const AssessmentForm = ({ 
+export const AssessmentForm = ({
   student,
-  sessionId,
-  sessionTitle,
-  onSubmit, 
-  initialScores = {}, 
-  initialNotes = "", 
-  initialStatus = 'draft',
-  isLocked = false 
+  sessions,
+  existingAssessments,
+  onSubmit,
+  isLocked = false,
+  onCancel,
 }: AssessmentFormProps) => {
-  const [scores, setScores] = useState<Record<string, any>>(initialScores || {});
-  const [notes, setNotes] = useState(initialNotes);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+
+  const buildInitialScores = () => {
+    const s: Record<string, string> = {};
+    sessions.forEach(sess => {
+      const ex = existingAssessments.find(a => a.session_id === sess.id);
+      s[sess.id] = ex ? String(ex.total_score) : '';
+    });
+    return s;
+  };
+
+  const [scores, setScores] = useState<Record<string, string>>(buildInitialScores);
+  const [notes, setNotes]   = useState(existingAssessments.find(a => a.notes)?.notes || '');
+  const [isSubmitting, setIsSubmitting]       = useState(false);
   const [assessmentsLocked, setAssessmentsLocked] = useState(false);
 
-  // Determine seat role from position (for UI rubric)
-  const getUIRubricRole = (position: string): keyof typeof RUBRICS => {
-    if (!position) return 'mp';
-    const pos = position.toLowerCase();
-    if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
-    if (pos.includes('speaker')) return 'speaker';
-    if (pos.includes('administrator') || pos.includes('admin')) return 'administrator';
-    if (pos.includes('minister') || pos.includes('shadow minister')) return 'mp';
-    return 'mp';
-  };
-
-  // Determine seat role from position (for database storage - constrained values)
-  const getDBSeatRole = (position: string): string => {
-    if (!position) return 'mp';
-    const pos = position.toLowerCase();
-    if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
-    if (pos.includes('speaker')) return 'speaker';
-    // Map admin/administrator and ministers to MP for DB constraint
-    if (pos.includes('administrator') || pos.includes('admin')) return 'mp';
-    if (pos.includes('minister') || pos.includes('shadow minister')) return 'mp';
-    return 'mp';
-  };
-
-  const seatRole = getUIRubricRole(student?.position || '');
-  const rubric = RUBRICS[seatRole] || RUBRICS.mp;
-
-  // Initialize scores with zero values - reset when student or session changes
   useEffect(() => {
-    if (!student || !rubric) return;
-    
-    // Always reset to zeros when student or session changes
-    const initialScoreState: Record<string, any> = {};
-    Object.keys(rubric).forEach(criteriaKey => {
-      const criteria = rubric[criteriaKey];
-      if (criteria.subcriteria) {
-        initialScoreState[criteriaKey] = {};
-        Object.keys(criteria.subcriteria).forEach(subKey => {
-          initialScoreState[criteriaKey][subKey] = 0;
-        });
-      } else {
-        initialScoreState[criteriaKey] = 0;
-      }
-    });
-    
-    // Only use initialScores if they exist for this specific student/session combo
-    setScores(Object.keys(initialScores || {}).length > 0 ? initialScores : initialScoreState);
-    setNotes(initialNotes || '');
-  }, [rubric, student, sessionId]); // Reset when session changes too
+    setScores(buildInitialScores());
+    setNotes(existingAssessments.find(a => a.notes)?.notes || '');
+  }, [student.id]);
 
-  // Check assessment lock setting
   useEffect(() => {
-    const checkAssessmentLock = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('system_settings')
-          .select('setting_value')
-          .eq('setting_key', 'assessments_locked')
-          .limit(1);
-        
-        if (error) throw error;
-        const lockValue = data && data.length ? data[0].setting_value : false;
-        setAssessmentsLocked(lockValue === true || lockValue === 'true');
-      } catch (error) {
-        console.error('Error checking assessment lock:', error);
-      }
-    };
-    
-    checkAssessmentLock();
+    supabase.from('system_settings').select('setting_value')
+      .eq('setting_key', 'assessments_locked').limit(1)
+      .then(({ data }) => {
+        const v = data?.[0]?.setting_value;
+        setAssessmentsLocked(v === true || v === 'true');
+      }).catch(() => {});
   }, []);
 
-  // Auto-save to localStorage every 2 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (scores && Object.keys(scores || {}).length > 0) {
-        localStorage.setItem(`assessment_draft_${student.id}`, JSON.stringify({
-          scores,
-          notes,
-          timestamp: new Date().toISOString()
-        }));
-        setLastSaved(new Date());
-      }
-    }, 2000);
+  const locked = isLocked || assessmentsLocked;
 
-    return () => clearInterval(interval);
-  }, [scores, notes, student.id]);
+  // Live average from entered values
+  const enteredValues = Object.values(scores)
+    .map(v => parseFloat(v))
+    .filter(v => !isNaN(v) && v >= 0);
+  const avg = enteredValues.length > 0
+    ? enteredValues.reduce((a, b) => a + b, 0) / enteredValues.length
+    : 0;
 
-  // Load from localStorage on mount
-  useEffect(() => {
-    const saved = localStorage.getItem(`assessment_draft_${student.id}`);
-    if (saved && Object.keys(initialScores || {}).length === 0) {
-      try {
-        const { scores: savedScores, notes: savedNotes } = JSON.parse(saved);
-        if (savedScores) {
-          setScores(savedScores);
-        }
-        if (savedNotes) {
-          setNotes(savedNotes);
-        }
-      } catch (error) {
-        console.error('Error loading saved assessment:', error);
-      }
-    }
-  }, [student.id, initialScores]);
+  const ringOffset = RING_C * (1 - Math.min(avg, 10) / 10);
+  const stars       = getStars(avg);
+  const grade       = getGrade(avg);
+  const hasScore    = enteredValues.length > 0;
 
-  const calculateTotal = () => {
-    if (!scores || !rubric || !student) return 0;
-    let total = 0;
-    try {
-      Object.keys(rubric).forEach(criteriaKey => {
-        const criteria = rubric[criteriaKey];
-        if (criteria && criteria.subcriteria) {
-          Object.keys(criteria.subcriteria).forEach(subKey => {
-            total += scores[criteriaKey]?.[subKey] || 0;
-          });
-        } else if (criteria) {
-          total += scores[criteriaKey] || 0;
-        }
-      });
-    } catch (error) {
-      console.error('Error calculating total:', error);
-      return 0;
-    }
-    return total;
-  };
-
-  const getMaxTotal = () => {
-    return Object.values(rubric).reduce((sum, criteria) => sum + criteria.maxScore, 0);
-  };
-
-  const updateScore = (criteriaKey: string, value: number, subKey?: string) => {
-    setScores(prev => {
-      const newScores = { ...prev };
-      if (subKey) {
-        if (!newScores[criteriaKey]) newScores[criteriaKey] = {};
-        newScores[criteriaKey][subKey] = value;
-      } else {
-        newScores[criteriaKey] = value;
-      }
-      return newScores;
-    });
+  const updateScore = (sessionId: string, raw: string) => {
+    if (raw === '') { setScores(p => ({ ...p, [sessionId]: '' })); return; }
+    const num = parseFloat(raw);
+    if (isNaN(num)) return;
+    setScores(p => ({ ...p, [sessionId]: String(Math.min(10, Math.max(0, num))) }));
   };
 
   const handleSubmit = async (status: 'draft' | 'submitted') => {
-    console.log('=== AssessmentForm Submit Triggered ===');
-    console.log('Submit status:', status);
-    console.log('Scores:', scores);
-    console.log('Notes:', notes);
-    console.log('Total:', total);
-    console.log('Student:', student);
-    
     setIsSubmitting(true);
     try {
-      console.log('Calling onSubmit callback...');
-      await onSubmit(scores, notes, status);
-      console.log('onSubmit callback completed successfully');
-      
-      if (status === 'submitted') {
-        localStorage.removeItem(`assessment_draft_${student.id}`);
-        console.log('Removed draft from localStorage');
-      }
-    } catch (error) {
-      console.error('=== AssessmentForm Submit Error ===');
-      console.error('Error details:', error);
-    } finally {
-      setIsSubmitting(false);
-      console.log('=== AssessmentForm Submit Complete ===');
-    }
+      const payload: SessionScore[] = sessions
+        .filter(s => scores[s.id] !== '' && !isNaN(parseFloat(scores[s.id])))
+        .map(s => ({ sessionId: s.id, score: parseFloat(scores[s.id]) }));
+      await onSubmit(payload, notes, status);
+    } catch {}
+    finally { setIsSubmitting(false); }
   };
 
-  const initials = student?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'UN';
-  const total = calculateTotal();
-  const maxTotal = getMaxTotal();
-  const percentage = maxTotal > 0 ? Math.round((total / maxTotal) * 100) : 0;
-  
-  // Early return if essential data is missing
-  if (!student || !rubric) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-  
-  
-  // Force cache clear for changes
-  useEffect(() => {
-    console.log('AssessmentForm component loaded with enhanced profile design');
-    console.log('Student data:', student);
-  }, [student]);
-
   return (
-    <div className="space-y-8">
-      {/* Session Info Badge */}
-      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="bg-white">Session Assessment</Badge>
-          <span className="text-sm font-medium text-blue-900">{sessionTitle}</span>
-        </div>
-      </div>
+    <div className="flex flex-col flex-1 overflow-hidden">
 
-      {/* Assessment Rubric Section - Clean separation */}
-      <div className="bg-white/20 backdrop-blur-lg rounded-3xl p-8 border border-white/25 shadow-xl">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-3xl flex items-center justify-center shadow-lg">
-              <Edit className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h3 className="text-2xl font-black text-slate-800">
-                {seatRole.replace('_', ' ').toUpperCase()} Assessment Rubric
-              </h3>
-              <p className="text-slate-600 font-semibold">Evaluate student performance across all criteria</p>
-            </div>
+      {/* ── Scrollable body ── */}
+      <div className="flex-1 overflow-y-auto p-8 grid grid-cols-1 md:grid-cols-12 gap-8 scroll-hide"
+           style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
+
+        {/* LEFT — session rows + notes */}
+        <div className="md:col-span-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <h3 className="font-headline font-bold text-lg text-on-surface flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary text-[20px]">analytics</span>
+              Session Performance
+            </h3>
+            <p className="text-[10px] text-on-surface-variant/50 font-body uppercase tracking-widest">
+              Score each session 0 – 10
+            </p>
           </div>
-          
-          {lastSaved && (
-            <div className="bg-white/30 backdrop-blur-sm rounded-xl px-4 py-2 border border-white/30">
-              <span className="text-sm font-semibold text-slate-600">
-                Last saved: {lastSaved.toLocaleTimeString()}
-              </span>
+
+          {sessions.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-14 text-center">
+              <span className="material-symbols-outlined text-[44px] text-on-surface-variant/20 mb-2">event_busy</span>
+              <div className="text-sm font-bold text-on-surface-variant/40 font-body">No sessions available yet</div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {sessions.map((session, idx) => {
+                const ex = existingAssessments.find(a => a.session_id === session.id);
+                const scored = ex?.status === 'submitted';
+                return (
+                  <div
+                    key={session.id}
+                    className={`flex items-center justify-between p-5 rounded-3xl border transition-all group ${
+                      scored
+                        ? 'bg-[#42d59a]/5 border-[#42d59a]/20'
+                        : 'bg-surface-container-low border-transparent hover:border-primary/20'
+                    }`}
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="w-11 h-11 rounded-2xl bg-surface-container-lowest flex items-center justify-center font-bold text-primary shadow-sm font-headline text-sm shrink-0">
+                        {String(idx + 1).padStart(2, '0')}
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-on-surface font-headline text-sm truncate">{session.title}</h4>
+                        {session.description && (
+                          <p className="text-xs text-on-surface-variant font-body mt-0.5 truncate max-w-[260px]">
+                            {session.description}
+                          </p>
+                        )}
+                        {session.session_date && (
+                          <p className="text-[10px] text-on-surface-variant/40 font-body mt-0.5">
+                            {new Date(session.session_date).toLocaleDateString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-4">
+                      <input
+                        type="number"
+                        min={0}
+                        max={10}
+                        step={0.5}
+                        placeholder="—"
+                        value={scores[session.id] ?? ''}
+                        onChange={e => updateScore(session.id, e.target.value)}
+                        disabled={locked}
+                        className="w-16 h-12 text-center text-xl font-bold font-headline rounded-2xl border-none bg-surface-container-lowest shadow-sm focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all placeholder:opacity-30 text-primary disabled:opacity-50"
+                      />
+                      <span className="text-on-surface-variant font-bold text-sm font-body">/ 10</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
-        </div>
 
-        <div className="space-y-6">
-          {Object.entries(rubric).map(([criteriaKey, criteria]) => (
-            <div key={criteriaKey} className="bg-white/15 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg">
-              <div className="flex items-center justify-between mb-4">
-                <h4 className="text-xl font-black text-slate-800">{criteria.name}</h4>
-                <div className="bg-white/40 backdrop-blur-sm rounded-xl px-4 py-2">
-                  <span className="text-lg font-black text-slate-800">
-                    {criteria.subcriteria 
-                      ? `${Object.values(scores[criteriaKey] || {}).reduce((a: number, b: number) => a + b, 0)} / ${criteria.maxScore}`
-                      : `${scores[criteriaKey] || 0} / ${criteria.maxScore}`
-                    }
-                  </span>
-                </div>
-              </div>
-
-              {criteria.subcriteria ? (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {Object.entries(criteria.subcriteria).map(([subKey, maxScore]) => (
-                    <div key={subKey} className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                      <div className="flex items-center justify-between mb-3">
-                        <label className="text-sm font-bold text-slate-700">
-                          {getSubcriteriaLabel(criteriaKey, subKey)}
-                        </label>
-                        <div className="bg-white/40 backdrop-blur-sm rounded-lg px-3 py-1">
-                          <span className="text-sm font-black text-slate-800">
-                            {scores[criteriaKey]?.[subKey] || 0} / {maxScore}
-                          </span>
-                        </div>
-                      </div>
-                      <Slider
-                        value={[scores[criteriaKey]?.[subKey] || 0]}
-                        onValueChange={([value]) => updateScore(criteriaKey, value, subKey)}
-                        max={maxScore}
-                        step={1}
-                        className="w-full"
-                        disabled={isLocked || initialStatus === 'locked' || assessmentsLocked}
-                      />
-                      <div className="flex justify-between text-xs font-semibold text-slate-500 mt-2">
-                        <span>0</span>
-                        <span>{Math.floor(maxScore / 2)}</span>
-                        <span>{maxScore}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 border border-white/20">
-                  <div className="mb-3">
-                    <div className="flex justify-between text-xs font-semibold text-slate-500 mb-2">
-                      <span>0</span>
-                      <span>{Math.floor(criteria.maxScore / 2)}</span>
-                      <span>{criteria.maxScore}</span>
-                    </div>
-                    <Slider
-                      value={[scores[criteriaKey] || 0]}
-                      onValueChange={([value]) => updateScore(criteriaKey, value)}
-                      max={criteria.maxScore}
-                      step={1}
-                      className="w-full"
-                      disabled={isLocked || initialStatus === 'locked' || assessmentsLocked}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-
-          {/* Notes Section */}
-          <div className="bg-white/15 backdrop-blur-sm rounded-2xl p-6 border border-white/20 shadow-lg">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg">
-                <Edit className="w-6 h-6 text-white" />
-              </div>
-              <h4 className="text-xl font-black text-slate-800">Additional Notes</h4>
-            </div>
+          {/* Notes */}
+          <div className="space-y-2">
+            <label className="font-bold text-on-surface-variant/60 text-[10px] uppercase tracking-widest font-body flex items-center gap-2">
+              <span className="material-symbols-outlined text-sm">sticky_note_2</span>
+              Jury Observations & Feedback
+            </label>
             <Textarea
               value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add any additional observations, comments, or feedback about the student's performance..."
-              rows={4}
-              disabled={isLocked || initialStatus === 'locked' || assessmentsLocked}
-              className="bg-white/30 backdrop-blur-sm border-white/40 text-slate-800 placeholder:text-slate-500 rounded-xl font-medium"
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Provide qualitative feedback on leadership qualities and decorum..."
+              rows={3}
+              disabled={locked}
+              className="bg-surface-container-high border-none rounded-[1.5rem] p-5 text-sm focus-visible:ring-4 focus-visible:ring-primary/10 transition-all placeholder:text-on-surface-variant/30 font-body resize-none"
             />
           </div>
+        </div>
 
-          {/* Action Buttons */}
-          {!isLocked && initialStatus !== 'locked' && !assessmentsLocked && (
-            <div className="flex flex-wrap gap-4 pt-6">
-              <Button
-                onClick={() => handleSubmit('draft')}
-                variant="outline"
-                disabled={isSubmitting}
-                className="bg-white/30 backdrop-blur-sm border-white/40 text-slate-800 hover:bg-white/40 hover:scale-105 transition-all duration-300 rounded-2xl px-6 py-3 font-bold"
-              >
-                <Save className="w-5 h-5 mr-2" />
-                Save Draft
-              </Button>
-              <Button
-                onClick={() => handleSubmit('submitted')}
-                disabled={isSubmitting || total === 0}
-                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white hover:scale-105 transition-all duration-300 rounded-2xl px-6 py-3 font-bold shadow-lg"
-              >
-                <Send className="w-5 h-5 mr-2" />
-                {initialStatus === 'submitted' ? 'Update Assessment' : 'Submit Assessment'}
-              </Button>
-              {initialStatus === 'submitted' && (
-                <div className="w-full bg-green-100/80 backdrop-blur-sm rounded-xl p-4 border border-green-200/50">
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                    <div className="text-sm">
-                      <span className="font-bold text-green-800">Assessment Previously Submitted</span>
-                      <p className="text-green-700">You can modify the scores and notes above, then click "Update Assessment" to save changes.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+        {/* RIGHT — live summary */}
+        <div className="md:col-span-4 space-y-5">
 
-          {(isLocked || initialStatus === 'locked' || assessmentsLocked) && (
-            <div className="bg-red-100/80 backdrop-blur-sm rounded-2xl p-6 border border-red-200/50 shadow-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Lock className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h4 className="text-lg font-black text-red-800">Assessment Locked</h4>
-                  <p className="text-red-700 font-semibold">
-                    {assessmentsLocked 
-                      ? "Assessments have been globally locked by the organizer and cannot be modified."
-                      : "This assessment has been locked and cannot be modified."
-                    }
-                  </p>
-                </div>
+          {/* Animated ring */}
+          <div className="bg-surface-container-high rounded-[2rem] p-6 text-center border border-outline-variant/30 flex flex-col items-center">
+            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-4 font-body">
+              Live Average Score
+            </p>
+            <div className="relative w-32 h-32 flex items-center justify-center mb-4">
+              <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 128 128">
+                <circle
+                  cx="64" cy="64" r={RING_R}
+                  fill="transparent" stroke="#e6e8ea" strokeWidth="8"
+                />
+                <circle
+                  cx="64" cy="64" r={RING_R}
+                  fill="transparent" stroke="#13298f" strokeWidth="8"
+                  strokeLinecap="round"
+                  strokeDasharray={RING_C}
+                  strokeDashoffset={ringOffset}
+                  className="transition-all duration-700 ease-out"
+                />
+              </svg>
+              <div className="text-center z-10">
+                <span className="text-4xl font-extrabold text-primary font-headline">
+                  {avg.toFixed(1)}
+                </span>
+                <p className="text-[10px] font-bold text-on-surface-variant font-body">OUT OF 10</p>
               </div>
             </div>
-          )}
+
+            {/* Stars */}
+            <div className="flex gap-0.5 mb-2">
+              {[1, 2, 3, 4, 5].map(i => (
+                <span
+                  key={i}
+                  className={`material-symbols-outlined text-base transition-colors duration-300 ${i <= stars ? 'text-primary' : 'text-outline-variant'}`}
+                  style={i <= stars ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                >star</span>
+              ))}
+            </div>
+            <p className="text-xs font-medium text-on-surface-variant font-body">
+              Grade: <span className="text-on-surface font-bold">{grade}</span>
+            </p>
+          </div>
+
+          {/* Tips */}
+          <div className="bg-primary/5 rounded-[2rem] p-5">
+            <h4 className="font-headline font-bold text-primary text-sm mb-3 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px]">lightbulb</span>
+              Assessment Tips
+            </h4>
+            <ul className="space-y-2.5">
+              {[
+                'Evaluate neutrality during conflict resolution.',
+                'Look for adherence to parliamentary terminology.',
+                'Reward inclusive behavior toward opposition delegates.',
+              ].map((tip, i) => (
+                <li key={i} className="flex gap-2 text-[11px] leading-relaxed font-body">
+                  <span
+                    className="material-symbols-outlined text-primary text-sm shrink-0"
+                    style={{ fontVariationSettings: "'FILL' 1" }}
+                  >check_circle</span>
+                  {tip}
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       </div>
+
+      {/* ── Footer ── */}
+      {!locked ? (
+        <div className="px-8 py-5 bg-surface-container-low border-t border-outline-variant/10 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
+          <button
+            onClick={() => handleSubmit('draft')}
+            disabled={isSubmitting || !hasScore}
+            className="flex items-center gap-2 text-on-surface-variant font-bold text-sm hover:text-on-surface transition-colors disabled:opacity-30 font-body"
+          >
+            <span className="material-symbols-outlined text-sm">cloud_upload</span>
+            Save Draft as Offline Copy
+          </button>
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            {onCancel && (
+              <button
+                onClick={onCancel}
+                className="flex-1 sm:flex-none px-6 py-3 rounded-full font-bold text-on-surface hover:bg-surface-container-high transition-all font-body text-sm"
+              >
+                Cancel
+              </button>
+            )}
+            <button
+              onClick={() => handleSubmit('submitted')}
+              disabled={isSubmitting || !hasScore}
+              className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-on-primary px-8 py-3 rounded-full font-bold shadow-[0_4px_16px_rgba(19,41,143,0.25)] transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 font-body text-sm"
+            >
+              <span
+                className="material-symbols-outlined text-sm"
+                style={{ fontVariationSettings: "'FILL' 1" }}
+              >verified</span>
+              Validate & Submit
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="px-8 py-5 bg-surface-container-low border-t border-outline-variant/10 flex items-center justify-center gap-3 shrink-0">
+          <Lock className="w-4 h-4 text-error/60" />
+          <span className="text-sm font-bold text-error/70 font-body">
+            {assessmentsLocked ? 'Assessments locked by organizer' : 'This assessment is locked'}
+          </span>
+        </div>
+      )}
     </div>
   );
 };

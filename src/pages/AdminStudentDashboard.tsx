@@ -1,112 +1,142 @@
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { StudentProfile } from '@/components/student/StudentProfile';
-import InteractiveParliamentTree from '@/components/student/InteractiveParliamentTree';
-import { StudentVotingTab } from '@/components/student/StudentVotingTab';
-import { ParliamentAgenda } from '@/components/student/ParliamentAgenda';
+import { CivicWall } from '@/components/student/CivicWall';
+import { ParliamentTree } from '@/components/student/ParliamentTree';
+import { GlobalSquare } from '@/components/student/GlobalSquare';
 import { AdminSpeechTracker } from '@/components/organizer/AdminSpeechTracker';
-import { SessionManagement } from '@/components/organizer/SessionManagement';
 import { BreakingNewsTicker } from '@/components/display/BreakingNewsTicker';
-import { Button } from "@/components/ui/button";
-import { LogOut, User, Users, Calendar, Mic, ListOrdered } from "lucide-react";
+import { StudentProfile } from '@/components/student/StudentProfile';
 
+type TabId = 'profile' | 'civic-wall' | 'tree' | 'messages' | 'speeches';
+
+const navItems: { id: TabId; label: string; icon: string; exclusive?: boolean }[] = [
+  { id: 'profile',       label: 'Profile',         icon: 'person' },
+  { id: 'civic-wall',    label: 'Civic Wall',       icon: 'public' },
+  { id: 'tree',          label: 'Parliament Tree',  icon: 'account_tree' },
+  { id: 'messages',      label: 'Civic Chat',       icon: 'chat' },
+  { id: 'speeches',      label: 'Speech Tracker',   icon: 'mic', exclusive: true },
+];
 
 export const AdminStudentDashboard = () => {
   const { profile, signOut } = useAuth();
+  const [activeTab, setActiveTab] = useState<TabId>('profile');
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'profile':    return <StudentProfile isOwnProfile />;
+      case 'civic-wall': return <CivicWall />;
+      case 'tree':       return <ParliamentTree />;
+      case 'speeches':   return <SpeechTrackerTabWrapper />;
+      default:           return <StudentProfile isOwnProfile />;
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-primary/10">
-      <BreakingNewsTicker />
-      {/* Header */}
-      <div className="sticky top-0 z-50 backdrop-blur-xl bg-background/80 border-b border-border/50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Young Indians Parliament
-              </h1>
-              <p className="text-sm text-muted-foreground">Admin Dashboard</p>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="font-medium text-foreground">{profile?.name}</p>
-                <p className="text-sm text-muted-foreground capitalize">{profile?.position} (Admin)</p>
-              </div>
-              <Button
-                onClick={signOut}
-                variant="outline"
-                size="sm"
-                className="gap-2"
+    <div className="flex min-h-screen bg-[#F3F4F6] font-body antialiased">
+
+      {/* ── Left Sidebar ── */}
+      <aside className="hidden md:flex flex-col h-screen w-64 fixed z-50 bg-white border-r border-outline-variant py-6 px-4">
+        <div className="mb-8 px-2 pt-2">
+          <h1 className="font-headline font-bold text-on-surface text-lg">The Civic Canvas</h1>
+          <p className="font-body text-on-surface-variant text-xs font-medium">Digital Diplomat Portal</p>
+          <span className="inline-flex items-center gap-1 mt-2 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-widest font-headline">
+            <span className="material-symbols-outlined text-[11px]" style={{ fontVariationSettings: "'FILL' 1" }}>admin_panel_settings</span>
+            Admin Student
+          </span>
+        </div>
+
+        <nav className="flex-1 space-y-1">
+          {navItems.map(item => (
+            <button
+              key={item.id}
+              onClick={() => setActiveTab(item.id)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-left ${
+                activeTab === item.id
+                  ? 'text-primary font-bold bg-primary/5 border-r-4 border-primary'
+                  : 'text-on-surface-variant hover:bg-surface-container font-medium'
+              }`}
+            >
+              <span
+                className="material-symbols-outlined text-[20px] shrink-0"
+                style={activeTab === item.id ? { fontVariationSettings: "'FILL' 1" } : undefined}
               >
-                <LogOut className="h-4 w-4" />
-                Sign Out
-              </Button>
-            </div>
+                {item.icon}
+              </span>
+              <span className="font-body text-sm whitespace-nowrap flex-1">{item.label}</span>
+              {item.exclusive && (
+                <span className="text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-headline shrink-0">
+                  Admin
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+
+        {/* Signed-in user */}
+        {profile && (
+          <div className="px-2 pt-4 border-t border-outline-variant/20 mb-4">
+            <p className="text-xs font-bold text-on-surface truncate">{profile.name}</p>
+            <p className="text-[10px] text-on-surface-variant font-body">{profile.position}</p>
           </div>
+        )}
+
+        <div className="px-2">
+          <button
+            onClick={() => signOut()}
+            className="flex items-center gap-2 font-body text-on-surface-variant hover:text-error transition-colors duration-200 font-medium text-sm"
+          >
+            <span className="material-symbols-outlined text-[20px]">logout</span>
+            <span>Sign Out</span>
+          </button>
         </div>
+      </aside>
+
+      {/* ── Mobile Bottom Nav ── */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant md:hidden flex justify-around items-center h-16 z-50">
+        {navItems.map(item => (
+          <button
+            key={item.id}
+            onClick={() => setActiveTab(item.id)}
+            className={`p-2 transition-colors ${activeTab === item.id ? 'text-primary' : 'text-on-surface-variant'}`}
+          >
+            <span
+              className="material-symbols-outlined text-[22px]"
+              style={activeTab === item.id ? { fontVariationSettings: "'FILL' 1" } : undefined}
+            >
+              {item.icon}
+            </span>
+          </button>
+        ))}
       </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="bg-card/50 backdrop-blur-sm border border-border/50 rounded-2xl shadow-xl p-6">
-          <div className="mb-6">
-            <h2 className="text-3xl font-bold text-foreground">
-              Welcome, <span className="text-primary">{profile?.name}</span>
-            </h2>
-            <p className="text-muted-foreground mt-2">
-              Managing as {profile?.position} with administrative privileges
-            </p>
-          </div>
-
-          <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-5 gap-2 mb-6">
-              <TabsTrigger value="profile" className="gap-2">
-                <User className="h-4 w-4" />
-                <span className="hidden sm:inline">My Profile</span>
-              </TabsTrigger>
-              <TabsTrigger value="parliament" className="gap-2">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Parliament Tree</span>
-              </TabsTrigger>
-              <TabsTrigger value="schedule" className="gap-2">
-                <Calendar className="h-4 w-4" />
-                <span className="hidden sm:inline">Schedule</span>
-              </TabsTrigger>
-              <TabsTrigger value="sessions" className="gap-2">
-                <ListOrdered className="h-4 w-4" />
-                <span className="hidden sm:inline">Sessions</span>
-              </TabsTrigger>
-              <TabsTrigger value="tracking" className="gap-2">
-                <Mic className="h-4 w-4" />
-                <span className="hidden sm:inline">Speech Tracking</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="profile">
-              {profile && <StudentProfile profile={profile} isOwnProfile={true} />}
-            </TabsContent>
-
-            <TabsContent value="parliament">
-              <InteractiveParliamentTree />
-            </TabsContent>
-
-            <TabsContent value="schedule">
-              <ParliamentAgenda />
-            </TabsContent>
-
-            <TabsContent value="sessions">
-              <SessionManagement />
-            </TabsContent>
-
-            <TabsContent value="tracking">
-              <AdminSpeechTracker />
-            </TabsContent>
-          </Tabs>
+      {/* ── Main Content ── */}
+      <main className="flex-1 md:ml-64 p-8 pb-24 md:pb-8">
+        {/* GlobalSquare always mounted, toggled via CSS — Party Wing hidden */}
+        <div className={activeTab === 'messages' ? '' : 'hidden'}>
+          <GlobalSquare hiddenChannels={['party']} />
         </div>
-      </div>
+        {activeTab !== 'messages' && renderTabContent()}
+      </main>
+
+      <BreakingNewsTicker />
     </div>
   );
 };
+
+// Wrapper to give the speech tracker tab a proper page heading
+const SpeechTrackerTabWrapper = () => (
+  <div>
+    <header className="mb-10">
+      <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+        Speech <span className="text-secondary">Tracker</span>
+      </h1>
+      <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+        <span className="material-symbols-outlined text-[12px]">mic</span>
+        Parliamentary Participation Monitor
+      </p>
+    </header>
+    <AdminSpeechTracker />
+  </div>
+);
 
 export default AdminStudentDashboard;

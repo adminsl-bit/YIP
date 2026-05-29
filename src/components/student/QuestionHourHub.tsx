@@ -1,10 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Send, TrendingUp, CheckCircle2, MessageSquare, Loader2,
-  Pencil, Trash2, Gavel, ChevronDown
-} from "lucide-react";
-import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
@@ -187,7 +183,7 @@ export const QuestionHourHub = () => {
           Legislative <span className="text-secondary">Question Hour</span>
         </h1>
         <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
-          <Gavel className="w-3 h-3" />
+          <span className="material-symbols-outlined text-[12px]">gavel</span>
           Parliamentary Deliberation Protocol
         </p>
       </header>
@@ -220,7 +216,7 @@ export const QuestionHourHub = () => {
                 <option value="">Select a Ministry</option>
                 {MINISTRIES.map(m => <option key={m} value={m}>{m}</option>)}
               </select>
-              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant w-4 h-4" />
+              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-on-surface-variant text-[18px]">expand_more</span>
             </div>
           </div>
 
@@ -243,8 +239,8 @@ export const QuestionHourHub = () => {
             className="w-full bg-primary text-white py-4 rounded-full font-headline font-black text-[11px] uppercase tracking-[0.15em] flex items-center justify-center gap-3 hover:bg-primary-container transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {submitting
-              ? <Loader2 className="w-4 h-4 animate-spin" />
-              : <>{editingId ? 'Update Question' : 'Seal & Submit'} <Send className="w-3.5 h-3.5 opacity-70" /></>}
+              ? <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span>
+              : <>{editingId ? 'Update Question' : 'Seal & Submit'} <span className="material-symbols-outlined text-[14px] opacity-70">send</span></>}
           </button>
 
           {editingId && (
@@ -259,7 +255,7 @@ export const QuestionHourHub = () => {
         </form>
 
         <div className="flex gap-3 p-5 bg-surface-container rounded-2xl">
-          <Gavel className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+          <span className="material-symbols-outlined text-[16px] text-primary shrink-0 mt-0.5">gavel</span>
           <div>
             <p className="text-[10px] font-black text-primary uppercase tracking-[0.15em] mb-1 font-headline">Protocol Notice</p>
             <p className="text-[12px] text-on-surface-variant/70 leading-relaxed font-body">
@@ -321,11 +317,11 @@ export const QuestionHourHub = () => {
         {/* Questions feed */}
         {loading ? (
           <div className="py-20 flex justify-center">
-            <Loader2 className="w-8 h-8 text-primary/20 animate-spin" />
+            <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
           </div>
         ) : allQuestions.length === 0 ? (
           <div className="py-16 flex flex-col items-center justify-center bg-surface-container-lowest rounded-3xl border border-outline-variant/15 border-dashed text-center px-8">
-            <MessageSquare className="w-8 h-8 text-on-surface-variant/20 mb-3" />
+            <span className="material-symbols-outlined text-[32px] text-on-surface-variant/20 mb-3">chat</span>
             <h4 className="text-sm font-headline font-black text-on-surface-variant/40 uppercase tracking-tight mb-1">No Active Questions</h4>
             <p className="text-xs text-on-surface-variant/30 max-w-xs leading-relaxed font-body">
               Be the first to initiate a question into the {ministryFilter === 'All Portfolios' ? 'assembly' : ministryFilter.replace('Ministry of ', '')} portfolio.
@@ -333,7 +329,7 @@ export const QuestionHourHub = () => {
           </div>
         ) : (
           <AnimatePresence>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {allQuestions.map((q, idx) => {
                 const isFeatured = idx === 0;
                 const initials = q.profiles?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'D';
@@ -347,10 +343,10 @@ export const QuestionHourHub = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.97 }}
                     transition={{ duration: 0.22 }}
-                    className={`bg-surface-container-lowest rounded-[28px] p-7 shadow-[0_4px_24px_0_rgba(46,65,172,0.04)] hover:shadow-[0_12px_40px_0_rgba(46,65,172,0.08)] hover:-translate-y-0.5 transition-all duration-300 group ${isFeatured ? 'md:col-span-2' : ''}`}
+                    className={`bg-surface-container-lowest rounded-[2rem] p-5 shadow-[0_4px_24px_0_rgba(46,65,172,0.04)] hover:shadow-[0_12px_40px_0_rgba(46,65,172,0.08)] hover:-translate-y-0.5 transition-all duration-300 group ${isFeatured ? 'md:col-span-2' : ''}`}
                   >
                     {/* Card header */}
-                    <div className="flex items-start justify-between mb-5">
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl overflow-hidden bg-primary/10 shrink-0 flex items-center justify-center">
                           {q.profiles?.photo_url
@@ -373,13 +369,13 @@ export const QuestionHourHub = () => {
                               onClick={() => { setEditingId(q.id); setSelectedMinistry(q.ministry); setQuestionContent(q.content); }}
                               className="p-1.5 rounded-lg text-on-surface-variant/40 hover:text-primary hover:bg-surface-container transition-all"
                             >
-                              <Pencil className="w-3 h-3" />
+                              <span className="material-symbols-outlined text-[12px]">edit</span>
                             </button>
                             <button
                               onClick={() => setDeleteId(q.id)}
                               className="p-1.5 rounded-lg text-on-surface-variant/40 hover:text-error hover:bg-surface-container transition-all"
                             >
-                              <Trash2 className="w-3 h-3" />
+                              <span className="material-symbols-outlined text-[12px]">delete</span>
                             </button>
                           </div>
                         )}
@@ -387,15 +383,15 @@ export const QuestionHourHub = () => {
                     </div>
 
                     {/* Question text */}
-                    <p className={`font-headline font-black text-on-surface italic leading-snug mb-6 tracking-tight ${isFeatured ? 'text-[22px] md:text-[26px]' : 'text-[16px]'}`}>
-                      "{q.content}"
+                    <p className={`font-body font-semibold text-on-surface leading-snug mb-4 ${isFeatured ? 'text-lg' : 'text-sm'}`}>
+                      {q.content}
                     </p>
 
                     {/* Official response for answered questions */}
                     {q.status === 'addressed' && q.answer && (
-                      <div className="bg-surface-container-low rounded-2xl p-4 mb-5 border-l-4 border-tertiary">
+                      <div className="bg-surface-container-low rounded-2xl p-3 mb-4 border-l-4 border-tertiary">
                         <div className="flex items-center gap-1.5 mb-2">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-tertiary" />
+                          <span className="material-symbols-outlined text-[14px] text-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                           <span className="text-[9px] font-black uppercase tracking-[0.15em] text-tertiary font-headline">Official Response</span>
                         </div>
                         <p className="text-xs text-on-surface-variant italic leading-relaxed font-body">"{q.answer}"</p>
@@ -403,14 +399,14 @@ export const QuestionHourHub = () => {
                     )}
 
                     {/* Footer */}
-                    <div className="flex items-center gap-4 pt-4 border-t border-surface-container-high">
+                    <div className="flex items-center gap-4 pt-3 border-t border-surface-container-high">
                       <button
                         onClick={() => handleVote(q.id, q.user_has_voted)}
                         className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest transition-all font-headline ${
                           q.user_has_voted ? 'text-primary' : 'text-on-surface-variant/40 hover:text-primary'
                         }`}
                       >
-                        <TrendingUp className="w-3.5 h-3.5" />
+                        <span className="material-symbols-outlined text-[14px]">trending_up</span>
                         {q.votes_count} Supports
                       </button>
                       {q.votes_count > 1 && q.status === 'pending' && !q.user_has_voted && (
@@ -434,8 +430,8 @@ export const QuestionHourHub = () => {
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent className="bg-surface-container-lowest border-none rounded-3xl p-8 max-w-sm shadow-2xl">
           <AlertDialogHeader className="space-y-3">
-            <div className="w-12 h-12 bg-red-50 rounded-2xl flex items-center justify-center">
-              <Trash2 className="w-5 h-5 text-red-500" />
+            <div className="w-12 h-12 bg-error/10 rounded-2xl flex items-center justify-center">
+              <span className="material-symbols-outlined text-[20px] text-error">delete</span>
             </div>
             <AlertDialogTitle className="font-headline font-bold text-xl text-on-surface">Retract Question?</AlertDialogTitle>
             <AlertDialogDescription className="font-body text-sm text-on-surface-variant">

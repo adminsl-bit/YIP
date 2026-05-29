@@ -45,13 +45,17 @@ export const useAdminSpeechTracking = () => {
   const fetchStudents = useCallback(async (silent = false) => {
     try {
       if (!silent) setLoading(true);
-      const { data, error } = await supabase
-        .from('admin_student_dashboard')
-        .select('*')
-        .order('serial_number', { ascending: true });
+      const [{ data, error }, { data: specialIds }] = await Promise.all([
+        supabase
+          .from('admin_student_dashboard')
+          .select('*')
+          .order('serial_number', { ascending: true }),
+        supabase.rpc('get_non_scoreable_student_ids'),
+      ]);
 
       if (error) throw error;
-      setStudents(data || []);
+      const excluded = new Set<string>((specialIds as string[] | null) || []);
+      setStudents((data || []).filter(s => !excluded.has(s.user_id)));
       initialLoadDone.current = true;
     } catch (error: any) {
       console.error('Error fetching students:', error);

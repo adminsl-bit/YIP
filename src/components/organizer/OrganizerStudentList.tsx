@@ -11,6 +11,14 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const ITEMS_PER_PAGE = 20;
 
 const PARTY_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
+
+const COMMITTEES = [
+  'IT & Education',
+  'Women and Child Safety',
+  'Health & Sports',
+  'Environment & Road Transport',
+  'Tourism and Culture',
+] as const;
 const partyLetter = (n: number) => (!n || n < 1) ? null : (PARTY_LETTERS[n - 1] ?? n.toString());
 const partyLabel = (n: number, name?: string | null) => {
   const letter = partyLetter(n);
@@ -1185,16 +1193,14 @@ export const OrganizerStudentList = () => {
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Committee</label>
-                <input
-                  list="reg-committees"
+                <select
                   value={registerForm.committee}
                   onChange={e => setRegisterForm(f => ({ ...f, committee: e.target.value }))}
-                  placeholder="Type or select committee"
                   className="w-full h-12 bg-surface-container border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
-                />
-                <datalist id="reg-committees">
-                  {uniqueCommittees.map(c => <option key={c} value={c} />)}
-                </datalist>
+                >
+                  <option value="">Select committee</option>
+                  {COMMITTEES.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Constituency</label>

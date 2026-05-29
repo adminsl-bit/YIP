@@ -1,11 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import {
-  Search,
-  Crown,
-  X
-} from 'lucide-react';
 import { StudentProfile } from './StudentProfile';
 
 interface Profile {
@@ -148,7 +143,7 @@ export const ParliamentTree = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-outline w-4 h-4" />
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline text-[16px]">search</span>
           </div>
         </header>
 
@@ -160,7 +155,7 @@ export const ParliamentTree = () => {
           {speaker ? (
             <div
               onClick={() => handleMemberClick(speaker.id)}
-              className="glass-card p-4 rounded-xl shadow-lg border border-white/50 w-72 cursor-pointer hover:shadow-xl transition-all group"
+              className="bg-surface-container-lowest p-4 rounded-xl shadow-md border border-outline-variant/10 w-72 cursor-pointer hover:shadow-xl transition-all group"
             >
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 bg-primary/10 rounded-lg overflow-hidden border border-primary/20 flex-shrink-0 flex items-center justify-center text-primary text-xl font-bold">
@@ -174,12 +169,12 @@ export const ParliamentTree = () => {
                   <p className="text-primary font-bold text-[10px]">Speaker of the House</p>
                 </div>
                 <div className="ml-auto">
-                  <Crown className="w-5 h-5 text-primary fill-primary" />
+                  <span className="material-symbols-outlined text-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>crown</span>
                 </div>
               </div>
             </div>
           ) : (
-            <div className="glass-card p-4 rounded-xl border border-white/50 w-72 opacity-40 text-center">
+            <div className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/10 w-72 opacity-40 text-center">
               <p className="text-xs text-on-surface-variant">No Speaker assigned</p>
             </div>
           )}
@@ -289,7 +284,7 @@ export const ParliamentTree = () => {
                 onClick={() => setSelectedProfile(null)}
                 className="absolute top-6 right-6 z-50 w-10 h-10 bg-white/90 hover:bg-white text-slate-500 rounded-2xl flex items-center justify-center shadow-lg transition-all backdrop-blur-md group border border-white/60"
               >
-                <X className="w-5 h-5 transition-transform group-hover:rotate-90" />
+                <span className="material-symbols-outlined text-[20px] transition-transform group-hover:rotate-90">close</span>
               </button>
 
               <div className="overflow-y-auto flex-1 px-4 md:px-8 pb-8">
@@ -310,7 +305,7 @@ const ExecutiveCard = ({ person, onClick }: { person: Profile; onClick: (id: str
   return (
     <div
       onClick={() => onClick(person.id)}
-      className="glass-card p-3 rounded-xl shadow-sm border border-white/40 w-56 flex-shrink-0 cursor-pointer hover:scale-[1.02] transition-transform"
+      className="bg-surface-container-lowest p-3 rounded-xl shadow-sm border border-outline-variant/10 w-56 flex-shrink-0 cursor-pointer hover:scale-[1.02] transition-transform"
     >
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg overflow-hidden bg-surface-container flex-shrink-0 flex items-center justify-center text-xs font-bold text-primary">

@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import {
-  Vote, CheckCircle, ThumbsUp, ThumbsDown, Loader2, Lock,
-  Landmark, User, Building2, ShieldCheck
-} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { toast } from "@/hooks/use-toast";
@@ -100,7 +96,7 @@ export const PollVoting = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
         <p className="text-[10px] font-black uppercase text-on-surface-variant tracking-widest font-headline">Loading Chamber...</p>
       </div>
     );
@@ -117,7 +113,7 @@ export const PollVoting = () => {
           Parliamentary <span className="text-secondary">Ballot Chamber</span>
         </h1>
         <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
-          <Landmark className="w-3 h-3" />
+          <span className="material-symbols-outlined text-[12px]">account_balance</span>
           Active Legislative Floor
         </p>
       </header>
@@ -129,14 +125,14 @@ export const PollVoting = () => {
 
           {!settings.voting_enabled && (
             <div className="bg-surface-container-lowest rounded-3xl p-12 text-center shadow-[0_8px_32px_0_rgba(46,65,172,0.04)]">
-              <Vote className="w-10 h-10 text-on-surface-variant/30 mx-auto mb-4" />
+              <span className="material-symbols-outlined text-[40px] text-on-surface-variant/30 block mx-auto mb-4">how_to_vote</span>
               <p className="text-on-surface-variant font-medium font-body">Voting is currently disabled by the organizer.</p>
             </div>
           )}
 
           {settings.voting_enabled && polls.length === 0 && (
             <div className="bg-surface-container-lowest rounded-3xl p-16 text-center shadow-[0_8px_32px_0_rgba(46,65,172,0.04)]">
-              <Vote className="w-10 h-10 text-on-surface-variant/30 mx-auto mb-4" />
+              <span className="material-symbols-outlined text-[40px] text-on-surface-variant/30 block mx-auto mb-4">how_to_vote</span>
               <p className="text-on-surface-variant font-medium font-body">No active resolutions at this time.</p>
               <p className="text-on-surface-variant/60 text-xs font-body mt-1">The organizer will open voting when a resolution is ready.</p>
             </div>
@@ -162,7 +158,7 @@ export const PollVoting = () => {
                       <div className="flex flex-wrap gap-x-6 gap-y-3">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
-                            <User className="w-4 h-4 text-primary" />
+                            <span className="material-symbols-outlined text-[16px] text-primary">person</span>
                           </div>
                           <div>
                             <p className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider font-headline">Proposed By</p>
@@ -171,7 +167,7 @@ export const PollVoting = () => {
                         </div>
                         <div className="flex items-center gap-2 border-l border-outline-variant/30 pl-6">
                           <div className="w-8 h-8 rounded-full bg-secondary-fixed flex items-center justify-center shrink-0">
-                            <Building2 className="w-4 h-4 text-secondary" />
+                            <span className="material-symbols-outlined text-[16px] text-secondary">domain</span>
                           </div>
                           <div>
                             <p className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider font-headline">Committee</p>
@@ -180,7 +176,7 @@ export const PollVoting = () => {
                         </div>
                         <div className="flex items-center gap-2 border-l border-outline-variant/30 pl-6">
                           <div className="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center shrink-0">
-                            <ShieldCheck className="w-4 h-4 text-on-surface-variant" />
+                            <span className="material-symbols-outlined text-[16px] text-on-surface-variant" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
                           </div>
                           <div>
                             <p className="text-[10px] uppercase font-bold text-on-surface-variant tracking-wider font-headline">Status</p>
@@ -211,13 +207,13 @@ export const PollVoting = () => {
                     </p>
                   )}
                   {hasVoted && (
-                    <div className="flex items-center gap-4 p-5 rounded-2xl bg-emerald-50 border border-emerald-100 mb-8">
-                      <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shrink-0">
-                        <CheckCircle className="w-5 h-5 text-white" strokeWidth={2.5} />
+                    <div className="flex items-center gap-4 p-5 rounded-2xl bg-tertiary-fixed/20 border border-tertiary-fixed-dim/30 mb-8">
+                      <div className="w-10 h-10 bg-on-tertiary-container rounded-full flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[20px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                       </div>
                       <div>
-                        <p className="text-emerald-800 font-bold font-headline">Vote Cast Successfully</p>
-                        <p className="text-emerald-600 text-xs font-body mt-0.5">Your choice: <span className="font-bold">{votedChoice}</span></p>
+                        <p className="text-tertiary-container font-bold font-headline">Vote Cast Successfully</p>
+                        <p className="text-on-surface-variant text-xs font-body mt-0.5">Your choice: <span className="font-bold">{votedChoice}</span></p>
                       </div>
                     </div>
                   )}
@@ -228,26 +224,26 @@ export const PollVoting = () => {
                           <button
                             disabled={hasVoted}
                             onClick={() => setSelectedOptions(prev => ({ ...prev, [poll.id]: getKey(options[0]) }))}
-                            className={`flex-1 group/btn flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${
+                            className={`flex-1 group/btn flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all ${
                               selectedOptions[poll.id] === getKey(options[0])
-                                ? 'border-primary-container bg-primary-container/10'
-                                : 'bg-surface-container border-outline-variant/40 hover:border-primary-container hover:bg-primary-container/5'
+                                ? 'border-[#42d59a] bg-[#42d59a]/10 shadow-[0_0_0_4px_rgba(66,213,154,0.08)]'
+                                : 'bg-surface-container border-outline-variant hover:border-[#42d59a]/60 hover:bg-[#42d59a]/5'
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
-                            <ThumbsUp className={`w-7 h-7 mb-1 group-hover/btn:scale-110 transition-transform text-primary-container ${selectedOptions[poll.id] === getKey(options[0]) ? 'scale-110' : ''}`} strokeWidth={1.5} />
-                            <span className="font-bold font-headline text-primary-container text-sm">{getText(options[0])}</span>
+                            <span className={`material-symbols-outlined text-[32px] mb-1.5 transition-transform group-hover/btn:scale-110 ${selectedOptions[poll.id] === getKey(options[0]) ? 'scale-110 text-[#2bb87c]' : 'text-on-surface-variant'}`} style={{ fontVariationSettings: selectedOptions[poll.id] === getKey(options[0]) ? "'FILL' 1" : "'FILL' 0" }}>thumb_up</span>
+                            <span className={`font-bold font-headline text-sm ${selectedOptions[poll.id] === getKey(options[0]) ? 'text-[#2bb87c]' : 'text-on-surface'}`}>{getText(options[0])}</span>
                           </button>
                           <button
                             disabled={hasVoted}
                             onClick={() => setSelectedOptions(prev => ({ ...prev, [poll.id]: getKey(options[1]) }))}
-                            className={`flex-1 group/btn flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${
+                            className={`flex-1 group/btn flex flex-col items-center justify-center p-5 rounded-2xl border-2 transition-all ${
                               selectedOptions[poll.id] === getKey(options[1])
-                                ? 'border-secondary-container bg-secondary-container/10'
-                                : 'bg-surface-container border-outline-variant/40 hover:border-secondary-container hover:bg-secondary-container/5'
+                                ? 'border-error bg-error/10 shadow-[0_0_0_4px_rgba(186,26,26,0.07)]'
+                                : 'bg-surface-container border-outline-variant hover:border-error/50 hover:bg-error/5'
                             } disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
-                            <ThumbsDown className={`w-7 h-7 mb-1 group-hover/btn:scale-110 transition-transform text-secondary-container ${selectedOptions[poll.id] === getKey(options[1]) ? 'scale-110' : ''}`} strokeWidth={1.5} />
-                            <span className="font-bold font-headline text-secondary-container text-sm">{getText(options[1])}</span>
+                            <span className={`material-symbols-outlined text-[32px] mb-1.5 transition-transform group-hover/btn:scale-110 ${selectedOptions[poll.id] === getKey(options[1]) ? 'scale-110 text-error' : 'text-on-surface-variant'}`} style={{ fontVariationSettings: selectedOptions[poll.id] === getKey(options[1]) ? "'FILL' 1" : "'FILL' 0" }}>thumb_down</span>
+                            <span className={`font-bold font-headline text-sm ${selectedOptions[poll.id] === getKey(options[1]) ? 'text-error' : 'text-on-surface'}`}>{getText(options[1])}</span>
                           </button>
                         </div>
                       ) : (
@@ -262,8 +258,8 @@ export const PollVoting = () => {
                                 onClick={() => setSelectedOptions(prev => ({ ...prev, [poll.id]: optKey }))}
                                 className={`w-full text-left px-5 py-4 rounded-2xl border-2 transition-all font-body font-semibold text-sm ${
                                   isSelected
-                                    ? 'border-primary-container bg-primary-container/10 text-primary'
-                                    : 'bg-surface-container border-outline-variant/40 hover:border-primary-container hover:bg-primary-container/5 text-on-surface'
+                                    ? 'border-primary bg-primary/10 text-primary shadow-[0_0_0_3px_rgba(19,41,143,0.08)]'
+                                    : 'bg-surface-container border-outline-variant hover:border-primary/40 hover:bg-primary/5 text-on-surface'
                                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                               >
                                 {getText(opt)}
@@ -276,29 +272,29 @@ export const PollVoting = () => {
                         <button
                           onClick={() => handleVote(poll)}
                           disabled={submitting === poll.id}
-                          className="w-full py-4 rounded-2xl bg-gradient-to-br from-primary to-primary-container text-white font-bold font-headline shadow-md hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-70 flex items-center justify-center gap-2"
+                          className="w-full py-4 rounded-2xl bg-gradient-to-br from-[#0f1f7a] via-primary to-[#2e4fd6] text-white font-bold font-headline shadow-[0_6px_24px_rgba(19,41,143,0.40)] hover:shadow-[0_8px_28px_rgba(19,41,143,0.50)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-70 flex items-center justify-center gap-2"
                         >
                           {submitting === poll.id
-                            ? <><Loader2 className="w-4 h-4 animate-spin" /><span>Casting Vote...</span></>
-                            : <><Vote className="w-4 h-4" /><span>Cast Vote</span></>}
+                            ? <><span className="material-symbols-outlined text-[16px] animate-spin">refresh</span><span>Casting Vote...</span></>
+                            : <><span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_vote</span><span>Cast Vote</span></>}
                         </button>
                       ) : !hasVoted ? (
                         <button disabled className="w-full py-4 rounded-2xl bg-outline-variant/30 text-on-surface-variant cursor-not-allowed font-bold font-headline flex items-center justify-center gap-2">
-                          <Lock className="w-4 h-4" />
+                          <span className="material-symbols-outlined text-[16px]">lock</span>
                           <span>Cast Vote (Waiting for Organizer)</span>
                         </button>
                       ) : null}
                     </div>
                     <div className="bg-surface-container-low rounded-2xl p-5">
                       <h3 className="font-bold font-headline text-primary mb-4 flex items-center gap-2 text-sm">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                        <div className="w-1.5 h-1.5 bg-on-tertiary-container rounded-full animate-pulse" />
                         Live Results
                       </h3>
                       {poll.show_results_publicly ? (
                         <VoteBars pollId={poll.id} options={options} refreshTrigger={refreshTrigger} />
                       ) : (
                         <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
-                          <Lock className="w-6 h-6 text-on-surface-variant/30" />
+                          <span className="material-symbols-outlined text-[24px] text-on-surface-variant/30">lock</span>
                           <p className="text-on-surface-variant text-xs font-body">Results visible once the organizer makes them public.</p>
                         </div>
                       )}
@@ -350,7 +346,7 @@ const LastPassedBanner = ({ poll }: { poll: Poll }) => (
   <div className="bg-primary-container rounded-3xl p-8 shadow-xl flex flex-col md:flex-row items-center gap-8 relative overflow-hidden">
     <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-24 -mt-24 pointer-events-none" />
     <div className="w-20 h-20 bg-tertiary-fixed rounded-full flex items-center justify-center shrink-0 shadow-lg">
-      <CheckCircle className="w-9 h-9 text-on-tertiary-fixed" strokeWidth={2} />
+      <span className="material-symbols-outlined text-[36px] text-on-tertiary-fixed" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
     </div>
     <div className="flex-1 text-center md:text-left">
       <span className="inline-block px-3 py-1 rounded-full bg-white/20 text-[10px] font-black tracking-widest mb-2 text-white uppercase font-headline">Last Outcome</span>
