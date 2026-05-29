@@ -19,12 +19,9 @@ interface OrganizerRow {
   created_at: string;
 }
 
-const blankForm = {
-  name: '',
-  email: '',
-  password: '',
-  event_id: '',
-};
+const blankForm = { name: '', email: '', password: '', event_id: '' };
+
+const inputCls = 'w-full bg-surface-container rounded-xl px-4 py-2.5 text-sm font-body border-0 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all';
 
 export const OrganizerManager = () => {
   const [organizers, setOrganizers] = useState<OrganizerRow[]>([]);
@@ -69,31 +66,22 @@ export const OrganizerManager = () => {
     }
     setSaving(true);
     try {
-      // Create auth user
-      const { data: authData, error: authError } = await supabase.auth.admin
-        ? // If admin API is available (service role), use it
-          { data: null, error: new Error('Use signup flow') }
-        : { data: null, error: new Error('Use signup flow') };
-
-      // Use the public sign-up API to create the account
       const { data: signupData, error: signupError } = await supabase.auth.signUp({
         email: form.email.trim(),
         password: form.password,
-        options: {
-          data: { full_name: form.name.trim() },
-          emailRedirectTo: undefined,
-        },
+        options: { data: { full_name: form.name.trim() }, emailRedirectTo: undefined },
       });
 
       if (signupError) throw signupError;
       if (!signupData.user) throw new Error('User creation failed');
 
-      // Upsert profile as organizer
       const profilePayload: Record<string, unknown> = {
         user_id: signupData.user.id,
         name: form.name.trim(),
         user_type: 'organizer',
         position: 'Organizer',
+        serial_number: 0,
+        party_number: 0,
       };
       if (form.event_id) profilePayload.event_id = form.event_id;
 
@@ -103,7 +91,6 @@ export const OrganizerManager = () => {
 
       if (profileError) throw profileError;
 
-      // Add to event_participants if event selected
       if (form.event_id) {
         await supabase.from('event_participants').insert({
           event_id: form.event_id,
@@ -145,55 +132,51 @@ export const OrganizerManager = () => {
         </div>
         <button
           onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white font-headline font-bold text-sm shadow-sm hover:bg-primary/90 transition"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-lg shadow-primary/10 hover:scale-[1.02] active:scale-[0.99] transition-all"
         >
           <span className="material-symbols-outlined text-[18px]">person_add</span>
           New Organizer
         </button>
       </header>
 
-      {/* Create form */}
       {showForm && (
-        <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm p-6 space-y-5">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-[0_2px_12px_0_rgba(19,41,143,0.06)] border border-outline-variant/10 p-6 space-y-5">
           <h2 className="font-headline font-bold text-on-surface text-base">Create Organizer Account</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-on-surface-variant mb-1 font-headline uppercase tracking-wider">Full Name *</label>
+              <label className="block text-xs font-bold text-on-surface-variant mb-1.5 font-headline uppercase tracking-wider">Full Name *</label>
               <input
-                className="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className={inputCls}
                 placeholder="Organizer name"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               />
             </div>
-
             <div>
-              <label className="block text-xs font-bold text-on-surface-variant mb-1 font-headline uppercase tracking-wider">Email *</label>
+              <label className="block text-xs font-bold text-on-surface-variant mb-1.5 font-headline uppercase tracking-wider">Email *</label>
               <input
                 type="email"
-                className="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className={inputCls}
                 placeholder="organizer@example.com"
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
               />
             </div>
-
             <div>
-              <label className="block text-xs font-bold text-on-surface-variant mb-1 font-headline uppercase tracking-wider">Temporary Password *</label>
+              <label className="block text-xs font-bold text-on-surface-variant mb-1.5 font-headline uppercase tracking-wider">Temporary Password *</label>
               <input
                 type="password"
-                className="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className={inputCls}
                 placeholder="Minimum 6 characters"
                 value={form.password}
                 onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
               />
             </div>
-
             <div>
-              <label className="block text-xs font-bold text-on-surface-variant mb-1 font-headline uppercase tracking-wider">Assign to Event</label>
+              <label className="block text-xs font-bold text-on-surface-variant mb-1.5 font-headline uppercase tracking-wider">Assign to Event</label>
               <select
-                className="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className={inputCls}
                 value={form.event_id}
                 onChange={e => setForm(f => ({ ...f, event_id: e.target.value }))}
               >
@@ -203,15 +186,15 @@ export const OrganizerManager = () => {
             </div>
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 font-body">
-            <span className="font-bold">Note:</span> Share the email and temporary password with the organizer. They should change their password on first login.
+          <div className="bg-secondary/5 rounded-xl p-3 text-xs text-on-surface-variant font-body">
+            <span className="font-bold text-on-surface">Note:</span> Share the email and temporary password with the organizer. They should change their password on first login.
           </div>
 
           <div className="flex gap-3 pt-2">
             <button
               onClick={handleCreate}
               disabled={saving}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white font-headline font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-lg shadow-primary/10 hover:scale-[1.02] active:scale-[0.99] disabled:opacity-50 transition-all"
             >
               {saving ? (
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -222,7 +205,7 @@ export const OrganizerManager = () => {
             </button>
             <button
               onClick={() => { setShowForm(false); setForm(blankForm); }}
-              className="px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface-variant font-body text-sm hover:bg-surface-container transition"
+              className="px-6 py-2.5 rounded-full border border-outline-variant/10 bg-surface-container text-on-surface-variant font-body text-sm hover:bg-surface-container-high transition-all"
             >
               Cancel
             </button>
@@ -230,12 +213,11 @@ export const OrganizerManager = () => {
         </div>
       )}
 
-      {/* Organizers table */}
-      <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm overflow-hidden">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-[0_2px_12px_0_rgba(19,41,143,0.06)] border border-outline-variant/10 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm font-body">
             <thead>
-              <tr className="border-b border-outline-variant/30 bg-surface-container/50">
+              <tr className="border-b border-outline-variant/10 bg-surface-container/50">
                 {['Name','Location','Assigned Event','Joined'].map(h => (
                   <th key={h} className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline whitespace-nowrap">
                     {h}

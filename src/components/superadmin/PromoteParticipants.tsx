@@ -26,6 +26,8 @@ interface LeaderboardEntry {
 
 const LEVEL_ORDER: Record<string, number> = { city: 1, regional: 2, national: 3 };
 
+const selectCls = 'w-full bg-surface-container rounded-xl px-4 py-2.5 text-sm font-body border-0 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all disabled:opacity-50';
+
 export const PromoteParticipants = () => {
   const [events, setEvents] = useState<EventOption[]>([]);
   const [fromEvent, setFromEvent] = useState('');
@@ -57,7 +59,6 @@ export const PromoteParticipants = () => {
     else setLeaderboard([]);
   }, [fromEvent, fetchLeaderboard]);
 
-  // Only show destination events at a higher level than source
   const sourceLevel = events.find(e => e.id === fromEvent)?.level;
   const toEventOptions = events.filter(e =>
     sourceLevel && LEVEL_ORDER[e.level] > LEVEL_ORDER[sourceLevel]
@@ -76,7 +77,7 @@ export const PromoteParticipants = () => {
 
   const handlePromote = async () => {
     if (!fromEvent || !toEvent || selected.size === 0) {
-      toast({ title: 'Select a source event, destination event, and at least one participant', variant: 'destructive' });
+      toast({ title: 'Select source event, destination event, and at least one participant', variant: 'destructive' });
       return;
     }
     setPromoting(true);
@@ -89,7 +90,10 @@ export const PromoteParticipants = () => {
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: `${selected.size} participant${selected.size !== 1 ? 's' : ''} promoted`, description: 'They will now appear in the destination event.' });
+      toast({
+        title: `${selected.size} participant${selected.size !== 1 ? 's' : ''} promoted`,
+        description: 'They will now appear in the destination event.',
+      });
       clearAll();
     }
   };
@@ -115,14 +119,14 @@ export const PromoteParticipants = () => {
       </header>
 
       {/* Event selectors */}
-      <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm p-6">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-[0_2px_12px_0_rgba(19,41,143,0.06)] border border-outline-variant/10 p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-xs font-bold text-on-surface-variant mb-2 font-headline uppercase tracking-wider">
               Source Event (promote FROM)
             </label>
             <select
-              className="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className={selectCls}
               value={fromEvent}
               onChange={e => { setFromEvent(e.target.value); setToEvent(''); }}
             >
@@ -138,7 +142,7 @@ export const PromoteParticipants = () => {
               Destination Event (promote TO)
             </label>
             <select
-              className="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className={selectCls}
               value={toEvent}
               onChange={e => setToEvent(e.target.value)}
               disabled={!fromEvent || toEventOptions.length === 0}
@@ -161,8 +165,8 @@ export const PromoteParticipants = () => {
 
       {/* Leaderboard selection */}
       {fromEvent && (
-        <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm overflow-hidden">
-          <div className="px-6 py-4 border-b border-outline-variant/20 flex items-center justify-between">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-[0_2px_12px_0_rgba(19,41,143,0.06)] border border-outline-variant/10 overflow-hidden">
+          <div className="px-6 py-4 border-b border-outline-variant/10 flex items-center justify-between">
             <div>
               <p className="font-headline font-bold text-on-surface text-sm">
                 Ranked Participants — {events.find(e => e.id === fromEvent)?.name}
@@ -171,9 +175,9 @@ export const PromoteParticipants = () => {
                 {selected.size > 0 ? `${selected.size} selected` : 'Select participants to promote'}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-3 items-center">
               <button onClick={selectAll} className="text-xs font-bold font-headline text-primary hover:underline">Select All</button>
-              <span className="text-on-surface-variant/30">|</span>
+              <span className="text-outline/30 text-xs">|</span>
               <button onClick={clearAll} className="text-xs font-bold font-headline text-on-surface-variant hover:underline">Clear</button>
             </div>
           </div>
@@ -186,7 +190,7 @@ export const PromoteParticipants = () => {
             <div className="overflow-x-auto">
               <table className="w-full text-sm font-body">
                 <thead>
-                  <tr className="border-b border-outline-variant/20 bg-surface-container/30">
+                  <tr className="border-b border-outline-variant/10 bg-surface-container/30">
                     <th className="w-12 px-5 py-3"></th>
                     {['Rank','Name','Position','Constituency','Pre-event','Jury Avg','Final Score'].map(h => (
                       <th key={h} className="text-left px-4 py-3 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline whitespace-nowrap">
@@ -205,8 +209,10 @@ export const PromoteParticipants = () => {
                       }`}
                     >
                       <td className="px-5 py-3.5">
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                          selected.has(entry.user_id) ? 'bg-primary border-primary' : 'border-outline-variant'
+                        <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${
+                          selected.has(entry.user_id)
+                            ? 'bg-primary'
+                            : 'bg-surface-container border border-outline-variant/20'
                         }`}>
                           {selected.has(entry.user_id) && (
                             <span className="material-symbols-outlined text-white text-[12px]">check</span>
@@ -245,21 +251,20 @@ export const PromoteParticipants = () => {
         </div>
       )}
 
-      {/* Promote button */}
+      {/* Sticky promote CTA */}
       {selected.size > 0 && toEvent && (
         <div className="sticky bottom-8 flex justify-center">
           <button
             onClick={handlePromote}
             disabled={promoting}
-            className="flex items-center gap-3 px-8 py-3.5 rounded-2xl bg-primary text-white font-headline font-bold text-sm shadow-lg hover:bg-primary/90 disabled:opacity-50 transition"
+            className="flex items-center gap-3 px-8 py-3.5 rounded-full bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.99] disabled:opacity-50 transition-all"
           >
             {promoting ? (
               <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
             )}
-            Promote {selected.size} Participant{selected.size !== 1 ? 's' : ''} →{' '}
-            {events.find(e => e.id === toEvent)?.name}
+            Promote {selected.size} Participant{selected.size !== 1 ? 's' : ''} → {events.find(e => e.id === toEvent)?.name}
           </button>
         </div>
       )}

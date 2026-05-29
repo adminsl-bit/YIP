@@ -38,10 +38,12 @@ const CITIES = [
 ];
 
 const STATUS_COLORS: Record<string, string> = {
-  upcoming:  'bg-yellow-50 text-yellow-700 border border-yellow-200',
-  active:    'bg-green-50 text-green-700 border border-green-200',
-  completed: 'bg-slate-100 text-slate-600 border border-slate-200',
+  upcoming:  'bg-yellow-50 text-yellow-700',
+  active:    'bg-green-50 text-green-700',
+  completed: 'bg-surface-container text-on-surface-variant',
 };
+
+const inputCls = 'w-full bg-surface-container rounded-xl px-4 py-2.5 text-sm font-body border-0 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all';
 
 const blankForm = {
   name: '',
@@ -132,7 +134,7 @@ export const EventsManager = () => {
         </div>
         <button
           onClick={() => setShowForm(v => !v)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white font-headline font-bold text-sm shadow-sm hover:bg-primary/90 transition"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-lg shadow-primary/10 hover:scale-[1.02] active:scale-[0.99] transition-all"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
           New Event
@@ -141,14 +143,14 @@ export const EventsManager = () => {
 
       {/* Create form */}
       {showForm && (
-        <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm p-6 space-y-5">
+        <div className="bg-surface-container-lowest rounded-2xl shadow-[0_2px_12px_0_rgba(19,41,143,0.06)] border border-outline-variant/10 p-6 space-y-5">
           <h2 className="font-headline font-bold text-on-surface text-base">Create New Event</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-xs font-bold text-on-surface-variant mb-1 font-headline uppercase tracking-wider">Event Name *</label>
+              <label className="block text-xs font-bold text-on-surface-variant mb-1.5 font-headline uppercase tracking-wider">Event Name *</label>
               <input
-                className="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className={inputCls}
                 placeholder="e.g. YIP City Parliament — Chennai 2025"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
@@ -156,9 +158,9 @@ export const EventsManager = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-on-surface-variant mb-1 font-headline uppercase tracking-wider">Level *</label>
+              <label className="block text-xs font-bold text-on-surface-variant mb-1.5 font-headline uppercase tracking-wider">Level *</label>
               <select
-                className="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className={inputCls}
                 value={form.level}
                 onChange={e => setForm(f => ({ ...f, level: e.target.value as typeof form.level, parent_event_id: '' }))}
               >
@@ -169,12 +171,8 @@ export const EventsManager = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-on-surface-variant mb-1 font-headline uppercase tracking-wider">Status</label>
-              <select
-                className="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/30"
-                value={form.status}
-                onChange={e => setForm(f => ({ ...f, status: e.target.value as typeof form.status }))}
-              >
+              <label className="block text-xs font-bold text-on-surface-variant mb-1.5 font-headline uppercase tracking-wider">Status</label>
+              <select className={inputCls} value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value as typeof form.status }))}>
                 <option value="upcoming">Upcoming</option>
                 <option value="active">Active</option>
                 <option value="completed">Completed</option>
@@ -183,12 +181,8 @@ export const EventsManager = () => {
 
             {form.level === 'city' && (
               <div>
-                <label className="block text-xs font-bold text-on-surface-variant mb-1 font-headline uppercase tracking-wider">City</label>
-                <select
-                  className="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  value={form.city}
-                  onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
-                >
+                <label className="block text-xs font-bold text-on-surface-variant mb-1.5 font-headline uppercase tracking-wider">City</label>
+                <select className={inputCls} value={form.city} onChange={e => setForm(f => ({ ...f, city: e.target.value }))}>
                   <option value="">Select city</option>
                   {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
@@ -196,12 +190,8 @@ export const EventsManager = () => {
             )}
 
             <div>
-              <label className="block text-xs font-bold text-on-surface-variant mb-1 font-headline uppercase tracking-wider">State</label>
-              <select
-                className="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/30"
-                value={form.state}
-                onChange={e => setForm(f => ({ ...f, state: e.target.value }))}
-              >
+              <label className="block text-xs font-bold text-on-surface-variant mb-1.5 font-headline uppercase tracking-wider">State</label>
+              <select className={inputCls} value={form.state} onChange={e => setForm(f => ({ ...f, state: e.target.value }))}>
                 <option value="">Select state</option>
                 {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
@@ -209,14 +199,10 @@ export const EventsManager = () => {
 
             {parentOptions.length > 0 && (
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-on-surface-variant mb-1 font-headline uppercase tracking-wider">
+                <label className="block text-xs font-bold text-on-surface-variant mb-1.5 font-headline uppercase tracking-wider">
                   Parent Event ({form.level === 'regional' ? 'City' : 'Regional'})
                 </label>
-                <select
-                  className="w-full border border-outline-variant rounded-xl px-4 py-2.5 text-sm font-body focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  value={form.parent_event_id}
-                  onChange={e => setForm(f => ({ ...f, parent_event_id: e.target.value }))}
-                >
+                <select className={inputCls} value={form.parent_event_id} onChange={e => setForm(f => ({ ...f, parent_event_id: e.target.value }))}>
                   <option value="">None</option>
                   {parentOptions.map(e => <option key={e.id} value={e.id}>{e.name}</option>)}
                 </select>
@@ -228,7 +214,7 @@ export const EventsManager = () => {
             <button
               onClick={handleCreate}
               disabled={saving}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-white font-headline font-bold text-sm hover:bg-primary/90 disabled:opacity-50 transition"
+              className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-lg shadow-primary/10 hover:scale-[1.02] active:scale-[0.99] disabled:opacity-50 transition-all"
             >
               {saving ? (
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -239,7 +225,7 @@ export const EventsManager = () => {
             </button>
             <button
               onClick={() => { setShowForm(false); setForm(blankForm); }}
-              className="px-5 py-2.5 rounded-xl border border-outline-variant text-on-surface-variant font-body text-sm hover:bg-surface-container transition"
+              className="px-6 py-2.5 rounded-full border border-outline-variant/10 bg-surface-container text-on-surface-variant font-body text-sm hover:bg-surface-container-high transition-all"
             >
               Cancel
             </button>
@@ -248,12 +234,12 @@ export const EventsManager = () => {
       )}
 
       {/* Events table */}
-      <div className="bg-white rounded-2xl border border-outline-variant/30 shadow-sm overflow-hidden">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-[0_2px_12px_0_rgba(19,41,143,0.06)] border border-outline-variant/10 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm font-body">
             <thead>
-              <tr className="border-b border-outline-variant/30 bg-surface-container/50">
-                {['Name','Level','Location','Status','Participants','Actions'].map(h => (
+              <tr className="border-b border-outline-variant/10 bg-surface-container/50">
+                {['Name','Level','Location','Status','Participants','Event ID'].map(h => (
                   <th key={h} className="text-left px-5 py-3 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline whitespace-nowrap">
                     {h}
                   </th>
@@ -276,7 +262,7 @@ export const EventsManager = () => {
                     <select
                       value={ev.status}
                       onChange={e => handleStatusChange(ev.id, e.target.value)}
-                      className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full font-headline cursor-pointer border-0 focus:ring-0 ${STATUS_COLORS[ev.status] || ''}`}
+                      className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full font-headline cursor-pointer border-0 outline-none ${STATUS_COLORS[ev.status] || ''}`}
                     >
                       <option value="upcoming">Upcoming</option>
                       <option value="active">Active</option>

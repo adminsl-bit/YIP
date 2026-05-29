@@ -13,9 +13,9 @@ interface EventRow {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  upcoming:  'bg-yellow-50 text-yellow-700 border border-yellow-200',
-  active:    'bg-green-50 text-green-700 border border-green-200',
-  completed: 'bg-slate-100 text-slate-600 border border-slate-200',
+  upcoming:  'bg-yellow-50 text-yellow-700',
+  active:    'bg-green-50 text-green-700',
+  completed: 'bg-surface-container text-on-surface-variant',
 };
 
 const LEVEL_ICON: Record<string, string> = {
@@ -64,12 +64,12 @@ export const GlobalOverview = () => {
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Total Events',   value: events.length,                   icon: 'event',         color: 'text-primary' },
-          { label: 'Active Now',     value: active,                           icon: 'play_circle',   color: 'text-green-600' },
-          { label: 'Total Delegates',value: total,                            icon: 'groups',        color: 'text-secondary' },
-          { label: 'Cities',         value: byLevel('city').length,           icon: 'location_city', color: 'text-violet-600' },
+          { label: 'Total Events',    value: events.length,        icon: 'event',         color: 'text-primary' },
+          { label: 'Active Now',      value: active,               icon: 'play_circle',   color: 'text-green-600' },
+          { label: 'Total Delegates', value: total,                icon: 'groups',        color: 'text-secondary' },
+          { label: 'Cities',          value: byLevel('city').length, icon: 'location_city', color: 'text-violet-600' },
         ].map(stat => (
-          <div key={stat.label} className="bg-white rounded-2xl p-5 border border-outline-variant/30 shadow-sm">
+          <div key={stat.label} className="bg-surface-container-lowest rounded-2xl p-5 shadow-[0_2px_12px_0_rgba(19,41,143,0.06)] border border-outline-variant/10">
             <span className={`material-symbols-outlined text-[28px] ${stat.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>
               {stat.icon}
             </span>
@@ -96,7 +96,7 @@ export const GlobalOverview = () => {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {levelEvents.map(ev => (
-                <div key={ev.id} className="bg-white rounded-2xl p-5 border border-outline-variant/30 shadow-sm flex flex-col gap-3">
+                <div key={ev.id} className="bg-surface-container-lowest rounded-2xl p-5 shadow-[0_2px_12px_0_rgba(19,41,143,0.06)] border border-outline-variant/10 flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-2">
                     <p className="font-headline font-bold text-on-surface text-sm leading-snug">{ev.name}</p>
                     <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full whitespace-nowrap font-headline ${STATUS_COLORS[ev.status] || ''}`}>
