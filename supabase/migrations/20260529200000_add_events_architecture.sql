@@ -5,7 +5,10 @@
 -- Existing single-city data is seeded as event 1 (no data loss).
 -- ================================================================
 
--- ── 0. is_super_admin() must exist before event RLS policies ──
+-- ── 0a. Extend user_type enum ────────────────────────────────
+ALTER TYPE public.user_type ADD VALUE IF NOT EXISTS 'super_admin';
+
+-- ── 0b. is_super_admin() must exist before event RLS policies ──
 CREATE OR REPLACE FUNCTION public.is_super_admin()
 RETURNS BOOLEAN
 LANGUAGE sql
