@@ -82,7 +82,7 @@ export const EventLeaderboard = () => {
   const sourceLevel      = events.find(e => e.id === selectedEvent)?.level;
   const toEventOptions   = events.filter(e => sourceLevel && LEVEL_ORDER[e.level] > LEVEL_ORDER[sourceLevel]);
   const selectedEventMeta = events.find(e => e.id === selectedEvent);
-  const canPromote       = !!sourceLevel && sourceLevel !== 'national' && toEventOptions.length > 0;
+  const showPromoteColumn = !!selectedEvent;
 
   const handlePromoteOne = async (entry: RankedEntry) => {
     if (!toEvent) {
@@ -211,8 +211,8 @@ export const EventLeaderboard = () => {
             </div>
           </div>
 
-          {/* ── Promote destination bar (always visible when promotion is possible) ── */}
-          {canPromote && (
+          {/* ── Promote destination bar ── */}
+          {showPromoteColumn && (
             <div
               ref={destRef}
               className={`px-6 py-3.5 bg-primary/[0.03] border-b border-surface-variant/30 flex items-center gap-3 flex-wrap transition-all ${
@@ -221,29 +221,39 @@ export const EventLeaderboard = () => {
             >
               <span className="material-symbols-outlined text-[18px] text-primary shrink-0">arrow_upward</span>
               <p className="text-xs font-bold text-on-surface-variant font-headline shrink-0">Promote to:</p>
-              <div className="relative flex-1 min-w-[200px] max-w-xs">
-                <select
-                  className={`${selectCls} ${!toEvent ? 'ring-2 ring-primary/20' : ''}`}
-                  value={toEvent}
-                  onChange={e => setToEvent(e.target.value)}
-                >
-                  <option value="">
-                    {`Select ${LEVEL_NEXT[sourceLevel ?? ''] ?? 'destination'} event…`}
-                  </option>
-                  {toEventOptions.map(e => (
-                    <option key={e.id} value={e.id}>{e.name} ({e.level})</option>
-                  ))}
-                </select>
-                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
-              </div>
-              {toEvent ? (
-                <span className="text-[11px] text-primary font-bold font-headline flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                  Destination set — click ↑ on any row to promote
-                </span>
+              {toEventOptions.length > 0 ? (
+                <>
+                  <div className="relative flex-1 min-w-[200px] max-w-xs">
+                    <select
+                      className={`${selectCls} ${!toEvent ? 'ring-2 ring-primary/20' : ''}`}
+                      value={toEvent}
+                      onChange={e => setToEvent(e.target.value)}
+                    >
+                      <option value="">
+                        {`Select ${LEVEL_NEXT[sourceLevel ?? ''] ?? 'destination'} event…`}
+                      </option>
+                      {toEventOptions.map(e => (
+                        <option key={e.id} value={e.id}>{e.name} ({e.level})</option>
+                      ))}
+                    </select>
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+                  </div>
+                  {toEvent ? (
+                    <span className="text-[11px] text-primary font-bold font-headline flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                      Destination set — click ↑ on any row to promote
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-on-surface-variant/60 font-body">
+                      Select destination, then click ↑ on a participant row
+                    </span>
+                  )}
+                </>
               ) : (
-                <span className="text-[11px] text-on-surface-variant/60 font-body">
-                  Select destination, then click ↑ on a participant row
+                <span className="text-[11px] text-on-surface-variant/50 font-body italic">
+                  {sourceLevel === 'national'
+                    ? 'Already at national level — no further promotion possible'
+                    : `No higher-level events yet — create a ${LEVEL_NEXT[sourceLevel ?? ''] ?? 'higher-level'} event to enable promotion`}
                 </span>
               )}
             </div>
@@ -270,7 +280,7 @@ export const EventLeaderboard = () => {
                     <th className="px-5 py-3.5 text-right text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Pre-event</th>
                     <th className="px-5 py-3.5 text-right text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Jury Avg</th>
                     <th className="px-5 py-3.5 text-right text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Final</th>
-                    {canPromote && <th className="w-14 px-3 py-3.5 text-center text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Promote</th>}
+                    {showPromoteColumn && <th className="w-14 px-3 py-3.5 text-center text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Promote</th>}
                   </tr>
                 </thead>
                 <tbody>
@@ -344,18 +354,24 @@ export const EventLeaderboard = () => {
                         </td>
 
                         {/* Promote icon */}
-                        {canPromote && (
+                        {showPromoteColumn && (
                           <td className="px-3 py-3.5 text-center">
                             {isPromoted ? (
                               <span className="material-symbols-outlined text-[20px] text-tertiary-fixed-dim" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                             ) : (
                               <button
                                 type="button"
-                                title={toEvent ? `Promote to ${events.find(e => e.id === toEvent)?.name}` : 'Select a destination event first'}
+                                title={
+                                  toEventOptions.length === 0
+                                    ? 'No higher-level events available'
+                                    : toEvent
+                                      ? `Promote to ${events.find(e => e.id === toEvent)?.name}`
+                                      : 'Select a destination event first'
+                                }
                                 onClick={() => handlePromoteOne(entry)}
-                                disabled={!!promotingId}
-                                className={`p-1.5 rounded-lg transition-all disabled:opacity-40 ${
-                                  toEvent
+                                disabled={!!promotingId || toEventOptions.length === 0}
+                                className={`p-1.5 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
+                                  toEvent && toEventOptions.length > 0
                                     ? 'text-primary hover:bg-primary hover:text-on-primary'
                                     : 'text-on-surface-variant/30 hover:text-primary hover:bg-primary/5'
                                 }`}
