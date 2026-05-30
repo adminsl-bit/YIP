@@ -72,9 +72,39 @@ export const EventLeaderboard = () => {
         .eq('is_current', false)
         .not('promoted_at', 'is', null),
     ]);
-    if (!error && lbData) setLeaderboard(lbData as RankedEntry[]);
-    // Seed promotedIds with anyone already promoted out of this event
-    setPromotedIds(new Set((epData || []).map((r: any) => r.user_id)));
+
+    const currentEntries = (lbData || []) as RankedEntry[];
+    const newPromotedIds = new Set((epData || []).map((r: any) => r.user_id as string));
+
+    // Promoted students may have moved to another event (profiles.event_id updated),
+    // so get_event_leaderboard won't return them. Fetch their profiles separately
+    // so we can still display them in the list with the promoted highlight.
+    const missingIds = [...newPromotedIds].filter(
+      id => !currentEntries.some(e => e.user_id === id)
+    );
+    let promotedEntries: RankedEntry[] = [];
+    if (missingIds.length > 0) {
+      const { data: profData } = await supabase
+        .from('profiles')
+        .select('user_id, name, position, party_number, constituency, state, serial_number, photo_url, preevent_scores')
+        .in('user_id', missingIds);
+      promotedEntries = (profData || []).map((p: any) => ({
+        user_id: p.user_id,
+        name: p.name,
+        position: p.position,
+        party_number: p.party_number,
+        constituency: p.constituency,
+        state: p.state,
+        serial_number: p.serial_number,
+        photo_url: p.photo_url,
+        avg_jury_score: null,
+        preevent_scores: p.preevent_scores ?? null,
+        final_score: p.preevent_scores ?? null,
+      }));
+    }
+
+    if (!error) setLeaderboard([...currentEntries, ...promotedEntries]);
+    setPromotedIds(newPromotedIds);
     setLoadingLb(false);
   }, []);
 
@@ -112,12 +142,14 @@ export const EventLeaderboard = () => {
     if (error) {
       toast({ title: 'Promotion failed', description: error.message, variant: 'destructive' });
     } else {
+      // Optimistically mark as promoted — keeps the student in the list with
+      // green highlight immediately, without a refetch that would remove them
+      // (their profiles.event_id has moved so get_event_leaderboard won't return them)
+      setPromotedIds(prev => new Set(prev).add(entry.user_id));
       toast({
         title: `${entry.name} promoted`,
         description: `Now in ${events.find(e => e.id === destEventId)?.name}.`,
       });
-      // Refresh from DB so promoted state is persisted and duplicates are blocked
-      fetchLeaderboard(selectedEvent);
     }
   };
 
