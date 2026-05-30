@@ -44,12 +44,12 @@ export const EventLeaderboard = () => {
   const [leaderboard, setLeaderboard]     = useState<RankedEntry[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
   const [loadingLb, setLoadingLb]         = useState(false);
-  const [toEvent, setToEvent]             = useState('');
   const [promotingId, setPromotingId]     = useState<string | null>(null);
   const [promotedIds, setPromotedIds]     = useState<Set<string>>(new Set());
-  const [shakeDest, setShakeDest]         = useState(false);
+  // userId of the row whose inline picker is open
+  const [pickerOpen, setPickerOpen]       = useState<string | null>(null);
   const { toast } = useToast();
-  const destRef = useRef<HTMLDivElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.from('events').select('id, name, level, status').order('created_at')
@@ -88,25 +88,30 @@ export const EventLeaderboard = () => {
     else setLeaderboard([]);
   }, [selectedEvent, fetchLeaderboard]);
 
-  const sourceLevel      = events.find(e => e.id === selectedEvent)?.level;
-  const toEventOptions   = events.filter(e => sourceLevel && LEVEL_ORDER[e.level] > LEVEL_ORDER[sourceLevel]);
+  const sourceLevel       = events.find(e => e.id === selectedEvent)?.level;
+  const toEventOptions    = events.filter(e => sourceLevel && LEVEL_ORDER[e.level] > LEVEL_ORDER[sourceLevel]);
   const selectedEventMeta = events.find(e => e.id === selectedEvent);
   const showPromoteColumn = !!selectedEvent;
 
-  const handlePromoteOne = async (entry: RankedEntry) => {
-    if (!toEvent) {
-      // Flash the destination picker
-      setShakeDest(true);
-      setTimeout(() => setShakeDest(false), 600);
-      destRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      toast({ title: 'Pick a destination event first', variant: 'destructive' });
-      return;
-    }
+  // Close picker on outside click
+  useEffect(() => {
+    if (!pickerOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
+        setPickerOpen(null);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [pickerOpen]);
+
+  const handlePromoteOne = async (entry: RankedEntry, destEventId: string) => {
+    setPickerOpen(null);
     setPromotingId(entry.user_id);
     const { error } = await supabase.rpc('promote_participants', {
       p_user_ids:   [entry.user_id],
       p_from_event: selectedEvent,
-      p_to_event:   toEvent,
+      p_to_event:   destEventId,
     });
     setPromotingId(null);
     if (error) {
@@ -115,7 +120,7 @@ export const EventLeaderboard = () => {
       setPromotedIds(prev => new Set(prev).add(entry.user_id));
       toast({
         title: `${entry.name} promoted`,
-        description: `Now in ${events.find(e => e.id === toEvent)?.name}.`,
+        description: `Now in ${events.find(e => e.id === destEventId)?.name}.`,
       });
     }
   };
@@ -219,54 +224,6 @@ export const EventLeaderboard = () => {
               </p>
             </div>
           </div>
-
-          {/* ── Promote destination bar ── */}
-          {showPromoteColumn && (
-            <div
-              ref={destRef}
-              className={`px-6 py-3.5 bg-primary/[0.03] border-b border-surface-variant/30 flex items-center gap-3 flex-wrap transition-all ${
-                shakeDest ? 'animate-[shake_0.4s_ease-in-out]' : ''
-              }`}
-            >
-              <span className="material-symbols-outlined text-[18px] text-primary shrink-0">arrow_upward</span>
-              <p className="text-xs font-bold text-on-surface-variant font-headline shrink-0">Promote to:</p>
-              {toEventOptions.length > 0 ? (
-                <>
-                  <div className="relative flex-1 min-w-[200px] max-w-xs">
-                    <select
-                      className={`${selectCls} ${!toEvent ? 'ring-2 ring-primary/20' : ''}`}
-                      value={toEvent}
-                      onChange={e => setToEvent(e.target.value)}
-                    >
-                      <option value="">
-                        {`Select ${LEVEL_NEXT[sourceLevel ?? ''] ?? 'destination'} event…`}
-                      </option>
-                      {toEventOptions.map(e => (
-                        <option key={e.id} value={e.id}>{e.name} ({e.level})</option>
-                      ))}
-                    </select>
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
-                  </div>
-                  {toEvent ? (
-                    <span className="text-[11px] text-primary font-bold font-headline flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                      Destination set — click ↑ on any row to promote
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-on-surface-variant/60 font-body">
-                      Select destination, then click ↑ on a participant row
-                    </span>
-                  )}
-                </>
-              ) : (
-                <span className="text-[11px] text-on-surface-variant/50 font-body italic">
-                  {sourceLevel === 'national'
-                    ? 'Already at national level — no further promotion possible'
-                    : `No higher-level events yet — create a ${LEVEL_NEXT[sourceLevel ?? ''] ?? 'higher-level'} event to enable promotion`}
-                </span>
-              )}
-            </div>
-          )}
 
           {/* Table body */}
           {loadingLb ? (
@@ -376,33 +333,42 @@ export const EventLeaderboard = () => {
 
                         {/* Promote icon */}
                         {showPromoteColumn && (
-                          <td className="px-3 py-3.5 text-center">
+                          <td className="px-3 py-3.5 text-center relative">
                             {isPromoted ? (
                               <span className="material-symbols-outlined text-[20px] text-[#2bb87c]" title="Already promoted" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                            ) : isPromoting ? (
+                              <span className="material-symbols-outlined text-[20px] text-primary animate-spin">progress_activity</span>
+                            ) : toEventOptions.length === 0 ? (
+                              <span className="material-symbols-outlined text-[20px] text-on-surface-variant/20" title="No higher-level events available">arrow_circle_up</span>
                             ) : (
-                              <button
-                                type="button"
-                                title={
-                                  toEventOptions.length === 0
-                                    ? 'No higher-level events available'
-                                    : toEvent
-                                      ? `Promote to ${events.find(e => e.id === toEvent)?.name}`
-                                      : 'Select a destination event first'
-                                }
-                                onClick={() => handlePromoteOne(entry)}
-                                disabled={!!promotingId || toEventOptions.length === 0}
-                                className={`p-1.5 rounded-lg transition-all disabled:opacity-30 disabled:cursor-not-allowed ${
-                                  toEvent && toEventOptions.length > 0
-                                    ? 'text-primary hover:bg-primary hover:text-on-primary'
-                                    : 'text-on-surface-variant/30 hover:text-primary hover:bg-primary/5'
-                                }`}
-                              >
-                                {isPromoting ? (
-                                  <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
-                                ) : (
+                              <div className="relative inline-block" ref={pickerOpen === entry.user_id ? pickerRef : undefined}>
+                                <button
+                                  type="button"
+                                  title="Promote to next round"
+                                  onClick={() => setPickerOpen(p => p === entry.user_id ? null : entry.user_id)}
+                                  disabled={!!promotingId}
+                                  className="p-1.5 rounded-lg text-primary hover:bg-primary hover:text-on-primary transition-all disabled:opacity-30"
+                                >
                                   <span className="material-symbols-outlined text-[20px]">arrow_circle_up</span>
+                                </button>
+                                {pickerOpen === entry.user_id && (
+                                  <div className="absolute right-0 top-full mt-1 z-50 bg-surface-container-lowest rounded-xl shadow-[0_8px_32px_rgba(19,41,143,0.15)] border border-outline-variant/20 min-w-[200px] overflow-hidden">
+                                    <p className="px-3 pt-2.5 pb-1 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/50 font-headline">Promote to</p>
+                                    {toEventOptions.map(ev => (
+                                      <button
+                                        key={ev.id}
+                                        type="button"
+                                        onClick={() => handlePromoteOne(entry, ev.id)}
+                                        className="w-full text-left px-3 py-2.5 text-sm font-body hover:bg-primary/5 flex items-center gap-2 transition-colors"
+                                      >
+                                        <span className="material-symbols-outlined text-[16px] text-primary">arrow_upward</span>
+                                        <span className="font-medium text-on-surface">{ev.name}</span>
+                                        <span className="ml-auto text-[10px] text-on-surface-variant/50 uppercase font-headline">{ev.level}</span>
+                                      </button>
+                                    ))}
+                                  </div>
                                 )}
-                              </button>
+                              </div>
                             )}
                           </td>
                         )}
