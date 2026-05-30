@@ -6,14 +6,36 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2, ArrowRight, ArrowLeft, User, MapPin, Landmark, Sparkles, CheckCircle2 } from "lucide-react";
 
+interface ActiveEventCity {
+  city: string;
+  state: string;
+}
+
+const STATE_REGION: Record<string, string> = {
+  'Delhi': 'North', 'Haryana': 'North', 'Punjab': 'North', 'Himachal Pradesh': 'North',
+  'Uttarakhand': 'North', 'Jammu and Kashmir': 'North', 'Ladakh': 'North',
+  'Uttar Pradesh': 'North', 'Rajasthan': 'North', 'Chandigarh': 'North',
+  'Tamil Nadu': 'South', 'Kerala': 'South', 'Karnataka': 'South',
+  'Andhra Pradesh': 'South', 'Telangana': 'South', 'Puducherry': 'South', 'Lakshadweep': 'South',
+  'West Bengal': 'East', 'Odisha': 'East', 'Bihar': 'East', 'Jharkhand': 'East',
+  'Assam': 'East', 'Meghalaya': 'East', 'Manipur': 'East', 'Mizoram': 'East',
+  'Nagaland': 'East', 'Tripura': 'East', 'Arunachal Pradesh': 'East', 'Sikkim': 'East',
+  'Andaman and Nicobar Islands': 'East',
+  'Maharashtra': 'West', 'Gujarat': 'West', 'Goa': 'West',
+  'Madhya Pradesh': 'West', 'Chhattisgarh': 'West',
+  'Dadra and Nagar Haveli and Daman and Diu': 'West',
+};
+
 const Onboarding = () => {
   const { user, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const [activeEventCities, setActiveEventCities] = useState<ActiveEventCity[]>([]);
+  const [loadingCities, setLoadingCities] = useState(true);
+
   // Form State
   const [formData, setFormData] = useState({
     name: '',
@@ -22,19 +44,37 @@ const Onboarding = () => {
   });
 
   // Assigned Details (derived on submission)
-  const [assignedDetails, setAssignedDetails] = useState<{ 
-    serial: number; 
-    partyName: string; 
+  const [assignedDetails, setAssignedDetails] = useState<{
+    serial: number;
+    partyName: string;
     committee: string;
     constituency: string;
   } | null>(null);
 
+  // Fetch only cities that have an active city-level event
+  useEffect(() => {
+    supabase
+      .from('events')
+      .select('city, state')
+      .eq('status', 'active')
+      .eq('level', 'city')
+      .not('city', 'is', null)
+      .then(({ data }) => {
+        if (data) {
+          const unique = data
+            .filter(e => e.city)
+            .filter((e, i, arr) => arr.findIndex(x => x.city === e.city) === i)
+            .sort((a, b) => (a.city ?? '').localeCompare(b.city ?? '')) as ActiveEventCity[];
+          setActiveEventCities(unique);
+        }
+        setLoadingCities(false);
+      });
+  }, []);
+
   useEffect(() => {
     if (profile && profile.constituency) {
-      // If profile already has constituency assignment, onboarding is complete
       navigate('/student');
     }
-    // Pre-fill name from existing profile (e.g. direct-registered users)
     if (profile?.name && !formData.name) {
       setFormData(prev => ({ ...prev, name: profile.name }));
     }
@@ -43,50 +83,19 @@ const Onboarding = () => {
   const nextStep = () => setStep(s => s + 1);
   const prevStep = () => setStep(s => s - 1);
 
-  const states = [
-    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat",
-    "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh",
-    "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
-    "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh",
-    "Uttarakhand", "West Bengal", "Delhi", "Jammu and Kashmir", "Ladakh", "Puducherry",
-    "Chandigarh", "Andaman and Nicobar Islands", "Dadra and Nagar Haveli and Daman and Diu",
-    "Lakshadweep"
-  ];
-
-  const cities = [
-    "Agartala", "Agra", "Ahmedabad", "Aizawl", "Ajmer", "Akola", "Aligarh", "Alwar",
-    "Ambala", "Amravati", "Amritsar", "Anantapur", "Asansol", "Aurangabad",
-    "Bareilly", "Belgaum", "Bengaluru", "Bhopal", "Bhubaneswar", "Bikaner",
-    "Bilaspur", "Bokaro", "Bongaigaon",
-    "Chandigarh", "Chennai", "Coimbatore", "Cuttack",
-    "Dahod", "Davangere", "Dehradun", "Dhanbad", "Dharwad", "Dibrugarh", "Durgapur",
-    "Erode",
-    "Faridabad", "Fatehpur",
-    "Gandhinagar", "Gaya", "Ghaziabad", "Gorakhpur", "Gulbarga", "Guntur", "Gurgaon",
-    "Guwahati", "Gwalior",
-    "Howrah", "Hubli", "Hyderabad",
-    "Imphal", "Indore", "Itanagar",
-    "Jabalpur", "Jaipur", "Jalandhar", "Jammu", "Jamnagar", "Jamshedpur", "Jhansi",
-    "Jodhpur", "Jorhat",
-    "Kakinada", "Kalyan-Dombivli", "Kanpur", "Karimnagar", "Karnal", "Kochi",
-    "Kohima", "Kolhapur", "Kolkata", "Kollam", "Kota", "Kozhikode", "Kurnool",
-    "Latur", "Lucknow", "Ludhiana",
-    "Madurai", "Mangalore", "Meerut", "Moradabad", "Mumbai", "Mysore",
-    "Nagpur", "Nanded", "Nashik", "Navi Mumbai", "New Delhi", "Noida",
-    "Panaji", "Patna", "Pimpri-Chinchwad", "Port Blair", "Puducherry", "Pune",
-    "Raipur", "Rajahmundry", "Rajkot", "Ranchi", "Rohtak",
-    "Salem", "Shillong", "Shimla", "Siliguri", "Silvassa", "Solapur", "Srinagar",
-    "Surat", "Surendranagar",
-    "Thane", "Thiruvananthapuram", "Thrissur", "Tiruchirapalli", "Tirunelveli",
-    "Tirupati", "Tirupur", "Tumkur",
-    "Udaipur", "Ujjain", "Ulhasnagar",
-    "Vadodara", "Varanasi", "Vasai-Virar", "Vijayawada", "Visakhapatnam",
-    "Warangal",
-  ];
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // When city is chosen from an active event, auto-fill state from the event record
+  const handleCitySelect = (city: string) => {
+    const match = activeEventCities.find(e => e.city === city);
+    setFormData(prev => ({
+      ...prev,
+      city,
+      state: match?.state || prev.state,
+    }));
   };
 
   const handleSubmit = async () => {
@@ -276,7 +285,7 @@ const Onboarding = () => {
         );
       case 2:
         return (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
@@ -284,63 +293,79 @@ const Onboarding = () => {
           >
             <div className="space-y-2">
               <span className="text-primary font-black uppercase tracking-[0.2em] text-[10px] bg-primary/5 px-3 py-1 rounded-full">Step 02 / Demographics</span>
-              <h2 className="text-4xl font-black font-headline text-slate-900 leading-tight tracking-tight">Regional Details</h2>
-              <p className="text-slate-500 font-medium text-lg">Constituencies and committees are assigned based on institutional balance protocols.</p>
+              <h2 className="text-4xl font-black font-headline text-slate-900 leading-tight tracking-tight">Select Your City</h2>
+              <p className="text-slate-500 font-medium text-lg">Choose the city where your parliament session is taking place.</p>
             </div>
 
             <div className="grid grid-cols-1 gap-6">
+              {/* City — driven by active events */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Home State</label>
-                <div className="relative group">
-                  <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-primary transition-colors z-10" />
-                  <select 
-                    name="state"
-                    className="w-full pl-16 pr-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-primary/10 transition-all font-bold text-slate-800 shadow-inner z-10 appearance-none cursor-pointer"
-                    value={formData.state}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="" disabled>Select your state</option>
-                    {states.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none z-10">
-                    <ArrowRight className="w-4 h-4 text-slate-300 rotate-90" />
-                  </div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Current City</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Parliament City</label>
                 <div className="relative group">
                   <Landmark className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-primary transition-colors z-10" />
-                  <select
-                    name="city"
-                    className="w-full pl-16 pr-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-primary/10 transition-all font-bold text-slate-800 shadow-inner z-10 appearance-none cursor-pointer"
-                    value={formData.city}
-                    onChange={handleInputChange}
-                    required
-                  >
-                    <option value="" disabled>Select your city</option>
-                    {cities.map(c => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                  <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none z-10">
-                    <ArrowRight className="w-4 h-4 text-slate-300 rotate-90" />
-                  </div>
+                  {loadingCities ? (
+                    <div className="w-full pl-16 pr-6 py-5 bg-slate-50 rounded-2xl flex items-center gap-3">
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                      <span className="text-slate-400 font-bold text-sm">Loading active sessions…</span>
+                    </div>
+                  ) : activeEventCities.length === 0 ? (
+                    <div className="w-full pl-16 pr-6 py-5 bg-amber-50 rounded-2xl border-2 border-amber-200">
+                      <p className="text-amber-700 font-bold text-sm">No active parliament sessions right now. Please check back later or contact administration.</p>
+                    </div>
+                  ) : (
+                    <>
+                      <select
+                        name="city"
+                        className="w-full pl-16 pr-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-primary/10 transition-all font-bold text-slate-800 shadow-inner z-10 appearance-none cursor-pointer"
+                        value={formData.city}
+                        onChange={e => handleCitySelect(e.target.value)}
+                        required
+                      >
+                        <option value="" disabled>Select your parliament city</option>
+                        {activeEventCities.map(ev => (
+                          <option key={ev.city} value={ev.city}>{ev.city}</option>
+                        ))}
+                      </select>
+                      <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+                        <ArrowRight className="w-4 h-4 text-slate-300 rotate-90" />
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
+
+              {/* State — auto-filled from event, read-only */}
+              {formData.city && formData.state && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-2"
+                >
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">State / Region</label>
+                  <div className="flex items-center gap-3 pl-6 pr-4 py-4 bg-primary/5 rounded-2xl border-2 border-primary/10">
+                    <MapPin className="w-5 h-5 text-primary/60 shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-bold text-slate-800">{formData.state}</p>
+                      {STATE_REGION[formData.state] && (
+                        <p className="text-[10px] font-black uppercase tracking-wider text-primary/60 mt-0.5">
+                          {STATE_REGION[formData.state]} India
+                        </p>
+                      )}
+                    </div>
+                    <span className="material-symbols-outlined text-primary/40 text-[18px]">check_circle</span>
+                  </div>
+                </motion.div>
+              )}
             </div>
 
             <div className="flex gap-4">
-              <button 
+              <button
                 onClick={prevStep}
                 className="flex-1 py-6 bg-slate-100 text-slate-500 rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-xs hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
               >
                 <ArrowLeft className="w-4 h-4" /> Back
               </button>
-              <button 
+              <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || !formData.state || !formData.city}
                 className="flex-[2] py-6 bg-[#13298f] text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-sm shadow-2xl shadow-[#13298f]/20 hover:scale-[1.02] hover:shadow-[#13298f]/40 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:hover:scale-100"
