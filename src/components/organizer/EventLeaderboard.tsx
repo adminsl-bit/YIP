@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -37,18 +37,19 @@ const selectCls = 'w-full bg-surface-container rounded-xl px-4 py-2.5 text-sm fo
 
 export const EventLeaderboard = () => {
   const { profile } = useAuth();
-  const isOrganizer  = profile?.user_type === 'organizer';
+  const isOrganizer = profile?.user_type === 'organizer';
 
-  const [events, setEvents]             = useState<EventOption[]>([]);
+  const [events, setEvents]               = useState<EventOption[]>([]);
   const [selectedEvent, setSelectedEvent] = useState('');
-  const [leaderboard, setLeaderboard]   = useState<RankedEntry[]>([]);
+  const [leaderboard, setLeaderboard]     = useState<RankedEntry[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
-  const [loadingLb, setLoadingLb]       = useState(false);
-  const [promoteMode, setPromoteMode]   = useState(false);
-  const [selected, setSelected]         = useState<Set<string>>(new Set());
-  const [toEvent, setToEvent]           = useState('');
-  const [promoting, setPromoting]       = useState(false);
+  const [loadingLb, setLoadingLb]         = useState(false);
+  const [toEvent, setToEvent]             = useState('');
+  const [promotingId, setPromotingId]     = useState<string | null>(null);
+  const [promotedIds, setPromotedIds]     = useState<Set<string>>(new Set());
+  const [shakeDest, setShakeDest]         = useState(false);
   const { toast } = useToast();
+  const destRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     supabase.from('events').select('id, name, level, status').order('created_at')
@@ -67,7 +68,7 @@ export const EventLeaderboard = () => {
 
   const fetchLeaderboard = useCallback(async (eventId: string) => {
     setLoadingLb(true);
-    setSelected(new Set());
+    setPromotedIds(new Set());
     const { data, error } = await supabase.rpc('get_event_leaderboard', { p_event_id: eventId });
     if (!error && data) setLeaderboard(data as RankedEntry[]);
     setLoadingLb(false);
@@ -78,37 +79,35 @@ export const EventLeaderboard = () => {
     else setLeaderboard([]);
   }, [selectedEvent, fetchLeaderboard]);
 
-  const sourceLevel     = events.find(e => e.id === selectedEvent)?.level;
-  const toEventOptions  = events.filter(e => sourceLevel && LEVEL_ORDER[e.level] > LEVEL_ORDER[sourceLevel]);
+  const sourceLevel      = events.find(e => e.id === selectedEvent)?.level;
+  const toEventOptions   = events.filter(e => sourceLevel && LEVEL_ORDER[e.level] > LEVEL_ORDER[sourceLevel]);
   const selectedEventMeta = events.find(e => e.id === selectedEvent);
+  const canPromote       = !!sourceLevel && sourceLevel !== 'national' && toEventOptions.length > 0;
 
-  const toggleSelect = (uid: string) =>
-    setSelected(prev => { const n = new Set(prev); n.has(uid) ? n.delete(uid) : n.add(uid); return n; });
-
-  const quickPromote = (uid: string) => {
-    if (!promoteMode) setPromoteMode(true);
-    setSelected(prev => { const n = new Set(prev); n.add(uid); return n; });
-  };
-
-  const handlePromote = async () => {
-    if (!selectedEvent || !toEvent || selected.size === 0) return;
-    setPromoting(true);
+  const handlePromoteOne = async (entry: RankedEntry) => {
+    if (!toEvent) {
+      // Flash the destination picker
+      setShakeDest(true);
+      setTimeout(() => setShakeDest(false), 600);
+      destRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      toast({ title: 'Pick a destination event first', variant: 'destructive' });
+      return;
+    }
+    setPromotingId(entry.user_id);
     const { error } = await supabase.rpc('promote_participants', {
-      p_user_ids:   Array.from(selected),
+      p_user_ids:   [entry.user_id],
       p_from_event: selectedEvent,
       p_to_event:   toEvent,
     });
-    setPromoting(false);
+    setPromotingId(null);
     if (error) {
-      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      toast({ title: 'Promotion failed', description: error.message, variant: 'destructive' });
     } else {
+      setPromotedIds(prev => new Set(prev).add(entry.user_id));
       toast({
-        title: `${selected.size} participant${selected.size !== 1 ? 's' : ''} promoted`,
-        description: `Moved to ${events.find(e => e.id === toEvent)?.name}.`,
+        title: `${entry.name} promoted`,
+        description: `Now in ${events.find(e => e.id === toEvent)?.name}.`,
       });
-      setSelected(new Set());
-      setPromoteMode(false);
-      setToEvent('');
     }
   };
 
@@ -140,7 +139,6 @@ export const EventLeaderboard = () => {
             </div>
           </div>
 
-          {/* Organizer: level + city badge top-right */}
           {isOrganizer && selectedEventMeta && (
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-on-primary text-[10px] font-black uppercase tracking-widest font-headline shadow-[0_2px_8px_rgba(19,41,143,0.25)]">
@@ -163,7 +161,7 @@ export const EventLeaderboard = () => {
             <select
               className={selectCls}
               value={selectedEvent}
-              onChange={e => { setSelectedEvent(e.target.value); setPromoteMode(false); setToEvent(''); }}
+              onChange={e => { setSelectedEvent(e.target.value); setToEvent(''); }}
             >
               <option value="">— Choose an event —</option>
               {events.map(e => (
@@ -205,50 +203,32 @@ export const EventLeaderboard = () => {
                 Performance Rankings — {selectedEventMeta?.name}
               </p>
               <p className="text-xs text-on-surface-variant font-body mt-0.5">
-                {leaderboard.length} participants · click a row or <span className="font-bold">↑</span> to promote
+                {leaderboard.length} participants
+                {promotedIds.size > 0 && (
+                  <span className="ml-2 text-primary font-bold">· {promotedIds.size} promoted this session</span>
+                )}
               </p>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0">
-              {promoteMode && (
-                <>
-                  <span className="text-xs font-bold text-primary font-headline">{selected.size} selected</span>
-                  <button onClick={() => setSelected(new Set(leaderboard.map(e => e.user_id)))} className="text-xs font-bold text-primary font-headline hover:underline">All</button>
-                  <span className="text-outline text-xs">|</span>
-                  <button onClick={() => setSelected(new Set())} className="text-xs font-bold text-on-surface-variant font-headline hover:underline">None</button>
-                  <span className="text-outline text-xs">|</span>
-                </>
-              )}
-              <button
-                onClick={() => { setPromoteMode(m => !m); setSelected(new Set()); setToEvent(''); }}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[11px] font-black font-headline uppercase tracking-wide transition-all ${
-                  promoteMode
-                    ? 'bg-primary text-on-primary shadow-[0_2px_8px_rgba(19,41,143,0.3)]'
-                    : 'bg-primary/10 text-primary hover:bg-primary/20'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[14px]">arrow_upward</span>
-                {promoteMode ? 'Exit Promote' : 'Promote Mode'}
-              </button>
             </div>
           </div>
 
-          {/* Promote destination selector — visible when in promote mode */}
-          {promoteMode && (
-            <div className="px-6 py-4 bg-primary/[0.03] border-b border-surface-variant/30 flex items-center gap-4 flex-wrap">
+          {/* ── Promote destination bar (always visible when promotion is possible) ── */}
+          {canPromote && (
+            <div
+              ref={destRef}
+              className={`px-6 py-3.5 bg-primary/[0.03] border-b border-surface-variant/30 flex items-center gap-3 flex-wrap transition-all ${
+                shakeDest ? 'animate-[shake_0.4s_ease-in-out]' : ''
+              }`}
+            >
               <span className="material-symbols-outlined text-[18px] text-primary shrink-0">arrow_upward</span>
               <p className="text-xs font-bold text-on-surface-variant font-headline shrink-0">Promote to:</p>
-              <div className="relative flex-1 min-w-[200px]">
+              <div className="relative flex-1 min-w-[200px] max-w-xs">
                 <select
-                  className={selectCls}
+                  className={`${selectCls} ${!toEvent ? 'ring-2 ring-primary/20' : ''}`}
                   value={toEvent}
                   onChange={e => setToEvent(e.target.value)}
-                  disabled={toEventOptions.length === 0}
                 >
                   <option value="">
-                    {toEventOptions.length === 0
-                      ? sourceLevel === 'national' ? 'Already national level' : 'No higher-level events found'
-                      : `Select ${LEVEL_NEXT[sourceLevel ?? ''] ?? 'destination'} event…`}
+                    {`Select ${LEVEL_NEXT[sourceLevel ?? ''] ?? 'destination'} event…`}
                   </option>
                   {toEventOptions.map(e => (
                     <option key={e.id} value={e.id}>{e.name} ({e.level})</option>
@@ -256,10 +236,15 @@ export const EventLeaderboard = () => {
                 </select>
                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
               </div>
-              {toEventOptions.length === 0 && sourceLevel !== 'national' && (
-                <p className="text-[10px] text-on-surface-variant/60 font-body">
-                  Create a {LEVEL_NEXT[sourceLevel ?? ''] ?? 'higher-level'} event first.
-                </p>
+              {toEvent ? (
+                <span className="text-[11px] text-primary font-bold font-headline flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                  Destination set — click ↑ on any row to promote
+                </span>
+              ) : (
+                <span className="text-[11px] text-on-surface-variant/60 font-body">
+                  Select destination, then click ↑ on a participant row
+                </span>
               )}
             </div>
           )}
@@ -279,40 +264,25 @@ export const EventLeaderboard = () => {
               <table className="w-full text-sm font-body">
                 <thead>
                   <tr className="bg-surface-container/30 border-b border-surface-variant/30">
-                    {promoteMode && <th className="w-12 px-5 py-3.5" />}
                     <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Rank</th>
                     <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Participant</th>
                     <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Constituency</th>
                     <th className="px-5 py-3.5 text-right text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Pre-event</th>
                     <th className="px-5 py-3.5 text-right text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Jury Avg</th>
                     <th className="px-5 py-3.5 text-right text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Final</th>
-                    <th className="w-12 px-3 py-3.5" />
+                    {canPromote && <th className="w-14 px-3 py-3.5 text-center text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Promote</th>}
                   </tr>
                 </thead>
                 <tbody>
                   {leaderboard.map((entry, idx) => {
-                    const isSelected = selected.has(entry.user_id);
-                    const initials   = entry.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-                    const rankColor  = idx === 0 ? 'text-amber-500' : idx === 1 ? 'text-slate-400' : idx === 2 ? 'text-orange-500' : 'text-on-surface-variant/40';
+                    const isPromoted  = promotedIds.has(entry.user_id);
+                    const isPromoting = promotingId === entry.user_id;
+                    const initials    = entry.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
                     return (
                       <tr
                         key={entry.user_id}
-                        onClick={() => promoteMode && toggleSelect(entry.user_id)}
-                        className={`border-b border-surface-variant/20 last:border-0 transition-colors ${
-                          promoteMode
-                            ? `cursor-pointer ${isSelected ? 'bg-primary/5' : 'hover:bg-surface-container/30'}`
-                            : 'hover:bg-surface-container/20'
-                        }`}
+                        className={`border-b border-surface-variant/20 last:border-0 transition-colors hover:bg-surface-container/20 ${isPromoted ? 'opacity-50' : ''}`}
                       >
-                        {/* Checkbox */}
-                        {promoteMode && (
-                          <td className="px-5 py-3.5">
-                            <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${isSelected ? 'bg-primary' : 'bg-surface-container border border-outline-variant/30'}`}>
-                              {isSelected && <span className="material-symbols-outlined text-white text-[12px]">check</span>}
-                            </div>
-                          </td>
-                        )}
-
                         {/* Rank */}
                         <td className="px-5 py-3.5">
                           {idx < 3 ? (
@@ -323,19 +293,24 @@ export const EventLeaderboard = () => {
                               {idx === 0 ? 'emoji_events' : idx === 1 ? 'military_tech' : 'workspace_premium'}
                             </span>
                           ) : (
-                            <span className={`font-black font-headline text-xs ${rankColor}`}>#{idx + 1}</span>
+                            <span className="font-black font-headline text-xs text-on-surface-variant/40">#{idx + 1}</span>
                           )}
                         </td>
 
                         {/* Participant */}
                         <td className="px-5 py-3.5">
                           <div className="flex items-center gap-3">
-                            <div className="shrink-0">
+                            <div className="shrink-0 relative">
                               {entry.photo_url ? (
                                 <img src={entry.photo_url} alt={entry.name} className="w-9 h-9 rounded-xl object-cover" />
                               ) : (
                                 <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
                                   <span className="text-xs font-headline font-bold text-primary">{initials}</span>
+                                </div>
+                              )}
+                              {isPromoted && (
+                                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-tertiary-fixed flex items-center justify-center">
+                                  <span className="material-symbols-outlined text-[10px] text-on-tertiary-fixed" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
                                 </div>
                               )}
                             </div>
@@ -368,23 +343,32 @@ export const EventLeaderboard = () => {
                           </span>
                         </td>
 
-                        {/* Quick promote icon */}
-                        <td className="px-3 py-3.5">
-                          <button
-                            type="button"
-                            title="Add to promote selection"
-                            onClick={e => { e.stopPropagation(); quickPromote(entry.user_id); }}
-                            className={`p-1.5 rounded-lg transition-all ${
-                              isSelected
-                                ? 'text-primary bg-primary/10'
-                                : 'text-on-surface-variant/30 hover:text-primary hover:bg-primary/5'
-                            }`}
-                          >
-                            <span className="material-symbols-outlined text-[18px]" style={isSelected ? { fontVariationSettings: "'FILL' 1" } : undefined}>
-                              arrow_circle_up
-                            </span>
-                          </button>
-                        </td>
+                        {/* Promote icon */}
+                        {canPromote && (
+                          <td className="px-3 py-3.5 text-center">
+                            {isPromoted ? (
+                              <span className="material-symbols-outlined text-[20px] text-tertiary-fixed-dim" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                            ) : (
+                              <button
+                                type="button"
+                                title={toEvent ? `Promote to ${events.find(e => e.id === toEvent)?.name}` : 'Select a destination event first'}
+                                onClick={() => handlePromoteOne(entry)}
+                                disabled={!!promotingId}
+                                className={`p-1.5 rounded-lg transition-all disabled:opacity-40 ${
+                                  toEvent
+                                    ? 'text-primary hover:bg-primary hover:text-on-primary'
+                                    : 'text-on-surface-variant/30 hover:text-primary hover:bg-primary/5'
+                                }`}
+                              >
+                                {isPromoting ? (
+                                  <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
+                                ) : (
+                                  <span className="material-symbols-outlined text-[20px]">arrow_circle_up</span>
+                                )}
+                              </button>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     );
                   })}
@@ -392,35 +376,6 @@ export const EventLeaderboard = () => {
               </table>
             </div>
           )}
-        </div>
-      )}
-
-      {/* ── Sticky promote CTA ── */}
-      {promoteMode && selected.size > 0 && toEvent && (
-        <div className="sticky bottom-8 flex justify-center">
-          <button
-            type="button"
-            onClick={handlePromote}
-            disabled={promoting}
-            className="flex items-center gap-3 px-8 py-3.5 rounded-full bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-[0_4px_24px_rgba(19,41,143,0.3)] hover:scale-[1.02] active:scale-[0.99] disabled:opacity-50 transition-all"
-          >
-            {promoting ? (
-              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
-            )}
-            Promote {selected.size} Participant{selected.size !== 1 ? 's' : ''} → {events.find(e => e.id === toEvent)?.name}
-          </button>
-        </div>
-      )}
-
-      {/* Prompt to select destination when selections made but no destination */}
-      {promoteMode && selected.size > 0 && !toEvent && (
-        <div className="sticky bottom-8 flex justify-center">
-          <div className="flex items-center gap-2 px-6 py-3 rounded-full bg-surface-container-lowest border border-primary/20 shadow-lg text-sm font-body text-on-surface-variant">
-            <span className="material-symbols-outlined text-[18px] text-primary">info</span>
-            {selected.size} selected — pick a destination event above to promote
-          </div>
         </div>
       )}
     </div>
