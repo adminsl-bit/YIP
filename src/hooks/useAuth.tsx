@@ -246,6 +246,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
       }
 
+      // Last resort: look up email stored in profiles (catches @gmail.com and any other domains)
+      if (error && !loginId.includes('@')) {
+        const { data: profileRow } = await supabase
+          .from('profiles')
+          .select('email')
+          .ilike('email', `${loginId.toLowerCase()}@%`)
+          .maybeSingle();
+
+        if (profileRow?.email && profileRow.email !== email) {
+          const profileFallback = await attemptSignIn(profileRow.email);
+          if (!profileFallback.error) {
+            data = profileFallback.data;
+            error = null;
+          }
+        }
+      }
+
       if (error) {
         toast.error(error.message);
       } else {

@@ -321,14 +321,7 @@ const OrganizerDashboard = () => {
 
               <TabsContent value="leaderboard" className="m-0 space-y-10">
                 <PageHeader primary="Performance" secondary="Leaderboard" icon={<BarChart3 className="w-3 h-3" />} subtitle="Event Rankings & Promote to Next Round" />
-
-                {/* Event-based ranking with inline promote */}
-                <EventLeaderboard />
-
-                {/* Full aggregate view — awards & detailed scoring */}
-                <div className="pt-4 border-t border-surface-variant/30">
-                  <OrganizerLeaderboard />
-                </div>
+                <OrganizerLeaderboard />
               </TabsContent>
 
               <TabsContent value="awards" className="m-0 space-y-8">

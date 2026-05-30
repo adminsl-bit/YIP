@@ -40,23 +40,9 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsAuthenticating(true);
-    
-    let loginEmail = loginId;
-    if (!loginEmail.includes('@')) {
-      const lowerLoginId = loginEmail.toLowerCase();
-      if (lowerLoginId.startsWith('jury')) {
-        loginEmail = `${loginEmail}@yip.com`;
-      } else if (lowerLoginId.startsWith('admin')) {
-        loginEmail = `${loginEmail}@yip.admin`;
-      } else if (lowerLoginId.startsWith('journalist')) {
-        loginEmail = `${loginEmail}@yip.journalism`;
-      } else {
-        loginEmail = `${loginEmail}@yip-parliament.com`;
-      }
-    }
-    
     try {
-      await signIn(loginEmail, password);
+      // Pass loginId as-is — signIn handles domain resolution with fallbacks
+      await signIn(loginId.trim(), password);
     } catch (error) {
       console.error('Login error:', error);
       toast({
