@@ -114,7 +114,7 @@ const StudentDashboard = () => {
         party_name: editPartyName.trim() || null,
         party_tagline: editPartyTagline.trim() || null,
       } as any)
-      .eq('id', user.id);
+      .eq('user_id', user.id);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
@@ -135,7 +135,7 @@ const StudentDashboard = () => {
         manifesto_problems: manifestoChallenges,
         manifesto_solutions: manifestoSolutions,
       } as any)
-      .eq('id', user.id);
+      .eq('user_id', user.id);
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
