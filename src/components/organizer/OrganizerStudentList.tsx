@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { KeyRound, Eye, EyeOff } from "lucide-react";
@@ -62,6 +63,7 @@ interface JuryAssessment {
 }
 
 export const OrganizerStudentList = () => {
+  const { profile } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [assessments, setAssessments] = useState<Assessment[]>([]);
   const [juryAssessments, setJuryAssessments] = useState<JuryAssessment[]>([]);
@@ -85,6 +87,32 @@ export const OrganizerStudentList = () => {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [currentPage, setCurrentPage] = useState(1);
+
+  const [isSyncingEvent, setIsSyncingEvent] = useState(false);
+
+  const handleSyncEventId = async () => {
+    if (!profile?.event_id) {
+      toast({ title: 'No event assigned to your account', variant: 'destructive' });
+      return;
+    }
+    const nullEventStudents = students.filter((s: any) => !s.event_id);
+    if (nullEventStudents.length === 0) {
+      toast({ title: 'All students already have an event assigned' });
+      return;
+    }
+    setIsSyncingEvent(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ event_id: profile.event_id })
+      .in('user_id', nullEventStudents.map((s: any) => s.user_id));
+    setIsSyncingEvent(false);
+    if (error) {
+      toast({ title: 'Sync failed', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: `${nullEventStudents.length} student${nullEventStudents.length !== 1 ? 's' : ''} assigned to this event` });
+      fetchStudents();
+    }
+  };
 
   // Register new student dialog
   const [showRegisterDialog, setShowRegisterDialog] = useState(false);
@@ -502,6 +530,7 @@ export const OrganizerStudentList = () => {
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
         body: JSON.stringify({
           mode: 'full',
+          event_id: profile?.event_id ?? null,
           students: [{
             serialNumber: nextSerial,
             loginId: registerForm.loginId,
@@ -578,6 +607,19 @@ export const OrganizerStudentList = () => {
             Cards
           </button>
         </div>
+        {profile?.event_id && students.some((s: any) => !s.event_id) && (
+          <button
+            onClick={handleSyncEventId}
+            disabled={isSyncingEvent}
+            title="Assign this event to all students who are missing an event assignment"
+            className="flex items-center gap-2 py-3 px-5 rounded-full border border-primary/30 text-primary font-bold font-body text-sm hover:bg-primary/5 transition-all disabled:opacity-50"
+          >
+            {isSyncingEvent
+              ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+              : <span className="material-symbols-outlined text-[18px]">sync</span>}
+            Sync Event ({students.filter((s: any) => !s.event_id).length})
+          </button>
+        )}
         <button
           onClick={() => { setRegisterForm(f => ({ ...f, committee: autoCommittee })); setShowRegisterDialog(true); }}
           className="bg-gradient-to-r from-primary to-primary-container text-white font-bold py-3 px-7 rounded-full flex items-center gap-2 shadow-[0_8px_24px_rgba(19,41,143,0.25)] hover:scale-[1.02] transition-all active:scale-95 font-body text-sm"
