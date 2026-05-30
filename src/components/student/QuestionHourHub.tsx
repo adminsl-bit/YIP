@@ -11,22 +11,38 @@ import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 
 const MINISTRIES = [
-  'Ministry of Education',
-  'Ministry of Finance & Economy',
-  'Ministry of Environment & Climate',
-  'Ministry of Technology & Innovation',
-  'Ministry of Youth Affairs',
-  'Ministry of Digital Transformation',
+  'Ministry of Road Transport & Highways',
+  'Ministry of Finance',
+  'Ministry of Defence',
+  'Ministry of Social Justice & Empowerment',
+  'Ministry of Women & Child Development',
+  'Ministry of Tourism & Culture',
+  'Ministry of Labour & Employment',
+  'Ministry of Information and Broadcasting',
+  'Ministry of Youth Affairs & Sports',
+  'Ministry of Home Affairs',
 ];
 
 const FILTER_LABELS: Record<string, string> = {
-  'All Portfolios': 'ALL PORTFOLIOS',
-  'Ministry of Education': 'EDUCATION',
-  'Ministry of Finance & Economy': 'FINANCE',
-  'Ministry of Environment & Climate': 'ENVIRONMENT',
-  'Ministry of Technology & Innovation': 'TECHNOLOGY',
-  'Ministry of Youth Affairs': 'YOUTH AFFAIRS',
-  'Ministry of Digital Transformation': 'DIGITAL',
+  'All Portfolios':                              'ALL',
+  'Ministry of Road Transport & Highways':       'TRANSPORT',
+  'Ministry of Finance':                         'FINANCE',
+  'Ministry of Defence':                         'DEFENCE',
+  'Ministry of Social Justice & Empowerment':    'SOCIAL JUSTICE',
+  'Ministry of Women & Child Development':       'WOMEN & CHILD',
+  'Ministry of Tourism & Culture':               'TOURISM',
+  'Ministry of Labour & Employment':             'LABOUR',
+  'Ministry of Information and Broadcasting':    'INFORMATION',
+  'Ministry of Youth Affairs & Sports':          'YOUTH',
+  'Ministry of Home Affairs':                    'HOME AFFAIRS',
+};
+
+// Extract "Ministry of X" from "Minister of X" or "Shadow Minister of X"
+const getMinistryFromPosition = (position: string | null | undefined): string | null => {
+  if (!position) return null;
+  const match = position.match(/[Mm]inister of (.+)/);
+  if (!match) return null;
+  return `Ministry of ${match[1]}`;
 };
 
 interface Question {
@@ -61,14 +77,17 @@ const StatusBadge = ({ status }: { status: string }) => {
 };
 
 export const QuestionHourHub = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const myMinistry = getMinistryFromPosition(profile?.position);
+  const isMinister = !!myMinistry;
+
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [questionContent, setQuestionContent] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [viewFilter, setViewFilter] = useState<'trending' | 'recent'>('trending');
+  const [viewFilter, setViewFilter] = useState<'trending' | 'assigned'>('trending');
   const [ministryFilter, setMinistryFilter] = useState<string>('All Portfolios');
   const [selectedMinistry, setSelectedMinistry] = useState('');
 
@@ -166,12 +185,13 @@ export const QuestionHourHub = () => {
     }
   };
 
-  const allQuestions = questions
-    .filter(q => ministryFilter === 'All Portfolios' || q.ministry === ministryFilter)
-    .sort((a, b) => viewFilter === 'trending'
-      ? b.votes_count - a.votes_count
-      : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    );
+  const allQuestions = viewFilter === 'assigned'
+    ? questions
+        .filter(q => myMinistry ? q.ministry === myMinistry : false)
+        .sort((a, b) => b.votes_count - a.votes_count)
+    : questions
+        .filter(q => ministryFilter === 'All Portfolios' || q.ministry === ministryFilter)
+        .sort((a, b) => b.votes_count - a.votes_count);
 
   const pendingCount = allQuestions.filter(q => q.status === 'pending').length;
 
@@ -269,39 +289,76 @@ export const QuestionHourHub = () => {
       <section className="lg:col-span-9 p-6 lg:p-8 space-y-7">
 
         {/* Header row */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <h2 className="text-[18px] font-bold text-on-surface font-headline tracking-tight">Ministerial Portfolios</h2>
           <div className="flex bg-surface-container-high p-1 rounded-full">
-            {(['trending', 'recent'] as const).map(mode => (
-              <button
-                key={mode}
-                onClick={() => setViewFilter(mode)}
-                className={`px-5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all font-headline ${
-                  viewFilter === mode ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant/50'
-                }`}
-              >
-                {mode}
-              </button>
-            ))}
+            <button
+              onClick={() => setViewFilter('trending')}
+              className={`px-5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all font-headline flex items-center gap-1.5 ${
+                viewFilter === 'trending' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant/50'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[13px]">trending_up</span>
+              Trending
+            </button>
+            <button
+              onClick={() => setViewFilter('assigned')}
+              className={`px-5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all font-headline flex items-center gap-1.5 ${
+                viewFilter === 'assigned' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant/50'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[13px]">inbox</span>
+              My Questions
+              {isMinister && viewFilter !== 'assigned' && questions.filter(q => q.ministry === myMinistry && q.status === 'pending').length > 0 && (
+                <span className="w-4 h-4 rounded-full bg-error text-white text-[9px] font-black flex items-center justify-center">
+                  {questions.filter(q => q.ministry === myMinistry && q.status === 'pending').length}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Portfolio filter chips */}
-        <div className="flex gap-2.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
-          {Object.entries(FILTER_LABELS).map(([full, label]) => (
-            <button
-              key={full}
-              onClick={() => setMinistryFilter(full)}
-              className={`px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-widest whitespace-nowrap transition-all font-headline ${
-                ministryFilter === full
-                  ? 'bg-primary text-white shadow-sm shadow-primary/20'
-                  : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        {/* Minister context banner — shown on assigned tab */}
+        {viewFilter === 'assigned' && (
+          <div className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl ${isMinister ? 'bg-primary/5 border border-primary/15' : 'bg-surface-container border border-outline-variant/10'}`}>
+            <span className="material-symbols-outlined text-[20px] text-primary shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>
+              {isMinister ? 'account_balance' : 'info'}
+            </span>
+            {isMinister ? (
+              <div>
+                <p className="text-xs font-black text-primary font-headline uppercase tracking-widest">
+                  {myMinistry}
+                </p>
+                <p className="text-[10px] text-on-surface-variant font-body mt-0.5">
+                  Showing all questions directed to your portfolio · {profile?.position}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-on-surface-variant font-body">
+                This view is for ministers. Questions addressed to a ministry appear here for the assigned minister.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Portfolio filter chips — only on trending tab */}
+        {viewFilter === 'trending' && (
+          <div className="flex gap-2.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+            {Object.entries(FILTER_LABELS).map(([full, label]) => (
+              <button
+                key={full}
+                onClick={() => setMinistryFilter(full)}
+                className={`px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-widest whitespace-nowrap transition-all font-headline ${
+                  ministryFilter === full
+                    ? 'bg-primary text-white shadow-sm shadow-primary/20'
+                    : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Section header */}
         <div className="flex items-center justify-between">
@@ -321,10 +378,19 @@ export const QuestionHourHub = () => {
           </div>
         ) : allQuestions.length === 0 ? (
           <div className="py-16 flex flex-col items-center justify-center bg-surface-container-lowest rounded-3xl border border-outline-variant/15 border-dashed text-center px-8">
-            <span className="material-symbols-outlined text-[32px] text-on-surface-variant/20 mb-3">chat</span>
-            <h4 className="text-sm font-headline font-black text-on-surface-variant/40 uppercase tracking-tight mb-1">No Active Questions</h4>
+            <span className="material-symbols-outlined text-[32px] text-on-surface-variant/20 mb-3">
+              {viewFilter === 'assigned' ? 'inbox' : 'chat'}
+            </span>
+            <h4 className="text-sm font-headline font-black text-on-surface-variant/40 uppercase tracking-tight mb-1">
+              {viewFilter === 'assigned' ? 'No Questions in Your Inbox' : 'No Active Questions'}
+            </h4>
             <p className="text-xs text-on-surface-variant/30 max-w-xs leading-relaxed font-body">
-              Be the first to initiate a question into the {ministryFilter === 'All Portfolios' ? 'assembly' : ministryFilter.replace('Ministry of ', '')} portfolio.
+              {viewFilter === 'assigned'
+                ? isMinister
+                  ? `No questions have been directed to ${myMinistry} yet.`
+                  : 'You are not assigned a ministerial portfolio.'
+                : `Be the first to initiate a question into the ${ministryFilter === 'All Portfolios' ? 'assembly' : ministryFilter.replace('Ministry of ', '')} portfolio.`
+              }
             </p>
           </div>
         ) : (
