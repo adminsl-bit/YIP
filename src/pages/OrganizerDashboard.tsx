@@ -193,7 +193,11 @@ const OrganizerDashboard = () => {
 
           {/* ── Canvas ──*/}
           <main className={`flex-1 transition-all duration-200 ${activeTab === 'square' ? 'p-8 lg:p-10 overflow-hidden' : activeTab === 'timer' ? 'p-6 lg:p-8 overflow-hidden flex flex-col' : 'p-8 lg:p-10 pb-24 overflow-y-auto'}`}>
-            <div>
+            {/* GlobalSquare always mounted so broadcast subscription stays alive */}
+            <div className={activeTab === 'square' ? '' : 'hidden'}>
+              <GlobalSquare />
+            </div>
+            <div className={activeTab === 'square' ? 'hidden' : ''}>
               <TabsContent value="controls" className="m-0 space-y-10">
 
                 {/* Page heading */}
@@ -292,10 +296,6 @@ const OrganizerDashboard = () => {
               <TabsContent value="polls" className="m-0 space-y-10">
                 <PageHeader primary="Ballot" secondary="Management" icon={<Gavel className="w-3 h-3" />} subtitle="Active Poll Administration" />
                 <PollManagement />
-              </TabsContent>
-
-              <TabsContent value="square" className="m-0">
-                <GlobalSquare />
               </TabsContent>
 
               <TabsContent value="students" className="m-0">

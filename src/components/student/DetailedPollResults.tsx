@@ -92,18 +92,38 @@ export const DetailedPollResults = ({
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
+    const { data: pollRow } = await supabase
+      .from("polls").select("event_id, created_at").eq("id", pollId).single();
+
+    let profilesQuery = supabase
+      .from("profiles")
+      .select("user_id, name, position, party_number, constituency, state, photo_url")
+      .eq("user_type", "student")
+      .eq("is_active", true);
+    if (pollRow?.event_id) {
+      profilesQuery = profilesQuery.eq("event_id", pollRow.event_id);
+    }
+    if (pollRow?.created_at) {
+      profilesQuery = profilesQuery.lte("created_at", pollRow.created_at);
+    }
+
     const [{ data: votesData }, { data: studentsData }] = await Promise.all([
       supabase.from("poll_votes").select("voter_id, option_id, created_at").eq("poll_id", pollId),
-      supabase.from("profiles").select("user_id, name, position, party_number, constituency, state, photo_url").eq("user_type", "student").eq("is_active", true),
+      profilesQuery,
     ]);
-    const studentMap = new Map((studentsData || []).map((s: any) => [s.user_id, s]));
+    // Only MPs are eligible voters — exclude journalists and administrators
+    const mpStudents = (studentsData || []).filter((s: any) => {
+      const pos = (s.position ?? "").toLowerCase();
+      return !pos.includes("journalist") && !pos.includes("administrator") && !pos.includes("admin");
+    });
+    const studentMap = new Map(mpStudents.map((s: any) => [s.user_id, s]));
     const voterSet = new Set((votesData || []).map((v: any) => v.voter_id));
     setVotesWithStudents([
       ...(votesData || []).filter((v: any) => studentMap.has(v.voter_id)).map((v: any) => ({
         voter_id: v.voter_id, option_id: v.option_id, created_at: v.created_at,
         student: studentMap.get(v.voter_id) as Student,
       })),
-      ...(studentsData || []).filter((s: any) => !voterSet.has(s.user_id)).map((s: any) => ({
+      ...mpStudents.filter((s: any) => !voterSet.has(s.user_id)).map((s: any) => ({
         voter_id: s.user_id, option_id: "did_not_vote", student: s as Student,
       })),
     ]);
@@ -442,8 +462,8 @@ export const DetailedPollResults = ({
             );
           })}
 
-          {/* Did Not Vote — slim inline bar */}
-          {dnvCount > 0 && (
+          {/* Did Not Vote — slim inline bar (always shown; MPs only, admins/journalists excluded) */}
+          {(
             <div className="shrink-0 flex items-center gap-4 px-2 opacity-40">
               <span className="font-display text-sm font-bold text-on-surface-variant uppercase tracking-wide whitespace-nowrap">Did Not Vote</span>
               <div className="relative flex-1 h-4 bg-surface-container rounded-full overflow-hidden">

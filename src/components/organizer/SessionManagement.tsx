@@ -717,7 +717,7 @@ export const SessionManagement = () => {
                 {sessionItems.filter(i => i.status === 'completed').length} Done
               </span>
               <a
-                href="/display/timer"
+                href="/display/combined"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-sm shadow-primary/20 hover:bg-primary-container transition-all font-headline"

@@ -7,18 +7,11 @@ import { toast } from "@/hooks/use-toast";
 import { StudentEditDialog } from "./StudentEditDialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { PARLIAMENT_COMMITTEES } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 20;
 
 const PARTY_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'];
-
-const COMMITTEES = [
-  'IT & Education',
-  'Women and Child Safety',
-  'Health & Sports',
-  'Environment & Road Transport',
-  'Tourism and Culture',
-] as const;
 const partyLetter = (n: number) => (!n || n < 1) ? null : (PARTY_LETTERS[n - 1] ?? n.toString());
 const partyLabel = (n: number, name?: string | null) => {
   const letter = partyLetter(n);
@@ -457,6 +450,17 @@ export const OrganizerStudentList = () => {
 
   const nextSerial = students.length > 0 ? Math.max(...students.map(s => s.serial_number)) + 1 : 1;
 
+  // Count assignable MPs (excludes journalists and administrators) to drive round-robin committee assignment
+  const assignableMpCount = useMemo(() =>
+    students.filter(s => {
+      const role = (s.position ?? '').toLowerCase();
+      return !role.includes('journalist') && !role.includes('administrator') && !role.includes('admin');
+    }).length
+  , [students]);
+
+  // Auto-selected committee for next registration (round-robin)
+  const autoCommittee = PARLIAMENT_COMMITTEES[assignableMpCount % PARLIAMENT_COMMITTEES.length];
+
   // Derive unique parties dynamically from loaded students (same pattern as InteractiveParliamentTree)
   const uniqueParties = useMemo(() => {
     const map = new Map<number, string | null>();
@@ -575,7 +579,7 @@ export const OrganizerStudentList = () => {
           </button>
         </div>
         <button
-          onClick={() => setShowRegisterDialog(true)}
+          onClick={() => { setRegisterForm(f => ({ ...f, committee: autoCommittee })); setShowRegisterDialog(true); }}
           className="bg-gradient-to-r from-primary to-primary-container text-white font-bold py-3 px-7 rounded-full flex items-center gap-2 shadow-[0_8px_24px_rgba(19,41,143,0.25)] hover:scale-[1.02] transition-all active:scale-95 font-body text-sm"
         >
           <span className="material-symbols-outlined text-[20px]">person_add</span>
@@ -1192,14 +1196,17 @@ export const OrganizerStudentList = () => {
                 </datalist>
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Committee</label>
+                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body flex items-center gap-1.5">
+                  Committee
+                  <span className="text-primary/60 normal-case tracking-normal font-medium text-[9px]">(auto-assigned)</span>
+                </label>
                 <select
                   value={registerForm.committee}
                   onChange={e => setRegisterForm(f => ({ ...f, committee: e.target.value }))}
                   className="w-full h-12 bg-surface-container border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
                 >
                   <option value="">Select committee</option>
-                  {COMMITTEES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {PARLIAMENT_COMMITTEES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div className="space-y-1">

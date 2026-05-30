@@ -422,13 +422,32 @@ export const AnalyticsBento = ({
   const isExpanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded;
   const handleToggle = onToggleExpand ?? (() => setInternalExpanded(e => !e));
 
+  const resolvePollMeta = async (pid: string): Promise<{ eventId: string | null; createdAt: string | null }> => {
+    const { data: pollRow } = await supabase
+      .from('polls').select('event_id, created_at').eq('id', pid).single();
+    return { eventId: pollRow?.event_id ?? null, createdAt: pollRow?.created_at ?? null };
+  };
+
   const fetchDetailedVotes = async () => {
+    const { eventId, createdAt } = await resolvePollMeta(pollId);
+
+    let profilesQuery = supabase
+      .from('profiles').select('user_id, name, position, party_number, constituency, state')
+      .eq('user_type', 'student').eq('is_active', true);
+    if (eventId) profilesQuery = profilesQuery.eq('event_id', eventId);
+    if (createdAt) profilesQuery = profilesQuery.lte('created_at', createdAt);
+
     const [{ data: votes }, { data: profiles }] = await Promise.all([
       supabase.from('poll_votes').select('voter_id, option_id').eq('poll_id', pollId),
-      supabase.from('profiles').select('user_id, name, position, party_number, constituency, state').eq('user_type', 'student').eq('is_active', true),
+      profilesQuery,
     ]);
-    const profileMap = new Map((profiles || []).map((p: any) => [p.user_id, p]));
-    return { votes: (votes || []) as any[], profileMap, profiles: profiles || [] };
+    // Only MPs are eligible — exclude journalists and administrators
+    const mpProfiles = (profiles || []).filter((p: any) => {
+      const pos = (p.position ?? '').toLowerCase();
+      return !pos.includes('journalist') && !pos.includes('administrator') && !pos.includes('admin');
+    });
+    const profileMap = new Map(mpProfiles.map((p: any) => [p.user_id, p]));
+    return { votes: (votes || []) as any[], profileMap, profiles: mpProfiles };
   };
 
   const partyStr = (num: number | null | undefined) => {
@@ -677,8 +696,18 @@ export const AnalyticsBento = ({
   };
 
   const fetchAnalytics = async () => {
+    const { eventId, createdAt } = await resolvePollMeta(pollId);
+
+    let delegatesQuery = supabase.from('profiles').select('user_id', { count: 'exact', head: true })
+      .eq('user_type', 'student').eq('is_active', true)
+      .not('position', 'ilike', '%journalist%')
+      .not('position', 'ilike', '%administrator%')
+      .not('position', 'ilike', '%admin student%');
+    if (eventId) delegatesQuery = delegatesQuery.eq('event_id', eventId);
+    if (createdAt) delegatesQuery = delegatesQuery.lte('created_at', createdAt);
+
     const [{ count: total }, { data: votes }] = await Promise.all([
-      supabase.from('profiles').select('user_id', { count: 'exact', head: true }).eq('user_type', 'student').eq('is_active', true),
+      delegatesQuery,
       supabase.from('poll_votes').select('option_id, voter_id').eq('poll_id', pollId).order('created_at', { ascending: false }),
     ]);
     const allVotes = (votes || []) as any[];
@@ -764,7 +793,7 @@ export const AnalyticsBento = ({
         </div>
 
         {/* ── Middle: icon-centric per-option metrics ── */}
-        <div className="flex items-center gap-8 flex-grow flex-wrap">
+        <div className="flex items-center gap-6 flex-grow flex-nowrap">
           {options.map((opt, idx) => {
             const key = getKey(opt);
             const text = getText(opt);

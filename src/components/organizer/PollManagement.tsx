@@ -40,7 +40,7 @@ interface PollVote {
 }
 
 export const PollManagement = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [polls, setPolls] = useState<Poll[]>([]);
   const [pollResults, setPollResults] = useState<Record<string, PollVote[]>>({});
   const [showDetailedResults, setShowDetailedResults] = useState<string | null>(null);
@@ -135,6 +135,7 @@ export const PollManagement = () => {
         created_by: user.id,
         is_active: true,
         show_results_publicly: formData.showPublicly,
+        ...(profile?.event_id ? { event_id: profile.event_id } : {}),
       });
       if (error) throw error;
       await supabase.from('system_settings').update({ setting_value: true }).eq('setting_key', 'voting_enabled');

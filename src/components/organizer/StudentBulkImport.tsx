@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
 
@@ -21,6 +22,7 @@ interface StudentData {
 }
 
 export const StudentBulkImport = () => {
+  const { profile } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -139,7 +141,7 @@ export const StudentBulkImport = () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ students, mode: importMode }),
+        body: JSON.stringify({ students, mode: importMode, event_id: profile?.event_id ?? null }),
       });
 
       if (!response.ok) {

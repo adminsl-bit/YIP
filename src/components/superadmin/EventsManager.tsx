@@ -211,8 +211,7 @@ export const EventsManager = () => {
 
   const parentOptions = (level: string, excludeId?: string) =>
     events.filter(e =>
-      level === 'regional' ? e.level === 'city' && e.id !== excludeId :
-      level === 'national' ? e.level === 'regional' && e.id !== excludeId : false
+      level === 'city' ? e.level === 'regional' && e.id !== excludeId : false
     );
 
   if (loading) {
@@ -265,10 +264,10 @@ export const EventsManager = () => {
         </SelectField>
       </div>
 
-      {/* Parent */}
-      {parentOptions(f.level, excludeId).length > 0 && (
+      {/* Parent — city events roll up to a regional event */}
+      {f.level === 'city' && parentOptions(f.level, excludeId).length > 0 && (
         <SelectField
-          label={`Parent Event (${f.level === 'regional' ? 'City' : 'Regional'})`}
+          label="Parent Regional Event"
           value={f.parent_event_id}
           onChange={v => setF(prev => ({ ...prev, parent_event_id: v }))}
         >

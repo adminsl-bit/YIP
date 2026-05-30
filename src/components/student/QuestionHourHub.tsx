@@ -343,7 +343,7 @@ export const QuestionHourHub = () => {
 
         {/* Portfolio filter chips — only on trending tab */}
         {viewFilter === 'trending' && (
-          <div className="flex gap-2.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex gap-2.5 overflow-x-auto pb-1 pr-6 lg:pr-8" style={{ scrollbarWidth: 'none' }}>
             {Object.entries(FILTER_LABELS).map(([full, label]) => (
               <button
                 key={full}

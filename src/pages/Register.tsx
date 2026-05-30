@@ -339,7 +339,7 @@ const Register = () => {
                   <div>
                     <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight font-headline">Verify Identity</h1>
                     <p className="text-slate-500 font-bold opacity-70 text-sm font-body leading-relaxed">
-                      We've sent a 6-digit verification code to <span className="text-[#13298f] underline underline-offset-4">{email}</span>.
+                      We've sent an 8-digit verification code to <span className="text-[#13298f] underline underline-offset-4">{email}</span>.
                     </p>
                   </div>
 
@@ -348,9 +348,9 @@ const Register = () => {
                       <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Verification Code</label>
                       <input 
                         type="text"
-                        maxLength={6}
+                        maxLength={8}
                         className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl focus:bg-white focus:ring-2 focus:ring-primary/10 transition-all font-black text-slate-800 placeholder:text-slate-300 text-center text-3xl tracking-[0.5em] shadow-inner"
-                        placeholder="000000"
+                        placeholder="00000000"
                         required
                         value={otp}
                         onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}

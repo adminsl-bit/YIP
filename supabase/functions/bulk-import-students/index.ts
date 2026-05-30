@@ -55,7 +55,7 @@ serve(async (req) => {
       }
     );
 
-    const { students, mode = 'full' } = await req.json();
+    const { students, mode = 'full', event_id } = await req.json();
     const results = { success: 0, failed: 0, errors: [] as string[] };
 
     console.log(`Import mode: ${mode}`);
@@ -188,6 +188,7 @@ serve(async (req) => {
             city: student.city,
             email: `${student.loginId}@yip.parliament`,
             user_type: 'student',
+            ...(event_id ? { event_id } : {}),
           };
 
           // Map alliance to party_alignment
@@ -266,6 +267,7 @@ serve(async (req) => {
             city: student.city,
             user_type: 'student',
             email: `${student.loginId}@yip.parliament`,
+            ...(event_id ? { event_id } : {}),
           };
 
           // Only add preevent_scores if provided
