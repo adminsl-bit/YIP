@@ -327,12 +327,6 @@ const OrganizerDashboard = () => {
 
                 {/* Full aggregate view — awards & detailed scoring */}
                 <div className="pt-4 border-t border-surface-variant/30">
-                  <div className="mb-6">
-                    <h2 className="text-2xl font-extrabold font-headline tracking-tight text-primary">
-                      All-Events <span className="text-secondary">Overview</span>
-                    </h2>
-                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Aggregate scores, awards & assessment status</p>
-                  </div>
                   <OrganizerLeaderboard />
                 </div>
               </TabsContent>
