@@ -42,8 +42,8 @@ Deno.serve(async (req) => {
       .eq('user_id', user.id)
       .single()
 
-    if (profileError || profile?.user_type !== 'organizer') {
-      throw new Error('Only organizers can reset passwords')
+    if (profileError || (profile?.user_type !== 'organizer' && profile?.user_type !== 'super_admin')) {
+      throw new Error('Only organizers or super admins can reset passwords')
     }
 
     const { userId, newPassword } = await req.json()
