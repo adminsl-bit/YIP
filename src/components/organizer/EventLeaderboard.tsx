@@ -112,11 +112,12 @@ export const EventLeaderboard = () => {
     if (error) {
       toast({ title: 'Promotion failed', description: error.message, variant: 'destructive' });
     } else {
-      setPromotedIds(prev => new Set(prev).add(entry.user_id));
       toast({
         title: `${entry.name} promoted`,
         description: `Now in ${events.find(e => e.id === destEventId)?.name}.`,
       });
+      // Refresh from DB so promoted state is persisted and duplicates are blocked
+      fetchLeaderboard(selectedEvent);
     }
   };
 
