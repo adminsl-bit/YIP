@@ -2,16 +2,21 @@ import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { EventsManager } from '@/components/superadmin/EventsManager';
 import { GlobalOverview } from '@/components/superadmin/GlobalOverview';
-import { PromoteParticipants } from '@/components/superadmin/PromoteParticipants';
 import { SuperAdminRoleCreator } from '@/components/superadmin/SuperAdminRoleCreator';
+import { EventLeaderboard } from '@/components/organizer/EventLeaderboard';
+import { SecurityLogsManager } from '@/components/organizer/SecurityLogsManager';
+import { SuperAdminStudentView } from '@/components/superadmin/SuperAdminStudentView';
+import { SupportChatWidget } from '@/components/shared/SupportChatWidget';
 
-type TabId = 'overview' | 'events' | 'promote' | 'roles';
+type TabId = 'overview' | 'events' | 'roles' | 'students' | 'leaderboard' | 'security';
 
 const navItems: { id: TabId; label: string; icon: string }[] = [
-  { id: 'overview', label: 'Global Overview',      icon: 'public' },
-  { id: 'events',   label: 'Events',                icon: 'event' },
-  { id: 'roles',    label: 'Organizers & Roles',    icon: 'manage_accounts' },
-  { id: 'promote',  label: 'Promote to Next Level', icon: 'arrow_upward' },
+  { id: 'overview',    label: 'Global Overview',     icon: 'public' },
+  { id: 'events',      label: 'Events',               icon: 'event' },
+  { id: 'roles',       label: 'Organizers & Roles',   icon: 'manage_accounts' },
+  { id: 'students',    label: 'Students',             icon: 'group' },
+  { id: 'leaderboard', label: 'Performance',          icon: 'leaderboard' },
+  { id: 'security',    label: 'Security',             icon: 'security' },
 ];
 
 const SuperAdminDashboard = () => {
@@ -20,11 +25,52 @@ const SuperAdminDashboard = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'overview': return <GlobalOverview onNavigateToEvents={() => setActiveTab('events')} />;
-      case 'events':   return <EventsManager />;
-      case 'roles':    return <SuperAdminRoleCreator />;
-      case 'promote':  return <PromoteParticipants />;
-      default:         return <GlobalOverview />;
+      case 'overview':    return <GlobalOverview onNavigateToEvents={() => setActiveTab('events')} />;
+      case 'events':      return <EventsManager />;
+      case 'roles':       return <SuperAdminRoleCreator />;
+      case 'students': return (
+        <div className="space-y-8">
+          <header>
+            <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+              Students <span className="text-secondary">Directory</span>
+            </h1>
+            <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+              <span className="material-symbols-outlined text-[12px]">group</span>
+              All Chapters · City-wise Breakdown
+            </p>
+          </header>
+          <SuperAdminStudentView />
+        </div>
+      );
+      case 'leaderboard': return (
+        <div className="space-y-8">
+          <header>
+            <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+              Performance <span className="text-secondary">Leaderboard</span>
+            </h1>
+            <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+              <span className="material-symbols-outlined text-[12px]">leaderboard</span>
+              Event Rankings & Promote to Next Round
+            </p>
+          </header>
+          <EventLeaderboard />
+        </div>
+      );
+      case 'security': return (
+        <div className="space-y-8">
+          <header>
+            <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+              Security <span className="text-secondary">Monitor</span>
+            </h1>
+            <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+              <span className="material-symbols-outlined text-[12px]">security</span>
+              Login Audit & Session Control
+            </p>
+          </header>
+          <SecurityLogsManager />
+        </div>
+      );
+      default: return <GlobalOverview />;
     }
   };
 
@@ -104,6 +150,8 @@ const SuperAdminDashboard = () => {
       <main className="flex-1 md:ml-64 p-8 pb-24 md:pb-8">
         {renderTabContent()}
       </main>
+
+      <SupportChatWidget />
     </div>
   );
 };

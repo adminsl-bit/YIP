@@ -68,6 +68,16 @@ const isSpecialRole = (position: string) =>
 
 const ITEMS_PER_PAGE = 20;
 
+const LEVEL_ORDER: Record<string, number> = { city: 1, regional: 2, national: 3 };
+const LEVEL_NEXT: Record<string, string> = { city: 'Regional', regional: 'National' };
+const selectCls = 'w-full bg-surface-container rounded-xl px-4 py-2.5 text-sm font-body border-0 outline-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all disabled:opacity-50 appearance-none';
+
+interface PromoteEventOption {
+  id: string;
+  name: string;
+  level: string;
+}
+
 // ── FilterPill ─────────────────────────────────────────────────────────────────
 const FilterPill = ({
   active, onClick, icon, label,
@@ -215,6 +225,14 @@ export const OrganizerLeaderboard = () => {
   // Filter panel visibility
   const [showFilters, setShowFilters] = useState(false);
 
+  // Promote mode
+  const [promoteMode, setPromoteMode] = useState(false);
+  const [promoteSelected, setPromoteSelected] = useState<Set<string>>(new Set());
+  const [promoteEvents, setPromoteEvents] = useState<PromoteEventOption[]>([]);
+  const [promoteFromEvent, setPromoteFromEvent] = useState('');
+  const [promoteToEvent, setPromoteToEvent] = useState('');
+  const [promoting, setPromoting] = useState(false);
+
   const { toast } = useToast();
 
   // Reset to page 1 whenever filters change
@@ -235,6 +253,12 @@ export const OrganizerLeaderboard = () => {
     fetchData();
     setupRealtimeSubscriptions();
   }, []);
+
+  useEffect(() => {
+    if (!promoteMode) return;
+    supabase.from('events').select('id, name, level').order('created_at')
+      .then(({ data }) => { if (data) setPromoteEvents(data as PromoteEventOption[]); });
+  }, [promoteMode]);
 
   const fetchData = async () => {
     try {
@@ -497,6 +521,39 @@ export const OrganizerLeaderboard = () => {
     setPositionFilter(''); setAssessmentStatusFilter(''); setSessionFilter('');
   };
 
+  const promoteSourceLevel = promoteEvents.find(e => e.id === promoteFromEvent)?.level;
+  const promoteToEventOptions = promoteEvents.filter(e =>
+    promoteSourceLevel && LEVEL_ORDER[e.level] > LEVEL_ORDER[promoteSourceLevel]
+  );
+
+  const togglePromoteSelect = (uid: string) =>
+    setPromoteSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(uid)) next.delete(uid); else next.add(uid);
+      return next;
+    });
+
+  const handlePromote = async () => {
+    if (!promoteFromEvent || !promoteToEvent || promoteSelected.size === 0) return;
+    setPromoting(true);
+    const { error } = await supabase.rpc('promote_participants', {
+      p_user_ids: Array.from(promoteSelected),
+      p_from_event: promoteFromEvent,
+      p_to_event: promoteToEvent,
+    });
+    setPromoting(false);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+    } else {
+      toast({
+        title: `${promoteSelected.size} participant${promoteSelected.size !== 1 ? 's' : ''} promoted`,
+        description: 'They will now appear in the destination event.',
+      });
+      setPromoteSelected(new Set());
+      setPromoteMode(false);
+    }
+  };
+
   const statusBadge = (status: string) => {
     if (status === 'fully-assessed') return 'bg-tertiary-fixed/30 text-on-tertiary-fixed-variant';
     if (status === 'partially-assessed') return 'bg-secondary-fixed/30 text-on-secondary-fixed-variant';
@@ -621,7 +678,68 @@ export const OrganizerLeaderboard = () => {
           <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>
           PDF
         </button>
+        <button
+          type="button"
+          onClick={() => { setPromoteMode(m => !m); setPromoteSelected(new Set()); setPromoteFromEvent(''); setPromoteToEvent(''); }}
+          className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold font-headline transition-all shadow-sm shrink-0 ${
+            promoteMode
+              ? 'bg-primary text-on-primary shadow-[0_4px_12px_rgba(19,41,143,0.3)]'
+              : 'bg-surface-container-lowest border border-outline-variant/20 text-on-surface-variant hover:border-primary/20 hover:text-primary'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[18px]">arrow_upward</span>
+          {promoteMode ? 'Exit Promote' : 'Promote'}
+        </button>
       </div>
+
+      {/* ── Promote panel ── */}
+      {promoteMode && (
+        <div className="bg-primary/5 border border-primary/10 rounded-2xl p-5 space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <p className="font-headline font-bold text-primary text-sm flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px]">arrow_upward</span>
+              Promote Selected Participants
+            </p>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setPromoteSelected(new Set(filteredLeaderboard.map(e => e.user_id)))} className="text-xs font-bold font-headline text-primary hover:underline">Select All</button>
+              <span className="text-outline text-xs">|</span>
+              <button type="button" onClick={() => setPromoteSelected(new Set())} className="text-xs font-bold font-headline text-on-surface-variant hover:underline">Clear</button>
+              <span className="text-xs text-on-surface-variant font-body">{promoteSelected.size} selected</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-on-surface-variant mb-2 font-headline uppercase tracking-wider">From Event</label>
+              <div className="relative">
+                <select className={selectCls} value={promoteFromEvent} onChange={e => { setPromoteFromEvent(e.target.value); setPromoteToEvent(''); }}>
+                  <option value="">Select source event</option>
+                  {promoteEvents.filter(e => e.level !== 'national').map(e => (
+                    <option key={e.id} value={e.id}>{e.name} ({e.level})</option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-on-surface-variant mb-2 font-headline uppercase tracking-wider">
+                To Event
+                {promoteSourceLevel && LEVEL_NEXT[promoteSourceLevel] && (
+                  <span className="ml-1 text-primary/60 normal-case font-normal"> — must be {LEVEL_NEXT[promoteSourceLevel]}</span>
+                )}
+              </label>
+              <div className="relative">
+                <select className={selectCls} value={promoteToEvent} onChange={e => setPromoteToEvent(e.target.value)} disabled={!promoteFromEvent || promoteToEventOptions.length === 0}>
+                  <option value="">{!promoteFromEvent ? 'Select source first' : promoteToEventOptions.length === 0 ? 'No higher-level events available' : 'Select destination event'}</option>
+                  {promoteToEventOptions.map(e => (
+                    <option key={e.id} value={e.id}>{e.name} ({e.level})</option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Filter bar (compact collapsible) ── */}
       <div className="bg-surface-container-low rounded-[1.5rem] overflow-hidden">
@@ -902,6 +1020,7 @@ export const OrganizerLeaderboard = () => {
             <table className="w-full">
               <thead>
                 <tr className="bg-surface-container-low/50">
+                  {promoteMode && <th className="w-12 px-5 py-3" />}
                   <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline w-16">Rank</th>
                   <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">Student</th>
                   <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">Constituency</th>
@@ -929,8 +1048,22 @@ export const OrganizerLeaderboard = () => {
                   return (
                     <tr
                       key={entry.user_id}
-                      className="hover:bg-surface-container-low/30 border-b border-outline-variant/5 transition-colors"
+                      onClick={() => { if (promoteMode) togglePromoteSelect(entry.user_id); }}
+                      className={`border-b border-outline-variant/5 transition-colors ${
+                        promoteMode
+                          ? `cursor-pointer ${promoteSelected.has(entry.user_id) ? 'bg-primary/5' : 'hover:bg-surface-container-low/30'}`
+                          : 'hover:bg-surface-container-low/30'
+                      }`}
                     >
+                      {promoteMode && (
+                        <td className="px-5 py-3.5">
+                          <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${promoteSelected.has(entry.user_id) ? 'bg-primary' : 'bg-surface-container border border-outline-variant/20'}`}>
+                            {promoteSelected.has(entry.user_id) && (
+                              <span className="material-symbols-outlined text-white text-[12px]">check</span>
+                            )}
+                          </div>
+                        </td>
+                      )}
                       {/* Rank */}
                       <td className="px-5 py-3.5">
                         {hasRealScores ? (
@@ -1127,6 +1260,25 @@ export const OrganizerLeaderboard = () => {
           </div>
         )}
       </div>
+
+      {/* ── Promote sticky CTA ── */}
+      {promoteMode && promoteSelected.size > 0 && promoteToEvent && (
+        <div className="sticky bottom-8 flex justify-center">
+          <button
+            type="button"
+            onClick={handlePromote}
+            disabled={promoting}
+            className="flex items-center gap-3 px-8 py-3.5 rounded-full bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-[0_4px_24px_rgba(19,41,143,0.25)] hover:scale-[1.02] active:scale-[0.99] disabled:opacity-50 transition-all"
+          >
+            {promoting ? (
+              <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <span className="material-symbols-outlined text-[20px]">arrow_upward</span>
+            )}
+            Promote {promoteSelected.size} Participant{promoteSelected.size !== 1 ? 's' : ''} → {promoteEvents.find(e => e.id === promoteToEvent)?.name}
+          </button>
+        </div>
+      )}
 
       {/* ── Award Modal ── */}
       {awardModalStudent && (

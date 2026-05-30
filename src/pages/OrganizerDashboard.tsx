@@ -32,6 +32,7 @@ import { DynamicRoleCreator } from "@/components/organizer/DynamicRoleCreator";
 import PhotoUploadManager from "@/components/organizer/PhotoUploadManager";
 import PhotoMigration from "@/components/organizer/PhotoMigration";
 import { OrganizerLeaderboard } from "@/components/organizer/OrganizerLeaderboard";
+import { EventLeaderboard } from "@/components/organizer/EventLeaderboard";
 import { AwardManagement } from "@/components/organizer/AwardManagement";
 import { AdminSpeechTracker } from "@/components/organizer/AdminSpeechTracker";
 import { BreakingNewsPublisher } from "@/components/journalist/BreakingNewsPublisher";
@@ -39,6 +40,7 @@ import { ManualScoring } from "@/components/organizer/ManualScoring";
 import { TimerTicker } from "@/components/organizer/TimerTicker";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { GlobalSquare } from "@/components/student/GlobalSquare";
+import { SupportChatWidget } from "@/components/shared/SupportChatWidget";
 
 interface DashboardStats {
   totalStudents: number;
@@ -146,6 +148,7 @@ const OrganizerDashboard = () => {
   return (
     <div className="flex min-h-screen bg-[#F3F4F6] font-body text-on-surface antialiased">
       <TimerTicker />
+      <SupportChatWidget />
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex h-screen overflow-hidden">
 
@@ -317,8 +320,21 @@ const OrganizerDashboard = () => {
               </TabsContent>
 
               <TabsContent value="leaderboard" className="m-0 space-y-10">
-                <PageHeader primary="Performance" secondary="Leaderboard" icon={<BarChart3 className="w-3 h-3" />} subtitle="Delegate Rankings & Scores" />
-                <OrganizerLeaderboard />
+                <PageHeader primary="Performance" secondary="Leaderboard" icon={<BarChart3 className="w-3 h-3" />} subtitle="Event Rankings & Promote to Next Round" />
+
+                {/* Event-based ranking with inline promote */}
+                <EventLeaderboard />
+
+                {/* Full aggregate view — awards & detailed scoring */}
+                <div className="pt-4 border-t border-surface-variant/30">
+                  <div className="mb-6">
+                    <h2 className="text-2xl font-extrabold font-headline tracking-tight text-primary">
+                      All-Events <span className="text-secondary">Overview</span>
+                    </h2>
+                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Aggregate scores, awards & assessment status</p>
+                  </div>
+                  <OrganizerLeaderboard />
+                </div>
               </TabsContent>
 
               <TabsContent value="awards" className="m-0 space-y-8">

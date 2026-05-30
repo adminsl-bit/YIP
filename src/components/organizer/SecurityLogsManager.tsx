@@ -83,7 +83,7 @@ export const SecurityLogsManager = () => {
     try {
       const { data: activeSessionUsers, error: activeError } = await supabase
         .from('profiles').select('user_id, name, email, position, session_id, last_login_at')
-        .not('session_id', 'is', null).eq('is_active', true);
+        .not('session_id', 'is', null).eq('is_active', true).neq('user_type', 'super_admin');
       if (activeError) throw activeError;
       if (!activeSessionUsers || activeSessionUsers.length === 0) { setDuplicateLogins([]); return; }
       const activeUserIds = activeSessionUsers.map(u => u.user_id);
@@ -135,7 +135,7 @@ export const SecurityLogsManager = () => {
     try {
       const { data: profileData, error } = await supabase
         .from('profiles').select('user_id, name, email, position, user_type, last_login_at, session_id, is_active')
-        .eq('is_active', true).not('last_login_at', 'is', null).order('last_login_at', { ascending: false });
+        .eq('is_active', true).not('last_login_at', 'is', null).neq('user_type', 'super_admin').order('last_login_at', { ascending: false });
       if (error) throw error;
       const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
       setActiveUsers(profileData?.filter(u => new Date(u.last_login_at) > fourHoursAgo || u.session_id !== null) || []);
@@ -157,6 +157,11 @@ export const SecurityLogsManager = () => {
   };
 
   const forceLogoutUser = async (userId: string, userName: string) => {
+    const target = activeUsers.find(u => u.user_id === userId);
+    if (target?.user_type === 'super_admin') {
+      toast({ title: 'Access Denied', description: 'Cannot force logout a super admin.', variant: 'destructive' });
+      return;
+    }
     try {
       const { error } = await supabase.from('profiles').update({ session_id: null }).eq('user_id', userId);
       if (error) throw error;
