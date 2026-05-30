@@ -149,21 +149,14 @@ export const EventLeaderboard = () => {
       )}
 
       {/* ── Leaderboard table ── */}
-      {selectedEvent && (
+      {selectedEvent && loadingLb && (
+        <div className="flex items-center justify-center h-40">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+      {selectedEvent && !loadingLb && leaderboard.length > 0 && (
         <div className="bg-surface-container-lowest rounded-2xl shadow-[0_4px_32px_0_rgba(19,41,143,0.06)] border border-outline-variant/10 overflow-hidden">
-
-          {/* Table body */}
-          {loadingLb ? (
-            <div className="flex items-center justify-center h-40">
-              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            </div>
-          ) : leaderboard.length === 0 ? (
-            <div className="text-center py-16">
-              <span className="material-symbols-outlined text-[48px] text-outline/30 block mb-3">group_off</span>
-              <p className="text-sm text-on-surface-variant/50 font-body">No participants in this event yet.</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
               <table className="w-full text-sm font-body">
                 <thead>
                   <tr className="bg-surface-container/30 border-b border-surface-variant/30">
@@ -308,7 +301,6 @@ export const EventLeaderboard = () => {
                 </tbody>
               </table>
             </div>
-          )}
         </div>
       )}
     </div>
