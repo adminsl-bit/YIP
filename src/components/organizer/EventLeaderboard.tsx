@@ -68,9 +68,18 @@ export const EventLeaderboard = () => {
 
   const fetchLeaderboard = useCallback(async (eventId: string) => {
     setLoadingLb(true);
-    setPromotedIds(new Set());
-    const { data, error } = await supabase.rpc('get_event_leaderboard', { p_event_id: eventId });
-    if (!error && data) setLeaderboard(data as RankedEntry[]);
+    const [{ data: lbData, error }, { data: epData }] = await Promise.all([
+      supabase.rpc('get_event_leaderboard', { p_event_id: eventId }),
+      supabase
+        .from('event_participants')
+        .select('user_id')
+        .eq('event_id', eventId)
+        .eq('is_current', false)
+        .not('promoted_at', 'is', null),
+    ]);
+    if (!error && lbData) setLeaderboard(lbData as RankedEntry[]);
+    // Seed promotedIds with anyone already promoted out of this event
+    setPromotedIds(new Set((epData || []).map((r: any) => r.user_id)));
     setLoadingLb(false);
   }, []);
 
@@ -291,7 +300,11 @@ export const EventLeaderboard = () => {
                     return (
                       <tr
                         key={entry.user_id}
-                        className={`border-b border-surface-variant/20 last:border-0 transition-colors hover:bg-surface-container/20 ${isPromoted ? 'opacity-50' : ''}`}
+                        className={`border-b border-surface-variant/20 last:border-0 transition-colors ${
+                          isPromoted
+                            ? 'bg-[#e6f9f1] dark:bg-tertiary-fixed/10'
+                            : 'hover:bg-surface-container/20'
+                        }`}
                       >
                         {/* Rank */}
                         <td className="px-5 py-3.5">
@@ -312,20 +325,28 @@ export const EventLeaderboard = () => {
                           <div className="flex items-center gap-3">
                             <div className="shrink-0 relative">
                               {entry.photo_url ? (
-                                <img src={entry.photo_url} alt={entry.name} className="w-9 h-9 rounded-xl object-cover" />
+                                <img src={entry.photo_url} alt={entry.name} className={`w-9 h-9 rounded-xl object-cover ${isPromoted ? 'ring-2 ring-[#2bb87c]' : ''}`} />
                               ) : (
-                                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                                  <span className="text-xs font-headline font-bold text-primary">{initials}</span>
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${isPromoted ? 'bg-[#2bb87c]/20' : 'bg-primary/10'}`}>
+                                  <span className={`text-xs font-headline font-bold ${isPromoted ? 'text-[#2bb87c]' : 'text-primary'}`}>{initials}</span>
                                 </div>
                               )}
                               {isPromoted && (
-                                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-tertiary-fixed flex items-center justify-center">
-                                  <span className="material-symbols-outlined text-[10px] text-on-tertiary-fixed" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+                                <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#2bb87c] flex items-center justify-center shadow">
+                                  <span className="material-symbols-outlined text-[10px] text-white" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
                                 </div>
                               )}
                             </div>
                             <div>
-                              <p className="font-headline font-bold text-on-surface">{entry.name}</p>
+                              <div className="flex items-center gap-2">
+                                <p className={`font-headline font-bold ${isPromoted ? 'text-[#1a8a5c]' : 'text-on-surface'}`}>{entry.name}</p>
+                                {isPromoted && (
+                                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-[#2bb87c]/15 text-[#1a8a5c] text-[9px] font-black uppercase tracking-wider font-headline">
+                                    <span className="material-symbols-outlined text-[10px]" style={{ fontVariationSettings: "'FILL' 1" }}>arrow_upward</span>
+                                    Promoted
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-[11px] text-on-surface-variant font-body">{entry.position} · #{entry.serial_number}</p>
                             </div>
                           </div>
@@ -348,7 +369,7 @@ export const EventLeaderboard = () => {
 
                         {/* Final */}
                         <td className="px-5 py-3.5 text-right">
-                          <span className="inline-block bg-primary text-on-primary font-headline font-black text-sm tabular-nums rounded-lg px-3 py-1">
+                          <span className={`inline-block font-headline font-black text-sm tabular-nums rounded-lg px-3 py-1 ${isPromoted ? 'bg-[#2bb87c]/15 text-[#1a8a5c]' : 'bg-primary text-on-primary'}`}>
                             {entry.final_score != null ? Number(entry.final_score).toFixed(1) : '—'}
                           </span>
                         </td>
@@ -357,7 +378,7 @@ export const EventLeaderboard = () => {
                         {showPromoteColumn && (
                           <td className="px-3 py-3.5 text-center">
                             {isPromoted ? (
-                              <span className="material-symbols-outlined text-[20px] text-tertiary-fixed-dim" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                              <span className="material-symbols-outlined text-[20px] text-[#2bb87c]" title="Already promoted" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                             ) : (
                               <button
                                 type="button"
