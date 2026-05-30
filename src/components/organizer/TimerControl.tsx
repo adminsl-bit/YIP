@@ -280,7 +280,6 @@ export const TimerControl = () => {
 
   const openStageView = () => {
     const stageUrl = '/display/timer';
-    console.log('Opening stage view at:', stageUrl);
     const newWindow = window.open(stageUrl, '_blank', 'width=1200,height=800,fullscreen=yes');
     if (!newWindow) {
       toast({

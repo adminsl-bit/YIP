@@ -94,7 +94,6 @@ const clockOffsetRef = useRef<number>(0);
         results[vote.option_id] = (results[vote.option_id] || 0) + 1;
       });
 
-      console.log('[SessionDisplay] Fetched poll results:', pollId, results);
       return results;
     } catch (error) {
       console.error('Error fetching poll results:', error);
@@ -171,7 +170,6 @@ const clockOffsetRef = useRef<number>(0);
       let results: Record<string, number> = {};
       if (pollData.show_results_publicly) {
         results = await fetchPollResults(pollData.id);
-        console.log('[SessionDisplay] Fetched poll with results:', pollData.id, results);
       }
 
       return { poll: pollData as Poll, results };
@@ -192,7 +190,6 @@ useEffect(() => {
       const serverTime = Date.parse(data);
       const clientMid = (clientBefore + clientAfter) / 2;
       clockOffsetRef.current = serverTime - clientMid;
-      console.log('[SessionDisplay] Clock offset calibrated:', clockOffsetRef.current, 'ms');
     }
   };
   
@@ -202,52 +199,27 @@ useEffect(() => {
 
   // Use unique channel name with timestamp to avoid conflicts
   const channelName = `session_display_${Date.now()}`;
-  console.log('[SessionDisplay] Setting up real-time subscription:', channelName);
 
   const subscription = supabase
     .channel(channelName)
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'session_items' },
-      (payload) => {
-        console.log('[SessionDisplay] session_items changed:', payload.eventType);
-        fetchActiveSession();
-      }
-    )
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'timer_sessions' },
-      (payload) => {
-        console.log('[SessionDisplay] timer_sessions changed:', payload.eventType);
-        fetchActiveSession();
-      }
-    )
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'polls' },
-      (payload) => {
-        console.log('[SessionDisplay] polls changed:', payload.eventType, 'refetching immediately');
-        fetchActiveSession();
-      }
-    )
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'session_sub_items' as any },
-      (payload) => {
-        console.log('[SessionDisplay] session_sub_items changed:', payload.eventType);
-        fetchActiveSession();
-      }
-    )
-    .on('postgres_changes',
-      { event: '*', schema: 'public', table: 'poll_votes' },
-      async (payload) => {
-        console.log('[SessionDisplay] poll_votes changed:', payload.eventType, payload);
-        // Update only poll results without refetching entire session (prevents screen refresh)
-        await updatePollResultsOnly();
-      }
-    )
-    .subscribe((status) => {
-      console.log('[SessionDisplay] Subscription status:', status);
-    });
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'session_items' }, () => {
+      fetchActiveSession();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'timer_sessions' }, () => {
+      fetchActiveSession();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () => {
+      fetchActiveSession();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'session_sub_items' as any }, () => {
+      fetchActiveSession();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes' }, async () => {
+      await updatePollResultsOnly();
+    })
+    .subscribe();
 
   return () => {
-    console.log('[SessionDisplay] Cleaning up subscription');
     if (recalibRef.current) window.clearInterval(recalibRef.current);
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
     supabase.removeChannel(subscription);

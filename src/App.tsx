@@ -21,7 +21,6 @@ import NotFound from "./pages/NotFound";
 import { AwardShowcase } from "./pages/AwardShowcase";
 import { AuthenticatedRoute } from "./components/AuthenticatedRoute";
 import { RoleProtectedRoute } from "./components/RoleProtectedRoute";
-import SeedDemoUsers from "./pages/SeedDemoUsers";
 import About from "./pages/About";
 import Results from "./pages/Results";
 import Sessions from "./pages/Sessions";
@@ -81,8 +80,7 @@ const App = () => (
             <Route path="/display/leaderboard" element={<LeaderboardDisplay />} />
             <Route path="/display/awards" element={<AwardShowcase />} />
             <Route path="/awards" element={<AwardShowcase />} />
-            <Route path="/seed-demo" element={<SeedDemoUsers />} />
-            {/* Public info pages */}
+{/* Public info pages */}
             <Route path="/about" element={<About />} />
             <Route path="/results" element={<Results />} />
             <Route path="/sessions" element={<Sessions />} />

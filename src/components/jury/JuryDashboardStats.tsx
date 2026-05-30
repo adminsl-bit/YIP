@@ -60,9 +60,7 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
           table: 'assessments',
           filter: `jury_id=eq.${juryId}` // Only listen to this jury's assessments
         },
-        (payload) => {
-          console.log('Dashboard assessment update received:', payload);
-          // Refresh dashboard data when any assessment changes
+        () => {
           fetchDashboardData();
         }
       )
@@ -79,9 +77,7 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
           table: 'profiles',
           filter: `user_type=eq.student`
         },
-        (payload) => {
-          console.log('Dashboard student profile update received:', payload);
-          // Refresh dashboard data when student profiles change
+        () => {
           fetchDashboardData();
         }
       )
@@ -116,16 +112,11 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
         throw assessmentsError;
       }
 
-      console.log('Fetched assessments:', assessments);
-      console.log('Total students:', students?.length);
-      console.log('Assessed count:', assessments?.length);
-
       // Build profiles map for assessed students
       const studentIds = (assessments || []).map((a) => a.student_id).filter(Boolean);
       let profilesMap: Record<string, any> = {};
       
       if (studentIds.length > 0) {
-        console.log('Student IDs to fetch:', studentIds);
         const uniqueIds = Array.from(new Set(studentIds));
         const { data: byUserId, error: profilesError1 } = await supabase
           .from('profiles')
@@ -137,7 +128,6 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
           throw profilesError1;
         }
         
-        console.log('Student profiles fetched (user_id):', byUserId);
         profilesMap = (byUserId || []).reduce((acc, p) => {
           acc[p.user_id] = p;
           return acc;
@@ -145,7 +135,6 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
 
         const missing = uniqueIds.filter((id) => !profilesMap[id]);
         if (missing.length) {
-          console.log('Missing profiles for user_id, trying id lookup:', missing);
           const { data: byId, error: profilesError2 } = await supabase
             .from('profiles')
             .select('id, user_id, name, position, party_number, serial_number')
@@ -159,7 +148,6 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
             profilesMap[p.id] = p;
           });
         }
-        console.log('Profiles map:', profilesMap);
       }
 
       // Calculate stats
@@ -175,7 +163,6 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
         .slice(0, 5)
         .map(a => {
           const profile = profilesMap[a.student_id];
-          console.log(`Processing student ${a.student_id}:`, profile);
           return {
             name: profile?.name || 'Student Name Not Found',
             score: a.total_score,

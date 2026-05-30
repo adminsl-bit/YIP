@@ -133,7 +133,7 @@ export const StudentBulkImport = () => {
       if (!session) throw new Error('No active session');
 
       // Use edge function for bulk import with admin privileges
-      const response = await fetch('https://ybxktwmpxdnpkfeewrpe.supabase.co/functions/v1/bulk-import-students', {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-import-students`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -193,7 +193,7 @@ export const StudentBulkImport = () => {
         return;
       }
 
-      const response = await fetch('https://ybxktwmpxdnpkfeewrpe.supabase.co/functions/v1/delete-all-students', {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-all-students`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,

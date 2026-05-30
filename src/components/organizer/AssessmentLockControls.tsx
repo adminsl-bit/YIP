@@ -48,7 +48,6 @@ export const AssessmentLockControls = () => {
 
       if (locksError) throw locksError;
 
-      console.log('Fetched locks:', locksData);
       setJuryMembers(juryData || []);
       setLocks(locksData || []);
     } catch (error) {
@@ -70,16 +69,12 @@ export const AssessmentLockControls = () => {
         event: '*',
         schema: 'public',
         table: 'assessment_locks',
-      }, (payload) => {
-        console.log('Assessment lock change detected:', payload);
+      }, () => {
         fetchData();
       })
-      .subscribe((status) => {
-        console.log('Subscription status:', status);
-      });
+      .subscribe();
 
     return () => {
-      console.log('Cleaning up assessment locks subscription');
       supabase.removeChannel(channel);
     };
   }, [fetchData]);

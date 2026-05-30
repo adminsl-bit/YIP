@@ -63,8 +63,7 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
             table: 'poll_votes',
             filter: `poll_id=eq.${pollId}`
           },
-          (payload) => {
-            console.log('Real-time vote change:', payload);
+          () => {
             fetchPollAndStats(); // Refresh stats on any vote change
             setIsLive(true);
             setTimeout(() => setIsLive(false), 1000); // Flash effect
@@ -78,9 +77,8 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
             table: 'polls',
             filter: `id=eq.${pollId}`
           },
-          (payload) => {
-            console.log('Real-time poll change:', payload);
-            fetchPollAndStats(); // Refresh stats on poll changes
+          () => {
+            fetchPollAndStats();
           }
         )
         .subscribe();
@@ -137,8 +135,8 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
         if (!countError && totalCount !== null) {
           totalVoters = totalCount;
         }
-      } catch (error) {
-        console.log('Could not fetch total student count for participation stats');
+      } catch {
+        // participation stats total unavailable; continue with partial count
       }
 
       // Fetch all votes for this poll with hybrid approach

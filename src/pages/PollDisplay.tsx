@@ -39,64 +39,31 @@ const PollDisplay = () => {
     const pollId = params.get('pollId');
     if (pollId) {
       setSpecificPollId(pollId);
-      console.log('PollDisplay: Displaying specific poll:', pollId);
     }
   }, []);
 
   useEffect(() => {
-    console.log('PollDisplay: Setting up real-time subscriptions');
     fetchActivePolls();
-    
-    // Real-time updates with unique channel names to avoid conflicts
+
     const timestamp = Date.now();
     const pollsChannelName = `polls_display_${timestamp}`;
     const votesChannelName = `votes_display_${timestamp}`;
-    
-    console.log('PollDisplay: Creating channels:', pollsChannelName, votesChannelName);
-    
+
     const pollsChannel = supabase
       .channel(pollsChannelName)
-      .on(
-        'postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'polls' 
-        }, 
-        (payload) => {
-          console.log('PollDisplay: Real-time poll change detected:', payload.eventType, payload);
-          console.log('PollDisplay: Refetching polls immediately');
-          fetchActivePolls();
-        }
-      )
-      .subscribe((status) => {
-        console.log('PollDisplay: Polls channel subscription status:', status);
-      });
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () => {
+        fetchActivePolls();
+      })
+      .subscribe();
 
     const votesChannel = supabase
       .channel(votesChannelName)
-      .on(
-        'postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'poll_votes' 
-        }, 
-        async (payload) => {
-          console.log('PollDisplay: Real-time vote change detected:', payload.eventType, payload);
-          console.log('PollDisplay: Immediately refetching polls for real-time vote updates');
-          // Immediately fetch updated results
-          await fetchActivePolls();
-        }
-      )
-      .subscribe((status) => {
-        console.log('PollDisplay: Votes channel subscription status:', status);
-      });
-
-    // Space bar toggle removed; stage display follows organizer stop action.
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'poll_votes' }, async () => {
+        await fetchActivePolls();
+      })
+      .subscribe();
 
     return () => {
-      console.log('PollDisplay: Cleaning up real-time subscriptions');
       supabase.removeChannel(pollsChannel);
       supabase.removeChannel(votesChannel);
     };

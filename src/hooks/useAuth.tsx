@@ -49,7 +49,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchProfile = async (userId: string) => {
     try {
-      console.log('Fetching profile for user ID:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -62,12 +61,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       
       if (!data) {
-        console.log('No profile found for user ID:', userId);
         setProfile(null);
         return;
       }
       
-      console.log('Profile fetched successfully:', data);
       setProfile(data);
     } catch (error) {
       console.error('Error in fetchProfile:', error);
@@ -135,7 +132,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state change:', event, 'Session:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         
@@ -161,7 +157,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      console.log('Initial session check:', !!session);
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -408,7 +403,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const signOut = async () => {
-    console.log('SignOut function called. Current state:', { user: !!user, session: !!session, profile: !!profile });
     try {
       setUser(null);
       setSession(null);
@@ -432,8 +426,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               .update({ session_id: null })
               .eq('user_id', user.id);
           }
-        } catch (dbError) {
-          console.log('Database cleanup failed, continuing with logout:', dbError);
+        } catch {
+          // cleanup failed; continue logout anyway
         }
       }
       
@@ -441,13 +435,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await supabase.auth.signOut();
       
       if (error) {
-        console.log('Supabase signOut error (handled gracefully):', error.message);
+        console.error('Supabase signOut error:', error.message);
       }
       
       toast.success('Signed out successfully');
       navigate('/login');
     } catch (error) {
-      console.log('Error during sign out, but state already cleared:', error);
+      console.error('Error during sign out:', error);
       setUser(null);
       setSession(null);
       setProfile(null);
