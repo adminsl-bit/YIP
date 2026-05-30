@@ -152,21 +152,6 @@ export const EventLeaderboard = () => {
       {selectedEvent && (
         <div className="bg-surface-container-lowest rounded-2xl shadow-[0_4px_32px_0_rgba(19,41,143,0.06)] border border-outline-variant/10 overflow-hidden">
 
-          {/* Table header bar */}
-          <div className="px-6 py-4 border-b border-surface-variant/30 flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <p className="font-headline font-extrabold text-on-surface text-sm">
-                Performance Rankings — {selectedEventMeta?.name}
-              </p>
-              <p className="text-xs text-on-surface-variant font-body mt-0.5">
-                {leaderboard.length} participants
-                {promotedIds.size > 0 && (
-                  <span className="ml-2 text-primary font-bold">· {promotedIds.size} promoted this session</span>
-                )}
-              </p>
-            </div>
-          </div>
-
           {/* Table body */}
           {loadingLb ? (
             <div className="flex items-center justify-center h-40">
