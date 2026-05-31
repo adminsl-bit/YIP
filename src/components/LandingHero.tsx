@@ -188,7 +188,7 @@ export const LandingHero = () => {
                   { value: "500+", desc: "Resolutions drafted and debated annually." },
                   { value: "300+", desc: "Hours of immersive simulation training." },
                   { value: "25+", desc: "Unique committees across all sectors." },
-                  { value: "15+", desc: "International bilateral treaties modeled." }
+                  { value: "1000+", desc: "Students impacted." }
                 ].map((item, i) => (
                   <div key={i} className="bg-white/10 backdrop-blur-xl p-4 rounded-xl border border-white/20 hover:bg-white/20 transition-colors">
                     <div className="text-2xl md:text-3xl font-black text-white mb-1">{item.value}</div>
