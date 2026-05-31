@@ -33,7 +33,7 @@ const Login = () => {
     );
   }
 
-  if (user) {
+  if (user && !isAuthenticating) {
     return <Navigate to="/" replace />;
   }
 
