@@ -123,6 +123,12 @@ export const EventsManager = () => {
   const [deleteTarget, setDeleteTarget] = useState<EventRow | null>(null);
   const [deleting, setDeleting]         = useState(false);
 
+  // Staff assignment
+  const [staffUsers, setStaffUsers]       = useState<{ user_id: string; name: string; email: string; user_type: string; event_id: string | null }[]>([]);
+  const [assignOrganizer, setAssignOrganizer] = useState('');
+  const [assignJury, setAssignJury]       = useState<Set<string>>(new Set());
+  const [loadingStaff, setLoadingStaff]   = useState(false);
+
   const { toast } = useToast();
 
   const fetchEvents = useCallback(async () => {
@@ -181,19 +187,57 @@ export const EventsManager = () => {
   };
 
   // ── Edit ─────────────────────────────────────────────────────────────────
-  const openEdit = (ev: EventRow) => {
+  const openEdit = async (ev: EventRow) => {
     setEditEvent(ev);
     setEditForm({ name: ev.name, level: ev.level as EditForm['level'], city: ev.city || '', state: ev.state || '', parent_event_id: ev.parent_event_id || '', status: ev.status as EditForm['status'] });
+    setLoadingStaff(true);
+    const { data } = await supabase
+      .from('profiles')
+      .select('user_id, name, email, user_type, event_id')
+      .in('user_type', ['organizer', 'jury']);
+    if (data) {
+      setStaffUsers(data);
+      const org = data.find(u => u.user_type === 'organizer' && u.event_id === ev.id);
+      setAssignOrganizer(org?.user_id || '');
+      setAssignJury(new Set(data.filter(u => u.user_type === 'jury' && u.event_id === ev.id).map(u => u.user_id)));
+    }
+    setLoadingStaff(false);
   };
 
   const handleEditSave = async () => {
     if (!editEvent || !editForm.name.trim()) { toast({ title: 'Name required', variant: 'destructive' }); return; }
     setEditSaving(true);
+
     const { error } = await supabase.from('events').update({
       name: editForm.name.trim(), level: editForm.level, status: editForm.status,
       city: editForm.city || null, state: editForm.state || null,
       parent_event_id: editForm.parent_event_id || null,
     }).eq('id', editEvent.id);
+
+    if (!error) {
+      // Unassign organizers previously on this event who are no longer selected
+      const prevOrgs = staffUsers.filter(u => u.user_type === 'organizer' && u.event_id === editEvent.id);
+      for (const u of prevOrgs) {
+        if (u.user_id !== assignOrganizer) {
+          await supabase.from('profiles').update({ event_id: null }).eq('user_id', u.user_id);
+        }
+      }
+      if (assignOrganizer) {
+        await supabase.from('profiles').update({ event_id: editEvent.id }).eq('user_id', assignOrganizer);
+      }
+
+      // Unassign jury previously on this event who are no longer selected
+      const prevJury = staffUsers.filter(u => u.user_type === 'jury' && u.event_id === editEvent.id);
+      for (const u of prevJury) {
+        if (!assignJury.has(u.user_id)) {
+          await supabase.from('profiles').update({ event_id: null }).eq('user_id', u.user_id);
+        }
+      }
+      for (const uid of assignJury) {
+        await supabase.from('profiles').update({ event_id: editEvent.id }).eq('user_id', uid);
+      }
+    }
+
     setEditSaving(false);
     if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); }
     else { toast({ title: 'Event updated' }); setEditEvent(null); fetchEvents(); }
@@ -559,6 +603,73 @@ export const EventsManager = () => {
                 <p className="text-sm text-outline/70 font-body mt-1">{editEvent?.name}</p>
               </div>
               {renderFormFields(editForm, setEditForm as any, editEvent?.id)}
+
+              {/* Staff Assignment */}
+              <div className="space-y-5 pt-2 border-t border-outline-variant/15">
+                <p className="text-xs font-black uppercase tracking-widest text-primary font-headline">Assign Staff</p>
+
+                {loadingStaff ? (
+                  <div className="flex items-center gap-2 text-outline text-xs font-body">
+                    <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                    Loading staff…
+                  </div>
+                ) : (
+                  <>
+                    {/* Organizer */}
+                    <div>
+                      <label className="block text-xs font-bold text-on-surface-variant mb-2 ml-1 uppercase tracking-wider font-headline">Organizer</label>
+                      <div className="relative">
+                        <select
+                          value={assignOrganizer}
+                          onChange={e => setAssignOrganizer(e.target.value)}
+                          className={fieldCls}
+                        >
+                          <option value="">— None —</option>
+                          {staffUsers.filter(u => u.user_type === 'organizer').map(u => (
+                            <option key={u.user_id} value={u.user_id}>
+                              {u.name} {u.event_id && u.event_id !== editEvent?.id ? '(assigned elsewhere)' : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+                      </div>
+                    </div>
+
+                    {/* Jury */}
+                    <div>
+                      <label className="block text-xs font-bold text-on-surface-variant mb-2 ml-1 uppercase tracking-wider font-headline">Jury Members</label>
+                      <div className="space-y-2">
+                        {staffUsers.filter(u => u.user_type === 'jury').length === 0 ? (
+                          <p className="text-xs text-outline font-body">No jury accounts found.</p>
+                        ) : staffUsers.filter(u => u.user_type === 'jury').map(u => (
+                          <label key={u.user_id} className="flex items-center gap-3 px-4 py-3 bg-surface-container rounded-xl cursor-pointer hover:bg-surface-container-high transition-colors">
+                            <input
+                              type="checkbox"
+                              checked={assignJury.has(u.user_id)}
+                              onChange={e => {
+                                setAssignJury(prev => {
+                                  const next = new Set(prev);
+                                  e.target.checked ? next.add(u.user_id) : next.delete(u.user_id);
+                                  return next;
+                                });
+                              }}
+                              className="h-4 w-4 rounded text-primary focus:ring-primary/20"
+                            />
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold font-headline text-on-surface">{u.name}</p>
+                              <p className="text-xs text-outline font-body truncate">{u.email}</p>
+                            </div>
+                            {u.event_id && u.event_id !== editEvent?.id && (
+                              <span className="ml-auto text-[9px] font-black uppercase tracking-wider text-outline font-headline shrink-0">elsewhere</span>
+                            )}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
               <div className="flex flex-wrap items-center gap-4 pt-2">
                 <button
                   onClick={handleEditSave}

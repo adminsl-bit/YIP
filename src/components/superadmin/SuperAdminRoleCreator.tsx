@@ -87,6 +87,7 @@ export const SuperAdminRoleCreator = () => {
   const [editingUser, setEditingUser]     = useState<UserRow | null>(null);
   const [editName, setEditName]           = useState('');
   const [editPosition, setEditPosition]   = useState('');
+  const [editEventId, setEditEventId]     = useState('');
   const [isSaving, setIsSaving]           = useState(false);
 
   // Password reset
@@ -207,13 +208,13 @@ export const SuperAdminRoleCreator = () => {
   };
 
   // ── Edit ────────────────────────────────────────────────────────────────
-  const openEdit = (user: UserRow) => { setEditingUser(user); setEditName(user.name); setEditPosition(user.position || ''); };
+  const openEdit = (user: UserRow) => { setEditingUser(user); setEditName(user.name); setEditPosition(user.position || ''); setEditEventId(user.event_id || ''); };
 
   const handleEditSave = async () => {
     if (!editingUser) return;
     setIsSaving(true);
     try {
-      const { error } = await supabase.from('profiles').update({ name: editName.trim(), position: editPosition.trim() }).eq('user_id', editingUser.user_id);
+      const { error } = await supabase.from('profiles').update({ name: editName.trim(), position: editPosition.trim(), event_id: editEventId || null }).eq('user_id', editingUser.user_id);
       if (error) throw error;
       toast.success('Updated', { description: `${editName.trim()} has been updated.` });
       setEditingUser(null);
@@ -535,6 +536,22 @@ export const SuperAdminRoleCreator = () => {
                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 font-headline mb-2">Position</p>
                 <input value={editPosition} onChange={e => setEditPosition(e.target.value)} placeholder="e.g. Senior Evaluator"
                   className="w-full h-12 bg-surface-container-high border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest font-body outline-none" />
+              </div>
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 font-headline mb-2">Assigned Event</p>
+                <div className="relative">
+                  <select
+                    value={editEventId}
+                    onChange={e => setEditEventId(e.target.value)}
+                    className="w-full h-12 bg-surface-container-high border-none rounded-2xl font-bold px-5 pr-10 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest font-body outline-none appearance-none"
+                  >
+                    <option value="">— Unassigned —</option>
+                    {events.map(e => (
+                      <option key={e.id} value={e.id}>{e.name} ({e.level})</option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+                </div>
               </div>
             </div>
             <div className="flex gap-3 pt-2">
