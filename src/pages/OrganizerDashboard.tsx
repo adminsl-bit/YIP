@@ -152,7 +152,7 @@ const OrganizerDashboard = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full flex h-screen overflow-hidden">
 
-        {/* ── Left Sidebar ── */}
+        {/* ── Left Sidebar (desktop) ── */}
         <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-outline-variant h-full overflow-y-auto shrink-0">
           <div className="mb-8 px-6 pt-6">
             <h1 className="font-headline font-bold text-on-surface text-lg">The Civic Canvas</h1>
@@ -191,8 +191,27 @@ const OrganizerDashboard = () => {
         {/* ── Main Content Area ── */}
         <div className="flex-1 flex flex-col h-full min-w-0">
 
+          {/* ── Mobile Top Header ── */}
+          <header className="lg:hidden bg-white border-b border-outline-variant px-4 py-3 flex items-center justify-between shrink-0">
+            <div>
+              <p className="font-headline font-bold text-on-surface text-sm">The Civic Canvas</p>
+              <p className="text-[10px] text-on-surface-variant font-body">Organizer Hub</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-black uppercase tracking-widest text-primary font-headline bg-primary/8 px-2 py-0.5 rounded-full">
+                {activeTab.replace(/-/g, ' ')}
+              </span>
+              <button
+                onClick={signOut}
+                className="p-1.5 text-on-surface-variant hover:text-error transition-colors"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </div>
+          </header>
+
           {/* ── Canvas ──*/}
-          <main className={`flex-1 transition-all duration-200 ${activeTab === 'square' ? 'p-8 lg:p-10 overflow-hidden' : activeTab === 'timer' ? 'p-6 lg:p-8 overflow-hidden flex flex-col' : 'p-8 lg:p-10 pb-24 overflow-y-auto'}`}>
+          <main className={`flex-1 transition-all duration-200 ${activeTab === 'square' ? 'p-4 lg:p-10 overflow-hidden pb-20 lg:pb-0' : activeTab === 'timer' ? 'p-4 lg:p-8 overflow-hidden flex flex-col pb-20 lg:pb-0' : 'p-4 lg:p-10 pb-24 overflow-y-auto'}`}>
             {/* GlobalSquare always mounted so broadcast subscription stays alive */}
             <div className={activeTab === 'square' ? '' : 'hidden'}>
               <GlobalSquare />
@@ -374,6 +393,38 @@ const OrganizerDashboard = () => {
 
         </div>
       </Tabs>
+
+      {/* ── Mobile Bottom Nav ── */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant z-50 flex items-center justify-around h-16 overflow-x-auto px-1">
+        {([
+          { value: 'controls',       icon: 'dashboard_customize' },
+          { value: 'timer',          icon: 'timer' },
+          { value: 'sessions',       icon: 'event_seat' },
+          { value: 'polls',          icon: 'how_to_vote' },
+          { value: 'square',         icon: 'forum' },
+          { value: 'students',       icon: 'group' },
+          { value: 'security',       icon: 'security' },
+          { value: 'leaderboard',    icon: 'leaderboard' },
+          { value: 'awards',         icon: 'emoji_events' },
+          { value: 'speeches',       icon: 'record_voice_over' },
+          { value: 'news',           icon: 'campaign' },
+        ] as { value: string; icon: string }[]).map(item => (
+          <button
+            key={item.value}
+            onClick={() => setActiveTab(item.value)}
+            className={`flex flex-col items-center justify-center p-2 min-w-[3rem] transition-colors ${
+              activeTab === item.value ? 'text-primary' : 'text-on-surface-variant'
+            }`}
+          >
+            <span
+              className="material-symbols-outlined text-[22px]"
+              style={activeTab === item.value ? { fontVariationSettings: "'FILL' 1" } : undefined}
+            >
+              {item.icon}
+            </span>
+          </button>
+        ))}
+      </div>
     </div>
   );
 };

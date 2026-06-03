@@ -9,6 +9,37 @@ import { Input } from '@/components/ui/input';
 
 const ITEMS_PER_PAGE = 25;
 
+const STATE_REGION: Record<string, string> = {
+  // North
+  'Delhi': 'North', 'Haryana': 'North', 'Punjab': 'North', 'Himachal Pradesh': 'North',
+  'Uttarakhand': 'North', 'Jammu and Kashmir': 'North', 'Ladakh': 'North',
+  'Uttar Pradesh': 'North', 'Rajasthan': 'North', 'Chandigarh': 'North',
+  // South
+  'Tamil Nadu': 'South', 'Kerala': 'South', 'Karnataka': 'South',
+  'Andhra Pradesh': 'South', 'Telangana': 'South', 'Puducherry': 'South', 'Lakshadweep': 'South',
+  // East
+  'West Bengal': 'East', 'Odisha': 'East', 'Bihar': 'East', 'Jharkhand': 'East',
+  'Andaman and Nicobar Islands': 'East',
+  // West
+  'Maharashtra': 'West', 'Gujarat': 'West', 'Goa': 'West',
+  'Madhya Pradesh': 'West', 'Chhattisgarh': 'West',
+  'Dadra and Nagar Haveli and Daman and Diu': 'West',
+  // Northeast
+  'Assam': 'Northeast', 'Meghalaya': 'Northeast', 'Manipur': 'Northeast',
+  'Mizoram': 'Northeast', 'Nagaland': 'Northeast', 'Tripura': 'Northeast',
+  'Arunachal Pradesh': 'Northeast', 'Sikkim': 'Northeast',
+};
+
+const REGION_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
+  North:     { icon: 'north', color: 'text-primary', bg: 'bg-primary/8' },
+  South:     { icon: 'south', color: 'text-secondary', bg: 'bg-secondary/8' },
+  East:      { icon: 'east', color: 'text-tertiary-container', bg: 'bg-tertiary-fixed/15' },
+  West:      { icon: 'west', color: 'text-on-tertiary-fixed-variant', bg: 'bg-tertiary/10' },
+  Northeast: { icon: 'explore', color: 'text-error', bg: 'bg-error/8' },
+};
+
+const getRegion = (state?: string) => (state ? (STATE_REGION[state] ?? 'Other') : 'Other');
+
 interface Student {
   id: string;
   user_id: string;
@@ -61,6 +92,7 @@ export const SuperAdminStudentView = () => {
   const [loading, setLoading]           = useState(true);
   const [searchTerm, setSearchTerm]     = useState('');
   const [cityFilter, setCityFilter]     = useState('');
+  const [regionFilter, setRegionFilter] = useState('');
   const [roleFilter, setRoleFilter]     = useState('all');
   const [currentPage, setCurrentPage]   = useState(1);
   const [viewingStudent, setViewingStudent] = useState<Student | null>(null);
@@ -81,16 +113,29 @@ export const SuperAdminStudentView = () => {
     setLoading(false);
   };
 
+  // ── Region breakdown ──────────────────────────────────────────────────────────
+  const regionGroups = useMemo(() => {
+    const map: Record<string, Student[]> = {};
+    students.forEach(s => {
+      const r = getRegion(s.state);
+      if (!map[r]) map[r] = [];
+      map[r].push(s);
+    });
+    const order = ['North', 'South', 'East', 'West', 'Northeast', 'Other'];
+    return order.filter(r => map[r]?.length > 0).map(r => [r, map[r]] as [string, Student[]]);
+  }, [students]);
+
   // ── City breakdown ────────────────────────────────────────────────────────────
   const cityGroups = useMemo(() => {
     const map: Record<string, Student[]> = {};
-    students.forEach(s => {
+    const source = regionFilter ? students.filter(s => getRegion(s.state) === regionFilter) : students;
+    source.forEach(s => {
       const c = (s.city || 'Unassigned').trim();
       if (!map[c]) map[c] = [];
       map[c].push(s);
     });
     return Object.entries(map).sort((a, b) => b[1].length - a[1].length);
-  }, [students]);
+  }, [students, regionFilter]);
 
   const totalStudents  = students.length;
   const totalCities    = cityGroups.filter(([c]) => c !== 'Unassigned').length;
@@ -101,23 +146,25 @@ export const SuperAdminStudentView = () => {
   const filtered = useMemo(() => {
     const q = searchTerm.toLowerCase();
     return students.filter(s => {
+      const matchRegion = !regionFilter || getRegion(s.state) === regionFilter;
       const matchCity = !cityFilter || (s.city || '').toLowerCase() === cityFilter.toLowerCase();
       const matchRole = roleFilter === 'all' || getSeatRole(s.position) === roleFilter;
       const matchSearch = !q || (
         s.name.toLowerCase().includes(q) ||
         (s.constituency || '').toLowerCase().includes(q) ||
         (s.city || '').toLowerCase().includes(q) ||
+        (s.state || '').toLowerCase().includes(q) ||
         s.serial_number.toString().includes(q) ||
         (s.position || '').toLowerCase().includes(q)
       );
-      return matchCity && matchRole && matchSearch;
+      return matchRegion && matchCity && matchRole && matchSearch;
     });
-  }, [students, searchTerm, cityFilter, roleFilter]);
+  }, [students, searchTerm, cityFilter, regionFilter, roleFilter]);
 
   const totalPages       = Math.max(1, Math.ceil(filtered.length / ITEMS_PER_PAGE));
   const paginated        = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
-  useEffect(() => { setCurrentPage(1); }, [searchTerm, cityFilter, roleFilter]);
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, cityFilter, regionFilter, roleFilter]);
 
   // ── Password reset ────────────────────────────────────────────────────────────
   const handleReset = async (e: React.FormEvent) => {
@@ -184,13 +231,69 @@ export const SuperAdminStudentView = () => {
         ))}
       </div>
 
+      {/* ── Region breakdown (5 regions) ── */}
+      <div className="bg-surface-container-lowest rounded-[2rem] shadow-[0_4px_32px_0_rgba(19,41,143,0.06)] border border-outline-variant/10 overflow-hidden">
+        <div className="px-8 py-5 border-b border-surface-variant/30 flex items-center gap-3">
+          <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>public</span>
+          <div>
+            <p className="font-headline font-extrabold text-on-surface">Region Breakdown</p>
+            <p className="text-xs text-on-surface-variant font-body mt-0.5">Delegates across 5 national regions — click a region to filter</p>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {regionGroups.map(([region, members]) => {
+              const cfg = REGION_CONFIG[region] || { icon: 'place', color: 'text-on-surface', bg: 'bg-surface-container' };
+              const pct = totalStudents > 0 ? Math.round((members.length / totalStudents) * 100) : 0;
+              const live = members.filter(m => m.session_id).length;
+              const isActive = regionFilter === region;
+              return (
+                <button
+                  key={region}
+                  type="button"
+                  onClick={() => { setRegionFilter(isActive ? '' : region); setCityFilter(''); }}
+                  className={`text-left p-4 rounded-2xl border transition-all ${
+                    isActive
+                      ? 'bg-primary/8 border-primary/20 shadow-[0_2px_8px_rgba(19,41,143,0.12)]'
+                      : 'bg-surface-container border-transparent hover:bg-surface-container-high hover:border-outline-variant/20'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isActive ? 'bg-primary/15' : cfg.bg}`}>
+                      <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1", color: 'inherit' }}>{cfg.icon}</span>
+                    </div>
+                    <span className={`text-2xl font-headline font-extrabold ${isActive ? 'text-primary' : 'text-on-surface'}`}>{members.length}</span>
+                  </div>
+                  <p className={`font-headline font-extrabold text-sm ${isActive ? 'text-primary' : 'text-on-surface'}`}>{region}</p>
+                  {live > 0 && (
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-tertiary-fixed-dim" />
+                      <span className="text-[10px] text-on-surface-variant font-body">{live} online</span>
+                    </div>
+                  )}
+                  <div className="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden mt-2">
+                    <div
+                      className={`h-full rounded-full transition-all duration-700 ${isActive ? 'bg-primary' : 'bg-primary/40'}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <p className="text-[10px] text-on-surface-variant font-body mt-1">{pct}% of total</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       {/* ── Chapter breakdown ── */}
       <div className="bg-surface-container-lowest rounded-[2rem] shadow-[0_4px_32px_0_rgba(19,41,143,0.06)] border border-outline-variant/10 overflow-hidden">
         <div className="px-8 py-5 border-b border-surface-variant/30 flex items-center gap-3">
           <span className="material-symbols-outlined text-[20px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>map</span>
           <div>
             <p className="font-headline font-extrabold text-on-surface">Chapter Breakdown</p>
-            <p className="text-xs text-on-surface-variant font-body mt-0.5">Delegates consolidated by city — click a city to filter the table</p>
+            <p className="text-xs text-on-surface-variant font-body mt-0.5">
+              {regionFilter ? `Cities in ${regionFilter} region — click to filter table` : 'All chapters by city — click to filter table'}
+            </p>
           </div>
         </div>
         <div className="p-6">
@@ -254,11 +357,29 @@ export const SuperAdminStudentView = () => {
             <p className="text-sm text-on-surface-variant font-body shrink-0">
               <span className="font-bold text-on-surface">{filtered.length}</span> of {totalStudents}
             </p>
-            {(searchTerm || cityFilter || roleFilter !== 'all') && (
-              <button onClick={() => { setSearchTerm(''); setCityFilter(''); setRoleFilter('all'); }} className="text-xs font-bold text-primary hover:underline font-headline shrink-0 flex items-center gap-1">
+            {(searchTerm || cityFilter || regionFilter || roleFilter !== 'all') && (
+              <button onClick={() => { setSearchTerm(''); setCityFilter(''); setRegionFilter(''); setRoleFilter('all'); }} className="text-xs font-bold text-primary hover:underline font-headline shrink-0 flex items-center gap-1">
                 <span className="material-symbols-outlined text-[14px]">close</span>Clear
               </button>
             )}
+          </div>
+
+          {/* Region chips */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/50 font-headline">Region</span>
+            {['', 'North', 'South', 'East', 'West', 'Northeast'].map(r => (
+              <button
+                key={r || 'all'}
+                onClick={() => { setRegionFilter(r); setCityFilter(''); }}
+                className={`flex items-center gap-1 py-1 px-2.5 rounded-full text-[11px] font-bold transition-all font-body ${
+                  regionFilter === r
+                    ? 'bg-primary text-on-primary shadow-[0_2px_8px_rgba(19,41,143,0.22)]'
+                    : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+                }`}
+              >
+                {r || 'All'}
+              </button>
+            ))}
           </div>
 
           {/* Role chips */}

@@ -183,10 +183,10 @@ const Onboarding = () => {
       // Select constituency based on modulo of current count to ensure distribution
       const constituency = availableConstituencies[currentCount % availableConstituencies.length].name;
 
-      // 4. Determine Parliamentary Alignment — strict 50/50 split, no non_aligned
+      // 4. Determine Parliamentary Alignment — ruling always has strict majority (more seats than opposition)
       let partyAlignment: 'ruling_party' | 'opposition' | 'non_aligned' = 'non_aligned';
       if (!isDemoAccount) {
-        const rulingThreshold = Math.ceil(parties.length / 2);
+        const rulingThreshold = Math.floor(parties.length / 2) + 1;
         partyAlignment = partyNumber <= rulingThreshold ? 'ruling_party' : 'opposition';
       }
 

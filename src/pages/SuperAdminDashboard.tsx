@@ -36,7 +36,7 @@ const SuperAdminDashboard = () => {
             </h1>
             <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
               <span className="material-symbols-outlined text-[12px]">group</span>
-              All Chapters · City-wise Breakdown
+              All Chapters · 5 Regions · City Breakdown
             </p>
           </header>
           <SuperAdminStudentView />
