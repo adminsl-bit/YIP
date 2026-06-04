@@ -30,6 +30,7 @@ import Terms from "./pages/Terms";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Disclaimer from "./pages/Disclaimer";
 import FAQ from "./pages/FAQ";
+import AdminInit from "./pages/AdminInit";
 
 const queryClient = new QueryClient();
 
@@ -91,6 +92,7 @@ const App = () => (
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/disclaimer" element={<Disclaimer />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/admin-init" element={<AdminInit />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
