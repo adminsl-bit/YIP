@@ -27,7 +27,7 @@ const STATE_REGION: Record<string, string> = {
 };
 
 const Onboarding = () => {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -362,8 +362,22 @@ const Onboarding = () => {
                       <span className="text-slate-400 font-bold text-sm">Loading active sessions…</span>
                     </div>
                   ) : activeEventCities.length === 0 ? (
-                    <div className="w-full pl-16 pr-6 py-5 bg-amber-50 rounded-2xl border-2 border-amber-200">
-                      <p className="text-amber-700 font-bold text-sm">No active parliament sessions right now. Please check back later or contact administration.</p>
+                    <div className="w-full p-6 bg-amber-50 rounded-2xl border-2 border-amber-200 space-y-4">
+                      <div className="flex items-start gap-3">
+                        <span className="material-symbols-outlined text-amber-500 text-[22px] mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>event_busy</span>
+                        <div>
+                          <p className="text-amber-800 font-black text-sm">No active parliament sessions right now</p>
+                          <p className="text-amber-700 font-medium text-xs mt-1 leading-relaxed">Your registration is saved. Come back once your organizer has opened a session for your city, or contact administration to confirm your event date.</p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={async () => { await signOut(); navigate('/login'); }}
+                        className="w-full py-3 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-800 font-black text-xs uppercase tracking-widest transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">logout</span>
+                        Sign Out & Return Later
+                      </button>
                     </div>
                   ) : (
                     <>
@@ -677,9 +691,20 @@ const Onboarding = () => {
             </AnimatePresence>
           </div>
           
-          <div className="mt-8 text-center flex items-center justify-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-slate-300" />
-            <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Verified Secure Session</span>
+          <div className="mt-8 text-center flex items-center justify-center gap-4">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-slate-300" />
+              <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em]">Verified Secure Session</span>
+            </div>
+            <span className="text-slate-200">·</span>
+            <button
+              type="button"
+              onClick={async () => { await signOut(); navigate('/login'); }}
+              className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] hover:text-slate-600 transition-colors flex items-center gap-1"
+            >
+              <span className="material-symbols-outlined text-[13px]">logout</span>
+              Sign Out
+            </button>
           </div>
         </div>
       </main>
