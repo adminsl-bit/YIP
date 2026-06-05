@@ -66,11 +66,6 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   const [parties, setParties] = useState<number[]>([]);
   const [selectedParty, setSelectedParty] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const visibleTabs = TABS.filter(t => {
-    if (hiddenChannels.includes(t.id)) return false;
-    if (t.id === 'committee') return !!myCommittee; // only show if student has a committee
-    return true;
-  });
   const bottomRef = useRef<HTMLDivElement>(null);
   const channelRefsMap = useRef<Map<string, ReturnType<typeof supabase.channel>>>(new Map());
   const messagesCacheRef = useRef<Map<string, Message[]>>(new Map());
@@ -78,9 +73,16 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   const presenceChRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const profileRef = useRef<typeof profile>(null);
 
+  // Derived profile values — must be declared before visibleTabs
   const isOrganizer   = (profile as any)?.user_type === 'organizer';
   const myPartyNumber = (profile as any)?.party_number ?? 0;
   const myCommittee   = (profile as any)?.committee as string | null ?? null;
+
+  const visibleTabs = TABS.filter(t => {
+    if (hiddenChannels.includes(t.id)) return false;
+    if (t.id === 'committee') return !!myCommittee;
+    return true;
+  });
 
   // Load distinct party numbers from active students (organizer only)
   useEffect(() => {
