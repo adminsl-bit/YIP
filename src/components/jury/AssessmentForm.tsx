@@ -6,7 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 const RING_R = 58;
 const RING_C = 2 * Math.PI * RING_R;
 
-// Official YIP 2026 evaluation framework — 7 components, 100 pts total
+// Official YIP 2026 — 7 scoring components, 100 pts total
+// Sub-criteria shown as reference only (no individual inputs)
 const SCORING_COMPONENTS = [
   {
     key: 'leadership',
@@ -14,7 +15,7 @@ const SCORING_COMPONENTS = [
     max: 10,
     icon: 'emoji_events',
     criteria: [
-      { key: 'leadership_position', label: 'Leadership positions secured in House / Party / Committee', max: 10 },
+      { label: 'Leadership positions secured in House / Party / Committee', max: 10 },
     ],
   },
   {
@@ -23,12 +24,12 @@ const SCORING_COMPONENTS = [
     max: 15,
     icon: 'record_voice_over',
     criteria: [
-      { key: 'research_constituency',   label: 'Research & Constituency Understanding', max: 4 },
-      { key: 'relevance_agenda',        label: 'Relevance to Central Agenda',            max: 3 },
-      { key: 'communication_delivery',  label: 'Communication & Delivery',               max: 3 },
-      { key: 'parliamentary_conduct',   label: 'Parliamentary Conduct',                  max: 2 },
-      { key: 'originality_preparation', label: 'Originality & Preparation',              max: 2 },
-      { key: 'time_management',         label: 'Time Management',                        max: 1 },
+      { label: 'Research & Constituency Understanding', max: 4 },
+      { label: 'Relevance to Central Agenda',           max: 3 },
+      { label: 'Communication & Delivery',              max: 3 },
+      { label: 'Parliamentary Conduct',                 max: 2 },
+      { label: 'Originality & Preparation',             max: 2 },
+      { label: 'Time Management',                       max: 1 },
     ],
   },
   {
@@ -37,13 +38,13 @@ const SCORING_COMPONENTS = [
     max: 20,
     icon: 'forum',
     criteria: [
-      { key: 'quality_of_question',        label: 'Quality of Question',        max: 4 },
-      { key: 'research_relevance',         label: 'Research & Relevance',       max: 3 },
-      { key: 'parliamentary_procedure',    label: 'Parliamentary Procedure',    max: 2 },
-      { key: 'supplementary_questions',    label: 'Supplementary Questions',    max: 3 },
-      { key: 'quality_of_response',        label: 'Quality of Response',        max: 4 },
-      { key: 'subject_knowledge',          label: 'Subject Knowledge',          max: 2 },
-      { key: 'handling_supplementaries',   label: 'Handling Supplementaries',   max: 2 },
+      { label: 'Quality of Question',       max: 4 },
+      { label: 'Research & Relevance',      max: 3 },
+      { label: 'Parliamentary Procedure',   max: 2 },
+      { label: 'Supplementary Questions',   max: 3 },
+      { label: 'Quality of Response',       max: 4 },
+      { label: 'Subject Knowledge',         max: 2 },
+      { label: 'Handling Supplementaries',  max: 2 },
     ],
   },
   {
@@ -52,12 +53,12 @@ const SCORING_COMPONENTS = [
     max: 15,
     icon: 'hourglass_empty',
     criteria: [
-      { key: 'critical_thinking',    label: 'Critical Thinking',    max: 4 },
-      { key: 'problem_solving',      label: 'Problem Solving',      max: 3 },
-      { key: 'creativity',           label: 'Creativity',           max: 3 },
-      { key: 'policy_orientation',   label: 'Policy Orientation',   max: 2 },
-      { key: 'communication_skills', label: 'Communication Skills', max: 2 },
-      { key: 'parliamentary_conduct',label: 'Parliamentary Conduct',max: 1 },
+      { label: 'Critical Thinking',    max: 4 },
+      { label: 'Problem Solving',      max: 3 },
+      { label: 'Creativity',           max: 3 },
+      { label: 'Policy Orientation',   max: 2 },
+      { label: 'Communication Skills', max: 2 },
+      { label: 'Parliamentary Conduct',max: 1 },
     ],
   },
   {
@@ -66,10 +67,10 @@ const SCORING_COMPONENTS = [
     max: 10,
     icon: 'account_balance',
     criteria: [
-      { key: 'coalition_building',      label: 'Coalition Building & Alliance Management',      max: 3 },
-      { key: 'parliamentary_strategy',  label: 'Parliamentary Strategy & Procedural Use',       max: 3 },
-      { key: 'influence_negotiation',   label: 'Influence, Negotiation & Vote Mobilisation',    max: 2 },
-      { key: 'political_communication', label: 'Political Communication & Floor Presence',      max: 2 },
+      { label: 'Coalition Building & Alliance Management',     max: 3 },
+      { label: 'Parliamentary Strategy & Procedural Use',      max: 3 },
+      { label: 'Influence, Negotiation & Vote Mobilisation',   max: 2 },
+      { label: 'Political Communication & Floor Presence',     max: 2 },
     ],
   },
   {
@@ -78,11 +79,11 @@ const SCORING_COMPONENTS = [
     max: 15,
     icon: 'edit_document',
     criteria: [
-      { key: 'initiative',             label: 'Initiative',                  max: 3 },
-      { key: 'research_contribution',  label: 'Research Contribution',       max: 3 },
-      { key: 'drafting_inputs',        label: 'Drafting Inputs',             max: 3 },
-      { key: 'team_collaboration',     label: 'Team Collaboration',          max: 3 },
-      { key: 'quality_committee_work', label: 'Quality of Committee Work',   max: 3 },
+      { label: 'Initiative',               max: 3 },
+      { label: 'Research Contribution',    max: 3 },
+      { label: 'Drafting Inputs',          max: 3 },
+      { label: 'Team Collaboration',       max: 3 },
+      { label: 'Quality of Committee Work',max: 3 },
     ],
   },
   {
@@ -91,23 +92,20 @@ const SCORING_COMPONENTS = [
     max: 15,
     icon: 'gavel',
     criteria: [
-      { key: 'quality_bill_presentation',  label: 'Quality of Bill Presentation', max: 3 },
-      { key: 'understanding_bill',         label: 'Understanding of Bill',         max: 3 },
-      { key: 'defence_against_questions',  label: 'Defence Against Questions',     max: 5 },
-      { key: 'feasibility_recommendations',label: 'Feasibility of Recommendations',max: 3 },
-      { key: 'parliamentary_conduct',      label: 'Parliamentary Conduct',         max: 1 },
+      { label: 'Quality of Bill Presentation', max: 3 },
+      { label: 'Understanding of Bill',         max: 3 },
+      { label: 'Defence Against Questions',     max: 5 },
+      { label: 'Feasibility of Recommendations',max: 3 },
+      { label: 'Parliamentary Conduct',         max: 1 },
     ],
   },
 ] as const;
 
 type ComponentKey = typeof SCORING_COMPONENTS[number]['key'];
-type SubScores    = Record<string, string>; // raw input strings
-type AllScores    = Record<ComponentKey, SubScores>;
 
 export interface ComponentScore {
   component: string;
-  subScores: Record<string, number>;
-  total: number;
+  score: number;
 }
 
 interface StudentProfile {
@@ -117,8 +115,6 @@ interface StudentProfile {
   party_number: number;
   serial_number: number;
   constituency?: string;
-  state?: string;
-  city?: string;
   photo_url?: string;
   user_type: string;
 }
@@ -130,6 +126,7 @@ interface ExistingAssessment {
   status: 'draft' | 'submitted' | 'locked';
   notes?: string;
   session_id?: string | null;
+  id?: string;
 }
 
 interface AssessmentFormProps {
@@ -158,9 +155,6 @@ const getStars = (t: number) => {
   return 0;
 };
 
-const componentTotal = (scores: SubScores, criteria: readonly { key: string; max: number }[]) =>
-  criteria.reduce((sum, c) => sum + Math.min(parseFloat(scores[c.key] || '0') || 0, c.max), 0);
-
 export const AssessmentForm = ({
   student,
   existingAssessments,
@@ -169,33 +163,28 @@ export const AssessmentForm = ({
   onCancel,
 }: AssessmentFormProps) => {
 
-  // Find existing component-based assessment (session_id = null)
   const existingComponent = existingAssessments.find(a => !a.session_id);
 
-  const buildInitial = (): AllScores => {
-    const result = {} as AllScores;
-    SCORING_COMPONENTS.forEach(comp => {
-      result[comp.key as ComponentKey] = {};
-      const saved = existingComponent?.scores?.[comp.key];
-      comp.criteria.forEach(c => {
-        (result[comp.key as ComponentKey] as SubScores)[c.key] =
-          saved?.[c.key] != null ? String(saved[c.key]) : '';
-      });
-    });
-    return result;
+  const buildInitial = (): Record<ComponentKey, string> => {
+    const saved = existingComponent?.scores ?? {};
+    return Object.fromEntries(
+      SCORING_COMPONENTS.map(c => [
+        c.key,
+        saved[c.key] != null ? String(saved[c.key]) : '',
+      ])
+    ) as Record<ComponentKey, string>;
   };
 
-  const [scores, setScores]       = useState<AllScores>(buildInitial);
-  const [expanded, setExpanded]   = useState<Set<ComponentKey>>(
-    () => new Set([SCORING_COMPONENTS[0].key as ComponentKey])
-  );
-  const [notes, setNotes]         = useState(existingComponent?.notes || '');
+  const [scores, setScores]     = useState<Record<ComponentKey, string>>(buildInitial);
+  const [expanded, setExpanded] = useState<Set<ComponentKey>>(new Set());
+  const [notes, setNotes]       = useState(existingComponent?.notes || '');
   const [isSubmitting, setIsSubmitting]           = useState(false);
   const [assessmentsLocked, setAssessmentsLocked] = useState(false);
 
   useEffect(() => {
     setScores(buildInitial());
     setNotes(existingComponent?.notes || '');
+    setExpanded(new Set());
   }, [student.id]);
 
   useEffect(() => {
@@ -209,15 +198,11 @@ export const AssessmentForm = ({
 
   const locked = isLocked || assessmentsLocked;
 
-  // ── Per-component totals ────────────────────────────────────────────────────
-  const compTotals = useMemo(() =>
-    Object.fromEntries(
-      SCORING_COMPONENTS.map(comp => [comp.key, componentTotal(scores[comp.key as ComponentKey] ?? {}, comp.criteria)])
-    ), [scores]
-  );
-
   const { grandTotal, ringOffset, stars, grade, nearCap, atCap } = useMemo(() => {
-    const gt = Math.min(Object.values(compTotals).reduce((s, v) => s + v, 0), 100);
+    const gt = Math.min(
+      SCORING_COMPONENTS.reduce((sum, c) => sum + Math.min(parseFloat(scores[c.key] || '0') || 0, c.max), 0),
+      100
+    );
     const hr = 100 - gt;
     return {
       grandTotal : gt,
@@ -228,16 +213,13 @@ export const AssessmentForm = ({
       nearCap    : hr < 10 && hr > 0,
       atCap      : hr <= 0,
     };
-  }, [compTotals]);
+  }, [scores]);
 
-  const updateScore = (compKey: ComponentKey, critKey: string, raw: string, max: number) => {
-    if (raw === '') {
-      setScores(p => ({ ...p, [compKey]: { ...p[compKey], [critKey]: '' } }));
-      return;
-    }
+  const updateScore = (key: ComponentKey, raw: string, max: number) => {
+    if (raw === '') { setScores(p => ({ ...p, [key]: '' })); return; }
     const num = parseFloat(raw);
     if (isNaN(num)) return;
-    setScores(p => ({ ...p, [compKey]: { ...p[compKey], [critKey]: String(Math.min(max, Math.max(0, num))) } }));
+    setScores(p => ({ ...p, [key]: String(Math.min(max, Math.max(0, num))) }));
   };
 
   const toggleExpand = (key: ComponentKey) =>
@@ -250,12 +232,9 @@ export const AssessmentForm = ({
   const handleSubmit = async (status: 'draft' | 'submitted') => {
     setIsSubmitting(true);
     try {
-      const payload: ComponentScore[] = SCORING_COMPONENTS.map(comp => ({
-        component: comp.key,
-        subScores: Object.fromEntries(
-          comp.criteria.map(c => [c.key, parseFloat(scores[comp.key as ComponentKey]?.[c.key] || '0') || 0])
-        ),
-        total: compTotals[comp.key] ?? 0,
+      const payload: ComponentScore[] = SCORING_COMPONENTS.map(c => ({
+        component: c.key,
+        score: parseFloat(scores[c.key] || '0') || 0,
       }));
       await onSubmit(payload, notes, status);
     } catch {}
@@ -265,16 +244,16 @@ export const AssessmentForm = ({
   return (
     <div className="flex flex-col flex-1 overflow-hidden">
 
-      {/* ── Scrollable body ── */}
       <div className="flex-1 overflow-y-auto p-6 md:p-8 grid grid-cols-1 md:grid-cols-12 gap-8"
            style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
 
-        {/* LEFT — 7 component accordions */}
-        <div className="md:col-span-8 space-y-3">
-          <div className="flex items-center justify-between mb-2">
+        {/* LEFT — scoring panels */}
+        <div className="md:col-span-8 space-y-2.5">
+
+          <div className="flex items-center justify-between mb-3">
             <h3 className="font-headline font-bold text-lg text-on-surface flex items-center gap-2">
               <span className="material-symbols-outlined text-primary text-[20px]">analytics</span>
-              Evaluation Components
+              Session Scoring
             </h3>
             <p className="text-[10px] text-on-surface-variant/50 font-body uppercase tracking-widest">
               100 pts total
@@ -283,102 +262,97 @@ export const AssessmentForm = ({
 
           {SCORING_COMPONENTS.map(comp => {
             const isOpen  = expanded.has(comp.key as ComponentKey);
-            const total   = compTotals[comp.key] ?? 0;
-            const pct     = total / comp.max;
-            const hasData = comp.criteria.some(c => scores[comp.key as ComponentKey]?.[c.key]);
+            const val     = scores[comp.key as ComponentKey];
+            const numVal  = parseFloat(val || '0') || 0;
+            const hasData = val !== '';
+            const pct     = numVal / comp.max;
 
             return (
               <div
                 key={comp.key}
-                className={`rounded-2xl border transition-all ${
+                className={`rounded-2xl border transition-all duration-200 ${
                   hasData
                     ? 'bg-primary/3 border-primary/15'
                     : 'bg-surface-container-low border-transparent'
                 }`}
               >
-                {/* Accordion header */}
-                <button
-                  type="button"
-                  disabled={locked}
-                  onClick={() => toggleExpand(comp.key as ComponentKey)}
-                  className="w-full flex items-center gap-4 p-4 text-left"
-                >
+                {/* Header row — component name + score input */}
+                <div className="flex items-center gap-3 p-4">
+
+                  {/* Expand toggle */}
+                  <button
+                    type="button"
+                    disabled={locked}
+                    onClick={() => toggleExpand(comp.key as ComponentKey)}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 hover:bg-surface-container transition-colors"
+                  >
+                    {isOpen
+                      ? <ChevronUp className="w-4 h-4 text-on-surface-variant/50" />
+                      : <ChevronDown className="w-4 h-4 text-on-surface-variant/30" />}
+                  </button>
+
                   {/* Icon */}
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                     hasData ? 'bg-primary/10' : 'bg-surface-container-lowest'
                   }`}>
                     <span
-                      className={`material-symbols-outlined text-[18px] ${hasData ? 'text-primary' : 'text-on-surface-variant/40'}`}
+                      className={`material-symbols-outlined text-[16px] ${hasData ? 'text-primary' : 'text-on-surface-variant/30'}`}
                       style={hasData ? { fontVariationSettings: "'FILL' 1" } : undefined}
                     >
                       {comp.icon}
                     </span>
                   </div>
 
-                  {/* Label + mini progress */}
+                  {/* Label + mini bar */}
                   <div className="flex-1 min-w-0">
                     <p className={`font-headline font-bold text-sm truncate ${hasData ? 'text-primary' : 'text-on-surface'}`}>
                       {comp.label}
                     </p>
-                    {/* Mini bar */}
-                    <div className="w-full h-1 bg-surface-container-high rounded-full mt-1.5 overflow-hidden">
+                    <div className="w-full h-1 bg-surface-container-high rounded-full mt-1 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-primary/50 transition-all duration-500"
+                        className="h-full rounded-full bg-primary/40 transition-all duration-500"
                         style={{ width: `${pct * 100}%` }}
                       />
                     </div>
                   </div>
 
-                  {/* Score pill + chevron */}
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`font-headline font-black text-sm ${total > 0 ? 'text-primary' : 'text-on-surface-variant/30'}`}>
-                      {total}<span className="text-[10px] font-medium text-on-surface-variant/40">/{comp.max}</span>
-                    </span>
-                    {isOpen ? (
-                      <ChevronUp className="w-4 h-4 text-on-surface-variant/40" />
-                    ) : (
-                      <ChevronDown className="w-4 h-4 text-on-surface-variant/40" />
-                    )}
+                  {/* Score input */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <input
+                      type="number"
+                      min={0}
+                      max={comp.max}
+                      step={0.5}
+                      placeholder="—"
+                      value={val}
+                      onChange={e => updateScore(comp.key as ComponentKey, e.target.value, comp.max)}
+                      onFocus={e => e.target.select()}
+                      disabled={locked}
+                      className="w-14 h-10 text-center text-lg font-black font-headline rounded-xl border-none bg-surface-container-lowest shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/15 text-primary disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <span className="text-xs text-on-surface-variant/40 font-body">/{comp.max}</span>
                   </div>
-                </button>
+                </div>
 
-                {/* Expanded sub-criteria */}
+                {/* Expanded — sub-criteria as reference info only */}
                 {isOpen && (
-                  <div className="px-4 pb-4 space-y-2 border-t border-surface-variant/20 pt-3">
-                    {comp.criteria.map(c => {
-                      const val = scores[comp.key as ComponentKey]?.[c.key] ?? '';
-                      return (
-                        <div key={c.key} className="flex items-center gap-3">
-                          <p className="flex-1 text-xs font-body text-on-surface-variant">{c.label}</p>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <input
-                              type="number"
-                              min={0}
-                              max={c.max}
-                              step={0.5}
-                              placeholder="—"
-                              value={val}
-                              onChange={e => updateScore(comp.key as ComponentKey, c.key, e.target.value, c.max)}
-                              onFocus={e => e.target.select()}
-                              disabled={locked}
-                              className="w-12 h-9 text-center text-sm font-black font-headline rounded-xl border-none bg-surface-container-lowest shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/15 text-primary disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
-                            <span className="text-[10px] text-on-surface-variant/40 font-body w-6 text-right">/{c.max}</span>
+                  <div className="px-5 pb-4 border-t border-surface-variant/20 pt-3">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline mb-2 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[11px]">info</span>
+                      Scoring reference — consider these criteria
+                    </p>
+                    <div className="space-y-1">
+                      {comp.criteria.map((c, i) => (
+                        <div key={i} className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="w-1 h-1 rounded-full bg-primary/30 shrink-0" />
+                            <p className="text-xs font-body text-on-surface-variant">{c.label}</p>
                           </div>
+                          <span className="text-[10px] font-black text-primary/50 font-headline shrink-0 tabular-nums">
+                            {c.max} pts
+                          </span>
                         </div>
-                      );
-                    })}
-
-                    {/* Component subtotal */}
-                    <div className="flex items-center justify-between pt-2 border-t border-surface-variant/20 mt-1">
-                      <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/50 font-headline">
-                        Component total
-                      </span>
-                      <span className={`text-sm font-black font-headline ${
-                        total === comp.max ? 'text-primary' : total > 0 ? 'text-on-surface' : 'text-on-surface-variant/30'
-                      }`}>
-                        {total} / {comp.max}
-                      </span>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -403,14 +377,11 @@ export const AssessmentForm = ({
           </div>
         </div>
 
-        {/* RIGHT — score ring + breakdown */}
+        {/* RIGHT — ring + breakdown */}
         <div className="md:col-span-4 space-y-5">
 
-          {/* Ring */}
           <div className="bg-surface-container-high rounded-[2rem] p-6 text-center border border-outline-variant/30 flex flex-col items-center">
-            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-4 font-body">
-              Total Score
-            </p>
+            <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-4 font-body">Total Score</p>
             <div className="relative w-32 h-32 flex items-center justify-center mb-4">
               <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 128 128">
                 <circle cx="64" cy="64" r={RING_R} fill="transparent" stroke="#e6e8ea" strokeWidth="8" />
@@ -418,8 +389,7 @@ export const AssessmentForm = ({
                   cx="64" cy="64" r={RING_R}
                   fill="transparent"
                   stroke={atCap ? '#ef4444' : nearCap ? '#f59e0b' : '#13298f'}
-                  strokeWidth="8"
-                  strokeLinecap="round"
+                  strokeWidth="8" strokeLinecap="round"
                   strokeDasharray={RING_C}
                   strokeDashoffset={ringOffset}
                   className="transition-all duration-500 ease-out"
@@ -445,26 +415,25 @@ export const AssessmentForm = ({
             </p>
           </div>
 
-          {/* Component breakdown */}
+          {/* Per-component breakdown */}
           <div className="bg-surface-container-lowest rounded-[2rem] p-5 border border-outline-variant/10">
-            <h4 className="font-headline font-bold text-on-surface text-sm mb-3">Score Breakdown</h4>
-            <div className="space-y-2">
+            <h4 className="font-headline font-bold text-on-surface text-sm mb-3">Breakdown</h4>
+            <div className="space-y-2.5">
               {SCORING_COMPONENTS.map(comp => {
-                const t   = compTotals[comp.key] ?? 0;
-                const pct = comp.max > 0 ? t / comp.max : 0;
+                const v   = parseFloat(scores[comp.key as ComponentKey] || '0') || 0;
+                const pct = comp.max > 0 ? v / comp.max : 0;
                 return (
                   <div key={comp.key}>
                     <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[10px] font-body text-on-surface-variant truncate max-w-[140px]">{comp.label}</span>
-                      <span className={`text-[11px] font-black font-headline shrink-0 ml-2 ${t > 0 ? 'text-primary' : 'text-on-surface-variant/30'}`}>
-                        {t}/{comp.max}
+                      <span className="text-[10px] font-body text-on-surface-variant truncate max-w-[130px]">
+                        {comp.label}
+                      </span>
+                      <span className={`text-[11px] font-black font-headline shrink-0 ml-2 ${v > 0 ? 'text-primary' : 'text-on-surface-variant/25'}`}>
+                        {v}/{comp.max}
                       </span>
                     </div>
                     <div className="h-1 bg-surface-container rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-primary/50 rounded-full transition-all duration-500"
-                        style={{ width: `${pct * 100}%` }}
-                      />
+                      <div className="h-full bg-primary/50 rounded-full transition-all duration-500" style={{ width: `${pct * 100}%` }} />
                     </div>
                   </div>
                 );
@@ -480,7 +449,7 @@ export const AssessmentForm = ({
         </div>
       </div>
 
-      {/* ── Footer ── */}
+      {/* Footer */}
       {!locked ? (
         <div className="px-8 py-5 bg-surface-container-low border-t border-outline-variant/10 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
           <button

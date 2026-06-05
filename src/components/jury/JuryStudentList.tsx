@@ -290,12 +290,12 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       return;
     }
     try {
-      // Build scores JSON: { component_key: { sub_key: value, ... }, ... }
-      const scoresJson: Record<string, Record<string, number>> = {};
+      // Build scores JSON: { component_key: score, ... }
+      const scoresJson: Record<string, number> = {};
       let totalScore = 0;
-      componentScores.forEach(({ component, subScores, total }) => {
-        scoresJson[component] = subScores;
-        totalScore += total;
+      componentScores.forEach(({ component, score }) => {
+        scoresJson[component] = score;
+        totalScore += score;
       });
       totalScore = Math.min(totalScore, 100);
 
