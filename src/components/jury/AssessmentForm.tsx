@@ -190,6 +190,29 @@ export const AssessmentForm = ({
     });
   };
 
+  // Raw string state for tag inputs so jury can freely type (e.g. "1" without snapping)
+  const [tagInputs, setTagInputs] = useState<Record<string, string>>({});
+  const tagInputKey = (sessionId: string, key: string) => `${sessionId}__${key}`;
+
+  const handleTagInputChange = (sessionId: string, key: string, raw: string, max: number) => {
+    const inputKey = tagInputKey(sessionId, key);
+    setTagInputs(prev => ({ ...prev, [inputKey]: raw }));
+    const num = parseFloat(raw);
+    if (!isNaN(num)) adjustTag(sessionId, key, num, max);
+  };
+
+  const handleTagInputBlur = (sessionId: string, key: string, max: number) => {
+    const inputKey = tagInputKey(sessionId, key);
+    // Snap display to actual stored value on blur
+    const stored = sessionTags[sessionId]?.[key] ?? 0;
+    setTagInputs(prev => ({ ...prev, [inputKey]: String(stored) }));
+  };
+
+  const getTagDisplayValue = (sessionId: string, key: string) => {
+    const inputKey = tagInputKey(sessionId, key);
+    return inputKey in tagInputs ? tagInputs[inputKey] : String(sessionTags[sessionId]?.[key] ?? '');
+  };
+
   const toggleExpand = (sessionId: string) => {
     setExpandedSessions(prev => {
       const next = new Set(prev);
@@ -340,29 +363,27 @@ export const AssessmentForm = ({
                             return (
                               <div key={tag.key} className="flex items-center">
                                 {isActive ? (
-                                  /* Active tag — shows value stepper */
-                                  <div className="flex items-center gap-1.5 bg-primary/8 border border-primary/20 rounded-2xl pl-3 pr-2 py-1.5">
+                                  /* Active tag — direct editable input */
+                                  <div className="flex items-center gap-2 bg-primary/8 border border-primary/20 rounded-2xl pl-3 pr-2 py-1.5">
                                     <span className="material-symbols-outlined text-primary text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>{tag.icon}</span>
                                     <span className="text-[11px] font-black text-primary font-headline whitespace-nowrap">{tag.label}</span>
-                                    <div className="flex items-center gap-1 ml-1">
-                                      <button
-                                        type="button"
-                                        onClick={() => adjustTag(session.id, tag.key, val - 1, tag.max)}
-                                        className="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs font-black hover:bg-primary/20 transition-colors"
-                                      >−</button>
-                                      <span className="w-6 text-center text-[11px] font-black text-primary font-headline">{val}</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => adjustTag(session.id, tag.key, val + 1, tag.max)}
-                                        disabled={headroom <= 0}
-                                        className="w-5 h-5 rounded-lg bg-primary/10 text-primary flex items-center justify-center text-xs font-black hover:bg-primary/20 transition-colors disabled:opacity-30"
-                                      >+</button>
+                                    <div className="flex items-center gap-1 ml-1 bg-white/60 rounded-xl px-2 py-0.5 border border-primary/15">
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        max={tag.max}
+                                        step={1}
+                                        value={getTagDisplayValue(session.id, tag.key)}
+                                        onChange={e => handleTagInputChange(session.id, tag.key, e.target.value, tag.max)}
+                                        onBlur={() => handleTagInputBlur(session.id, tag.key, tag.max)}
+                                        className="w-8 text-center text-sm font-black text-primary font-headline bg-transparent outline-none"
+                                      />
+                                      <span className="text-[10px] text-primary/40 font-body">/{tag.max}</span>
                                     </div>
-                                    <span className="text-[10px] text-primary/50 font-body">/{tag.max}</span>
                                     <button
                                       type="button"
                                       onClick={() => toggleTag(session.id, tag.key, tag.max)}
-                                      className="ml-1 text-primary/40 hover:text-error transition-colors"
+                                      className="ml-0.5 text-primary/40 hover:text-error transition-colors"
                                     >
                                       <X className="w-3 h-3" />
                                     </button>
