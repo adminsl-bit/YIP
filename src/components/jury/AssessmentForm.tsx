@@ -367,7 +367,7 @@ export const AssessmentForm = ({
                                   <div className="flex items-center gap-2 bg-primary/8 border border-primary/20 rounded-2xl pl-3 pr-2 py-1.5">
                                     <span className="material-symbols-outlined text-primary text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>{tag.icon}</span>
                                     <span className="text-[11px] font-black text-primary font-headline whitespace-nowrap">{tag.label}</span>
-                                    <div className="flex items-center gap-1 ml-1 bg-white/60 rounded-xl px-2 py-0.5 border border-primary/15">
+                                    <div className="flex items-center gap-1 ml-1 bg-white rounded-xl px-2 py-1 border-2 border-primary/30 shadow-sm">
                                       <input
                                         type="number"
                                         min={0}
@@ -375,10 +375,11 @@ export const AssessmentForm = ({
                                         step={1}
                                         value={getTagDisplayValue(session.id, tag.key)}
                                         onChange={e => handleTagInputChange(session.id, tag.key, e.target.value, tag.max)}
+                                        onFocus={e => e.target.select()}
                                         onBlur={() => handleTagInputBlur(session.id, tag.key, tag.max)}
-                                        className="w-8 text-center text-sm font-black text-primary font-headline bg-transparent outline-none"
+                                        className="w-9 text-center text-sm font-black text-primary font-headline bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                       />
-                                      <span className="text-[10px] text-primary/40 font-body">/{tag.max}</span>
+                                      <span className="text-[11px] font-bold text-primary/50 font-body">/{tag.max}</span>
                                     </div>
                                     <button
                                       type="button"
