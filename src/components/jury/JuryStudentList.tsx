@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { AssessmentForm, SessionScore } from "./AssessmentForm";
+import { AssessmentForm, ComponentScore } from "./AssessmentForm";
 import { toast } from "@/hooks/use-toast";
 
 const PARTY_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
@@ -276,12 +276,12 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
   };
 
   const handleAssessmentSubmit = async (
-    sessionScores: SessionScore[],
+    componentScores: ComponentScore[],
     notes: string,
     status: 'draft' | 'submitted'
   ) => {
-    if (!selectedStudent || sessionScores.length === 0) {
-      toast({ title: "Nothing to save", description: "Enter at least one session score.", variant: "destructive" });
+    if (!selectedStudent || componentScores.length === 0) {
+      toast({ title: "Nothing to save", description: "Enter at least one score.", variant: "destructive" });
       return;
     }
     const pos = selectedStudent.position?.toLowerCase() || '';
@@ -290,28 +290,44 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       return;
     }
     try {
-      // score already includes tag values (tags were added into the box directly)
-      const rawTotal = sessionScores.reduce((sum, { score }) => sum + score, 0);
-      const scale    = rawTotal > 100 ? 100 / rawTotal : 1;
+      // Build scores JSON: { component_key: { sub_key: value, ... }, ... }
+      const scoresJson: Record<string, Record<string, number>> = {};
+      let totalScore = 0;
+      componentScores.forEach(({ component, subScores, total }) => {
+        scoresJson[component] = subScores;
+        totalScore += total;
+      });
+      totalScore = Math.min(totalScore, 100);
 
-      const results = await Promise.all(
-        sessionScores.map(({ sessionId, score, tags }) => {
-          const sessionTotal = Math.round(score * scale * 10) / 10;
-          return supabase.from('assessments').upsert({
-            jury_id: juryId,
-            student_id: selectedStudent.user_id,
-            session_id: sessionId,
-            seat_role: getSeatRole(selectedStudent.position),
-            scores: { base: score, tags: tags ?? {} },
-            total_score: sessionTotal,
-            status,
-            notes,
-            submitted_at: status === 'submitted' ? new Date().toISOString() : null,
-          }, { onConflict: 'jury_id,student_id,session_id' });
-        })
+      // Single row per jury × student (session_id = null)
+      const existing = allAssessments.find(
+        a => a.student_id === selectedStudent.user_id && !a.session_id
       );
-      const err = results.find(r => r.error);
-      if (err?.error) throw err.error;
+
+      if (existing) {
+        const { error } = await supabase.from('assessments').update({
+          scores: scoresJson,
+          total_score: totalScore,
+          seat_role: getSeatRole(selectedStudent.position),
+          status,
+          notes,
+          submitted_at: status === 'submitted' ? new Date().toISOString() : null,
+        }).eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from('assessments').insert({
+          jury_id: juryId,
+          student_id: selectedStudent.user_id,
+          session_id: null,
+          seat_role: getSeatRole(selectedStudent.position),
+          scores: scoresJson,
+          total_score: totalScore,
+          status,
+          notes,
+          submitted_at: status === 'submitted' ? new Date().toISOString() : null,
+        });
+        if (error) throw error;
+      }
 
       toast({
         title: status === 'submitted' ? "Scores Submitted" : "Draft Saved",
@@ -729,7 +745,6 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
             {/* Form body + footer */}
             <AssessmentForm
               student={selectedStudent}
-              sessions={sessions}
               existingAssessments={getStudentAssessments(selectedStudent.user_id)}
               onSubmit={handleAssessmentSubmit}
               isLocked={isLockedByOrganizer}

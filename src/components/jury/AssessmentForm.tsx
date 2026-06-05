@@ -1,23 +1,114 @@
 import { Textarea } from "@/components/ui/textarea";
-import { Lock, ChevronDown, ChevronUp, Plus, X } from "lucide-react";
+import { Lock, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const RING_R = 58;
 const RING_C = 2 * Math.PI * RING_R;
 
-// 7 scoring criteria matching the official rubric
-const SCORE_TAGS = [
-  { key: 'leadership',        label: 'Leadership & Positions',          max: 10, icon: 'emoji_events' },
-  { key: 'mupi',              label: 'MUPI / Opening Speech',           max: 15, icon: 'record_voice_over' },
-  { key: 'question_hour',     label: 'Question Hour',                   max: 20, icon: 'forum' },
-  { key: 'zero_hour',         label: 'Zero Hour',                       max: 15, icon: 'hourglass_empty' },
-  { key: 'political_acumen',  label: 'Political Acumen & Strategy',     max: 10, icon: 'account_balance' },
-  { key: 'committee',         label: 'Committee & Bill Drafting',       max: 15, icon: 'edit_document' },
-  { key: 'bill_presentation', label: 'Bill Presentation & Defence',     max: 15, icon: 'gavel' },
+// Official YIP 2026 evaluation framework — 7 components, 100 pts total
+const SCORING_COMPONENTS = [
+  {
+    key: 'leadership',
+    label: 'Leadership & Positions',
+    max: 10,
+    icon: 'emoji_events',
+    criteria: [
+      { key: 'leadership_position', label: 'Leadership positions secured in House / Party / Committee', max: 10 },
+    ],
+  },
+  {
+    key: 'mupi',
+    label: 'Matters of Urgent Public Importance',
+    max: 15,
+    icon: 'record_voice_over',
+    criteria: [
+      { key: 'research_constituency',   label: 'Research & Constituency Understanding', max: 4 },
+      { key: 'relevance_agenda',        label: 'Relevance to Central Agenda',            max: 3 },
+      { key: 'communication_delivery',  label: 'Communication & Delivery',               max: 3 },
+      { key: 'parliamentary_conduct',   label: 'Parliamentary Conduct',                  max: 2 },
+      { key: 'originality_preparation', label: 'Originality & Preparation',              max: 2 },
+      { key: 'time_management',         label: 'Time Management',                        max: 1 },
+    ],
+  },
+  {
+    key: 'question_hour',
+    label: 'Question Hour Participation & Relevance',
+    max: 20,
+    icon: 'forum',
+    criteria: [
+      { key: 'quality_of_question',        label: 'Quality of Question',        max: 4 },
+      { key: 'research_relevance',         label: 'Research & Relevance',       max: 3 },
+      { key: 'parliamentary_procedure',    label: 'Parliamentary Procedure',    max: 2 },
+      { key: 'supplementary_questions',    label: 'Supplementary Questions',    max: 3 },
+      { key: 'quality_of_response',        label: 'Quality of Response',        max: 4 },
+      { key: 'subject_knowledge',          label: 'Subject Knowledge',          max: 2 },
+      { key: 'handling_supplementaries',   label: 'Handling Supplementaries',   max: 2 },
+    ],
+  },
+  {
+    key: 'zero_hour',
+    label: 'Zero Hour Participation & Understanding',
+    max: 15,
+    icon: 'hourglass_empty',
+    criteria: [
+      { key: 'critical_thinking',    label: 'Critical Thinking',    max: 4 },
+      { key: 'problem_solving',      label: 'Problem Solving',      max: 3 },
+      { key: 'creativity',           label: 'Creativity',           max: 3 },
+      { key: 'policy_orientation',   label: 'Policy Orientation',   max: 2 },
+      { key: 'communication_skills', label: 'Communication Skills', max: 2 },
+      { key: 'parliamentary_conduct',label: 'Parliamentary Conduct',max: 1 },
+    ],
+  },
+  {
+    key: 'political_acumen',
+    label: 'Political Acumen & Legislative Strategy',
+    max: 10,
+    icon: 'account_balance',
+    criteria: [
+      { key: 'coalition_building',      label: 'Coalition Building & Alliance Management',      max: 3 },
+      { key: 'parliamentary_strategy',  label: 'Parliamentary Strategy & Procedural Use',       max: 3 },
+      { key: 'influence_negotiation',   label: 'Influence, Negotiation & Vote Mobilisation',    max: 2 },
+      { key: 'political_communication', label: 'Political Communication & Floor Presence',      max: 2 },
+    ],
+  },
+  {
+    key: 'committee',
+    label: 'Committee Discussions & Bill Drafting',
+    max: 15,
+    icon: 'edit_document',
+    criteria: [
+      { key: 'initiative',             label: 'Initiative',                  max: 3 },
+      { key: 'research_contribution',  label: 'Research Contribution',       max: 3 },
+      { key: 'drafting_inputs',        label: 'Drafting Inputs',             max: 3 },
+      { key: 'team_collaboration',     label: 'Team Collaboration',          max: 3 },
+      { key: 'quality_committee_work', label: 'Quality of Committee Work',   max: 3 },
+    ],
+  },
+  {
+    key: 'bill_presentation',
+    label: 'Bill Presentation & Defence',
+    max: 15,
+    icon: 'gavel',
+    criteria: [
+      { key: 'quality_bill_presentation',  label: 'Quality of Bill Presentation', max: 3 },
+      { key: 'understanding_bill',         label: 'Understanding of Bill',         max: 3 },
+      { key: 'defence_against_questions',  label: 'Defence Against Questions',     max: 5 },
+      { key: 'feasibility_recommendations',label: 'Feasibility of Recommendations',max: 3 },
+      { key: 'parliamentary_conduct',      label: 'Parliamentary Conduct',         max: 1 },
+    ],
+  },
 ] as const;
 
-type TagKey = typeof SCORE_TAGS[number]['key'];
+type ComponentKey = typeof SCORING_COMPONENTS[number]['key'];
+type SubScores    = Record<string, string>; // raw input strings
+type AllScores    = Record<ComponentKey, SubScores>;
+
+export interface ComponentScore {
+  component: string;
+  subScores: Record<string, number>;
+  total: number;
+}
 
 interface StudentProfile {
   id: string;
@@ -32,96 +123,79 @@ interface StudentProfile {
   user_type: string;
 }
 
-interface Session {
-  id: string;
-  title: string;
-  description?: string;
-  session_date?: string;
-}
-
 interface ExistingAssessment {
   student_id: string;
   scores: any;
   total_score: number;
   status: 'draft' | 'submitted' | 'locked';
   notes?: string;
-  session_id?: string;
-}
-
-export interface SessionScore {
-  sessionId: string;
-  score: number;
-  tags: Record<string, number>;
+  session_id?: string | null;
 }
 
 interface AssessmentFormProps {
   student: StudentProfile;
-  sessions: Session[];
   existingAssessments: ExistingAssessment[];
-  onSubmit: (scores: SessionScore[], notes: string, status: 'draft' | 'submitted') => Promise<void>;
+  onSubmit: (scores: ComponentScore[], notes: string, status: 'draft' | 'submitted') => Promise<void>;
   isLocked?: boolean;
   onCancel?: () => void;
 }
 
-const getGrade = (total: number) => {
-  if (total >= 90) return 'Outstanding';
-  if (total >= 75) return 'Excellent';
-  if (total >= 60) return 'Good';
-  if (total >= 45) return 'Satisfactory';
-  if (total > 0)   return 'Needs Improvement';
+const getGrade = (t: number) => {
+  if (t >= 90) return 'Outstanding';
+  if (t >= 75) return 'Excellent';
+  if (t >= 60) return 'Good';
+  if (t >= 45) return 'Satisfactory';
+  if (t > 0)   return 'Needs Improvement';
   return '—';
 };
 
-const getStars = (total: number) => {
-  if (total >= 80) return 5;
-  if (total >= 60) return 4;
-  if (total >= 45) return 3;
-  if (total >= 25) return 2;
-  if (total > 0)   return 1;
+const getStars = (t: number) => {
+  if (t >= 80) return 5;
+  if (t >= 60) return 4;
+  if (t >= 45) return 3;
+  if (t >= 25) return 2;
+  if (t > 0)   return 1;
   return 0;
 };
 
+const componentTotal = (scores: SubScores, criteria: readonly { key: string; max: number }[]) =>
+  criteria.reduce((sum, c) => sum + Math.min(parseFloat(scores[c.key] || '0') || 0, c.max), 0);
+
 export const AssessmentForm = ({
   student,
-  sessions,
   existingAssessments,
   onSubmit,
   isLocked = false,
   onCancel,
 }: AssessmentFormProps) => {
 
-  // Base session scores (0–10 per session)
-  const buildInitialBase = () => {
-    const s: Record<string, string> = {};
-    sessions.forEach(sess => {
-      const ex = existingAssessments.find(a => a.session_id === sess.id);
-      const base = ex?.scores?.base ?? ex?.total_score;
-      s[sess.id] = base != null ? String(base) : '';
+  // Find existing component-based assessment (session_id = null)
+  const existingComponent = existingAssessments.find(a => !a.session_id);
+
+  const buildInitial = (): AllScores => {
+    const result = {} as AllScores;
+    SCORING_COMPONENTS.forEach(comp => {
+      result[comp.key as ComponentKey] = {};
+      const saved = existingComponent?.scores?.[comp.key];
+      comp.criteria.forEach(c => {
+        (result[comp.key as ComponentKey] as SubScores)[c.key] =
+          saved?.[c.key] != null ? String(saved[c.key]) : '';
+      });
     });
-    return s;
+    return result;
   };
 
-  // Per-session tag scores { sessionId: { tagKey: value } }
-  const buildInitialTags = () => {
-    const t: Record<string, Record<string, number>> = {};
-    sessions.forEach(sess => {
-      const ex = existingAssessments.find(a => a.session_id === sess.id);
-      t[sess.id] = ex?.scores?.tags ?? {};
-    });
-    return t;
-  };
-
-  const [baseScores, setBaseScores]   = useState<Record<string, string>>(buildInitialBase);
-  const [sessionTags, setSessionTags] = useState<Record<string, Record<string, number>>>(buildInitialTags);
-  const [expandedSessions, setExpandedSessions] = useState<Set<string>>(new Set());
-  const [notes, setNotes]             = useState(existingAssessments.find(a => a.notes)?.notes || '');
-  const [isSubmitting, setIsSubmitting]         = useState(false);
+  const [scores, setScores]       = useState<AllScores>(buildInitial);
+  const [expanded, setExpanded]   = useState<Set<ComponentKey>>(
+    () => new Set([SCORING_COMPONENTS[0].key as ComponentKey])
+  );
+  const [notes, setNotes]         = useState(existingComponent?.notes || '');
+  const [isSubmitting, setIsSubmitting]           = useState(false);
   const [assessmentsLocked, setAssessmentsLocked] = useState(false);
 
   useEffect(() => {
-    setBaseScores(buildInitialBase());
-    setSessionTags(buildInitialTags());
-    setNotes(existingAssessments.find(a => a.notes)?.notes || '');
+    setScores(buildInitial());
+    setNotes(existingComponent?.notes || '');
   }, [student.id]);
 
   useEffect(() => {
@@ -135,94 +209,54 @@ export const AssessmentForm = ({
 
   const locked = isLocked || assessmentsLocked;
 
-  // ── Totals — all in useMemo so ring re-renders on every tag/score change ──────
-  const baseTotal = useMemo(() =>
-    Object.values(baseScores).reduce((sum, v) => sum + (parseFloat(v) || 0), 0),
-    [baseScores]
+  // ── Per-component totals ────────────────────────────────────────────────────
+  const compTotals = useMemo(() =>
+    Object.fromEntries(
+      SCORING_COMPONENTS.map(comp => [comp.key, componentTotal(scores[comp.key as ComponentKey] ?? {}, comp.criteria)])
+    ), [scores]
   );
 
-  const tagTotal = useMemo(() =>
-    Object.values(sessionTags).reduce((sum, tags) =>
-      sum + Object.values(tags).reduce((s, v) => s + (v || 0), 0), 0),
-    [sessionTags]
-  );
+  const { grandTotal, ringOffset, stars, grade, nearCap, atCap } = useMemo(() => {
+    const gt = Math.min(Object.values(compTotals).reduce((s, v) => s + v, 0), 100);
+    const hr = 100 - gt;
+    return {
+      grandTotal : gt,
+      headroom   : hr,
+      ringOffset : RING_C * (1 - gt / 100),
+      stars      : getStars(gt),
+      grade      : getGrade(gt),
+      nearCap    : hr < 10 && hr > 0,
+      atCap      : hr <= 0,
+    };
+  }, [compTotals]);
 
-  const { grandTotal, headroom, ringOffset, stars, grade, hasScore, nearCap, atCap } =
-    useMemo(() => {
-      // Tags are already added into baseScores when clicked — don't double-count tagTotal
-      const gt = Math.min(baseTotal, 100);
-      const hr = 100 - gt;
-      return {
-        grandTotal : gt,
-        headroom   : hr,
-        ringOffset : RING_C * (1 - gt / 100),
-        stars      : getStars(gt),
-        grade      : getGrade(gt),
-        hasScore   : gt > 0,
-        nearCap    : hr < 10 && hr > 0,
-        atCap      : hr <= 0,
-      };
-    }, [baseTotal]);
-
-  // ── Helpers ─────────────────────────────────────────────────────────────────
-  // Tags add/subtract directly into the session score box.
-  // sessionTags is kept purely as metadata for award mapping — totals come from baseScores.
-  const updateBase = (sessionId: string, raw: string) => {
-    if (raw === '') { setBaseScores(p => ({ ...p, [sessionId]: '' })); return; }
+  const updateScore = (compKey: ComponentKey, critKey: string, raw: string, max: number) => {
+    if (raw === '') {
+      setScores(p => ({ ...p, [compKey]: { ...p[compKey], [critKey]: '' } }));
+      return;
+    }
     const num = parseFloat(raw);
     if (isNaN(num)) return;
-    setBaseScores(p => ({ ...p, [sessionId]: String(Math.min(100, Math.max(0, num))) }));
+    setScores(p => ({ ...p, [compKey]: { ...p[compKey], [critKey]: String(Math.min(max, Math.max(0, num))) } }));
   };
 
-  const toggleTag = (sessionId: string, key: string, max: number) => {
-    const current = sessionTags[sessionId] ?? {};
-    const isActive = key in current;
-    const tagVal   = current[key] ?? max;
-    const curBase  = parseFloat(baseScores[sessionId] || '0');
-
-    if (isActive) {
-      // Remove — subtract this tag's contribution from the box
-      const newBase = Math.max(0, curBase - tagVal);
-      setBaseScores(p => ({ ...p, [sessionId]: String(newBase) }));
-      setSessionTags(prev => {
-        const updated = { ...(prev[sessionId] ?? {}) };
-        delete updated[key];
-        return { ...prev, [sessionId]: updated };
-      });
-    } else {
-      // Add — add default value (or remaining headroom if less) to the box
-      const add     = Math.min(max, 100 - curBase);
-      if (add <= 0) return;
-      const newBase = Math.min(100, curBase + add);
-      setBaseScores(p => ({ ...p, [sessionId]: String(newBase) }));
-      setSessionTags(prev => ({
-        ...prev,
-        [sessionId]: { ...(prev[sessionId] ?? {}), [key]: add },
-      }));
-    }
-  };
-
-  const toggleExpand = (sessionId: string) => {
-    setExpandedSessions(prev => {
+  const toggleExpand = (key: ComponentKey) =>
+    setExpanded(prev => {
       const next = new Set(prev);
-      next.has(sessionId) ? next.delete(sessionId) : next.add(sessionId);
+      next.has(key) ? next.delete(key) : next.add(key);
       return next;
     });
-  };
-
-  const sessionTagTotal = (sessionId: string) =>
-    Object.values(sessionTags[sessionId] ?? {}).reduce((s, v) => s + (v || 0), 0);
 
   const handleSubmit = async (status: 'draft' | 'submitted') => {
     setIsSubmitting(true);
     try {
-      const payload: SessionScore[] = sessions
-        .filter(s => baseScores[s.id] !== '' && !isNaN(parseFloat(baseScores[s.id])))
-        .map(s => ({
-          sessionId: s.id,
-          score: parseFloat(baseScores[s.id]),
-          tags: sessionTags[s.id] ?? {},
-        }));
+      const payload: ComponentScore[] = SCORING_COMPONENTS.map(comp => ({
+        component: comp.key,
+        subScores: Object.fromEntries(
+          comp.criteria.map(c => [c.key, parseFloat(scores[comp.key as ComponentKey]?.[c.key] || '0') || 0])
+        ),
+        total: compTotals[comp.key] ?? 0,
+      }));
       await onSubmit(payload, notes, status);
     } catch {}
     finally { setIsSubmitting(false); }
@@ -232,173 +266,125 @@ export const AssessmentForm = ({
     <div className="flex flex-col flex-1 overflow-hidden">
 
       {/* ── Scrollable body ── */}
-      <div className="flex-1 overflow-y-auto p-6 md:p-8 grid grid-cols-1 md:grid-cols-12 gap-8 scroll-hide"
+      <div className="flex-1 overflow-y-auto p-6 md:p-8 grid grid-cols-1 md:grid-cols-12 gap-8"
            style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
 
-        {/* LEFT — sessions + tags + notes */}
-        <div className="md:col-span-8 space-y-4">
-
-          <div className="flex items-center justify-between">
+        {/* LEFT — 7 component accordions */}
+        <div className="md:col-span-8 space-y-3">
+          <div className="flex items-center justify-between mb-2">
             <h3 className="font-headline font-bold text-lg text-on-surface flex items-center gap-2">
               <span className="material-symbols-outlined text-primary text-[20px]">analytics</span>
-              Session Performance
+              Evaluation Components
             </h3>
             <p className="text-[10px] text-on-surface-variant/50 font-body uppercase tracking-widest">
-              Base 0–100 · Tags add within 100 cap
+              100 pts total
             </p>
           </div>
 
-          {sessions.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-14 text-center">
-              <span className="material-symbols-outlined text-[44px] text-on-surface-variant/20 mb-2">event_busy</span>
-              <div className="text-sm font-bold text-on-surface-variant/40 font-body">No sessions available yet</div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {sessions.map((session, idx) => {
-                const ex       = existingAssessments.find(a => a.session_id === session.id);
-                const scored   = ex?.status === 'submitted';
-                const expanded = expandedSessions.has(session.id);
-                const tagSum   = sessionTagTotal(session.id);
-                const activeTags = Object.keys(sessionTags[session.id] ?? {});
+          {SCORING_COMPONENTS.map(comp => {
+            const isOpen  = expanded.has(comp.key as ComponentKey);
+            const total   = compTotals[comp.key] ?? 0;
+            const pct     = total / comp.max;
+            const hasData = comp.criteria.some(c => scores[comp.key as ComponentKey]?.[c.key]);
 
-                return (
-                  <div
-                    key={session.id}
-                    className={`rounded-3xl border transition-all ${
-                      scored
-                        ? 'bg-[#42d59a]/5 border-[#42d59a]/20'
-                        : 'bg-surface-container-low border-transparent'
-                    }`}
-                  >
-                    {/* Session row */}
-                    <div className="flex items-center justify-between p-5">
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div className="w-11 h-11 rounded-2xl bg-surface-container-lowest flex items-center justify-center font-bold text-primary shadow-sm font-headline text-sm shrink-0">
-                          {String(idx + 1).padStart(2, '0')}
-                        </div>
-                        <div className="min-w-0">
-                          <h4 className="font-bold text-on-surface font-headline text-sm truncate">{session.title}</h4>
-                          {session.description && (
-                            <p className="text-xs text-on-surface-variant font-body mt-0.5 truncate max-w-[200px]">
-                              {session.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
+            return (
+              <div
+                key={comp.key}
+                className={`rounded-2xl border transition-all ${
+                  hasData
+                    ? 'bg-primary/3 border-primary/15'
+                    : 'bg-surface-container-low border-transparent'
+                }`}
+              >
+                {/* Accordion header */}
+                <button
+                  type="button"
+                  disabled={locked}
+                  onClick={() => toggleExpand(comp.key as ComponentKey)}
+                  className="w-full flex items-center gap-4 p-4 text-left"
+                >
+                  {/* Icon */}
+                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    hasData ? 'bg-primary/10' : 'bg-surface-container-lowest'
+                  }`}>
+                    <span
+                      className={`material-symbols-outlined text-[18px] ${hasData ? 'text-primary' : 'text-on-surface-variant/40'}`}
+                      style={hasData ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                    >
+                      {comp.icon}
+                    </span>
+                  </div>
 
-                      <div className="flex items-center gap-3 shrink-0 ml-4">
-                        {/* Tag summary pill */}
-                        {tagSum > 0 && (
-                          <span className="text-[10px] font-black text-primary bg-primary/8 px-2 py-0.5 rounded-full font-headline">
-                            +{tagSum} pts
-                          </span>
-                        )}
-                        {/* Base score input — out of 100 */}
-                        <input
-                          type="number"
-                          min={0} max={100} step={1}
-                          placeholder="—"
-                          value={baseScores[session.id] ?? ''}
-                          onChange={e => updateBase(session.id, e.target.value)}
-                          onFocus={e => e.target.select()}
-                          disabled={locked}
-                          className="w-16 h-12 text-center text-xl font-bold font-headline rounded-2xl border-none bg-surface-container-lowest shadow-sm focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all placeholder:opacity-30 text-primary disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                        <span className="text-on-surface-variant font-bold text-sm font-body">/ 100</span>
-                        {/* Expand toggle */}
-                        {!locked && (
-                          <button
-                            type="button"
-                            onClick={() => toggleExpand(session.id)}
-                            className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all font-headline ${
-                              expanded
-                                ? 'bg-primary/10 text-primary'
-                                : activeTags.length > 0
-                                  ? 'bg-primary/8 text-primary'
-                                  : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
-                            }`}
-                          >
-                            {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                            {activeTags.length > 0 ? `${activeTags.length} tag${activeTags.length > 1 ? 's' : ''}` : 'Tags'}
-                          </button>
-                        )}
-                      </div>
+                  {/* Label + mini progress */}
+                  <div className="flex-1 min-w-0">
+                    <p className={`font-headline font-bold text-sm truncate ${hasData ? 'text-primary' : 'text-on-surface'}`}>
+                      {comp.label}
+                    </p>
+                    {/* Mini bar */}
+                    <div className="w-full h-1 bg-surface-container-high rounded-full mt-1.5 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-primary/50 transition-all duration-500"
+                        style={{ width: `${pct * 100}%` }}
+                      />
                     </div>
+                  </div>
 
-                    {/* Tag panel — collapsed by default */}
-                    {expanded && !locked && (
-                      <div className="px-5 pb-5 space-y-3 border-t border-surface-variant/20 pt-4">
-
-                        {/* Cap warning */}
-                        {atCap && (
-                          <div className="flex items-center gap-2 bg-error/8 rounded-xl px-3 py-2">
-                            <span className="material-symbols-outlined text-error text-[14px]">block</span>
-                            <p className="text-[11px] font-bold text-error">100 pt cap reached — remove a tag or lower a score to add more.</p>
-                          </div>
-                        )}
-                        {nearCap && !atCap && (
-                          <div className="flex items-center gap-2 bg-amber-50 rounded-xl px-3 py-2">
-                            <span className="material-symbols-outlined text-amber-600 text-[14px]">warning</span>
-                            <p className="text-[11px] font-bold text-amber-700">{headroom} pt{headroom !== 1 ? 's' : ''} remaining before cap.</p>
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap gap-2">
-                          {SCORE_TAGS.map(tag => {
-                            const isActive = tag.key in (sessionTags[session.id] ?? {});
-                            const val      = sessionTags[session.id]?.[tag.key] ?? tag.max;
-                            const canAdd   = !isActive && headroom > 0;
-
-                            return (
-                              <div key={tag.key} className="flex items-center">
-                                {isActive ? (
-                                  /* Active tag — shows as filled chip, tap again to remove */
-                                  <button
-                                    type="button"
-                                    onClick={() => toggleTag(session.id, tag.key, tag.max)}
-                                    className="flex items-center gap-1.5 bg-primary border-primary rounded-2xl pl-3 pr-3 py-1.5 border"
-                                  >
-                                    <span className="material-symbols-outlined text-white text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>{tag.icon}</span>
-                                    <span className="text-[11px] font-black text-white font-headline whitespace-nowrap">{tag.label}</span>
-                                    <span className="text-[11px] font-black text-white/80 font-headline ml-0.5">+{sessionTags[session.id]?.[tag.key] ?? tag.max}</span>
-                                    <X className="w-3 h-3 text-white/60 ml-0.5" />
-                                  </button>
-                                ) : (
-                                  /* Inactive tag — tap to add */
-                                  <button
-                                    type="button"
-                                    onClick={() => canAdd && toggleTag(session.id, tag.key, tag.max)}
-                                    disabled={!canAdd}
-                                    className={`flex items-center gap-1.5 rounded-2xl px-3 py-1.5 border text-[11px] font-bold font-headline transition-all ${
-                                      canAdd
-                                        ? 'bg-surface-container border-outline-variant/30 text-on-surface-variant hover:bg-surface-container-high hover:border-primary/20 hover:text-primary'
-                                        : 'bg-surface-container/50 border-transparent text-on-surface-variant/30 cursor-not-allowed'
-                                    }`}
-                                  >
-                                    <Plus className="w-3 h-3" />
-                                    <span className="material-symbols-outlined text-[12px]">{tag.icon}</span>
-                                    {tag.label}
-                                    <span className="ml-1 text-[10px] opacity-60">+{tag.max}</span>
-                                  </button>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-
-                        {activeTags.length > 0 && (
-                          <p className="text-[10px] font-body text-on-surface-variant/50">
-                            {activeTags.length} tag{activeTags.length > 1 ? 's' : ''} added · score updated in box above
-                          </p>
-                        )}
-                      </div>
+                  {/* Score pill + chevron */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`font-headline font-black text-sm ${total > 0 ? 'text-primary' : 'text-on-surface-variant/30'}`}>
+                      {total}<span className="text-[10px] font-medium text-on-surface-variant/40">/{comp.max}</span>
+                    </span>
+                    {isOpen ? (
+                      <ChevronUp className="w-4 h-4 text-on-surface-variant/40" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-on-surface-variant/40" />
                     )}
                   </div>
-                );
-              })}
-            </div>
-          )}
+                </button>
+
+                {/* Expanded sub-criteria */}
+                {isOpen && (
+                  <div className="px-4 pb-4 space-y-2 border-t border-surface-variant/20 pt-3">
+                    {comp.criteria.map(c => {
+                      const val = scores[comp.key as ComponentKey]?.[c.key] ?? '';
+                      return (
+                        <div key={c.key} className="flex items-center gap-3">
+                          <p className="flex-1 text-xs font-body text-on-surface-variant">{c.label}</p>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <input
+                              type="number"
+                              min={0}
+                              max={c.max}
+                              step={0.5}
+                              placeholder="—"
+                              value={val}
+                              onChange={e => updateScore(comp.key as ComponentKey, c.key, e.target.value, c.max)}
+                              onFocus={e => e.target.select()}
+                              disabled={locked}
+                              className="w-12 h-9 text-center text-sm font-black font-headline rounded-xl border-none bg-surface-container-lowest shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/15 text-primary disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                            <span className="text-[10px] text-on-surface-variant/40 font-body w-6 text-right">/{c.max}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Component subtotal */}
+                    <div className="flex items-center justify-between pt-2 border-t border-surface-variant/20 mt-1">
+                      <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/50 font-headline">
+                        Component total
+                      </span>
+                      <span className={`text-sm font-black font-headline ${
+                        total === comp.max ? 'text-primary' : total > 0 ? 'text-on-surface' : 'text-on-surface-variant/30'
+                      }`}>
+                        {total} / {comp.max}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
 
           {/* Notes */}
           <div className="space-y-2 pt-2">
@@ -409,7 +395,7 @@ export const AssessmentForm = ({
             <Textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
-              placeholder="Provide qualitative feedback on leadership qualities and decorum..."
+              placeholder="Qualitative notes on performance, decorum and standout moments..."
               rows={3}
               disabled={locked}
               className="bg-surface-container-high border-none rounded-[1.5rem] p-5 text-sm focus-visible:ring-4 focus-visible:ring-primary/10 transition-all placeholder:text-on-surface-variant/30 font-body resize-none"
@@ -417,10 +403,10 @@ export const AssessmentForm = ({
           </div>
         </div>
 
-        {/* RIGHT — live score ring */}
+        {/* RIGHT — score ring + breakdown */}
         <div className="md:col-span-4 space-y-5">
 
-          {/* Score ring — out of 100 */}
+          {/* Ring */}
           <div className="bg-surface-container-high rounded-[2rem] p-6 text-center border border-outline-variant/30 flex flex-col items-center">
             <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest mb-4 font-body">
               Total Score
@@ -436,7 +422,7 @@ export const AssessmentForm = ({
                   strokeLinecap="round"
                   strokeDasharray={RING_C}
                   strokeDashoffset={ringOffset}
-                  className="transition-all duration-700 ease-out"
+                  className="transition-all duration-500 ease-out"
                 />
               </svg>
               <div className="text-center z-10">
@@ -446,13 +432,10 @@ export const AssessmentForm = ({
                 <p className="text-[10px] font-bold text-on-surface-variant font-body">OUT OF 100</p>
               </div>
             </div>
-
-            {/* Stars */}
             <div className="flex gap-0.5 mb-2">
-              {[1, 2, 3, 4, 5].map(i => (
-                <span
-                  key={i}
-                  className={`material-symbols-outlined text-base transition-colors duration-300 ${i <= stars ? 'text-primary' : 'text-outline-variant'}`}
+              {[1,2,3,4,5].map(i => (
+                <span key={i}
+                  className={`material-symbols-outlined text-base ${i <= stars ? 'text-primary' : 'text-outline-variant'}`}
                   style={i <= stars ? { fontVariationSettings: "'FILL' 1" } : undefined}
                 >star</span>
               ))}
@@ -460,37 +443,37 @@ export const AssessmentForm = ({
             <p className="text-xs font-medium text-on-surface-variant font-body">
               Grade: <span className="text-on-surface font-bold">{grade}</span>
             </p>
-
-            {/* Score breakdown — always visible */}
-            <div className="mt-4 w-full space-y-1.5 border-t border-outline-variant/20 pt-4">
-              <div className="flex justify-between text-[12px] font-black font-headline">
-                <span className={atCap ? 'text-error' : 'text-on-surface'}>Total</span>
-                <span className={atCap ? 'text-error' : 'text-primary'}>{grandTotal.toFixed(0)} / 100</span>
-              </div>
-              <p className={`text-[10px] font-body text-center mt-1 ${
-                atCap ? 'text-error font-bold' : nearCap ? 'text-amber-600 font-bold' : 'text-on-surface-variant/40'
-              }`}>
-                {atCap ? 'Cap reached' : `${headroom} pts remaining`}
-              </p>
-            </div>
           </div>
 
-          {/* Tag reference guide */}
-          <div className="bg-primary/5 rounded-[2rem] p-5">
-            <h4 className="font-headline font-bold text-primary text-sm mb-3 flex items-center gap-2">
-              <span className="material-symbols-outlined text-[16px]">info</span>
-              Tag Point Values
-            </h4>
-            <div className="space-y-1.5">
-              {SCORE_TAGS.map(tag => (
-                <div key={tag.key} className="flex items-center justify-between">
-                  <span className="text-[11px] font-body text-on-surface-variant">{tag.label}</span>
-                  <span className="text-[11px] font-black text-primary font-headline">{tag.max} pts</span>
-                </div>
-              ))}
-              <div className="border-t border-primary/10 pt-1.5 flex items-center justify-between">
-                <span className="text-[11px] font-black text-on-surface font-headline">Total Max</span>
-                <span className="text-[11px] font-black text-primary font-headline">100 pts</span>
+          {/* Component breakdown */}
+          <div className="bg-surface-container-lowest rounded-[2rem] p-5 border border-outline-variant/10">
+            <h4 className="font-headline font-bold text-on-surface text-sm mb-3">Score Breakdown</h4>
+            <div className="space-y-2">
+              {SCORING_COMPONENTS.map(comp => {
+                const t   = compTotals[comp.key] ?? 0;
+                const pct = comp.max > 0 ? t / comp.max : 0;
+                return (
+                  <div key={comp.key}>
+                    <div className="flex items-center justify-between mb-0.5">
+                      <span className="text-[10px] font-body text-on-surface-variant truncate max-w-[140px]">{comp.label}</span>
+                      <span className={`text-[11px] font-black font-headline shrink-0 ml-2 ${t > 0 ? 'text-primary' : 'text-on-surface-variant/30'}`}>
+                        {t}/{comp.max}
+                      </span>
+                    </div>
+                    <div className="h-1 bg-surface-container rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary/50 rounded-full transition-all duration-500"
+                        style={{ width: `${pct * 100}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="border-t border-outline-variant/20 pt-2 flex justify-between items-center">
+                <span className="text-[11px] font-black font-headline text-on-surface">Total</span>
+                <span className={`text-sm font-black font-headline ${atCap ? 'text-error' : 'text-primary'}`}>
+                  {grandTotal.toFixed(0)} / 100
+                </span>
               </div>
             </div>
           </div>
@@ -502,24 +485,21 @@ export const AssessmentForm = ({
         <div className="px-8 py-5 bg-surface-container-low border-t border-outline-variant/10 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
           <button
             onClick={() => handleSubmit('draft')}
-            disabled={isSubmitting || !hasScore}
+            disabled={isSubmitting || grandTotal === 0}
             className="flex items-center gap-2 text-on-surface-variant font-bold text-sm hover:text-on-surface transition-colors disabled:opacity-30 font-body"
           >
             <span className="material-symbols-outlined text-sm">cloud_upload</span>
-            Save Draft as Offline Copy
+            Save Draft
           </button>
           <div className="flex items-center gap-3 w-full sm:w-auto">
             {onCancel && (
-              <button
-                onClick={onCancel}
-                className="flex-1 sm:flex-none px-6 py-3 rounded-full font-bold text-on-surface hover:bg-surface-container-high transition-all font-body text-sm"
-              >
+              <button onClick={onCancel} className="flex-1 sm:flex-none px-6 py-3 rounded-full font-bold text-on-surface hover:bg-surface-container-high transition-all font-body text-sm">
                 Cancel
               </button>
             )}
             <button
               onClick={() => handleSubmit('submitted')}
-              disabled={isSubmitting || !hasScore}
+              disabled={isSubmitting || grandTotal === 0}
               className="flex-1 sm:flex-none bg-primary hover:bg-primary/90 text-on-primary px-8 py-3 rounded-full font-bold shadow-[0_4px_16px_rgba(19,41,143,0.25)] transition-all flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-40 font-body text-sm"
             >
               <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
