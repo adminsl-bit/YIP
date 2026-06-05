@@ -223,10 +223,11 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     getStudentAssessments(userId).filter(a => a.status === 'submitted');
 
   const getAvgScore = (userId: string): number | null => {
-    const sub = getSubmittedAssessments(userId);
-    if (!sub.length) return null;
-    const raw = sub.reduce((s, a) => s + (a.total_score || 0), 0) / sub.length;
-    return Math.round(raw * 10) / 10; // 1 decimal place
+    // One assessment row per student (session_id = null) — total is already out of 100
+    const row = getSubmittedAssessments(userId).find(a => !a.session_id)
+      ?? getSubmittedAssessments(userId)[0];
+    if (!row) return null;
+    return Math.round(row.total_score * 10) / 10;
   };
 
   const getOverallStatus = (userId: string): 'not_started' | 'in_progress' | 'scored' => {
@@ -241,7 +242,8 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     const getAvg = (userId: string) => {
       const sub = allAssessments.filter(a => a.student_id === userId && a.status === 'submitted');
       if (!sub.length) return null;
-      return sub.reduce((s, a) => s + (a.total_score || 0), 0) / sub.length;
+      const row = sub.find(a => !a.session_id) ?? sub[0];
+      return row.total_score ?? 0;
     };
     const scored = students
       .map(s => ({ userId: s.user_id, avg: getAvg(s.user_id) }))
@@ -580,7 +582,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                         {avgScore !== null ? (
                           <div className="inline-flex flex-col items-center">
                             <span className="text-lg font-extrabold font-headline text-[#42d59a]">{avgScore.toFixed(1)}</span>
-                            <span className="text-[10px] text-on-surface-variant/40 font-body">/ 10</span>
+                            <span className="text-[10px] text-on-surface-variant/40 font-body">/ 100</span>
                           </div>
                         ) : <span className="text-xs italic text-on-surface-variant/30 font-body">—</span>}
                       </td>

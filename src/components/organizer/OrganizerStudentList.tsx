@@ -343,11 +343,11 @@ export const OrganizerStudentList = () => {
   };
 
   const getAverageScore = (userId: string): number => {
-    const studentAssessments = assessments.filter(a => a.student_id === userId && a.status === 'submitted');
-    if (studentAssessments.length === 0) return 0;
-    
-    const total = studentAssessments.reduce((sum, a) => sum + a.total_score, 0);
-    return Math.round(total / studentAssessments.length);
+    const submitted = assessments.filter(a => a.student_id === userId && a.status === 'submitted');
+    if (!submitted.length) return 0;
+    // One row per student (session_id = null) — total already out of 100
+    const row = submitted.find(a => !a.session_id) ?? submitted[0];
+    return Math.round(row.total_score ?? 0);
   };
 
   const toggleStudentStatus = async (studentId: string, currentStatus: boolean) => {
@@ -849,7 +849,7 @@ export const OrganizerStudentList = () => {
                       <div className="flex-1 h-1.5 bg-surface-container rounded-full overflow-hidden">
                         <div className="bg-on-tertiary-container h-full transition-all duration-1000" style={{ width: `${averageScore}%` }} />
                       </div>
-                      <span className="text-xs font-black text-on-surface font-headline">{averageScore}%</span>
+                      <span className="text-xs font-black text-on-surface font-headline">{averageScore}<span className="text-[9px] text-on-surface-variant/50 font-normal">/100</span></span>
                     </div>
                   </div>
                 </div>
@@ -922,7 +922,7 @@ export const OrganizerStudentList = () => {
                         <div className="flex flex-col gap-1 w-24">
                           <div className="flex justify-between text-[10px] font-bold font-body">
                             <span className="text-on-surface-variant">Score</span>
-                            <span className="text-primary">{averageScore}%</span>
+                            <span className="text-primary">{averageScore}<span className="text-on-surface-variant/50 font-normal">/100</span></span>
                           </div>
                           <div className="w-full bg-surface-container h-1.5 rounded-full overflow-hidden">
                             <div className="bg-on-tertiary-container h-full transition-all duration-1000" style={{ width: `${averageScore}%` }} />
@@ -1087,7 +1087,7 @@ export const OrganizerStudentList = () => {
                     <div className="flex-1">
                       <div className="flex justify-between text-[10px] font-bold font-body mb-1.5">
                         <span className="text-on-surface-variant">Performance Score</span>
-                        <span className="text-primary">{avgScore}%</span>
+                        <span className="text-primary">{avgScore}<span className="text-on-surface-variant/50 font-normal text-[10px]">/100</span></span>
                       </div>
                       <div className="h-2 bg-surface-container-high rounded-full overflow-hidden">
                         <div className="bg-on-tertiary-container h-full transition-all duration-1000" style={{ width: `${avgScore}%` }} />
