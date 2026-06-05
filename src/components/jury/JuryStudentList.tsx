@@ -290,20 +290,30 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       return;
     }
     try {
+      // Compute overall grand total across all sessions (capped at 100)
+      const rawTotal = sessionScores.reduce((sum, { score, tags }) =>
+        sum + score + Object.values(tags ?? {}).reduce((s, v) => s + (v || 0), 0), 0
+      );
+      const grandTotal = Math.min(rawTotal, 100);
+      // Distribute cap proportionally if over 100
+      const scale = rawTotal > 100 ? 100 / rawTotal : 1;
+
       const results = await Promise.all(
-        sessionScores.map(({ sessionId, score }) =>
-          supabase.from('assessments').upsert({
+        sessionScores.map(({ sessionId, score, tags }) => {
+          const tagSum = Object.values(tags ?? {}).reduce((s, v) => s + (v || 0), 0);
+          const sessionTotal = Math.round((score + tagSum) * scale * 10) / 10;
+          return supabase.from('assessments').upsert({
             jury_id: juryId,
             student_id: selectedStudent.user_id,
             session_id: sessionId,
             seat_role: getSeatRole(selectedStudent.position),
-            scores: { session_score: score },
-            total_score: score,
+            scores: { base: score, tags: tags ?? {} },
+            total_score: sessionTotal,
             status,
             notes,
             submitted_at: status === 'submitted' ? new Date().toISOString() : null,
-          }, { onConflict: 'jury_id,student_id,session_id' })
-        )
+          }, { onConflict: 'jury_id,student_id,session_id' });
+        })
       );
       const err = results.find(r => r.error);
       if (err?.error) throw err.error;
