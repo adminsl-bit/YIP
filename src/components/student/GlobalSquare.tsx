@@ -30,12 +30,13 @@ interface Participant {
   position?: string;
 }
 
-type Channel = 'global' | 'party' | 'organizer';
+type Channel = 'global' | 'party' | 'organizer' | 'committee';
 
-const TABS: { id: Channel; label: string }[] = [
-  { id: 'global',    label: 'Global Square' },
-  { id: 'party',     label: 'Party Wing' },
-  { id: 'organizer', label: 'Organizer Hub' },
+const TABS: { id: Channel; label: string; icon: string }[] = [
+  { id: 'global',    label: 'Global Square', icon: 'public' },
+  { id: 'party',     label: 'Party Wing',    icon: 'groups' },
+  { id: 'committee', label: 'Committee',     icon: 'edit_document' },
+  { id: 'organizer', label: 'Organizer Hub', icon: 'admin_panel_settings' },
 ];
 
 function formatTime(dateStr: string) {
@@ -65,7 +66,11 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   const [parties, setParties] = useState<number[]>([]);
   const [selectedParty, setSelectedParty] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const visibleTabs = TABS.filter(t => !hiddenChannels.includes(t.id));
+  const visibleTabs = TABS.filter(t => {
+    if (hiddenChannels.includes(t.id)) return false;
+    if (t.id === 'committee') return !!myCommittee; // only show if student has a committee
+    return true;
+  });
   const bottomRef = useRef<HTMLDivElement>(null);
   const channelRefsMap = useRef<Map<string, ReturnType<typeof supabase.channel>>>(new Map());
   const messagesCacheRef = useRef<Map<string, Message[]>>(new Map());
@@ -73,8 +78,9 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   const presenceChRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const profileRef = useRef<typeof profile>(null);
 
-  const isOrganizer = (profile as any)?.user_type === 'organizer';
+  const isOrganizer   = (profile as any)?.user_type === 'organizer';
   const myPartyNumber = (profile as any)?.party_number ?? 0;
+  const myCommittee   = (profile as any)?.committee as string | null ?? null;
 
   // Load distinct party numbers from active students (organizer only)
   useEffect(() => {
@@ -98,8 +104,12 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
       const partyNum = isOrganizer ? (selectedParty ?? 0) : myPartyNumber;
       return `party_${partyNum}`;
     }
+    if (activeChannel === 'committee') {
+      const committee = (myCommittee ?? 'unassigned').toLowerCase().replace(/\s+/g, '_');
+      return `committee_${committee}`;
+    }
     return 'organizer_direct';
-  }, [activeChannel, isOrganizer, selectedParty, myPartyNumber]);
+  }, [activeChannel, isOrganizer, selectedParty, myPartyNumber, myCommittee]);
 
   // Keep refs current (avoid stale closures in broadcast/presence callbacks)
   useEffect(() => { channelKeyRef.current = channelKey; }, [channelKey]);
@@ -306,13 +316,17 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
             <button
               key={tab.id}
               onClick={() => switchChannel(tab.id)}
-              className={`py-5 text-sm font-bold border-b-2 transition-all font-headline ${
+              className={`py-5 text-sm font-bold border-b-2 transition-all font-headline flex items-center gap-1.5 ${
                 activeChannel === tab.id
                   ? 'text-primary border-primary'
                   : 'text-slate-400 hover:text-slate-600 border-transparent'
               }`}
             >
-              {tab.label}
+              <span className="material-symbols-outlined text-[15px]"
+                style={activeChannel === tab.id ? { fontVariationSettings: "'FILL' 1" } : undefined}>
+                {tab.icon}
+              </span>
+              {tab.id === 'committee' && myCommittee ? myCommittee.replace('Standing Committee on ', '').replace('Committee on ', '') : tab.label}
             </button>
           ))}
         </div>

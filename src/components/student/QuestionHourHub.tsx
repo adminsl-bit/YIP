@@ -132,9 +132,17 @@ export const QuestionHourHub = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  // Check if this student already has a pending/addressed question (not rejected)
+  const myActiveQuestion = questions.find(q => q.user_id === user?.id && q.status !== 'rejected');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !questionContent.trim()) return;
+    // Enforce one-question-per-student limit
+    if (!editingId && myActiveQuestion) {
+      toast.error('You have already submitted a question. Only one question per session is allowed.');
+      return;
+    }
     const ministry = selectedMinistry || MINISTRIES[0];
     setSubmitting(true);
     try {
@@ -222,7 +230,23 @@ export const QuestionHourHub = () => {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Block form if student already has an active question */}
+        {myActiveQuestion && !editingId ? (
+          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 space-y-2">
+            <div className="flex items-start gap-2">
+              <span className="material-symbols-outlined text-amber-600 text-[18px] shrink-0 mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>info</span>
+              <div>
+                <p className="text-xs font-black text-amber-800 font-headline uppercase tracking-wider">One Question Per Session</p>
+                <p className="text-xs text-amber-700 font-body mt-1 leading-relaxed">You have already submitted a question. Retract it to ask a new one.</p>
+              </div>
+            </div>
+            <p className="text-[10px] font-bold text-amber-600 font-body truncate border-t border-amber-200 pt-2">
+              "{myActiveQuestion.content}"
+            </p>
+          </div>
+        ) : null}
+
+        <form onSubmit={handleSubmit} className={`space-y-5 ${myActiveQuestion && !editingId ? 'opacity-40 pointer-events-none select-none' : ''}`}>
           <div>
             <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-widest block mb-2 font-headline">
               Target Portfolio

@@ -61,6 +61,7 @@ const Onboarding = () => {
     name: '',
     state: '',
     city: '',
+    partyAlignment: '' as 'ruling_party' | 'opposition' | '',
   });
 
   // Assigned Details (derived on submission)
@@ -183,12 +184,9 @@ const Onboarding = () => {
       // Select constituency based on modulo of current count to ensure distribution
       const constituency = availableConstituencies[currentCount % availableConstituencies.length].name;
 
-      // 4. Determine Parliamentary Alignment — ruling always has strict majority (more seats than opposition)
-      let partyAlignment: 'ruling_party' | 'opposition' | 'non_aligned' = 'non_aligned';
-      if (!isDemoAccount) {
-        const rulingThreshold = Math.floor(parties.length / 2) + 1;
-        partyAlignment = partyNumber <= rulingThreshold ? 'ruling_party' : 'opposition';
-      }
+      // 4. Parliamentary Alignment — student's own choice, demo accounts default non_aligned
+      const partyAlignment: 'ruling_party' | 'opposition' | 'non_aligned' =
+        isDemoAccount ? 'non_aligned' : (formData.partyAlignment || 'non_aligned');
 
       // 4. Create or Update Profile
       const profileData = {
@@ -433,12 +431,97 @@ const Onboarding = () => {
                 <ArrowLeft className="w-4 h-4" /> Back
               </button>
               <button
-                onClick={handleSubmit}
-                disabled={isSubmitting || !formData.state || !formData.city}
+                onClick={nextStep}
+                disabled={!formData.state || !formData.city}
+                className="flex-[2] py-6 bg-[#13298f] text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-sm shadow-2xl shadow-[#13298f]/20 hover:scale-[1.02] hover:shadow-[#13298f]/40 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:hover:scale-100"
+              >
+                Choose Your Bench <ArrowRight className="w-5 h-5" />
+              </button>
+            </div>
+          </motion.div>
+        );
+
+      case 3:
+        return (
+          <motion.div
+            key="alignment-step"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-8"
+          >
+            <div className="space-y-2">
+              <span className="text-primary font-black uppercase tracking-[0.2em] text-[10px] bg-primary/5 px-3 py-1 rounded-full">Step 03 / Alignment</span>
+              <h2 className="text-4xl font-black font-headline text-slate-900 leading-tight tracking-tight">Choose Your Bench</h2>
+              <p className="text-slate-500 font-medium text-lg">Will you govern or hold the government accountable?</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Ruling Party */}
+              <button
+                type="button"
+                onClick={() => setFormData(p => ({ ...p, partyAlignment: 'ruling_party' }))}
+                className={`relative overflow-hidden rounded-[2rem] p-6 flex flex-col items-center gap-4 border-2 transition-all ${
+                  formData.partyAlignment === 'ruling_party'
+                    ? 'border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-500/20 scale-[1.02]'
+                    : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/30'
+                }`}
+              >
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${formData.partyAlignment === 'ruling_party' ? 'bg-emerald-500' : 'bg-slate-100'}`}>
+                  <span className={`material-symbols-outlined text-3xl ${formData.partyAlignment === 'ruling_party' ? 'text-white' : 'text-slate-400'}`} style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
+                </div>
+                <div className="text-center">
+                  <p className={`font-black font-headline text-lg ${formData.partyAlignment === 'ruling_party' ? 'text-emerald-700' : 'text-slate-700'}`}>Ruling Party</p>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">Present policies, defend governance, lead the house</p>
+                </div>
+                {formData.partyAlignment === 'ruling_party' && (
+                  <div className="absolute top-3 right-3 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+                  </div>
+                )}
+              </button>
+
+              {/* Opposition */}
+              <button
+                type="button"
+                onClick={() => setFormData(p => ({ ...p, partyAlignment: 'opposition' }))}
+                className={`relative overflow-hidden rounded-[2rem] p-6 flex flex-col items-center gap-4 border-2 transition-all ${
+                  formData.partyAlignment === 'opposition'
+                    ? 'border-primary bg-primary/5 shadow-lg shadow-primary/20 scale-[1.02]'
+                    : 'border-slate-200 bg-white hover:border-primary/30 hover:bg-primary/3'
+                }`}
+              >
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${formData.partyAlignment === 'opposition' ? 'bg-primary' : 'bg-slate-100'}`}>
+                  <span className={`material-symbols-outlined text-3xl ${formData.partyAlignment === 'opposition' ? 'text-white' : 'text-slate-400'}`} style={{ fontVariationSettings: "'FILL' 1" }}>gavel</span>
+                </div>
+                <div className="text-center">
+                  <p className={`font-black font-headline text-lg ${formData.partyAlignment === 'opposition' ? 'text-primary' : 'text-slate-700'}`}>Opposition</p>
+                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">Hold the government accountable, challenge and debate</p>
+                </div>
+                {formData.partyAlignment === 'opposition' && (
+                  <div className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                    <span className="material-symbols-outlined text-white text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
+                  </div>
+                )}
+              </button>
+            </div>
+
+            <div className="flex gap-4">
+              <button
+                onClick={prevStep}
+                className="flex-1 py-6 bg-slate-100 text-slate-500 rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-xs hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
+              >
+                <ArrowLeft className="w-4 h-4" /> Back
+              </button>
+              <button
+                onClick={isEmailEnrolled ? nextStep : handleSubmit}
+                disabled={!formData.partyAlignment || isSubmitting}
                 className="flex-[2] py-6 bg-[#13298f] text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-sm shadow-2xl shadow-[#13298f]/20 hover:scale-[1.02] hover:shadow-[#13298f]/40 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:hover:scale-100"
               >
                 {isSubmitting ? (
                   <>Processing... <Loader2 className="w-5 h-5 animate-spin" /></>
+                ) : isEmailEnrolled ? (
+                  <>Set Credentials <ArrowRight className="w-5 h-5" /></>
                 ) : (
                   <>Initialize Profile <Sparkles className="w-5 h-5" /></>
                 )}
@@ -447,7 +530,7 @@ const Onboarding = () => {
           </motion.div>
         );
 
-      case 3:
+      case 4:
         return (
           <motion.div
             key="password-step"
@@ -457,7 +540,7 @@ const Onboarding = () => {
             className="space-y-8"
           >
             <div className="space-y-2">
-              <span className="text-primary font-black uppercase tracking-[0.2em] text-[10px] bg-primary/5 px-3 py-1 rounded-full">Step 03 / Security</span>
+              <span className="text-primary font-black uppercase tracking-[0.2em] text-[10px] bg-primary/5 px-3 py-1 rounded-full">Step 04 / Security</span>
               <h2 className="text-4xl font-black font-headline text-slate-900 leading-tight tracking-tight">Choose Your Login</h2>
               <p className="text-slate-500 font-medium text-lg">
                 Pick a short Login ID and password — you'll use these every time you sign in.
