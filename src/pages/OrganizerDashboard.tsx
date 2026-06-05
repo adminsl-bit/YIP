@@ -34,6 +34,7 @@ import PhotoMigration from "@/components/organizer/PhotoMigration";
 import { OrganizerLeaderboard } from "@/components/organizer/OrganizerLeaderboard";
 import { EventLeaderboard } from "@/components/organizer/EventLeaderboard";
 import { AwardManagement } from "@/components/organizer/AwardManagement";
+import { AwardSuggestions } from "@/components/shared/AwardSuggestions";
 import { AdminSpeechTracker } from "@/components/organizer/AdminSpeechTracker";
 import { BreakingNewsPublisher } from "@/components/journalist/BreakingNewsPublisher";
 import { ManualScoring } from "@/components/organizer/ManualScoring";
@@ -350,7 +351,20 @@ const OrganizerDashboard = () => {
                     <Presentation className="h-4 w-4 mr-2" /> Launch Award Screen
                   </Button>
                 </div>
+
+                {/* Award Suggestions — algorithmic top-3 per award */}
                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
+                  <AwardSuggestions />
+                </div>
+
+                {/* Award Management — confirmation and assignment */}
+                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
+                  <div className="mb-6">
+                    <h2 className="text-xl font-extrabold font-headline text-primary">
+                      Confirm <span className="text-secondary">Awards</span>
+                    </h2>
+                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Finalise & assign award winners</p>
+                  </div>
                   <AwardManagement />
                 </div>
               </TabsContent>

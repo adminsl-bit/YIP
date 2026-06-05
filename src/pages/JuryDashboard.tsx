@@ -3,15 +3,17 @@ import { JuryStudentList } from "@/components/jury/JuryStudentList";
 import { ProfilePhotoUploader } from "@/components/jury/ProfilePhotoUploader";
 import { JuryProfileEditor } from "@/components/jury/JuryProfileEditor";
 import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
+import { AwardSuggestions } from "@/components/shared/AwardSuggestions";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-type TabId = 'dashboard' | 'assessment' | 'profile';
+type TabId = 'dashboard' | 'assessment' | 'awards' | 'profile';
 
 const navItems: { id: TabId; label: string; icon: string }[] = [
   { id: 'dashboard',  label: 'Dashboard',  icon: 'dashboard' },
   { id: 'assessment', label: 'Assessment', icon: 'rate_review' },
+  { id: 'awards',     label: 'Awards',     icon: 'emoji_events' },
   { id: 'profile',    label: 'Profile',    icon: 'person' },
 ];
 
@@ -513,6 +515,13 @@ const JuryDashboard = () => {
             <div className="bg-surface-container-lowest rounded-[2rem] shadow-[0_4px_24px_-4px_rgba(19,41,143,0.06)] p-6">
               {user && <JuryStudentList juryId={user.id} />}
             </div>
+          </div>
+        )}
+
+        {/* ── Awards tab ── */}
+        {activeTab === 'awards' && (
+          <div className="px-8 lg:px-12 py-8">
+            <AwardSuggestions juryId={user?.id} />
           </div>
         )}
 
