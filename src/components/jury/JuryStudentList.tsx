@@ -290,18 +290,13 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       return;
     }
     try {
-      // Compute overall grand total across all sessions (capped at 100)
-      const rawTotal = sessionScores.reduce((sum, { score, tags }) =>
-        sum + score + Object.values(tags ?? {}).reduce((s, v) => s + (v || 0), 0), 0
-      );
-      const grandTotal = Math.min(rawTotal, 100);
-      // Distribute cap proportionally if over 100
-      const scale = rawTotal > 100 ? 100 / rawTotal : 1;
+      // score already includes tag values (tags were added into the box directly)
+      const rawTotal = sessionScores.reduce((sum, { score }) => sum + score, 0);
+      const scale    = rawTotal > 100 ? 100 / rawTotal : 1;
 
       const results = await Promise.all(
         sessionScores.map(({ sessionId, score, tags }) => {
-          const tagSum = Object.values(tags ?? {}).reduce((s, v) => s + (v || 0), 0);
-          const sessionTotal = Math.round((score + tagSum) * scale * 10) / 10;
+          const sessionTotal = Math.round(score * scale * 10) / 10;
           return supabase.from('assessments').upsert({
             jury_id: juryId,
             student_id: selectedStudent.user_id,

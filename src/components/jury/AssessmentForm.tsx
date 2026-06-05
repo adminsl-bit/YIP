@@ -149,8 +149,9 @@ export const AssessmentForm = ({
 
   const { grandTotal, headroom, ringOffset, stars, grade, hasScore, nearCap, atCap } =
     useMemo(() => {
-      const gt       = Math.min(baseTotal + tagTotal, 100);
-      const hr       = 100 - gt;
+      // Tags are already added into baseScores when clicked — don't double-count tagTotal
+      const gt = Math.min(baseTotal, 100);
+      const hr = 100 - gt;
       return {
         grandTotal : gt,
         headroom   : hr,
@@ -161,7 +162,7 @@ export const AssessmentForm = ({
         nearCap    : hr < 10 && hr > 0,
         atCap      : hr <= 0,
       };
-    }, [baseTotal, tagTotal]);
+    }, [baseTotal]);
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   // Tags add/subtract directly into the session score box.
@@ -462,17 +463,7 @@ export const AssessmentForm = ({
 
             {/* Score breakdown — always visible */}
             <div className="mt-4 w-full space-y-1.5 border-t border-outline-variant/20 pt-4">
-              <div className="flex justify-between text-[10px] font-body">
-                <span className="text-on-surface-variant">Session base</span>
-                <span className="font-bold text-on-surface">{baseTotal.toFixed(0)}</span>
-              </div>
-              <div className="flex justify-between text-[10px] font-body">
-                <span className="text-on-surface-variant">Tag marks</span>
-                <span className={`font-bold ${tagTotal > 0 ? 'text-primary' : 'text-on-surface-variant/40'}`}>
-                  +{tagTotal}
-                </span>
-              </div>
-              <div className="flex justify-between text-[12px] font-black font-headline border-t border-outline-variant/20 pt-1.5">
+              <div className="flex justify-between text-[12px] font-black font-headline">
                 <span className={atCap ? 'text-error' : 'text-on-surface'}>Total</span>
                 <span className={atCap ? 'text-error' : 'text-primary'}>{grandTotal.toFixed(0)} / 100</span>
               </div>
