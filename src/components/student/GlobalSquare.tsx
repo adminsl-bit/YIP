@@ -65,6 +65,8 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   const [activeChannel, setActiveChannel] = useState<Channel>('global');
   const [parties, setParties] = useState<number[]>([]);
   const [selectedParty, setSelectedParty] = useState<number | null>(null);
+  const [committees, setCommittees] = useState<string[]>([]);
+  const [selectedCommittee, setSelectedCommittee] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const channelRefsMap = useRef<Map<string, ReturnType<typeof supabase.channel>>>(new Map());
@@ -80,7 +82,7 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
 
   const visibleTabs = TABS.filter(t => {
     if (hiddenChannels.includes(t.id)) return false;
-    if (t.id === 'committee') return !!myCommittee;
+    if (t.id === 'committee') return !!myCommittee || isOrganizer;
     return true;
   });
 
@@ -99,6 +101,21 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
       });
   }, [isOrganizer]);
 
+  // Load distinct committees from active students (organizer only)
+  useEffect(() => {
+    if (!isOrganizer) return;
+    supabase.from('profiles')
+      .select('committee')
+      .eq('user_type', 'student')
+      .eq('is_active', true)
+      .not('committee', 'is', null)
+      .then(({ data }) => {
+        const cs = [...new Set((data || []).map((p: any) => p.committee).filter(Boolean))].sort() as string[];
+        setCommittees(cs);
+        setSelectedCommittee(prev => prev ?? cs[0] ?? null);
+      });
+  }, [isOrganizer]);
+
   // Derive the actual channel key — only changes when the real channel changes
   const channelKey = useMemo(() => {
     if (activeChannel === 'global') return 'global_square';
@@ -107,11 +124,11 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
       return `party_${partyNum}`;
     }
     if (activeChannel === 'committee') {
-      const committee = (myCommittee ?? 'unassigned').toLowerCase().replace(/\s+/g, '_');
-      return `committee_${committee}`;
+      const src = isOrganizer ? (selectedCommittee ?? 'unassigned') : (myCommittee ?? 'unassigned');
+      return `committee_${src.toLowerCase().replace(/\s+/g, '_')}`;
     }
     return 'organizer_direct';
-  }, [activeChannel, isOrganizer, selectedParty, myPartyNumber, myCommittee]);
+  }, [activeChannel, isOrganizer, selectedParty, myPartyNumber, myCommittee, selectedCommittee]);
 
   // Keep refs current (avoid stale closures in broadcast/presence callbacks)
   useEffect(() => { channelKeyRef.current = channelKey; }, [channelKey]);
@@ -225,17 +242,28 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
-  // Student: subscribe to own party channel once party number is known (profile may load async)
+  // Student: subscribe to own party + committee channels once profile loads
   useEffect(() => {
     if (isOrganizer || !user || !myPartyNumber) return;
     ensureSubscribed(`party_${myPartyNumber}`);
   }, [myPartyNumber, isOrganizer, user, ensureSubscribed]);
+
+  useEffect(() => {
+    if (isOrganizer || !user || !myCommittee) return;
+    ensureSubscribed(`committee_${myCommittee.toLowerCase().replace(/\s+/g, '_')}`);
+  }, [myCommittee, isOrganizer, user, ensureSubscribed]);
 
   // Organizer: subscribe to every party channel as soon as party list loads
   useEffect(() => {
     if (!isOrganizer || !user || parties.length === 0) return;
     parties.forEach(p => ensureSubscribed(`party_${p}`));
   }, [parties, isOrganizer, user, ensureSubscribed]);
+
+  // Organizer: subscribe to every committee channel as soon as committee list loads
+  useEffect(() => {
+    if (!isOrganizer || !user || committees.length === 0) return;
+    committees.forEach(c => ensureSubscribed(`committee_${c.toLowerCase().replace(/\s+/g, '_')}`));
+  }, [committees, isOrganizer, user, ensureSubscribed]);
 
   // When the active channel changes: ensure it's subscribed, load its cached messages
   useEffect(() => {
@@ -355,6 +383,26 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
               }`}
             >
               Party {partyNum}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Organizer: Committee selector strip ── */}
+      {isOrganizer && activeChannel === 'committee' && committees.length > 0 && (
+        <div className="px-6 py-3 bg-surface-container-low border-b border-slate-100 flex items-center gap-3 overflow-x-auto shrink-0" style={{ scrollbarWidth: 'none' }}>
+          <span className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 shrink-0 font-headline">Monitor Committee:</span>
+          {committees.map(c => (
+            <button
+              key={c}
+              onClick={() => setSelectedCommittee(c)}
+              className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all font-headline ${
+                selectedCommittee === c
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'bg-white text-on-surface-variant hover:bg-primary/10 hover:text-primary border border-slate-200'
+              }`}
+            >
+              {c.replace(/Standing Committee on /i, '').replace(/Committee on /i, '')}
             </button>
           ))}
         </div>
