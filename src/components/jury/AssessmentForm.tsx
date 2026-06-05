@@ -135,7 +135,7 @@ export const AssessmentForm = ({
 
   const locked = isLocked || assessmentsLocked;
 
-  // ── Totals ──────────────────────────────────────────────────────────────────
+  // ── Totals — all in useMemo so ring re-renders on every tag/score change ──────
   const baseTotal = useMemo(() =>
     Object.values(baseScores).reduce((sum, v) => sum + (parseFloat(v) || 0), 0),
     [baseScores]
@@ -147,21 +147,28 @@ export const AssessmentForm = ({
     [sessionTags]
   );
 
-  const grandTotal  = Math.min(baseTotal + tagTotal, 100);
-  const headroom    = 100 - grandTotal;
-  const ringOffset  = RING_C * (1 - grandTotal / 100);
-  const stars       = getStars(grandTotal);
-  const grade       = getGrade(grandTotal);
-  const hasScore    = grandTotal > 0;
-  const nearCap     = headroom < 10 && headroom > 0;
-  const atCap       = headroom <= 0;
+  const { grandTotal, headroom, ringOffset, stars, grade, hasScore, nearCap, atCap } =
+    useMemo(() => {
+      const gt       = Math.min(baseTotal + tagTotal, 100);
+      const hr       = 100 - gt;
+      return {
+        grandTotal : gt,
+        headroom   : hr,
+        ringOffset : RING_C * (1 - gt / 100),
+        stars      : getStars(gt),
+        grade      : getGrade(gt),
+        hasScore   : gt > 0,
+        nearCap    : hr < 10 && hr > 0,
+        atCap      : hr <= 0,
+      };
+    }, [baseTotal, tagTotal]);
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
   const updateBase = (sessionId: string, raw: string) => {
     if (raw === '') { setBaseScores(p => ({ ...p, [sessionId]: '' })); return; }
     const num = parseFloat(raw);
     if (isNaN(num)) return;
-    setBaseScores(p => ({ ...p, [sessionId]: String(Math.min(10, Math.max(0, num))) }));
+    setBaseScores(p => ({ ...p, [sessionId]: String(Math.min(100, Math.max(0, num))) }));
   };
 
   const toggleTag = (sessionId: string, key: string, max: number) => {
@@ -255,7 +262,7 @@ export const AssessmentForm = ({
               Session Performance
             </h3>
             <p className="text-[10px] text-on-surface-variant/50 font-body uppercase tracking-widest">
-              Base 0–10 · Tags add to 100 total
+              Base 0–100 · Tags add within 100 cap
             </p>
           </div>
 
@@ -305,17 +312,18 @@ export const AssessmentForm = ({
                             +{tagSum} pts
                           </span>
                         )}
-                        {/* Base score input */}
+                        {/* Base score input — out of 100 */}
                         <input
                           type="number"
-                          min={0} max={10} step={0.5}
+                          min={0} max={100} step={1}
                           placeholder="—"
                           value={baseScores[session.id] ?? ''}
                           onChange={e => updateBase(session.id, e.target.value)}
+                          onFocus={e => e.target.select()}
                           disabled={locked}
-                          className="w-16 h-12 text-center text-xl font-bold font-headline rounded-2xl border-none bg-surface-container-lowest shadow-sm focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all placeholder:opacity-30 text-primary disabled:opacity-50"
+                          className="w-16 h-12 text-center text-xl font-bold font-headline rounded-2xl border-none bg-surface-container-lowest shadow-sm focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all placeholder:opacity-30 text-primary disabled:opacity-50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         />
-                        <span className="text-on-surface-variant font-bold text-sm font-body">/ 10</span>
+                        <span className="text-on-surface-variant font-bold text-sm font-body">/ 100</span>
                         {/* Expand toggle */}
                         {!locked && (
                           <button
@@ -488,28 +496,28 @@ export const AssessmentForm = ({
               Grade: <span className="text-on-surface font-bold">{grade}</span>
             </p>
 
-            {/* Score breakdown */}
-            {hasScore && (
-              <div className="mt-4 w-full space-y-1.5 border-t border-outline-variant/20 pt-4">
-                <div className="flex justify-between text-[10px] font-body">
-                  <span className="text-on-surface-variant">Session base</span>
-                  <span className="font-bold text-on-surface">{baseTotal.toFixed(1)}</span>
-                </div>
-                <div className="flex justify-between text-[10px] font-body">
-                  <span className="text-on-surface-variant">Tag marks</span>
-                  <span className="font-bold text-primary">+{tagTotal}</span>
-                </div>
-                <div className="flex justify-between text-[11px] font-black font-headline border-t border-outline-variant/20 pt-1.5">
-                  <span className={atCap ? 'text-error' : 'text-on-surface'}>Total</span>
-                  <span className={atCap ? 'text-error' : 'text-primary'}>{grandTotal.toFixed(0)} / 100</span>
-                </div>
-                {headroom > 0 && (
-                  <p className={`text-[10px] font-body text-center mt-1 ${nearCap ? 'text-amber-600 font-bold' : 'text-on-surface-variant/50'}`}>
-                    {headroom} pt{headroom !== 1 ? 's' : ''} remaining
-                  </p>
-                )}
+            {/* Score breakdown — always visible */}
+            <div className="mt-4 w-full space-y-1.5 border-t border-outline-variant/20 pt-4">
+              <div className="flex justify-between text-[10px] font-body">
+                <span className="text-on-surface-variant">Session base</span>
+                <span className="font-bold text-on-surface">{baseTotal.toFixed(0)}</span>
               </div>
-            )}
+              <div className="flex justify-between text-[10px] font-body">
+                <span className="text-on-surface-variant">Tag marks</span>
+                <span className={`font-bold ${tagTotal > 0 ? 'text-primary' : 'text-on-surface-variant/40'}`}>
+                  +{tagTotal}
+                </span>
+              </div>
+              <div className="flex justify-between text-[12px] font-black font-headline border-t border-outline-variant/20 pt-1.5">
+                <span className={atCap ? 'text-error' : 'text-on-surface'}>Total</span>
+                <span className={atCap ? 'text-error' : 'text-primary'}>{grandTotal.toFixed(0)} / 100</span>
+              </div>
+              <p className={`text-[10px] font-body text-center mt-1 ${
+                atCap ? 'text-error font-bold' : nearCap ? 'text-amber-600 font-bold' : 'text-on-surface-variant/40'
+              }`}>
+                {atCap ? 'Cap reached' : `${headroom} pts remaining`}
+              </p>
+            </div>
           </div>
 
           {/* Tag reference guide */}
