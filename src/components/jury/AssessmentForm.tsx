@@ -164,6 +164,8 @@ export const AssessmentForm = ({
     }, [baseTotal, tagTotal]);
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
+  // Tags add/subtract directly into the session score box.
+  // sessionTags is kept purely as metadata for award mapping — totals come from baseScores.
   const updateBase = (sessionId: string, raw: string) => {
     if (raw === '') { setBaseScores(p => ({ ...p, [sessionId]: '' })); return; }
     const num = parseFloat(raw);
@@ -172,52 +174,31 @@ export const AssessmentForm = ({
   };
 
   const toggleTag = (sessionId: string, key: string, max: number) => {
-    setSessionTags(prev => {
-      const current = prev[sessionId] ?? {};
-      if (key in current) {
-        // Remove tag
-        const updated = { ...current };
+    const current = sessionTags[sessionId] ?? {};
+    const isActive = key in current;
+    const tagVal   = current[key] ?? max;
+    const curBase  = parseFloat(baseScores[sessionId] || '0');
+
+    if (isActive) {
+      // Remove — subtract this tag's contribution from the box
+      const newBase = Math.max(0, curBase - tagVal);
+      setBaseScores(p => ({ ...p, [sessionId]: String(newBase) }));
+      setSessionTags(prev => {
+        const updated = { ...(prev[sessionId] ?? {}) };
         delete updated[key];
         return { ...prev, [sessionId]: updated };
-      }
-      // Add tag — use min of max or remaining headroom
-      const available = Math.min(max, headroom + (current[key] || 0));
-      if (available <= 0) return prev;
-      return { ...prev, [sessionId]: { ...current, [key]: available } };
-    });
-  };
-
-  const adjustTag = (sessionId: string, key: string, value: number, max: number) => {
-    setSessionTags(prev => {
-      const current = prev[sessionId] ?? {};
-      const otherTagTotal = tagTotal - (current[key] || 0);
-      const maxAllowed = Math.min(max, 100 - baseTotal - otherTagTotal);
-      const clamped = Math.max(0, Math.min(value, maxAllowed));
-      return { ...prev, [sessionId]: { ...current, [key]: clamped } };
-    });
-  };
-
-  // Raw string state for tag inputs so jury can freely type (e.g. "1" without snapping)
-  const [tagInputs, setTagInputs] = useState<Record<string, string>>({});
-  const tagInputKey = (sessionId: string, key: string) => `${sessionId}__${key}`;
-
-  const handleTagInputChange = (sessionId: string, key: string, raw: string, max: number) => {
-    const inputKey = tagInputKey(sessionId, key);
-    setTagInputs(prev => ({ ...prev, [inputKey]: raw }));
-    const num = parseFloat(raw);
-    if (!isNaN(num)) adjustTag(sessionId, key, num, max);
-  };
-
-  const handleTagInputBlur = (sessionId: string, key: string, max: number) => {
-    const inputKey = tagInputKey(sessionId, key);
-    // Snap display to actual stored value on blur
-    const stored = sessionTags[sessionId]?.[key] ?? 0;
-    setTagInputs(prev => ({ ...prev, [inputKey]: String(stored) }));
-  };
-
-  const getTagDisplayValue = (sessionId: string, key: string) => {
-    const inputKey = tagInputKey(sessionId, key);
-    return inputKey in tagInputs ? tagInputs[inputKey] : String(sessionTags[sessionId]?.[key] ?? '');
+      });
+    } else {
+      // Add — add default value (or remaining headroom if less) to the box
+      const add     = Math.min(max, 100 - curBase);
+      if (add <= 0) return;
+      const newBase = Math.min(100, curBase + add);
+      setBaseScores(p => ({ ...p, [sessionId]: String(newBase) }));
+      setSessionTags(prev => ({
+        ...prev,
+        [sessionId]: { ...(prev[sessionId] ?? {}), [key]: add },
+      }));
+    }
   };
 
   const toggleExpand = (sessionId: string) => {
@@ -371,32 +352,17 @@ export const AssessmentForm = ({
                             return (
                               <div key={tag.key} className="flex items-center">
                                 {isActive ? (
-                                  /* Active tag — direct editable input */
-                                  <div className="flex items-center gap-2 bg-primary/8 border border-primary/20 rounded-2xl pl-3 pr-2 py-1.5">
-                                    <span className="material-symbols-outlined text-primary text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>{tag.icon}</span>
-                                    <span className="text-[11px] font-black text-primary font-headline whitespace-nowrap">{tag.label}</span>
-                                    <div className="flex items-center gap-1 ml-1 bg-white rounded-xl px-2 py-1 border-2 border-primary/30 shadow-sm">
-                                      <input
-                                        type="number"
-                                        min={0}
-                                        max={tag.max}
-                                        step={1}
-                                        value={getTagDisplayValue(session.id, tag.key)}
-                                        onChange={e => handleTagInputChange(session.id, tag.key, e.target.value, tag.max)}
-                                        onFocus={e => e.target.select()}
-                                        onBlur={() => handleTagInputBlur(session.id, tag.key, tag.max)}
-                                        className="w-9 text-center text-sm font-black text-primary font-headline bg-transparent outline-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                      />
-                                      <span className="text-[11px] font-bold text-primary/50 font-body">/{tag.max}</span>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => toggleTag(session.id, tag.key, tag.max)}
-                                      className="ml-0.5 text-primary/40 hover:text-error transition-colors"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
+                                  /* Active tag — shows as filled chip, tap again to remove */
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleTag(session.id, tag.key, tag.max)}
+                                    className="flex items-center gap-1.5 bg-primary border-primary rounded-2xl pl-3 pr-3 py-1.5 border"
+                                  >
+                                    <span className="material-symbols-outlined text-white text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>{tag.icon}</span>
+                                    <span className="text-[11px] font-black text-white font-headline whitespace-nowrap">{tag.label}</span>
+                                    <span className="text-[11px] font-black text-white/80 font-headline ml-0.5">+{sessionTags[session.id]?.[tag.key] ?? tag.max}</span>
+                                    <X className="w-3 h-3 text-white/60 ml-0.5" />
+                                  </button>
                                 ) : (
                                   /* Inactive tag — tap to add */
                                   <button
@@ -420,11 +386,9 @@ export const AssessmentForm = ({
                           })}
                         </div>
 
-                        {/* Session subtotal */}
-                        {tagSum > 0 && (
-                          <p className="text-[10px] font-black text-on-surface-variant/50 font-headline uppercase tracking-widest">
-                            Session subtotal: {(parseFloat(baseScores[session.id] || '0') + tagSum).toFixed(1)} pts
-                            <span className="normal-case font-normal ml-1">(base {baseScores[session.id] || 0} + tags {tagSum})</span>
+                        {activeTags.length > 0 && (
+                          <p className="text-[10px] font-body text-on-surface-variant/50">
+                            {activeTags.length} tag{activeTags.length > 1 ? 's' : ''} added · score updated in box above
                           </p>
                         )}
                       </div>
