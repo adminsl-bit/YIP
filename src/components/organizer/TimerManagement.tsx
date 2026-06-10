@@ -127,6 +127,12 @@ export const TimerManagement = () => {
         const timer = timerSessions.find(t => t.id === timerId);
         if (!timer) return;
 
+        // Starting a timer makes it the one shown on the public display
+        if (action === 'start' && !timer.is_active) {
+            await supabase.from('timer_sessions').update({ is_active: false }).neq('id', timerId);
+            await supabase.from('timer_sessions').update({ is_active: true }).eq('id', timerId);
+        }
+
         let updates: any = {};
         switch (action) {
             case 'start': updates = { status: 'running', started_at: new Date().toISOString() }; break;

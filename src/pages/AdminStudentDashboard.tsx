@@ -4,10 +4,13 @@ import { CivicWall } from '@/components/student/CivicWall';
 import { ParliamentTree } from '@/components/student/ParliamentTree';
 import { GlobalSquare } from '@/components/student/GlobalSquare';
 import { AdminSpeechTracker } from '@/components/organizer/AdminSpeechTracker';
+import { SessionManagement } from '@/components/organizer/SessionManagement';
+import { PollManagement } from '@/components/organizer/PollManagement';
+import { TimerManagement } from '@/components/organizer/TimerManagement';
 import { BreakingNewsTicker } from '@/components/display/BreakingNewsTicker';
 import { StudentProfile } from '@/components/student/StudentProfile';
 
-type TabId = 'profile' | 'civic-wall' | 'tree' | 'messages' | 'speeches';
+type TabId = 'profile' | 'civic-wall' | 'tree' | 'messages' | 'speeches' | 'sessions' | 'polls' | 'timer';
 
 const navItems: { id: TabId; label: string; icon: string; exclusive?: boolean }[] = [
   { id: 'profile',       label: 'Profile',         icon: 'person' },
@@ -15,6 +18,9 @@ const navItems: { id: TabId; label: string; icon: string; exclusive?: boolean }[
   { id: 'tree',          label: 'Parliament Tree',  icon: 'account_tree' },
   { id: 'messages',      label: 'Civic Chat',       icon: 'chat' },
   { id: 'speeches',      label: 'Speech Tracker',   icon: 'mic', exclusive: true },
+  { id: 'sessions',      label: 'Sessions',         icon: 'event_seat', exclusive: true },
+  { id: 'polls',         label: 'Ballot',           icon: 'how_to_vote', exclusive: true },
+  { id: 'timer',         label: 'Timer',            icon: 'timer', exclusive: true },
 ];
 
 export const AdminStudentDashboard = () => {
@@ -27,6 +33,9 @@ export const AdminStudentDashboard = () => {
       case 'civic-wall': return <CivicWall />;
       case 'tree':       return <ParliamentTree />;
       case 'speeches':   return <SpeechTrackerTabWrapper />;
+      case 'sessions':   return <SessionsTabWrapper />;
+      case 'polls':      return <PollsTabWrapper />;
+      case 'timer':      return <TimerManagement />;
       default:           return <StudentProfile isOwnProfile />;
     }
   };
@@ -110,7 +119,7 @@ export const AdminStudentDashboard = () => {
       </div>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 md:ml-64 p-8 pb-24 md:pb-8">
+      <main className={`flex-1 md:ml-64 ${activeTab === 'timer' ? 'p-4 md:p-8 pb-20 md:pb-8 h-screen overflow-hidden flex flex-col' : 'p-8 pb-24 md:pb-8'}`}>
         {/* GlobalSquare always mounted, toggled via CSS — Party Wing hidden */}
         <div className={activeTab === 'messages' ? '' : 'hidden'}>
           <GlobalSquare hiddenChannels={['party']} />
@@ -136,6 +145,38 @@ const SpeechTrackerTabWrapper = () => (
       </p>
     </header>
     <AdminSpeechTracker />
+  </div>
+);
+
+// Wrapper to give the sessions tab a proper page heading
+const SessionsTabWrapper = () => (
+  <div>
+    <header className="mb-10">
+      <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+        Parliamentary <span className="text-secondary">Sessions</span>
+      </h1>
+      <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+        <span className="material-symbols-outlined text-[12px]">event_seat</span>
+        Agenda & Schedule Control
+      </p>
+    </header>
+    <SessionManagement />
+  </div>
+);
+
+// Wrapper to give the polls/ballot tab a proper page heading
+const PollsTabWrapper = () => (
+  <div>
+    <header className="mb-10">
+      <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+        Ballot <span className="text-secondary">Management</span>
+      </h1>
+      <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+        <span className="material-symbols-outlined text-[12px]">how_to_vote</span>
+        Active Poll Administration
+      </p>
+    </header>
+    <PollManagement />
   </div>
 );
 

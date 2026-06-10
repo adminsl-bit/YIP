@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from '@/hooks/use-toast';
 import { ProfilePhotoUploader } from '@/components/student/ProfilePhotoUploader';
 import { PartyLogoUploader } from '@/components/student/PartyLogoUploader';
 
@@ -69,6 +70,32 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
     }
   }, [profile?.id, profile?.manifesto_about]);
 
+  // Editable bench alignment (ruling party / opposition)
+  const [alignment, setAlignment] = useState<string>(profile?.party_alignment || 'non_aligned');
+  const [savingAlignment, setSavingAlignment] = useState(false);
+
+  useEffect(() => {
+    setAlignment(profile?.party_alignment || 'non_aligned');
+  }, [profile?.party_alignment]);
+
+  const handleAlignmentChange = async (newAlignment: 'ruling_party' | 'opposition') => {
+    if (newAlignment === alignment || savingAlignment || !profile?.user_id) return;
+    setSavingAlignment(true);
+    const previous = alignment;
+    setAlignment(newAlignment);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ party_alignment: newAlignment })
+      .eq('user_id', profile.user_id);
+    if (error) {
+      setAlignment(previous);
+      toast({ title: 'Failed to update bench', variant: 'destructive' });
+    } else {
+      toast({ title: `Switched to ${newAlignment === 'ruling_party' ? 'Ruling Party' : 'Opposition'}` });
+    }
+    setSavingAlignment(false);
+  };
+
   if (!profile) return null;
 
   // Derived values
@@ -77,7 +104,7 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
   const serialNumber = profile.serial_number || '—';
   const partyName = profile.party_name || null;
   const partyNumber = profile.party_number ?? 0;
-  const partyAlignment = profile.party_alignment || 'non_aligned';
+  const partyAlignment = alignment;
   const partyLogoUrl = profile.party_logo_url || null;
   const committee = profile.committee || null;
   const constituency = profile.constituency || '—';
@@ -210,15 +237,46 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
               )}
 
               {/* Alignment Tag */}
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${getAlignmentColor(partyAlignment)}`}>
-                {partyAlignment === 'ruling_party' && (
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></svg>
-                )}
-                {partyAlignment === 'opposition' && (
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></svg>
-                )}
-                {getAlignmentLabel(partyAlignment)}
-              </span>
+              {isOwnProfile ? (
+                <div className="inline-flex items-center gap-1 p-1 rounded-full bg-gray-100 border border-gray-200">
+                  <button
+                    type="button"
+                    disabled={savingAlignment}
+                    onClick={() => handleAlignmentChange('ruling_party')}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-60 ${
+                      partyAlignment === 'ruling_party'
+                        ? 'bg-emerald-500 text-white shadow-sm'
+                        : 'text-gray-500 hover:text-emerald-600'
+                    }`}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></svg>
+                    Ruling Party
+                  </button>
+                  <button
+                    type="button"
+                    disabled={savingAlignment}
+                    onClick={() => handleAlignmentChange('opposition')}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-60 ${
+                      partyAlignment === 'opposition'
+                        ? 'bg-red-500 text-white shadow-sm'
+                        : 'text-gray-500 hover:text-red-600'
+                    }`}
+                  >
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></svg>
+                    Opposition
+                  </button>
+                </div>
+              ) : (
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${getAlignmentColor(partyAlignment)}`}>
+                  {partyAlignment === 'ruling_party' && (
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></svg>
+                  )}
+                  {partyAlignment === 'opposition' && (
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></svg>
+                  )}
+                  {getAlignmentLabel(partyAlignment)}
+                </span>
+              )}
             </div>
 
             {/* Detail rows */}

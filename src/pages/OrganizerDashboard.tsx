@@ -34,7 +34,7 @@ import PhotoMigration from "@/components/organizer/PhotoMigration";
 import { OrganizerLeaderboard } from "@/components/organizer/OrganizerLeaderboard";
 import { EventLeaderboard } from "@/components/organizer/EventLeaderboard";
 import { AwardManagement } from "@/components/organizer/AwardManagement";
-import { AwardSuggestions } from "@/components/shared/AwardSuggestions";
+import { AwardIntelligenceDashboard } from "@/components/shared/AwardIntelligenceDashboard";
 import { AdminSpeechTracker } from "@/components/organizer/AdminSpeechTracker";
 import { BreakingNewsPublisher } from "@/components/journalist/BreakingNewsPublisher";
 import { ManualScoring } from "@/components/organizer/ManualScoring";
@@ -352,10 +352,8 @@ const OrganizerDashboard = () => {
                   </Button>
                 </div>
 
-                {/* Award Suggestions — algorithmic top-3 per award */}
-                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
-                  <AwardSuggestions />
-                </div>
+                {/* Award Intelligence Dashboard — immersive per-award detail view */}
+                <AwardIntelligenceDashboard isOrganizer />
 
                 {/* Award Management — confirmation and assignment */}
                 <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">

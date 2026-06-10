@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, ArrowRight, ArrowLeft, User, MapPin, Landmark, Sparkles, CheckCircle2, Eye, EyeOff, Lock } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, User, MapPin, Landmark, Sparkles, CheckCircle2 } from "lucide-react";
 
 interface ActiveEventCity {
   city: string;
@@ -36,32 +36,11 @@ const Onboarding = () => {
   const [activeEventCities, setActiveEventCities] = useState<ActiveEventCity[]>([]);
   const [loadingCities, setLoadingCities] = useState(true);
 
-  // Password step (email-enrolled users only)
-  const [loginId, setLoginId] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showNewPw, setShowNewPw] = useState(false);
-  const [showConfirmPw, setShowConfirmPw] = useState(false);
-  const [isSettingPassword, setIsSettingPassword] = useState(false);
-
-  // True when the user logged in via real email OTP (not a @yip.* internal account)
-  const isEmailEnrolled = !['@yip.parliament', '@yip.com', '@yip.admin', '@yip.journalism']
-    .some(domain => user?.email?.endsWith(domain));
-
-  // Auto-suggest login ID from name when password step is reached
-  useEffect(() => {
-    if (step === 3 && !loginId && formData.name) {
-      const suggested = formData.name.toLowerCase().trim().replace(/\s+/g, '.').replace(/[^a-z0-9._-]/g, '');
-      setLoginId(suggested);
-    }
-  }, [step]);
-
   // Form State
   const [formData, setFormData] = useState({
     name: '',
     state: '',
     city: '',
-    partyAlignment: '' as 'ruling_party' | 'opposition' | '',
   });
 
   // Assigned Details (derived on submission)
@@ -184,9 +163,12 @@ const Onboarding = () => {
       // Select constituency based on modulo of current count to ensure distribution
       const constituency = availableConstituencies[currentCount % availableConstituencies.length].name;
 
-      // 4. Parliamentary Alignment — student's own choice, demo accounts default non_aligned
-      const partyAlignment: 'ruling_party' | 'opposition' | 'non_aligned' =
-        isDemoAccount ? 'non_aligned' : (formData.partyAlignment || 'non_aligned');
+      // 4. Parliamentary Alignment — algorithmic, based on majority/minority bench split
+      let partyAlignment: 'ruling_party' | 'opposition' | 'non_aligned' = 'non_aligned';
+      if (!isDemoAccount) {
+        const rulingThreshold = Math.floor(parties.length / 2) + 1;
+        partyAlignment = partyNumber <= rulingThreshold ? 'ruling_party' : 'opposition';
+      }
 
       // 4. Create or Update Profile
       const profileData = {
@@ -239,8 +221,8 @@ const Onboarding = () => {
       });
       
       await refreshProfile();
-      setStep(isEmailEnrolled ? 3 : 4); // 3 = set password (email users), 4 = identity card
-      
+      setStep(3); // 3 = identity card
+
       toast({
         title: "Registration Validated",
         description: `Parliamentary profile generated for ${formData.name}.`,
@@ -254,39 +236,6 @@ const Onboarding = () => {
       });
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const handleSetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!loginId.trim()) {
-      toast({ variant: 'destructive', title: 'Login ID required', description: 'Choose a login ID you will use to sign in.' });
-      return;
-    }
-    if (newPassword.length < 6) {
-      toast({ variant: 'destructive', title: 'Password too short', description: 'Use at least 6 characters.' });
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      toast({ variant: 'destructive', title: "Passwords don't match", description: 'Both fields must be identical.' });
-      return;
-    }
-    setIsSettingPassword(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No active session');
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/finalize-email-enrollment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
-        body: JSON.stringify({ loginId: loginId.trim(), password: newPassword }),
-      });
-      const result = await res.json();
-      if (!result.success) throw new Error(result.error || 'Failed to set credentials');
-      setStep(4);
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Could not set password', description: error.message });
-    } finally {
-      setIsSettingPassword(false);
     }
   };
 
@@ -431,97 +380,12 @@ const Onboarding = () => {
                 <ArrowLeft className="w-4 h-4" /> Back
               </button>
               <button
-                onClick={nextStep}
-                disabled={!formData.state || !formData.city}
-                className="flex-[2] py-6 bg-[#13298f] text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-sm shadow-2xl shadow-[#13298f]/20 hover:scale-[1.02] hover:shadow-[#13298f]/40 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:hover:scale-100"
-              >
-                Choose Your Bench <ArrowRight className="w-5 h-5" />
-              </button>
-            </div>
-          </motion.div>
-        );
-
-      case 3:
-        return (
-          <motion.div
-            key="alignment-step"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="space-y-8"
-          >
-            <div className="space-y-2">
-              <span className="text-primary font-black uppercase tracking-[0.2em] text-[10px] bg-primary/5 px-3 py-1 rounded-full">Step 03 / Alignment</span>
-              <h2 className="text-4xl font-black font-headline text-slate-900 leading-tight tracking-tight">Choose Your Bench</h2>
-              <p className="text-slate-500 font-medium text-lg">Will you govern or hold the government accountable?</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              {/* Ruling Party */}
-              <button
-                type="button"
-                onClick={() => setFormData(p => ({ ...p, partyAlignment: 'ruling_party' }))}
-                className={`relative overflow-hidden rounded-[2rem] p-6 flex flex-col items-center gap-4 border-2 transition-all ${
-                  formData.partyAlignment === 'ruling_party'
-                    ? 'border-emerald-500 bg-emerald-50 shadow-lg shadow-emerald-500/20 scale-[1.02]'
-                    : 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50/30'
-                }`}
-              >
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${formData.partyAlignment === 'ruling_party' ? 'bg-emerald-500' : 'bg-slate-100'}`}>
-                  <span className={`material-symbols-outlined text-3xl ${formData.partyAlignment === 'ruling_party' ? 'text-white' : 'text-slate-400'}`} style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
-                </div>
-                <div className="text-center">
-                  <p className={`font-black font-headline text-lg ${formData.partyAlignment === 'ruling_party' ? 'text-emerald-700' : 'text-slate-700'}`}>Ruling Party</p>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">Present policies, defend governance, lead the house</p>
-                </div>
-                {formData.partyAlignment === 'ruling_party' && (
-                  <div className="absolute top-3 right-3 w-6 h-6 bg-emerald-500 rounded-full flex items-center justify-center">
-                    <span className="material-symbols-outlined text-white text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
-                  </div>
-                )}
-              </button>
-
-              {/* Opposition */}
-              <button
-                type="button"
-                onClick={() => setFormData(p => ({ ...p, partyAlignment: 'opposition' }))}
-                className={`relative overflow-hidden rounded-[2rem] p-6 flex flex-col items-center gap-4 border-2 transition-all ${
-                  formData.partyAlignment === 'opposition'
-                    ? 'border-primary bg-primary/5 shadow-lg shadow-primary/20 scale-[1.02]'
-                    : 'border-slate-200 bg-white hover:border-primary/30 hover:bg-primary/3'
-                }`}
-              >
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${formData.partyAlignment === 'opposition' ? 'bg-primary' : 'bg-slate-100'}`}>
-                  <span className={`material-symbols-outlined text-3xl ${formData.partyAlignment === 'opposition' ? 'text-white' : 'text-slate-400'}`} style={{ fontVariationSettings: "'FILL' 1" }}>gavel</span>
-                </div>
-                <div className="text-center">
-                  <p className={`font-black font-headline text-lg ${formData.partyAlignment === 'opposition' ? 'text-primary' : 'text-slate-700'}`}>Opposition</p>
-                  <p className="text-xs text-slate-500 mt-1 leading-relaxed">Hold the government accountable, challenge and debate</p>
-                </div>
-                {formData.partyAlignment === 'opposition' && (
-                  <div className="absolute top-3 right-3 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
-                    <span className="material-symbols-outlined text-white text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>check</span>
-                  </div>
-                )}
-              </button>
-            </div>
-
-            <div className="flex gap-4">
-              <button
-                onClick={prevStep}
-                className="flex-1 py-6 bg-slate-100 text-slate-500 rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-xs hover:bg-slate-200 transition-all flex items-center justify-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" /> Back
-              </button>
-              <button
-                onClick={isEmailEnrolled ? nextStep : handleSubmit}
-                disabled={!formData.partyAlignment || isSubmitting}
+                onClick={handleSubmit}
+                disabled={isSubmitting || !formData.state || !formData.city}
                 className="flex-[2] py-6 bg-[#13298f] text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-sm shadow-2xl shadow-[#13298f]/20 hover:scale-[1.02] hover:shadow-[#13298f]/40 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:hover:scale-100"
               >
                 {isSubmitting ? (
                   <>Processing... <Loader2 className="w-5 h-5 animate-spin" /></>
-                ) : isEmailEnrolled ? (
-                  <>Set Credentials <ArrowRight className="w-5 h-5" /></>
                 ) : (
                   <>Initialize Profile <Sparkles className="w-5 h-5" /></>
                 )}
@@ -530,92 +394,7 @@ const Onboarding = () => {
           </motion.div>
         );
 
-      case 4:
-        return (
-          <motion.div
-            key="password-step"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="space-y-8"
-          >
-            <div className="space-y-2">
-              <span className="text-primary font-black uppercase tracking-[0.2em] text-[10px] bg-primary/5 px-3 py-1 rounded-full">Step 04 / Security</span>
-              <h2 className="text-4xl font-black font-headline text-slate-900 leading-tight tracking-tight">Choose Your Login</h2>
-              <p className="text-slate-500 font-medium text-lg">
-                Pick a short Login ID and password — you'll use these every time you sign in.
-              </p>
-            </div>
-
-            <form onSubmit={handleSetPassword} className="space-y-5">
-              {/* Login ID */}
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Login ID</label>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-primary/5 rounded-3xl blur-xl group-focus-within:bg-primary/10 transition-all" />
-                  <User className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within:text-primary transition-colors z-10" />
-                  <input
-                    type="text"
-                    className="relative w-full pl-16 pr-6 py-6 bg-slate-50 border-2 border-transparent rounded-3xl focus:bg-white focus:border-primary/10 transition-all font-bold text-slate-800 placeholder:text-slate-300 shadow-inner text-lg z-10"
-                    placeholder="e.g. arjun.sharma"
-                    required
-                    value={loginId}
-                    onChange={e => setLoginId(e.target.value.toLowerCase().replace(/[^a-z0-9._-]/g, ''))}
-                  />
-                </div>
-                <p className="text-[10px] text-slate-400 ml-1">Lowercase letters, numbers, dots and hyphens only. You'll type this at login.</p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">New Password</label>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-primary/5 rounded-3xl blur-xl group-focus-within:bg-primary/10 transition-all" />
-                  <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within:text-primary transition-colors z-10" />
-                  <input
-                    type={showNewPw ? 'text' : 'password'}
-                    className="relative w-full pl-16 pr-14 py-6 bg-slate-50 border-2 border-transparent rounded-3xl focus:bg-white focus:border-primary/10 transition-all font-bold text-slate-800 placeholder:text-slate-300 shadow-inner text-lg z-10"
-                    placeholder="Min 6 characters"
-                    required
-                    value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
-                  />
-                  <button type="button" onClick={() => setShowNewPw(v => !v)} className="absolute right-6 top-1/2 -translate-y-1/2 z-10 text-slate-300 hover:text-primary transition-colors">
-                    {showNewPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Confirm Password</label>
-                <div className="relative group">
-                  <div className="absolute inset-0 bg-primary/5 rounded-3xl blur-xl group-focus-within:bg-primary/10 transition-all" />
-                  <Lock className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300 group-focus-within:text-primary transition-colors z-10" />
-                  <input
-                    type={showConfirmPw ? 'text' : 'password'}
-                    className="relative w-full pl-16 pr-14 py-6 bg-slate-50 border-2 border-transparent rounded-3xl focus:bg-white focus:border-primary/10 transition-all font-bold text-slate-800 placeholder:text-slate-300 shadow-inner text-lg z-10"
-                    placeholder="Repeat password"
-                    required
-                    value={confirmPassword}
-                    onChange={e => setConfirmPassword(e.target.value)}
-                  />
-                  <button type="button" onClick={() => setShowConfirmPw(v => !v)} className="absolute right-6 top-1/2 -translate-y-1/2 z-10 text-slate-300 hover:text-primary transition-colors">
-                    {showConfirmPw ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSettingPassword || !loginId.trim() || !newPassword || !confirmPassword}
-                className="w-full py-6 bg-[#13298f] text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-sm shadow-2xl shadow-[#13298f]/20 hover:scale-[1.02] hover:shadow-[#13298f]/40 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:hover:scale-100"
-              >
-                {isSettingPassword ? <><Loader2 className="w-5 h-5 animate-spin" /> Saving…</> : <>Save & Continue <ArrowRight className="w-5 h-5" /></>}
-              </button>
-            </form>
-          </motion.div>
-        );
-
-      case 4:
+      case 3:
         return (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}

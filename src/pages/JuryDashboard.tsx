@@ -3,7 +3,7 @@ import { JuryStudentList } from "@/components/jury/JuryStudentList";
 import { ProfilePhotoUploader } from "@/components/jury/ProfilePhotoUploader";
 import { JuryProfileEditor } from "@/components/jury/JuryProfileEditor";
 import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
-import { AwardSuggestions } from "@/components/shared/AwardSuggestions";
+import { AwardIntelligenceDashboard } from "@/components/shared/AwardIntelligenceDashboard";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -521,7 +521,7 @@ const JuryDashboard = () => {
         {/* ── Awards tab ── */}
         {activeTab === 'awards' && (
           <div className="px-8 lg:px-12 py-8">
-            <AwardSuggestions juryId={user?.id} />
+            <AwardIntelligenceDashboard juryId={user?.id} />
           </div>
         )}
 
