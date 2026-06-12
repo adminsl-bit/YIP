@@ -10,19 +10,21 @@ import { PollVoting } from '@/components/student/PollVoting';
 import { QuestionHourHub } from '@/components/student/QuestionHourHub';
 import { GlobalSquare } from '@/components/student/GlobalSquare';
 import { BreakingNewsTicker } from '@/components/display/BreakingNewsTicker';
+import { SpeechTrackingView } from '@/components/student/SpeechTrackingView';
 
-type TabId = 'profile' | 'civic-wall' | 'tree' | 'ballot' | 'question-hour' | 'messages';
+type TabId = 'profile' | 'civic-wall' | 'tree' | 'ballot' | 'question-hour' | 'speeches' | 'messages';
 
 interface ManifestoItem {
   text: string;
 }
 
-const navItems: { id: TabId; label: string; icon: string }[] = [
+const baseNavItems: { id: TabId; label: string; icon: string }[] = [
   { id: 'profile',       label: 'Profile',         icon: 'person' },
   { id: 'civic-wall',    label: 'Civic Wall',       icon: 'public' },
   { id: 'tree',          label: 'Parliament Tree',  icon: 'account_tree' },
   { id: 'ballot',        label: 'Ballot',           icon: 'how_to_vote' },
   { id: 'question-hour', label: 'Question Hour',    icon: 'forum' },
+  { id: 'speeches',      label: 'Speech Tracker',   icon: 'mic' },
   { id: 'messages',      label: 'Civic Chat',       icon: 'chat' },
 ];
 
@@ -48,10 +50,61 @@ const StudentDashboard = () => {
   const [editPartyTagline, setEditPartyTagline] = useState('');
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
+  // Bench alignment (ruling party / opposition)
+  const [alignment, setAlignment] = useState<string>(profile?.party_alignment || 'non_aligned');
+  const [savingAlignment, setSavingAlignment] = useState(false);
+
+  useEffect(() => {
+    setAlignment(profile?.party_alignment || 'non_aligned');
+  }, [profile?.party_alignment]);
+
+  const handleAlignmentChange = async (newAlignment: 'ruling_party' | 'opposition') => {
+    if (newAlignment === alignment || savingAlignment || !profile?.user_id) return;
+    setSavingAlignment(true);
+    const previous = alignment;
+    setAlignment(newAlignment);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ party_alignment: newAlignment })
+      .eq('user_id', profile.user_id);
+    if (error) {
+      setAlignment(previous);
+      toast({ title: 'Failed to update bench', variant: 'destructive' });
+    } else {
+      toast({ title: `Switched to ${newAlignment === 'ruling_party' ? 'Ruling Party' : 'Opposition'}` });
+    }
+    setSavingAlignment(false);
+  };
+
   // Derived values
   const delegateName = profile?.name || 'Delegate';
   const firstName = delegateName.split(' ')[0];
   const position = profile?.position || 'Member of Parliament';
+  // Speaker & Deputy Speaker get a read-only view of the speech tracker
+  const isSpeaker = /speaker/i.test(position);
+  const navItems = isSpeaker ? baseNavItems : baseNavItems.filter(item => item.id !== 'speeches');
+  // Admin students and journalists sit outside party politics — fixed role card, no manifesto
+  const isStaffRole = /journalist|admin/i.test(position);
+  const isJournalist = /journalist/i.test(position);
+  const staffInfo = isJournalist
+    ? {
+        subtitle: 'Press & Media Corps',
+        responsibilities: [
+          'Cover committee proceedings and plenary debates as they unfold',
+          'Publish reports and updates to the Civic Wall',
+          'Conduct interviews with delegates and party representatives',
+          'Maintain neutrality and accuracy across all published content',
+        ],
+      }
+    : {
+        subtitle: 'Administrative Support Team',
+        responsibilities: [
+          'Assist organizers with session logistics and scheduling',
+          'Moderate and curate content on the Civic Wall',
+          'Support attendance and score tracking for delegates',
+          "Coordinate with the Speaker's office on procedural matters",
+        ],
+      };
   const serialNumber = profile?.serial_number || '—';
   const constituency = profile?.constituency || '—';
   const state = profile?.state || '—';
@@ -59,28 +112,13 @@ const StudentDashboard = () => {
   const partyName = profile?.party_name || 'Independent';
   const partyTagline = (profile as any)?.party_tagline || '';
   const partyNumber = profile?.party_number ?? 0;
-  const partyAlignment = profile?.party_alignment || 'non_aligned';
+  const partyAlignment = alignment;
   const partyLogoUrl = profile?.party_logo_url || null;
   const photoUrl = profile?.photo_url || null;
   const isActive = profile?.is_active !== false;
   const committee = profile?.committee || null;
   const initials = delegateName.split(' ').map((n: string) => n[0]).join('').toUpperCase();
 
-  const getAlignmentLabel = (alignment: string) => {
-    switch (alignment) {
-      case 'ruling_party': return 'Ruling Party';
-      case 'opposition': return 'Opposition';
-      default: return 'Non-Aligned';
-    }
-  };
-
-  const getAlignmentColor = (alignment: string) => {
-    switch (alignment) {
-      case 'ruling_party': return 'bg-tertiary-fixed/30 text-tertiary-container border-tertiary-fixed-dim/30';
-      case 'opposition': return 'bg-error-container/30 text-on-error-container border-error/20';
-      default: return 'bg-surface-container text-on-surface-variant border-outline-variant/20';
-    }
-  };
 
   useEffect(() => {
     if (profile) {
@@ -254,79 +292,128 @@ const StudentDashboard = () => {
                 <span>{position}</span>
               </div>
 
-              {/* Party */}
-              <div className="mt-6 flex items-center gap-4">
-                <div className="relative shrink-0">
-                  <div className="w-14 h-14 rounded-2xl bg-surface-container-low border border-outline-variant/20 overflow-hidden shadow-sm flex items-center justify-center">
-                    {partyLogoUrl ? (
-                      <img
-                        src={`${partyLogoUrl}${partyLogoUrl.includes('?') ? '&' : '?'}cb=${profile?.updated_at ? new Date(profile.updated_at).getTime() : ''}`}
-                        alt="Party logo"
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/30 flex items-center justify-center text-primary font-black text-xl">
-                        {partyName?.charAt(0) || '?'}
+              {isStaffRole ? (
+                /* Staff role badge — admin students/journalists have no party */
+                <div className="mt-6 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                    <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>badge</span>
+                    {staffInfo.subtitle}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-surface-container text-on-surface-variant border border-outline-variant/20">
+                    Non-Aligned
+                  </span>
+                </div>
+              ) : (
+                <>
+                  {/* Party */}
+                  <div className="mt-6 flex items-center gap-4">
+                    <div className="relative shrink-0">
+                      <div className="w-14 h-14 rounded-2xl bg-surface-container-low border border-outline-variant/20 overflow-hidden shadow-sm flex items-center justify-center">
+                        {partyLogoUrl ? (
+                          <img
+                            src={`${partyLogoUrl}${partyLogoUrl.includes('?') ? '&' : '?'}cb=${profile?.updated_at ? new Date(profile.updated_at).getTime() : ''}`}
+                            alt="Party logo"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-primary/10 to-primary/30 flex items-center justify-center text-primary font-black text-xl">
+                            {partyName?.charAt(0) || '?'}
+                          </div>
+                        )}
                       </div>
+                      {isEditingProfile && (
+                        <div className="absolute -bottom-1 -right-1">
+                          <PartyLogoUploader currentLogoUrl={partyLogoUrl} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {isEditingProfile ? (
+                        <>
+                          <input
+                            type="text"
+                            value={editPartyName}
+                            onChange={(e) => setEditPartyName(e.target.value)}
+                            placeholder="Party Name"
+                            className="font-bold text-on-surface w-full border-b border-primary/20 focus:border-primary outline-none bg-transparent text-sm pb-0.5"
+                          />
+                          <input
+                            type="text"
+                            value={editPartyTagline}
+                            onChange={(e) => setEditPartyTagline(e.target.value)}
+                            placeholder="Party Tagline"
+                            className="text-xs text-on-surface-variant w-full border-b border-outline-variant/20 focus:border-primary outline-none bg-transparent mt-1 pb-0.5"
+                          />
+                        </>
+                      ) : (
+                        <>
+                          <h4 className="font-bold text-on-surface text-sm truncate">{partyName}</h4>
+                          <p className="text-xs text-on-surface-variant font-medium truncate">{partyTagline || 'Yi Parliamentary Bloc'}</p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Tag pills */}
+                  <div className="flex flex-wrap gap-2 mt-6">
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                      <span className="material-symbols-outlined text-[12px]">tag</span>
+                      {partyName}
+                    </span>
+
+                    {committee && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-secondary/10 text-secondary border border-secondary/20">
+                        <span className="material-symbols-outlined text-[12px]">people</span>
+                        {committee}
+                      </span>
+                    )}
+
+                    {isEditingProfile ? (
+                      <div className="inline-flex items-center gap-1 p-1 rounded-full bg-surface-container border border-outline-variant/20">
+                        <button
+                          type="button"
+                          disabled={savingAlignment}
+                          onClick={() => handleAlignmentChange('ruling_party')}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-60 ${
+                            partyAlignment === 'ruling_party'
+                              ? 'bg-tertiary-fixed text-on-tertiary-fixed shadow-sm'
+                              : 'text-on-surface-variant hover:text-tertiary'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
+                          Ruling Party
+                        </button>
+                        <button
+                          type="button"
+                          disabled={savingAlignment}
+                          onClick={() => handleAlignmentChange('opposition')}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all disabled:opacity-60 ${
+                            partyAlignment === 'opposition'
+                              ? 'bg-error text-on-error shadow-sm'
+                              : 'text-on-surface-variant hover:text-error'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[12px]">flag</span>
+                          Opposition
+                        </button>
+                      </div>
+                    ) : (
+                      <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        partyAlignment === 'ruling_party'
+                          ? 'bg-tertiary-fixed text-on-tertiary-fixed'
+                          : partyAlignment === 'opposition'
+                            ? 'bg-error text-on-error'
+                            : 'bg-surface-container text-on-surface-variant border border-outline-variant/20'
+                      }`}>
+                        <span className="material-symbols-outlined text-[12px]" style={partyAlignment === 'ruling_party' ? { fontVariationSettings: "'FILL' 1" } : undefined}>
+                          {partyAlignment === 'ruling_party' ? 'shield' : partyAlignment === 'opposition' ? 'flag' : 'balance'}
+                        </span>
+                        {partyAlignment === 'ruling_party' ? 'Ruling Party' : partyAlignment === 'opposition' ? 'Opposition' : 'Non-Aligned'}
+                      </span>
                     )}
                   </div>
-                  {isEditingProfile && (
-                    <div className="absolute -bottom-1 -right-1">
-                      <PartyLogoUploader currentLogoUrl={partyLogoUrl} />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  {isEditingProfile ? (
-                    <>
-                      <input
-                        type="text"
-                        value={editPartyName}
-                        onChange={(e) => setEditPartyName(e.target.value)}
-                        placeholder="Party Name"
-                        className="font-bold text-on-surface w-full border-b border-primary/20 focus:border-primary outline-none bg-transparent text-sm pb-0.5"
-                      />
-                      <input
-                        type="text"
-                        value={editPartyTagline}
-                        onChange={(e) => setEditPartyTagline(e.target.value)}
-                        placeholder="Party Tagline"
-                        className="text-xs text-on-surface-variant w-full border-b border-outline-variant/20 focus:border-primary outline-none bg-transparent mt-1 pb-0.5"
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <h4 className="font-bold text-on-surface text-sm truncate">{partyName}</h4>
-                      <p className="text-xs text-on-surface-variant font-medium truncate">{partyTagline || 'Yi Parliamentary Bloc'}</p>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Tag pills */}
-              <div className="flex flex-wrap gap-2 mt-6">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
-                  <span className="material-symbols-outlined text-[12px]">tag</span>
-                  {partyName}
-                </span>
-
-                {committee && (
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-secondary/10 text-secondary border border-secondary/20">
-                    <span className="material-symbols-outlined text-[12px]">people</span>
-                    {committee}
-                  </span>
-                )}
-
-                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${getAlignmentColor(partyAlignment)}`}>
-                  {partyAlignment === 'ruling_party' && (
-                    <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
-                  )}
-                  {partyAlignment === 'opposition' && (
-                    <span className="material-symbols-outlined text-[12px]">flag</span>
-                  )}
-                  {getAlignmentLabel(partyAlignment)}
-                </span>
-              </div>
+                </>
+              )}
 
               {/* Detail rows */}
               <div className="mt-8 space-y-6 border-t border-outline-variant/10 pt-6">
@@ -343,23 +430,27 @@ const StudentDashboard = () => {
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">State</label>
-                    <p className="font-bold text-on-surface">{state}</p>
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">City</label>
-                    <p className="font-bold text-on-surface">{city}</p>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Constituency Focus</label>
-                  <p className="font-bold text-on-surface flex items-center gap-1 mt-1">
-                    <span className="material-symbols-outlined text-[16px] text-on-surface-variant" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
-                    {constituency}
-                  </p>
-                </div>
+                {!isStaffRole && (
+                  <>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">State</label>
+                        <p className="font-bold text-on-surface">{state}</p>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">City</label>
+                        <p className="font-bold text-on-surface">{city}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Constituency Focus</label>
+                      <p className="font-bold text-on-surface flex items-center gap-1 mt-1">
+                        <span className="material-symbols-outlined text-[16px] text-on-surface-variant" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
+                        {constituency}
+                      </p>
+                    </div>
+                  </>
+                )}
                 <div>
                   <label className="text-[10px] font-bold text-on-surface-variant uppercase tracking-widest">Parliamentary Role</label>
                   <div className="mt-1 bg-primary px-4 py-3 rounded-xl shadow-md">
@@ -371,9 +462,36 @@ const StudentDashboard = () => {
           </div>
         </div>
 
-        {/* Right Column – Civic Agenda */}
+        {/* Right Column – Civic Agenda / Roles & Responsibilities */}
         <div className="lg:col-span-8">
           <div className="bg-surface-container-lowest rounded-[2rem] p-10 min-h-[600px] flex flex-col shadow-[0_16px_40px_-12px_rgba(19,41,143,0.06)]">
+          {isStaffRole ? (
+            <>
+              {/* Roles & Responsibilities */}
+              <div className="flex flex-wrap justify-between items-start mb-10 gap-4">
+                <div>
+                  <h2 className="text-4xl font-extrabold text-on-surface tracking-tight font-headline">Roles &amp; Responsibilities</h2>
+                  <div className="flex items-center gap-2 mt-2 text-primary font-medium">
+                    <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>badge</span>
+                    <span className="text-sm">{staffInfo.subtitle}</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                {staffInfo.responsibilities.map((item, i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <span className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold shrink-0 font-headline">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <div className="bg-surface-container-low border border-outline-variant/10 p-5 rounded-xl flex-1 shadow-sm">
+                      <p className="text-on-surface font-semibold text-sm font-body">{item}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
             <div className="flex flex-wrap justify-between items-start mb-10 gap-4">
               <div>
                 <h2 className="text-4xl font-extrabold text-on-surface tracking-tight font-headline">Civic Agenda</h2>
@@ -567,6 +685,8 @@ const StudentDashboard = () => {
                 </button>
               </div>
             )}
+            </>
+          )}
           </div>
         </div>
       </div>
@@ -580,6 +700,7 @@ const StudentDashboard = () => {
       case 'tree':          return <ParliamentTree />;
       case 'ballot':        return <PollVoting />;
       case 'question-hour': return <QuestionHourHub />;
+      case 'speeches':      return <SpeechTrackerTabWrapper />;
       default:              return renderProfileTab();
     }
   };
@@ -657,5 +778,21 @@ const StudentDashboard = () => {
     </div>
   );
 };
+
+// Wrapper to give the speech tracker tab a proper page heading
+const SpeechTrackerTabWrapper = () => (
+  <div>
+    <header className="mb-10">
+      <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+        Speech <span className="text-secondary">Tracker</span>
+      </h1>
+      <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+        <span className="material-symbols-outlined text-[12px]">mic</span>
+        Parliamentary Participation Monitor
+      </p>
+    </header>
+    <SpeechTrackingView />
+  </div>
+);
 
 export default StudentDashboard;

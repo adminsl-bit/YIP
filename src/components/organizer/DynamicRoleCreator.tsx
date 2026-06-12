@@ -7,6 +7,7 @@ import {
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/useAuth";
 
 type RoleType = 'jury' | 'admin' | 'journalist';
 type DisplayRole = 'jury' | 'admin' | 'journalist' | 'student';
@@ -58,6 +59,8 @@ const fmtDate  = (d?: string)   => d ? new Date(d).toLocaleDateString('en-US', {
 const ITEMS_PER_PAGE = 10;
 
 export const DynamicRoleCreator = () => {
+  const { profile } = useAuth();
+
   // Create form
   const [selectedRole, setSelectedRole]   = useState<RoleType>('jury');
   const [count, setCount]                 = useState(1);
@@ -195,7 +198,7 @@ export const DynamicRoleCreator = () => {
     setIsCreating(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-role-users', {
-        body: { roleType: selectedRole, count, password: finalPwd },
+        body: { roleType: selectedRole, count, password: finalPwd, eventId: profile?.event_id },
       });
       if (error) throw new Error(error.message || JSON.stringify(error));
       if (data?.error) throw new Error(data.error);

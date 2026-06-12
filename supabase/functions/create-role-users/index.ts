@@ -9,6 +9,7 @@ interface RoleUserConfig {
   roleType: 'jury' | 'admin' | 'journalist' | 'organizer';
   count: number;
   password: string;
+  eventId?: string;
 }
 
 interface RoleDefinition {
@@ -70,7 +71,7 @@ Deno.serve(async (req) => {
       }
     )
 
-    const { roleType, count, password }: RoleUserConfig = await req.json();
+    const { roleType, count, password, eventId }: RoleUserConfig = await req.json();
 
     console.log(`Creating ${count} ${roleType} users with password: ${password}`);
 
@@ -118,6 +119,7 @@ Deno.serve(async (req) => {
               party_number: 0,
               user_type: roleDef.userType,
               email: userEmail,
+              ...(eventId ? { event_id: eventId } : {}),
             })
             .eq('user_id', userId);
           if (updateProfileError) throw new Error(`Profile update failed: ${updateProfileError.message}`);
@@ -139,6 +141,13 @@ Deno.serve(async (req) => {
                   role: roleDef.appRole,
                 });
             }
+          }
+
+          // Link to event so it shows up in the Super Admin roles menu
+          if (eventId) {
+            await supabaseAdmin
+              .from('event_participants')
+              .upsert({ event_id: eventId, user_id: userId, is_current: true }, { onConflict: 'event_id,user_id' });
           }
 
           console.log(`Updated ${userEmail}`);
@@ -180,6 +189,7 @@ Deno.serve(async (req) => {
             party_number: 0,
             user_type: roleDef.userType,
             email: userEmail,
+            ...(eventId ? { event_id: eventId } : {}),
           });
 
         if (profileError) {
@@ -198,6 +208,13 @@ Deno.serve(async (req) => {
           if (roleError) {
             throw new Error(`Role assignment failed: ${roleError.message}`);
           }
+        }
+
+        // Link to event so it shows up in the Super Admin roles menu
+        if (eventId) {
+          await supabaseAdmin
+            .from('event_participants')
+            .upsert({ event_id: eventId, user_id: userId, is_current: true }, { onConflict: 'event_id,user_id' });
         }
 
         console.log(`Created ${userEmail}`);

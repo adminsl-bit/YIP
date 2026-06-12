@@ -113,6 +113,29 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
   const photoUrl = profile.photo_url || null;
   const isActive = profile.is_active !== false;
   const initials = name.split(' ').map((n: string) => n[0]).join('').toUpperCase();
+  // Journalists and admin students sit outside party politics — no party, always Non-Aligned
+  const isStaffRole = /journalist|admin/i.test(position);
+  const isJournalist = /journalist/i.test(position);
+  // Staff roles are fixed for the event, so their responsibilities are static copy
+  const staffInfo = isJournalist
+    ? {
+        subtitle: 'Press & Media Corps',
+        responsibilities: [
+          'Cover committee proceedings and plenary debates as they unfold',
+          'Publish reports and updates to the Civic Wall',
+          'Conduct interviews with delegates and party representatives',
+          'Maintain neutrality and accuracy across all published content',
+        ],
+      }
+    : {
+        subtitle: 'Administrative Support Team',
+        responsibilities: [
+          'Assist organizers with session logistics and scheduling',
+          'Moderate and curate content on the Civic Wall',
+          'Support attendance and score tracking for delegates',
+          "Coordinate with the Speaker's office on procedural matters",
+        ],
+      };
 
   const getAlignmentLabel = (alignment: string) => {
     switch (alignment) {
@@ -178,6 +201,73 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
 
       {/* Bento Grid Layout */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mt-16">
+        {isStaffRole ? (
+          <>
+            {/* Left Column: Staff Role Card */}
+            <div className="md:col-span-4 space-y-6">
+              <div className="bg-surface-container-lowest p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5 3.5 9.74 9 11 5.5-1.26 9-6 9-11V5l-9-4z"/></svg>
+                </div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-4">Staff Role</p>
+
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/30 flex items-center justify-center text-primary shrink-0">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5 3.5 9.74 9 11 5.5-1.26 9-6 9-11V5l-9-4z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5"/></svg>
+                  </div>
+                  <div>
+                    <h3 className="font-headline text-lg font-bold text-on-surface leading-tight">{position}</h3>
+                    <p className="text-xs font-semibold mt-1 text-gray-400 uppercase tracking-wider">{staffInfo.subtitle}</p>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-5">
+                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${getAlignmentColor('non_aligned')}`}>
+                    {getAlignmentLabel('non_aligned')}
+                  </span>
+                </div>
+
+                <div className="space-y-3 border-t border-surface-variant/30 pt-4">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-on-surface-variant">Serial Number</span>
+                    <span className="font-bold">#{serialNumber}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-on-surface-variant">Status</span>
+                    <span className={`font-bold flex items-center gap-1.5 ${isActive ? 'text-emerald-600' : 'text-red-500'}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                      {isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Roles & Responsibilities */}
+            <div className="md:col-span-8 bg-surface-container-lowest p-6 md:p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <div className="flex items-center justify-between mb-8">
+                <div>
+                  <h2 className="font-headline text-xl md:text-2xl font-extrabold tracking-tight">Roles &amp; Responsibilities</h2>
+                  <p className="text-on-surface-variant text-xs font-medium opacity-80 mt-1">{staffInfo.subtitle}</p>
+                </div>
+                <svg className="w-10 h-10 text-primary opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/>
+                </svg>
+              </div>
+              <div className="space-y-3">
+                {staffInfo.responsibilities.map((item, i) => (
+                  <div key={i} className="flex items-start gap-3 bg-surface-container-low/50 p-4 rounded-2xl">
+                    <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black text-xs shrink-0">
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <p className="font-semibold text-on-surface text-sm leading-snug">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
         {/* Left Column: Party & Constituency */}
         <div className="md:col-span-4 space-y-6">
           {/* Party Identity Card */}
@@ -222,11 +312,13 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
 
             {/* Tag pills: Party Number, Committee, Alignment */}
             <div className="flex flex-wrap gap-2 mb-5">
-              {/* Party Number Tag */}
-              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></svg>
-                Party {partyNumber}
-              </span>
+              {/* Party Number Tag — journalists/admin students have no party */}
+              {!isStaffRole && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"/></svg>
+                  Party {partyNumber}
+                </span>
+              )}
 
               {/* Committee Tag */}
               {committee && (
@@ -236,8 +328,12 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
                 </span>
               )}
 
-              {/* Alignment Tag */}
-              {isOwnProfile ? (
+              {/* Alignment Tag — journalists/admin students are always Non-Aligned */}
+              {isStaffRole ? (
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${getAlignmentColor('non_aligned')}`}>
+                  {getAlignmentLabel('non_aligned')}
+                </span>
+              ) : isOwnProfile ? (
                 <div className="inline-flex items-center gap-1 p-1 rounded-full bg-gray-100 border border-gray-200">
                   <button
                     type="button"
@@ -397,6 +493,8 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
             </div>
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );
