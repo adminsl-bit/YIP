@@ -9,14 +9,16 @@ import { PollManagement } from '@/components/organizer/PollManagement';
 import { TimerManagement } from '@/components/organizer/TimerManagement';
 import { BreakingNewsTicker } from '@/components/display/BreakingNewsTicker';
 import { StudentProfile } from '@/components/student/StudentProfile';
+import { QuestionHourHub } from '@/components/student/QuestionHourHub';
 
-type TabId = 'profile' | 'civic-wall' | 'tree' | 'messages' | 'speeches' | 'sessions' | 'polls' | 'timer';
+type TabId = 'profile' | 'civic-wall' | 'tree' | 'messages' | 'speeches' | 'sessions' | 'polls' | 'timer' | 'question-hour';
 
 const navItems: { id: TabId; label: string; icon: string; exclusive?: boolean }[] = [
   { id: 'profile',       label: 'Profile',         icon: 'person' },
   { id: 'civic-wall',    label: 'Civic Wall',       icon: 'public' },
   { id: 'tree',          label: 'Parliament Tree',  icon: 'account_tree' },
   { id: 'messages',      label: 'Civic Chat',       icon: 'chat' },
+  { id: 'question-hour', label: 'Question Hour',    icon: 'forum', exclusive: true },
   { id: 'speeches',      label: 'Speech Tracker',   icon: 'mic', exclusive: true },
   { id: 'sessions',      label: 'Sessions',         icon: 'event_seat', exclusive: true },
   { id: 'polls',         label: 'Ballot',           icon: 'how_to_vote', exclusive: true },
@@ -32,6 +34,7 @@ export const AdminStudentDashboard = () => {
       case 'profile':    return <StudentProfile isOwnProfile />;
       case 'civic-wall': return <CivicWall />;
       case 'tree':       return <ParliamentTree />;
+      case 'question-hour': return <QuestionHourHub />;
       case 'speeches':   return <SpeechTrackerTabWrapper />;
       case 'sessions':   return <SessionsTabWrapper />;
       case 'polls':      return <PollsTabWrapper />;

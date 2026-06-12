@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
+import { QuestionHourSummary } from '@/components/organizer/QuestionHourSummary';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -56,7 +58,31 @@ interface Question {
   profiles: any;
   votes_count: number;
   user_has_voted: boolean;
+  is_discussing: boolean;
+  supporters: { user_id: string; name: string; photo_url?: string }[];
 }
+
+const PARTY_NUMBER_LABELS = ['NONE', 'A', 'B', 'C', 'D', 'E'];
+
+const AVATAR_COLORS = [
+  'bg-primary-fixed text-on-primary-fixed',
+  'bg-secondary-fixed text-on-secondary-fixed',
+  'bg-tertiary-fixed text-on-tertiary-fixed',
+  'bg-surface-variant text-on-surface-variant',
+  'bg-primary-container text-on-primary-container',
+];
+
+// Mirrors the alignment styling used on the student profile page
+const getAlignmentBadge = (alignment: string | null | undefined) => {
+  switch (alignment) {
+    case 'ruling_party':
+      return { label: 'Ruling Party', cls: 'bg-emerald-500/10 text-emerald-700 border-emerald-200', icon: 'shield' };
+    case 'opposition':
+      return { label: 'Opposition', cls: 'bg-red-500/10 text-red-700 border-red-200', icon: 'flag' };
+    default:
+      return { label: 'Non-Aligned', cls: 'bg-gray-500/10 text-gray-600 border-gray-200', icon: 'balance' };
+  }
+};
 
 const StatusBadge = ({ status }: { status: string }) => {
   const styles: Record<string, string> = {
@@ -78,8 +104,10 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export const QuestionHourHub = () => {
   const { user, profile } = useAuth();
+  const { hasRole } = useUserRole(user?.id);
   const myMinistry = getMinistryFromPosition(profile?.position);
   const isMinister = !!myMinistry;
+  const isModerator = profile?.user_type === 'organizer' || profile?.user_type === 'super_admin' || hasRole('admin_student');
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,13 +115,21 @@ export const QuestionHourHub = () => {
   const [questionContent, setQuestionContent] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [viewFilter, setViewFilter] = useState<'trending' | 'assigned'>('trending');
+  const [viewFilter, setViewFilter] = useState<'trending' | 'assigned' | 'summary'>('trending');
   const [ministryFilter, setMinistryFilter] = useState<string>('All Portfolios');
   const [selectedMinistry, setSelectedMinistry] = useState('');
+  const [totalEligible, setTotalEligible] = useState(0);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const toggleExpanded = (id: string) =>
+    setExpandedCards(prev => {
+      const s = new Set(prev);
+      if (s.has(id)) s.delete(id); else s.add(id);
+      return s;
+    });
 
-  const fetchQuestions = async () => {
+  const fetchQuestions = async (opts: { silent?: boolean } = {}) => {
+    if (!opts.silent) setLoading(true);
     try {
-      setLoading(true);
       const { data: qs, error } = await supabase
         .from('questions')
         .select(`*, profiles (*)`)
@@ -104,6 +140,13 @@ export const QuestionHourHub = () => {
         .from('question_votes')
         .select('question_id, user_id');
 
+      const voterIds = [...new Set((votes || []).map(v => v.user_id))];
+      let voterProfiles: Record<string, { name: string; photo_url?: string }> = {};
+      if (voterIds.length) {
+        const { data: vp } = await supabase.from('profiles').select('user_id, name, photo_url').in('user_id', voterIds);
+        voterProfiles = Object.fromEntries((vp || []).map((p) => [p.user_id, { name: p.name, photo_url: p.photo_url }]));
+      }
+
       const processed: Question[] = (qs || []).map(q => {
         const qVotes = votes?.filter(v => v.question_id === q.id) || [];
         const profileData = Array.isArray(q.profiles) ? q.profiles[0] : q.profiles;
@@ -112,6 +155,9 @@ export const QuestionHourHub = () => {
           profiles: profileData,
           votes_count: qVotes.length,
           user_has_voted: qVotes.some(v => v.user_id === user?.id),
+          supporters: qVotes
+            .map(v => voterProfiles[v.user_id] ? { user_id: v.user_id, ...voterProfiles[v.user_id] } : null)
+            .filter((p): p is { user_id: string; name: string; photo_url?: string } => !!p),
         };
       });
 
@@ -126,11 +172,26 @@ export const QuestionHourHub = () => {
   useEffect(() => {
     fetchQuestions();
     const channel = supabase.channel('public:questions')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'questions' }, fetchQuestions)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'question_votes' }, fetchQuestions)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'questions' }, () => fetchQuestions({ silent: true }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'question_votes' }, () => fetchQuestions({ silent: true }))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user]);
+
+  // Total eligible delegates — used to show what share of the assembly supports a question
+  useEffect(() => {
+    const fetchTotalEligible = async () => {
+      let q = supabase.from('profiles').select('user_id', { count: 'exact', head: true })
+        .eq('user_type', 'student').eq('is_active', true)
+        .not('position', 'ilike', '%journalist%')
+        .not('position', 'ilike', '%administrator%')
+        .not('position', 'ilike', '%admin student%');
+      if (profile?.event_id) q = q.eq('event_id', profile.event_id);
+      const { count } = await q;
+      setTotalEligible(count || 0);
+    };
+    fetchTotalEligible();
+  }, [profile?.event_id]);
 
   // Check if this student already has a pending/addressed question (not rejected)
   const myActiveQuestion = questions.find(q => q.user_id === user?.id && q.status !== 'rejected');
@@ -157,7 +218,7 @@ export const QuestionHourHub = () => {
       }
       setQuestionContent('');
       setEditingId(null);
-      fetchQuestions();
+      fetchQuestions({ silent: true });
     } catch {
       toast.error('Failed to process question');
     } finally {
@@ -171,7 +232,7 @@ export const QuestionHourHub = () => {
       const { error } = await supabase.from('questions').delete().eq('id', deleteId);
       if (error) throw error;
       toast.success('Question retracted');
-      fetchQuestions();
+      fetchQuestions({ silent: true });
     } catch {
       toast.error('Failed to retract question');
     } finally {
@@ -187,9 +248,48 @@ export const QuestionHourHub = () => {
       } else {
         await supabase.from('question_votes').insert({ question_id: questionId, user_id: user.id });
       }
-      fetchQuestions();
+      fetchQuestions({ silent: true });
     } catch {
       toast.error('Protocol error');
+    }
+  };
+
+  // Minister selects/clears the question their portfolio is currently discussing —
+  // only one question per ministry can be "live" at a time, and the highlight is
+  // visible to every student and the minister under that ministry.
+  const handleToggleDiscussion = async (q: Question) => {
+    if (!user) return;
+    try {
+      if (q.is_discussing) {
+        const { error } = await supabase.from('questions').update({ is_discussing: false }).eq('id', q.id);
+        if (error) throw error;
+        toast.success('Discussion concluded');
+      } else {
+        await supabase.from('questions').update({ is_discussing: false }).eq('ministry', q.ministry).eq('is_discussing', true);
+        const { error } = await supabase.from('questions').update({ is_discussing: true }).eq('id', q.id);
+        if (error) throw error;
+        toast.success('Question is now under discussion');
+      }
+      fetchQuestions({ silent: true });
+    } catch {
+      toast.error('Failed to update discussion status');
+    }
+  };
+
+  // Admin/Organizer moderation: mark a question "Completed" once the minister
+  // has spoken on it — closes the live discussion banner for everyone.
+  const handleMarkCompleted = async (q: Question) => {
+    try {
+      const nextStatus = q.status === 'addressed' ? 'pending' : 'addressed';
+      const { error } = await supabase
+        .from('questions')
+        .update({ status: nextStatus, is_discussing: false })
+        .eq('id', q.id);
+      if (error) throw error;
+      toast.success(nextStatus === 'addressed' ? 'Question marked as completed' : 'Question reopened');
+      fetchQuestions({ silent: true });
+    } catch {
+      toast.error('Failed to update question status');
     }
   };
 
@@ -307,6 +407,27 @@ export const QuestionHourHub = () => {
             </p>
           </div>
         </div>
+
+        {/* How it works */}
+        <div className="p-5 bg-surface-container-lowest rounded-2xl border border-outline-variant/15 space-y-3">
+          <p className="text-[10px] font-black text-primary uppercase tracking-[0.15em] font-headline flex items-center gap-2">
+            <span className="material-symbols-outlined text-[14px]">help</span>
+            How Question Hour Works
+          </p>
+          <ul className="space-y-2.5">
+            {[
+              'Submit one active question to a ministry of your choice — you can edit or retract it any time before it is answered.',
+              'Tap "Support" on questions raised by other delegates. The bar under each question shows what share of the assembly backs it, and the floor is sorted by support.',
+              'The assigned Minister can mark one question per ministry "Discuss Now". That question is highlighted with a "Now Under Discussion" tag for everyone — in Trending and in My Questions — until the Minister concludes it.',
+              'Each question shows the author\'s party affiliation (Ruling Party, Opposition or Non-Aligned) alongside their name.',
+            ].map((step, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black font-headline flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+                <p className="text-[12px] text-on-surface-variant/70 leading-relaxed font-body">{step}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
       </aside>
 
       {/* ── Right Feed ── */}
@@ -339,6 +460,17 @@ export const QuestionHourHub = () => {
                 </span>
               )}
             </button>
+            {isModerator && (
+              <button
+                onClick={() => setViewFilter('summary')}
+                className={`px-5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-widest transition-all font-headline flex items-center gap-1.5 ${
+                  viewFilter === 'summary' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant/50'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[13px]">summarize</span>
+                Summary
+              </button>
+            )}
           </div>
         </div>
 
@@ -367,7 +499,7 @@ export const QuestionHourHub = () => {
 
         {/* Portfolio filter chips — only on trending tab */}
         {viewFilter === 'trending' && (
-          <div className="flex gap-2.5 overflow-x-auto pb-1 pr-6 lg:pr-8" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex flex-wrap gap-2.5 pb-1">
             {Object.entries(FILTER_LABELS).map(([full, label]) => (
               <button
                 key={full}
@@ -385,6 +517,7 @@ export const QuestionHourHub = () => {
         )}
 
         {/* Section header */}
+        {viewFilter !== 'summary' && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-on-tertiary-container animate-pulse" />
@@ -394,9 +527,12 @@ export const QuestionHourHub = () => {
             {pendingCount} Question{pendingCount !== 1 ? 's' : ''} Pending Response
           </span>
         </div>
+        )}
 
-        {/* Questions feed */}
-        {loading ? (
+        {/* Summary view — moderators only */}
+        {viewFilter === 'summary' ? (
+          <QuestionHourSummary />
+        ) : loading ? (
           <div className="py-20 flex justify-center">
             <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
           </div>
@@ -419,95 +555,201 @@ export const QuestionHourHub = () => {
           </div>
         ) : (
           <AnimatePresence>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {allQuestions.map((q, idx) => {
-                const isFeatured = idx === 0;
+            <div className="space-y-3">
+              {allQuestions.map((q) => {
                 const initials = q.profiles?.name?.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) || 'D';
                 const shortMinistry = q.ministry.replace('Ministry of ', '');
+                const supportPct = totalEligible > 0 ? Math.min(100, (q.votes_count / totalEligible) * 100) : 0;
+                const alignmentBadge = getAlignmentBadge(q.profiles?.party_alignment);
+                const partyLabel = q.profiles?.party_name
+                  || (q.profiles?.party_number ? `Party ${PARTY_NUMBER_LABELS[q.profiles.party_number] ?? q.profiles.party_number}` : null);
+                const canToggleDiscussion = isMinister && q.ministry === myMinistry;
+                const isExpanded = expandedCards.has(q.id);
 
                 return (
                   <motion.div
                     key={q.id}
                     layout
-                    initial={{ opacity: 0, y: 16 }}
+                    initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.97 }}
                     transition={{ duration: 0.22 }}
-                    className={`bg-surface-container-lowest rounded-[2rem] p-5 shadow-[0_4px_24px_0_rgba(46,65,172,0.04)] hover:shadow-[0_12px_40px_0_rgba(46,65,172,0.08)] hover:-translate-y-0.5 transition-all duration-300 group ${isFeatured ? 'md:col-span-2' : ''}`}
+                    className={`bg-surface-container-lowest border rounded-2xl shadow-sm overflow-hidden transition-all ${
+                      q.is_discussing ? 'border-error/40 shadow-[0_4px_24px_0_rgba(186,26,26,0.08)]' : 'border-outline-variant/10'
+                    }`}
                   >
-                    {/* Card header */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-primary/10 shrink-0 flex items-center justify-center">
+                    {/* Main row */}
+                    <div className="p-4 flex items-center gap-4">
+                      {/* Left: avatar + ministry / author / question */}
+                      <div className="flex items-center gap-3 flex-1 min-w-0 border-r border-outline-variant/20 pr-4">
+                        <div className="w-9 h-9 rounded-lg overflow-hidden bg-primary/10 shrink-0 flex items-center justify-center">
                           {q.profiles?.photo_url
                             ? <img src={q.profiles.photo_url} alt={q.profiles.name} className="w-full h-full object-cover" />
-                            : <span className="text-sm font-black text-primary font-headline">{initials}</span>}
+                            : <span className="text-xs font-black text-primary font-headline">{initials}</span>}
                         </div>
-                        <div>
-                          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary mb-0.5 font-headline">{shortMinistry}</p>
-                          <h4 className="text-sm font-black text-on-surface font-headline leading-none">
-                            {q.profiles?.name || 'National Delegate'}
-                          </h4>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-primary/70 font-headline shrink-0">{shortMinistry}</span>
+                            <span className="text-[10px] text-on-surface-variant/40 font-body shrink-0">· {q.profiles?.name || 'National Delegate'}</span>
+                            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider border shrink-0 ${alignmentBadge.cls}`}>
+                              <span className="material-symbols-outlined text-[9px]">{alignmentBadge.icon}</span>
+                              {partyLabel || alignmentBadge.label}
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold text-on-surface font-body truncate" title={q.content}>{q.content}</p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
+                      {/* Right: badges + action icons */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        {q.is_discussing && (
+                          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-widest bg-error/10 text-error border border-error/20 mr-1">
+                            <span className="w-1.5 h-1.5 bg-error rounded-full animate-pulse-live" />
+                            Live
+                          </span>
+                        )}
                         <StatusBadge status={q.status} />
+
+                        <button
+                          onClick={() => handleVote(q.id, q.user_has_voted)}
+                          title={q.user_has_voted ? 'Remove support' : 'Support this question'}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                            q.user_has_voted ? 'bg-primary text-white' : 'text-on-surface-variant/50 hover:bg-surface-container hover:text-primary'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: q.user_has_voted ? "'FILL' 1" : "'FILL' 0" }}>thumb_up</span>
+                        </button>
+
                         {q.user_id === user?.id && (
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <>
                             <button
                               onClick={() => { setEditingId(q.id); setSelectedMinistry(q.ministry); setQuestionContent(q.content); }}
-                              className="p-1.5 rounded-lg text-on-surface-variant/40 hover:text-primary hover:bg-surface-container transition-all"
+                              title="Edit question"
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant/50 hover:bg-surface-container hover:text-primary transition-colors"
                             >
-                              <span className="material-symbols-outlined text-[12px]">edit</span>
+                              <span className="material-symbols-outlined text-[16px]">edit</span>
                             </button>
                             <button
                               onClick={() => setDeleteId(q.id)}
-                              className="p-1.5 rounded-lg text-on-surface-variant/40 hover:text-error hover:bg-surface-container transition-all"
+                              title="Retract question"
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant/50 hover:bg-error/10 hover:text-error transition-colors"
                             >
-                              <span className="material-symbols-outlined text-[12px]">delete</span>
+                              <span className="material-symbols-outlined text-[16px]">delete</span>
                             </button>
+                          </>
+                        )}
+
+                        {canToggleDiscussion && (
+                          <button
+                            onClick={() => handleToggleDiscussion(q)}
+                            title={q.is_discussing ? 'Conclude discussion' : 'Mark for discussion'}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                              q.is_discussing ? 'bg-error text-white' : 'text-on-surface-variant/50 hover:bg-error/10 hover:text-error'
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: q.is_discussing ? "'FILL' 1" : "'FILL' 0" }}>campaign</span>
+                          </button>
+                        )}
+
+                        {isModerator && (
+                          <button
+                            onClick={() => handleMarkCompleted(q)}
+                            title={q.status === 'addressed' ? 'Reopen question' : 'Mark as completed'}
+                            className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                              q.status === 'addressed' ? 'bg-tertiary text-on-tertiary' : 'text-on-surface-variant/50 hover:bg-tertiary/10 hover:text-tertiary'
+                            }`}
+                          >
+                            <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: q.status === 'addressed' ? "'FILL' 1" : "'FILL' 0" }}>task_alt</span>
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => toggleExpanded(q.id)}
+                          title={isExpanded ? 'Collapse' : 'Expand'}
+                          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container transition-colors"
+                        >
+                          <span
+                            className="material-symbols-outlined text-primary transition-transform duration-200"
+                            style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                          >
+                            chevron_right
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expanded row */}
+                    {isExpanded && (
+                      <div className="border-t border-outline-variant/10 px-4 py-3 bg-surface-container-low/40 space-y-3">
+                        <p className="text-sm text-on-surface font-body leading-relaxed">{q.content}</p>
+
+                        {q.status === 'addressed' && q.answer && (
+                          <div className="bg-surface-container-lowest rounded-2xl p-3 border-l-4 border-tertiary">
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <span className="material-symbols-outlined text-[14px] text-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                              <span className="text-[9px] font-black uppercase tracking-[0.15em] text-tertiary font-headline">Official Response</span>
+                            </div>
+                            <p className="text-xs text-on-surface-variant italic leading-relaxed font-body">"{q.answer}"</p>
                           </div>
                         )}
-                      </div>
-                    </div>
 
-                    {/* Question text */}
-                    <p className={`font-body font-semibold text-on-surface leading-snug mb-4 ${isFeatured ? 'text-lg' : 'text-sm'}`}>
-                      {q.content}
-                    </p>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          {/* Support meter */}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[9px] font-black uppercase tracking-wide font-headline text-primary">Support</span>
+                            <div className="w-24 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${supportPct}%` }}
+                                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                                className="h-full rounded-full bg-primary"
+                              />
+                            </div>
+                            <span className="text-[9px] font-black font-headline text-primary">{supportPct.toFixed(0)}%</span>
+                            <span className="text-[8px] text-on-surface-variant/40 font-body">({q.votes_count})</span>
+                          </div>
 
-                    {/* Official response for answered questions */}
-                    {q.status === 'addressed' && q.answer && (
-                      <div className="bg-surface-container-low rounded-2xl p-3 mb-4 border-l-4 border-tertiary">
-                        <div className="flex items-center gap-1.5 mb-2">
-                          <span className="material-symbols-outlined text-[14px] text-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                          <span className="text-[9px] font-black uppercase tracking-[0.15em] text-tertiary font-headline">Official Response</span>
+                          <div className="w-px h-3 bg-outline-variant/30" />
+                          <span className="text-[9px] font-bold text-on-surface-variant/50 font-headline whitespace-nowrap">
+                            {q.votes_count}/{totalEligible} Delegates
+                          </span>
+
+                          {q.supporters.length > 0 && (
+                            <>
+                              <div className="w-px h-3 bg-outline-variant/30" />
+                              <div className="flex items-center gap-1.5 overflow-hidden">
+                                <div className="flex -space-x-1">
+                                  {q.supporters.slice(0, 5).map((s, idx) => {
+                                    const sInitials = s.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || '?';
+                                    return s.photo_url ? (
+                                      <img key={s.user_id} src={s.photo_url} alt={s.name} title={s.name}
+                                        className="w-5 h-5 rounded-full border border-surface-container-lowest object-cover" />
+                                    ) : (
+                                      <div key={s.user_id} title={s.name}
+                                        className={`w-5 h-5 rounded-full border border-surface-container-lowest flex items-center justify-center text-[7px] font-bold shrink-0 ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}>
+                                        {sInitials}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                {q.supporters.slice(0, 3).map(s => (
+                                  <span key={s.user_id} className="text-[9px] text-on-surface-variant/50 font-body whitespace-nowrap hidden sm:inline">
+                                    {s.name?.split(' ')[0]}
+                                  </span>
+                                ))}
+                                {q.votes_count > Math.min(q.supporters.length, 3) && (
+                                  <span className="text-[8px] font-bold text-on-surface-variant/30 font-headline shrink-0">+{q.votes_count - Math.min(q.supporters.length, 3)}</span>
+                                )}
+                              </div>
+                            </>
+                          )}
+
+                          <span className="ml-auto text-[9px] font-black text-on-surface-variant/30 uppercase tracking-widest font-headline">
+                            {formatDistanceToNow(new Date(q.created_at), { addSuffix: true })}
+                          </span>
                         </div>
-                        <p className="text-xs text-on-surface-variant italic leading-relaxed font-body">"{q.answer}"</p>
                       </div>
                     )}
-
-                    {/* Footer */}
-                    <div className="flex items-center gap-4 pt-3 border-t border-surface-container-high">
-                      <button
-                        onClick={() => handleVote(q.id, q.user_has_voted)}
-                        className={`flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest transition-all font-headline ${
-                          q.user_has_voted ? 'text-primary' : 'text-on-surface-variant/40 hover:text-primary'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[14px]">trending_up</span>
-                        {q.votes_count} Supports
-                      </button>
-                      {q.votes_count > 1 && q.status === 'pending' && !q.user_has_voted && (
-                        <span className="text-[9px] font-black text-on-surface-variant/30 uppercase tracking-widest font-headline">
-                          {q.votes_count} Others Asking
-                        </span>
-                      )}
-                      <span className="text-[9px] font-black text-on-surface-variant/30 uppercase tracking-widest ml-auto font-headline">
-                        {new Date(q.created_at).toLocaleDateString('en-GB')}
-                      </span>
-                    </div>
                   </motion.div>
                 );
               })}

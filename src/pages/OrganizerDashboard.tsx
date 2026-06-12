@@ -42,6 +42,7 @@ import { TimerTicker } from "@/components/organizer/TimerTicker";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { GlobalSquare } from "@/components/student/GlobalSquare";
 import { SupportChatWidget } from "@/components/shared/SupportChatWidget";
+import { QuestionHourHub } from "@/components/student/QuestionHourHub";
 
 interface DashboardStats {
   totalStudents: number;
@@ -165,6 +166,7 @@ const OrganizerDashboard = () => {
             <NavTrigger value="timer"          icon="timer"               label="Timer" />
             <NavTrigger value="sessions"       icon="event_seat"          label="Sessions" />
             <NavTrigger value="polls"          icon="how_to_vote"         label="Ballot" />
+            <NavTrigger value="question-hour"  icon="forum"               label="Question Hour" />
             <NavTrigger value="square"         icon="forum"               label="Civic Chat" />
             <NavTrigger value="students"       icon="group"               label="Students" />
             <NavTrigger value="bulk-import"    icon="upload_file"         label="Bulk Import" />
@@ -316,6 +318,10 @@ const OrganizerDashboard = () => {
               <TabsContent value="polls" className="m-0 space-y-10">
                 <PageHeader primary="Ballot" secondary="Management" icon={<Gavel className="w-3 h-3" />} subtitle="Active Poll Administration" />
                 <PollManagement />
+              </TabsContent>
+
+              <TabsContent value="question-hour" className="m-0">
+                <QuestionHourHub />
               </TabsContent>
 
               <TabsContent value="students" className="m-0">
