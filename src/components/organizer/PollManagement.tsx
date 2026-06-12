@@ -93,7 +93,13 @@ export const PollManagement = () => {
   };
 
   const fetchTotalParticipants = async () => {
-    const { count } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'student');
+    // Only MPs are eligible delegates — exclude journalists and administrators,
+    // matching the delegate count shown in AnalyticsBento and the public display.
+    const { count } = await supabase.from('profiles').select('user_id', { count: 'exact', head: true })
+      .eq('user_type', 'student').eq('is_active', true)
+      .not('position', 'ilike', '%journalist%')
+      .not('position', 'ilike', '%administrator%')
+      .not('position', 'ilike', '%admin student%');
     setTotalParticipants(count || 0);
   };
 

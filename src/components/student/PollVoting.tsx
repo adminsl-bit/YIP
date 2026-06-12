@@ -422,20 +422,19 @@ export const AnalyticsBento = ({
   const isExpanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded;
   const handleToggle = onToggleExpand ?? (() => setInternalExpanded(e => !e));
 
-  const resolvePollMeta = async (pid: string): Promise<{ eventId: string | null; createdAt: string | null }> => {
+  const resolvePollMeta = async (pid: string): Promise<{ eventId: string | null }> => {
     const { data: pollRow } = await supabase
-      .from('polls').select('event_id, created_at').eq('id', pid).single();
-    return { eventId: pollRow?.event_id ?? null, createdAt: pollRow?.created_at ?? null };
+      .from('polls').select('event_id').eq('id', pid).single();
+    return { eventId: pollRow?.event_id ?? null };
   };
 
   const fetchDetailedVotes = async () => {
-    const { eventId, createdAt } = await resolvePollMeta(pollId);
+    const { eventId } = await resolvePollMeta(pollId);
 
     let profilesQuery = supabase
       .from('profiles').select('user_id, name, position, party_number, constituency, state')
       .eq('user_type', 'student').eq('is_active', true);
     if (eventId) profilesQuery = profilesQuery.eq('event_id', eventId);
-    if (createdAt) profilesQuery = profilesQuery.lte('created_at', createdAt);
 
     const [{ data: votes }, { data: profiles }] = await Promise.all([
       supabase.from('poll_votes').select('voter_id, option_id').eq('poll_id', pollId),
@@ -532,7 +531,7 @@ export const AnalyticsBento = ({
       const statsData = [
         { label: 'TOTAL DELEGATES', value: String(totalDelegates) },
         { label: 'VOTES CAST', value: String(votedCount) },
-        { label: 'TURNOUT', value: `${(totalDelegates > 0 ? (votedCount / totalDelegates * 100) : 0).toFixed(1)}%` },
+        { label: 'TURNOUT', value: `${(Math.max(totalDelegates, votedCount) > 0 ? (votedCount / Math.max(totalDelegates, votedCount) * 100) : 0).toFixed(1)}%` },
         { label: 'STATUS', value: votingEnabled ? 'LIVE' : 'CLOSED' },
       ];
       const colW = (W - 2 * M) / 4;
@@ -566,7 +565,7 @@ export const AnalyticsBento = ({
         if (y > 250) { pdf.addPage(); y = 20; }
         const key = getKey(opt); const text = getText(opt);
         const count = optionCounts[key] || 0;
-        const pct = totalDelegates > 0 ? count / totalDelegates * 100 : 0;
+        const pct = Math.max(totalDelegates, votedCount) > 0 ? count / Math.max(totalDelegates, votedCount) * 100 : 0;
         const optVotes = votes.filter((v: any) => v.option_id === key);
         const t = text.toLowerCase();
         const [r, g, b] = t === 'yes' || t === 'aye' ? [0, 88, 59] : t === 'no' || t === 'nay' ? [172, 53, 9] : [19, 41, 143];
@@ -636,7 +635,7 @@ export const AnalyticsBento = ({
       const dnvDelegates = profiles.filter((p: any) => !voterSet.has(p.user_id));
       if (dnvDelegates.length > 0) {
         if (y > 245) { pdf.addPage(); y = 20; }
-        const dnvPct = totalDelegates > 0 ? dnvDelegates.length / totalDelegates * 100 : 0;
+        const dnvPct = Math.max(totalDelegates, votedCount) > 0 ? dnvDelegates.length / Math.max(totalDelegates, votedCount) * 100 : 0;
 
         pdf.setFillColor(197, 197, 213);
         pdf.roundedRect(M, y, 3, 6, 0.5, 0.5, 'F');
@@ -696,7 +695,7 @@ export const AnalyticsBento = ({
   };
 
   const fetchAnalytics = async () => {
-    const { eventId, createdAt } = await resolvePollMeta(pollId);
+    const { eventId } = await resolvePollMeta(pollId);
 
     let delegatesQuery = supabase.from('profiles').select('user_id', { count: 'exact', head: true })
       .eq('user_type', 'student').eq('is_active', true)
@@ -704,7 +703,6 @@ export const AnalyticsBento = ({
       .not('position', 'ilike', '%administrator%')
       .not('position', 'ilike', '%admin student%');
     if (eventId) delegatesQuery = delegatesQuery.eq('event_id', eventId);
-    if (createdAt) delegatesQuery = delegatesQuery.lte('created_at', createdAt);
 
     const [{ count: total }, { data: votes }] = await Promise.all([
       delegatesQuery,
@@ -741,9 +739,13 @@ export const AnalyticsBento = ({
     return () => { supabase.removeChannel(ch); };
   }, [pollId]);
 
-  const turnoutPct = totalDelegates > 0 ? (votedCount / totalDelegates) * 100 : 0;
+  // Some votes may come from delegates who registered after this poll's
+  // snapshot of totalDelegates was taken — fall back to vote share so
+  // percentages never exceed 100%.
+  const pctBase = Math.max(totalDelegates, votedCount);
+  const turnoutPct = pctBase > 0 ? (votedCount / pctBase) * 100 : 0;
   const abstainCount = Math.max(0, totalDelegates - votedCount);
-  const abstainPct = totalDelegates > 0 ? (abstainCount / totalDelegates * 100) : 0;
+  const abstainPct = pctBase > 0 ? (abstainCount / pctBase * 100) : 0;
 
   const OPTION_STYLES = [
     { icon: 'check_circle',  bg: 'bg-tertiary-fixed/30',      text: 'text-on-tertiary-container' },
@@ -771,50 +773,22 @@ export const AnalyticsBento = ({
     <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl shadow-sm overflow-hidden">
 
       {/* ── Main row ── */}
-      <div className="p-4 flex flex-col md:flex-row items-center gap-6">
+      <div className="p-4 flex flex-col md:flex-row items-center justify-between gap-6">
 
         {/* ── Left: branded header ── */}
-        <div className="flex flex-col border-r border-outline-variant/20 pr-6 min-w-fit shrink-0">
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-6 h-6 bg-primary rounded flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-white" style={{ fontSize: '14px', fontVariationSettings: "'FILL' 1" }}>account_balance</span>
-            </div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary/70 font-headline">National Youth Parliament</span>
+        <div className="flex items-center gap-3 flex-1 min-w-0 border-r border-outline-variant/20 pr-6">
+          <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-white text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-base font-extrabold text-on-surface font-headline max-w-[160px] truncate" title={pollTitle || pollHeading}>
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary/70 font-headline leading-tight">National Youth Parliament</span>
+            <span className="text-xl font-extrabold text-on-surface font-headline truncate leading-tight" title={pollTitle || pollHeading}>
               {pollTitle || pollHeading || 'Poll Analytics'}
             </span>
-            <span className="bg-tertiary-fixed text-on-tertiary-fixed text-[10px] px-2 py-0.5 rounded-full font-black font-headline flex items-center gap-1 shrink-0">
-              <span className="w-1.5 h-1.5 bg-tertiary-container rounded-full animate-pulse inline-block" />
-              {votingEnabled ? 'LIVE' : 'FINAL'} {turnoutPct.toFixed(1)}%
-            </span>
           </div>
         </div>
 
-        {/* ── Middle: icon-centric per-option metrics ── */}
-        <div className="flex items-center gap-6 flex-grow flex-nowrap">
-          {options.map((opt, idx) => {
-            const key = getKey(opt);
-            const text = getText(opt);
-            const count = optionCounts[key] || 0;
-            const pct = totalDelegates > 0 ? (count / totalDelegates * 100).toFixed(1) : '0.0';
-            const style = getStyle(text, idx);
-            return (
-              <div key={key} className="flex items-center gap-3 group">
-                <div className={`w-10 h-10 rounded-full ${style.bg} flex items-center justify-center ${style.text} group-hover:scale-110 transition-transform shrink-0`}>
-                  <span className="material-symbols-outlined text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>{style.icon}</span>
-                </div>
-                <div>
-                  <div className="text-xs text-on-surface-variant font-medium font-body">{text}</div>
-                  <div className="text-lg font-black leading-none font-headline">{pct}%</div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* ── Outcome badge (between options and recent votes) ── */}
+        {/* ── Outcome badge ── */}
         {outcome && (
           <div className={`shrink-0 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest font-headline flex items-center gap-1.5 ${
             outcome === 'passed'
@@ -828,37 +802,8 @@ export const AnalyticsBento = ({
           </div>
         )}
 
-        {/* ── Right: recent voter avatars + action buttons ── */}
+        {/* ── Right: action buttons ── */}
         <div className="flex items-center gap-3 border-l border-outline-variant/20 pl-6 shrink-0">
-          <span className="text-[10px] font-bold text-on-surface-variant/40 uppercase tracking-tighter w-10 leading-tight font-headline">Recent Votes</span>
-          <div className="flex -space-x-2">
-            {recentVoters.slice(0, 5).map((voter: any, idx: number) => {
-              const initials = voter.name?.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() || '?';
-              return voter.photo_url ? (
-                <img
-                  key={voter.user_id}
-                  src={voter.photo_url}
-                  alt={voter.name}
-                  title={voter.name}
-                  className="w-8 h-8 rounded-full border-2 border-surface-container-lowest object-cover cursor-help hover:-translate-y-1 transition-transform"
-                />
-              ) : (
-                <div
-                  key={voter.user_id}
-                  title={voter.name}
-                  className={`w-8 h-8 rounded-full border-2 border-surface-container-lowest flex items-center justify-center text-[10px] font-bold cursor-help hover:-translate-y-1 transition-transform ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}
-                >
-                  {initials}
-                </div>
-              );
-            })}
-            {votedCount > 5 && (
-              <div className="w-8 h-8 rounded-full border-2 border-surface-container-lowest bg-surface-container-high flex items-center justify-center text-[8px] font-bold text-on-surface-variant">
-                +{votedCount - 5}
-              </div>
-            )}
-          </div>
-
           {/* CSV + PDF downloads (organizer) */}
           {(onResetVotes || onDeletePoll) && (
             <>
@@ -930,7 +875,7 @@ export const AnalyticsBento = ({
             const key = getKey(opt);
             const text = getText(opt);
             const count = optionCounts[key] || 0;
-            const pct = totalDelegates > 0 ? (count / totalDelegates * 100) : 0;
+            const pct = pctBase > 0 ? (count / pctBase * 100) : 0;
             const style = getStyle(text, idx);
             const BAR_COLORS = ['bg-tertiary-fixed', 'bg-error-container', 'bg-primary-container', 'bg-secondary-container'];
             return (

@@ -93,7 +93,7 @@ export const DetailedPollResults = ({
 
   const fetchData = async () => {
     const { data: pollRow } = await supabase
-      .from("polls").select("event_id, created_at").eq("id", pollId).single();
+      .from("polls").select("event_id").eq("id", pollId).single();
 
     let profilesQuery = supabase
       .from("profiles")
@@ -102,9 +102,6 @@ export const DetailedPollResults = ({
       .eq("is_active", true);
     if (pollRow?.event_id) {
       profilesQuery = profilesQuery.eq("event_id", pollRow.event_id);
-    }
-    if (pollRow?.created_at) {
-      profilesQuery = profilesQuery.lte("created_at", pollRow.created_at);
     }
 
     const [{ data: votesData }, { data: studentsData }] = await Promise.all([

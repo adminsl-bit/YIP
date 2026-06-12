@@ -63,9 +63,14 @@ const PollDisplay = () => {
       })
       .subscribe();
 
+    // Fallback polling: kiosk/TV displays stay open for hours and the realtime
+    // websocket can silently drop, leaving the screen stuck on stale vote counts.
+    const pollInterval = setInterval(fetchActivePolls, 15000);
+
     return () => {
       supabase.removeChannel(pollsChannel);
       supabase.removeChannel(votesChannel);
+      clearInterval(pollInterval);
     };
   }, [specificPollId]);
 

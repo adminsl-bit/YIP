@@ -83,8 +83,13 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
         )
         .subscribe();
 
+      // Fallback polling: kiosk/TV displays stay open for hours and the realtime
+      // websocket can silently drop, leaving the screen stuck on stale vote counts.
+      const pollInterval = setInterval(fetchPollAndStats, 15000);
+
       return () => {
         supabase.removeChannel(channel);
+        clearInterval(pollInterval);
       };
     }
   }, [pollId]);
@@ -146,7 +151,7 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
         // Try authenticated query first
         const result = await supabase
           .from('poll_votes')
-          .select('option_id')
+          .select('option_id, voter_id')
           .eq('poll_id', pollId);
         votesData = result.data;
         votesError = result.error;
@@ -154,7 +159,7 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
         // Fall back to public view
         const result = await supabase
           .from('public_poll_votes')
-          .select('option_id')
+          .select('option_id, voter_id')
           .eq('poll_id', pollId);
         votesData = result.data;
         votesError = result.error;
@@ -162,10 +167,18 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
 
       if (votesError) throw votesError;
 
+      // Exclude journalist/admin_student votes so counts match the public-facing totals
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('role', ['journalist', 'admin_student']);
+      const excludedVoterIds = new Set((roleData || []).map((r: { user_id: string }) => r.user_id));
+      const filteredVotes = (votesData || []).filter((v: PollVoteData) => !excludedVoterIds.has(v.voter_id));
+
       // Count votes by option - handle custom options dynamically
       const voteCounts: Record<string, number> = {};
       const pollOptions = Array.isArray(pollData.options) ? pollData.options : [];
-      
+
       // Initialize all options with 0 votes
       pollOptions.forEach((option: any) => {
         const optionKey = typeof option === 'string' ? option : option.id;
@@ -173,7 +186,7 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
       });
 
       // Count actual votes
-      (votesData || []).forEach((vote: PollVoteData) => {
+      filteredVotes.forEach((vote: PollVoteData) => {
         const option = vote.option_id;
         if (voteCounts.hasOwnProperty(option)) {
           voteCounts[option]++;
