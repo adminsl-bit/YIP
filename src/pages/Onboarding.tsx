@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Loader2, ArrowRight, ArrowLeft, User, MapPin, Landmark, Sparkles, CheckCircle2 } from "lucide-react";
 
 interface ActiveEventCity {
+  id: string;
   city: string;
   state: string;
 }
@@ -35,6 +36,7 @@ const Onboarding = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeEventCities, setActiveEventCities] = useState<ActiveEventCity[]>([]);
   const [loadingCities, setLoadingCities] = useState(true);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -55,7 +57,7 @@ const Onboarding = () => {
   useEffect(() => {
     supabase
       .from('events')
-      .select('city, state')
+      .select('id, city, state')
       .eq('status', 'active')
       .eq('level', 'city')
       .not('city', 'is', null)
@@ -96,6 +98,7 @@ const Onboarding = () => {
       city,
       state: match?.state || prev.state,
     }));
+    setSelectedEventId(match?.id || null);
   };
 
   const handleSubmit = async () => {
@@ -103,16 +106,31 @@ const Onboarding = () => {
     setIsSubmitting(true);
     
     try {
+      if (!selectedEventId) {
+        throw new Error("System configuration missing. Please contact administration.");
+      }
+
       // 1. Fetch System-Driven Assignment Configuration
       const { data: settings, error: settingsError } = await supabase
         .from('system_settings')
         .select('setting_key, setting_value')
-        .in('setting_key', ['assignment_parties', 'assignment_committees', 'assignment_constituencies']);
+        .eq('setting_key', 'assignment_constituencies');
 
       if (settingsError) throw settingsError;
 
-      const parties = (settings?.find(s => s.setting_key === 'assignment_parties')?.setting_value as string[]) || [];
-      const committees = (settings?.find(s => s.setting_key === 'assignment_committees')?.setting_value as string[]) || [];
+      const { data: committeeRows } = await supabase
+        .from('event_committees')
+        .select('name')
+        .eq('event_id', selectedEventId)
+        .order('display_order');
+      const { data: partyRows } = await supabase
+        .from('event_parties')
+        .select('name')
+        .eq('event_id', selectedEventId)
+        .order('display_order');
+
+      const committees = (committeeRows ?? []).map((r: { name: string }) => r.name);
+      const parties = (partyRows ?? []).map((r: { name: string }) => r.name);
       const allConstituencies = (settings?.find(s => s.setting_key === 'assignment_constituencies')?.setting_value as any[]) || [];
 
       if (parties.length === 0 || committees.length === 0 || allConstituencies.length === 0) {
@@ -184,7 +202,8 @@ const Onboarding = () => {
         user_type: 'student' as const,
         is_active: true,
         email: user.email,
-        party_alignment: partyAlignment
+        party_alignment: partyAlignment,
+        event_id: selectedEventId,
       };
 
       let insertError;

@@ -6,6 +6,7 @@ import {
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { CommitteePartyEditor, defaultCommittees, defaultParties } from './CommitteePartyEditor';
 
 interface EventRow {
   id: string;
@@ -104,6 +105,9 @@ export const EventsManager = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm]             = useState(blankForm);
   const [saving, setSaving]         = useState(false);
+  const [createStep, setCreateStep] = useState<1 | 2>(1);
+  const [createCommittees, setCreateCommittees] = useState<string[]>(() => defaultCommittees(5));
+  const [createParties, setCreateParties]       = useState<string[]>(() => defaultParties(5));
 
   // Filters
   const [levelFilter, setLevelFilter]   = useState<LevelFilter>('all');
@@ -118,6 +122,11 @@ export const EventsManager = () => {
   const [editEvent, setEditEvent]     = useState<EventRow | null>(null);
   const [editForm, setEditForm]       = useState<EditForm>(blankForm);
   const [editSaving, setEditSaving]   = useState(false);
+  const [editStep, setEditStep]       = useState<1 | 2>(1);
+  const [editCommittees, setEditCommittees] = useState<string[]>([]);
+  const [editParties, setEditParties]       = useState<string[]>([]);
+  const [originalCommittees, setOriginalCommittees] = useState<string[]>([]);
+  const [originalParties, setOriginalParties]       = useState<string[]>([]);
 
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<EventRow | null>(null);
@@ -173,6 +182,13 @@ export const EventsManager = () => {
   }, [currentPage, totalPages]);
 
   // ── Create ───────────────────────────────────────────────────────────────
+  const resetCreateState = () => {
+    setForm(blankForm);
+    setCreateStep(1);
+    setCreateCommittees(defaultCommittees(5));
+    setCreateParties(defaultParties(5));
+  };
+
   const handleCreate = async () => {
     if (!form.name.trim()) { toast({ title: 'Name required', variant: 'destructive' }); return; }
     setSaving(true);
@@ -180,15 +196,24 @@ export const EventsManager = () => {
     if (form.city)             payload.city             = form.city;
     if (form.state)            payload.state            = form.state;
     if (form.parent_event_id)  payload.parent_event_id  = form.parent_event_id;
-    const { error } = await supabase.from('events').insert(payload);
+    const { data: newEvent, error } = await supabase.from('events').insert(payload).select('id').single();
+    if (!error && newEvent) {
+      await supabase.from('event_committees').insert(
+        createCommittees.map((name, i) => ({ event_id: newEvent.id, name, display_order: i }))
+      );
+      await supabase.from('event_parties').insert(
+        createParties.map((name, i) => ({ event_id: newEvent.id, name, display_order: i }))
+      );
+    }
     setSaving(false);
     if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); }
-    else { toast({ title: 'Event created' }); setForm(blankForm); setShowCreate(false); fetchEvents(); }
+    else { toast({ title: 'Event created' }); resetCreateState(); setShowCreate(false); fetchEvents(); }
   };
 
   // ── Edit ─────────────────────────────────────────────────────────────────
   const openEdit = async (ev: EventRow) => {
     setEditEvent(ev);
+    setEditStep(1);
     setEditForm({ name: ev.name, level: ev.level as EditForm['level'], city: ev.city || '', state: ev.state || '', parent_event_id: ev.parent_event_id || '', status: ev.status as EditForm['status'] });
     setLoadingStaff(true);
     const { data } = await supabase
@@ -202,6 +227,15 @@ export const EventsManager = () => {
       setAssignJury(new Set(data.filter(u => u.user_type === 'jury' && u.event_id === ev.id).map(u => u.user_id)));
     }
     setLoadingStaff(false);
+
+    const { data: committeeRows } = await supabase.from('event_committees').select('name').eq('event_id', ev.id).order('display_order');
+    const { data: partyRows }     = await supabase.from('event_parties').select('name').eq('event_id', ev.id).order('display_order');
+    const committees = (committeeRows ?? []).map((r: { name: string }) => r.name);
+    const parties    = (partyRows ?? []).map((r: { name: string }) => r.name);
+    setEditCommittees(committees);
+    setEditParties(parties);
+    setOriginalCommittees(committees);
+    setOriginalParties(parties);
   };
 
   const handleEditSave = async () => {
@@ -235,6 +269,28 @@ export const EventsManager = () => {
       }
       for (const uid of assignJury) {
         await supabase.from('profiles').update({ event_id: editEvent.id }).eq('user_id', uid);
+      }
+
+      // Committees / Parties — only touch & reassign if the configuration actually changed
+      const committeesChanged = JSON.stringify(editCommittees) !== JSON.stringify(originalCommittees);
+      const partiesChanged    = JSON.stringify(editParties)    !== JSON.stringify(originalParties);
+      if (committeesChanged || partiesChanged) {
+        if (committeesChanged) {
+          await supabase.from('event_committees').delete().eq('event_id', editEvent.id);
+          await supabase.from('event_committees').insert(
+            editCommittees.map((name, i) => ({ event_id: editEvent.id, name, display_order: i }))
+          );
+        }
+        if (partiesChanged) {
+          await supabase.from('event_parties').delete().eq('event_id', editEvent.id);
+          await supabase.from('event_parties').insert(
+            editParties.map((name, i) => ({ event_id: editEvent.id, name, display_order: i }))
+          );
+        }
+        const { error: reassignError } = await supabase.rpc('reassign_event_committees_parties', { p_event_id: editEvent.id });
+        if (reassignError) {
+          toast({ title: 'Reassignment failed', description: reassignError.message, variant: 'destructive' });
+        }
       }
     }
 
@@ -509,30 +565,69 @@ export const EventsManager = () => {
       </div>
 
       {/* ── Create Dialog ────────────────────────────────────────────────────── */}
-      <Dialog open={showCreate} onOpenChange={open => { if (!open) { setShowCreate(false); setForm(blankForm); } }}>
+      <Dialog open={showCreate} onOpenChange={open => { if (!open) { setShowCreate(false); resetCreateState(); } }}>
         <DialogContent className="rounded-[2rem] border-none bg-surface-container-lowest shadow-2xl overflow-hidden p-0 max-w-2xl [&>button]:hidden">
           <div className="relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
             <div className="p-10 space-y-8 relative z-10 max-h-[85vh] overflow-y-auto">
               <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black font-headline ${createStep === 1 ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>1</span>
+                  <span className="h-px flex-1 max-w-[40px] bg-outline-variant/30" />
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black font-headline ${createStep === 2 ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>2</span>
+                </div>
                 <h3 className="text-2xl font-extrabold font-headline text-on-surface tracking-tight">Create New Event</h3>
-                <p className="text-sm text-outline/70 font-body mt-1">Provision a new parliamentary session for the civic ecosystem.</p>
+                <p className="text-sm text-outline/70 font-body mt-1">
+                  {createStep === 1
+                    ? 'Provision a new parliamentary session for the civic ecosystem.'
+                    : 'Set the committees and parties students will be assigned to — rename or accept the defaults.'}
+                </p>
               </div>
-              {renderFormFields(form, setForm as any)}
+              {createStep === 1
+                ? renderFormFields(form, setForm as any)
+                : (
+                  <CommitteePartyEditor
+                    committees={createCommittees}
+                    parties={createParties}
+                    onCommitteesChange={setCreateCommittees}
+                    onPartiesChange={setCreateParties}
+                  />
+                )}
               <div className="flex flex-wrap items-center gap-4 pt-2">
+                {createStep === 1 ? (
+                  <button
+                    onClick={() => {
+                      if (!form.name.trim()) { toast({ title: 'Name required', variant: 'destructive' }); return; }
+                      setCreateStep(2);
+                    }}
+                    className="flex items-center gap-2 px-10 py-4 rounded-full bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                  >
+                    Next
+                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleCreate}
+                      disabled={saving}
+                      className="flex items-center gap-2 px-10 py-4 rounded-full bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all"
+                    >
+                      {saving
+                        ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        : <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                      }
+                      {saving ? 'Creating…' : 'Create Event'}
+                    </button>
+                    <button
+                      onClick={() => setCreateStep(1)}
+                      className="px-8 py-4 text-outline hover:text-on-surface font-bold font-body transition-all"
+                    >
+                      Back
+                    </button>
+                  </>
+                )}
                 <button
-                  onClick={handleCreate}
-                  disabled={saving}
-                  className="flex items-center gap-2 px-10 py-4 rounded-full bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all"
-                >
-                  {saving
-                    ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    : <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                  }
-                  {saving ? 'Creating…' : 'Create Event'}
-                </button>
-                <button
-                  onClick={() => { setShowCreate(false); setForm(blankForm); }}
+                  onClick={() => { setShowCreate(false); resetCreateState(); }}
                   className="px-8 py-4 text-outline hover:text-on-surface font-bold font-body transition-all"
                 >
                   Cancel
@@ -599,89 +694,131 @@ export const EventsManager = () => {
             <div className="absolute top-0 right-0 w-64 h-64 bg-secondary/5 rounded-full -mr-20 -mt-20 blur-3xl pointer-events-none" />
             <div className="p-10 space-y-8 relative z-10 max-h-[85vh] overflow-y-auto">
               <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black font-headline ${editStep === 1 ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>1</span>
+                  <span className="h-px flex-1 max-w-[40px] bg-outline-variant/30" />
+                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black font-headline ${editStep === 2 ? 'bg-primary text-white' : 'bg-primary/10 text-primary'}`}>2</span>
+                </div>
                 <h3 className="text-2xl font-extrabold font-headline text-on-surface tracking-tight">Edit Event</h3>
-                <p className="text-sm text-outline/70 font-body mt-1">{editEvent?.name}</p>
+                <p className="text-sm text-outline/70 font-body mt-1">
+                  {editStep === 1
+                    ? editEvent?.name
+                    : "Set the committees and parties students will be assigned to — changing the count or names will round-robin reassign this event's students on save."}
+                </p>
               </div>
-              {renderFormFields(editForm, setEditForm as any, editEvent?.id)}
 
-              {/* Staff Assignment */}
-              <div className="space-y-5 pt-2 border-t border-outline-variant/15">
-                <p className="text-xs font-black uppercase tracking-widest text-primary font-headline">Assign Staff</p>
+              {editStep === 1 ? (
+                <>
+                  {renderFormFields(editForm, setEditForm as any, editEvent?.id)}
 
-                {loadingStaff ? (
-                  <div className="flex items-center gap-2 text-outline text-xs font-body">
-                    <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    Loading staff…
+                  {/* Staff Assignment */}
+                  <div className="space-y-5 pt-2 border-t border-outline-variant/15">
+                    <p className="text-xs font-black uppercase tracking-widest text-primary font-headline">Assign Staff</p>
+
+                    {loadingStaff ? (
+                      <div className="flex items-center gap-2 text-outline text-xs font-body">
+                        <span className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        Loading staff…
+                      </div>
+                    ) : (
+                      <>
+                        {/* Organizer */}
+                        <div>
+                          <label className="block text-xs font-bold text-on-surface-variant mb-2 ml-1 uppercase tracking-wider font-headline">Organizer</label>
+                          <div className="relative">
+                            <select
+                              value={assignOrganizer}
+                              onChange={e => setAssignOrganizer(e.target.value)}
+                              className={fieldCls}
+                            >
+                              <option value="">— None —</option>
+                              {staffUsers.filter(u => u.user_type === 'organizer').map(u => (
+                                <option key={u.user_id} value={u.user_id}>
+                                  {u.name} {u.event_id && u.event_id !== editEvent?.id ? '(assigned elsewhere)' : ''}
+                                </option>
+                              ))}
+                            </select>
+                            <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
+                          </div>
+                        </div>
+
+                        {/* Jury */}
+                        <div>
+                          <label className="block text-xs font-bold text-on-surface-variant mb-2 ml-1 uppercase tracking-wider font-headline">Jury Members</label>
+                          <div className="space-y-2">
+                            {staffUsers.filter(u => u.user_type === 'jury').length === 0 ? (
+                              <p className="text-xs text-outline font-body">No jury accounts found.</p>
+                            ) : staffUsers.filter(u => u.user_type === 'jury').map(u => (
+                              <label key={u.user_id} className="flex items-center gap-3 px-4 py-3 bg-surface-container rounded-xl cursor-pointer hover:bg-surface-container-high transition-colors">
+                                <input
+                                  type="checkbox"
+                                  checked={assignJury.has(u.user_id)}
+                                  onChange={e => {
+                                    setAssignJury(prev => {
+                                      const next = new Set(prev);
+                                      e.target.checked ? next.add(u.user_id) : next.delete(u.user_id);
+                                      return next;
+                                    });
+                                  }}
+                                  className="h-4 w-4 rounded text-primary focus:ring-primary/20"
+                                />
+                                <div className="min-w-0">
+                                  <p className="text-sm font-bold font-headline text-on-surface">{u.name}</p>
+                                  <p className="text-xs text-outline font-body truncate">{u.email}</p>
+                                </div>
+                                {u.event_id && u.event_id !== editEvent?.id && (
+                                  <span className="ml-auto text-[9px] font-black uppercase tracking-wider text-outline font-headline shrink-0">elsewhere</span>
+                                )}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
-                ) : (
-                  <>
-                    {/* Organizer */}
-                    <div>
-                      <label className="block text-xs font-bold text-on-surface-variant mb-2 ml-1 uppercase tracking-wider font-headline">Organizer</label>
-                      <div className="relative">
-                        <select
-                          value={assignOrganizer}
-                          onChange={e => setAssignOrganizer(e.target.value)}
-                          className={fieldCls}
-                        >
-                          <option value="">— None —</option>
-                          {staffUsers.filter(u => u.user_type === 'organizer').map(u => (
-                            <option key={u.user_id} value={u.user_id}>
-                              {u.name} {u.event_id && u.event_id !== editEvent?.id ? '(assigned elsewhere)' : ''}
-                            </option>
-                          ))}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-outline pointer-events-none text-[20px]">expand_more</span>
-                      </div>
-                    </div>
-
-                    {/* Jury */}
-                    <div>
-                      <label className="block text-xs font-bold text-on-surface-variant mb-2 ml-1 uppercase tracking-wider font-headline">Jury Members</label>
-                      <div className="space-y-2">
-                        {staffUsers.filter(u => u.user_type === 'jury').length === 0 ? (
-                          <p className="text-xs text-outline font-body">No jury accounts found.</p>
-                        ) : staffUsers.filter(u => u.user_type === 'jury').map(u => (
-                          <label key={u.user_id} className="flex items-center gap-3 px-4 py-3 bg-surface-container rounded-xl cursor-pointer hover:bg-surface-container-high transition-colors">
-                            <input
-                              type="checkbox"
-                              checked={assignJury.has(u.user_id)}
-                              onChange={e => {
-                                setAssignJury(prev => {
-                                  const next = new Set(prev);
-                                  e.target.checked ? next.add(u.user_id) : next.delete(u.user_id);
-                                  return next;
-                                });
-                              }}
-                              className="h-4 w-4 rounded text-primary focus:ring-primary/20"
-                            />
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold font-headline text-on-surface">{u.name}</p>
-                              <p className="text-xs text-outline font-body truncate">{u.email}</p>
-                            </div>
-                            {u.event_id && u.event_id !== editEvent?.id && (
-                              <span className="ml-auto text-[9px] font-black uppercase tracking-wider text-outline font-headline shrink-0">elsewhere</span>
-                            )}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
+                </>
+              ) : (
+                <CommitteePartyEditor
+                  committees={editCommittees}
+                  parties={editParties}
+                  onCommitteesChange={setEditCommittees}
+                  onPartiesChange={setEditParties}
+                />
+              )}
 
               <div className="flex flex-wrap items-center gap-4 pt-2">
-                <button
-                  onClick={handleEditSave}
-                  disabled={editSaving || !editForm.name.trim()}
-                  className="flex items-center gap-2 px-10 py-4 rounded-full bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all"
-                >
-                  {editSaving
-                    ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    : <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                  }
-                  {editSaving ? 'Saving…' : 'Save Changes'}
-                </button>
+                {editStep === 1 ? (
+                  <button
+                    onClick={() => {
+                      if (!editForm.name.trim()) { toast({ title: 'Name required', variant: 'destructive' }); return; }
+                      setEditStep(2);
+                    }}
+                    className="flex items-center gap-2 px-10 py-4 rounded-full bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all"
+                  >
+                    Next
+                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleEditSave}
+                      disabled={editSaving || !editForm.name.trim()}
+                      className="flex items-center gap-2 px-10 py-4 rounded-full bg-gradient-to-r from-primary to-primary-container text-white font-headline font-bold text-sm shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 disabled:opacity-50 transition-all"
+                    >
+                      {editSaving
+                        ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        : <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                      }
+                      {editSaving ? 'Saving…' : 'Save Changes'}
+                    </button>
+                    <button
+                      onClick={() => setEditStep(1)}
+                      className="px-8 py-4 text-outline hover:text-on-surface font-bold font-body transition-all"
+                    >
+                      Back
+                    </button>
+                  </>
+                )}
                 <button onClick={() => setEditEvent(null)} className="px-8 py-4 text-outline hover:text-on-surface font-bold font-body transition-all">
                   Cancel
                 </button>

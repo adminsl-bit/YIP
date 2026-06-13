@@ -8,7 +8,6 @@ import { toast } from "@/hooks/use-toast";
 import { StudentEditDialog } from "./StudentEditDialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { PARLIAMENT_COMMITTEES } from "@/lib/utils";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -89,6 +88,21 @@ export const OrganizerStudentList = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const [isSyncingEvent, setIsSyncingEvent] = useState(false);
+
+  // Event-scoped committee list, configured by the SuperAdmin per event
+  const [eventCommittees, setEventCommittees] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!profile?.event_id) { setEventCommittees([]); return; }
+    supabase
+      .from('event_committees')
+      .select('name')
+      .eq('event_id', profile.event_id)
+      .order('display_order')
+      .then(({ data }) => {
+        setEventCommittees((data ?? []).map((r: { name: string }) => r.name));
+      });
+  }, [profile?.event_id]);
 
   const handleSyncEventId = async () => {
     if (!profile?.event_id) {
@@ -487,7 +501,7 @@ export const OrganizerStudentList = () => {
   , [students]);
 
   // Auto-selected committee for next registration (round-robin)
-  const autoCommittee = PARLIAMENT_COMMITTEES[assignableMpCount % PARLIAMENT_COMMITTEES.length];
+  const autoCommittee = eventCommittees.length > 0 ? eventCommittees[assignableMpCount % eventCommittees.length] : '';
 
   // Derive unique parties dynamically from loaded students (same pattern as InteractiveParliamentTree)
   const uniqueParties = useMemo(() => {
@@ -502,10 +516,6 @@ export const OrganizerStudentList = () => {
 
   const uniqueConstituencies = useMemo(() =>
     [...new Set(students.map(s => s.constituency).filter((v): v is string => !!v))].sort()
-  , [students]);
-
-  const uniqueCommittees = useMemo(() =>
-    [...new Set(students.map(s => s.committee).filter((v): v is string => !!v))].sort()
   , [students]);
 
   const uniquePartyNames = useMemo(() =>
@@ -1248,7 +1258,7 @@ export const OrganizerStudentList = () => {
                   className="w-full h-12 bg-surface-container border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
                 >
                   <option value="">Select committee</option>
-                  {PARLIAMENT_COMMITTEES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {eventCommittees.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
               <div className="space-y-1">
@@ -1300,7 +1310,7 @@ export const OrganizerStudentList = () => {
         onSave={() => { fetchStudents(); fetchJuryAssessments(); }}
         parties={uniqueParties}
         constituencies={uniqueConstituencies}
-        committees={uniqueCommittees}
+        committees={eventCommittees}
         partyNames={uniquePartyNames}
       />
 

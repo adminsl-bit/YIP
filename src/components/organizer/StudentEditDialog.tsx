@@ -7,7 +7,6 @@ import { Camera } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from '@/hooks/useAuth';
-import { PARLIAMENT_COMMITTEES } from '@/lib/utils';
 
 interface Student {
   id: string;
@@ -333,7 +332,7 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = 
                 <SelectValue placeholder="Select committee" />
               </SelectTrigger>
               <SelectContent className="bg-surface-container-lowest border-none rounded-2xl shadow-elevated z-50">
-                {PARLIAMENT_COMMITTEES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                {committees.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
