@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -204,6 +205,10 @@ const PodiumCard = ({
 // ── Main ───────────────────────────────────────────────────────────────────────
 export const OrganizerLeaderboard = () => {
   const { profile } = useAuth();
+  const { settings: systemSettings } = useSystemSettings();
+  const prePct = systemSettings.pre_event_weightage_enabled ? systemSettings.pre_event_weightage_pct : 0;
+  const judgePct = 100 - prePct;
+  const preeventConverted = (entry: LeaderboardEntry) => (entry.preevent_scores ?? 0) * (100 / 60) * (prePct / 100);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [awards, setAwards] = useState<Award[]>([]);
   const [awardVotes, setAwardVotes] = useState<AwardVote[]>([]);
@@ -612,8 +617,8 @@ export const OrganizerLeaderboard = () => {
       Name: entry.name,
       Position: entry.position,
       Party: `Party ${partyLabel(entry.party_number)}`,
-      'Pre-Event Score (60)': entry.preevent_scores?.toFixed(2) || '0.00',
-      'Jury Score (40)': entry.jury_converted_score?.toFixed(2) || '0.00',
+      [`Pre-Event Score (${prePct})`]: preeventConverted(entry).toFixed(2),
+      [`Jury Score (${judgePct})`]: entry.jury_converted_score?.toFixed(2) || '0.00',
       'Final Total (100)': entry.final_total_score?.toFixed(2) || '0.00',
       'Jury Average (100 scale)': entry.jury_average_score?.toFixed(2) || '0.00',
       'Assessment Count': entry.assessment_count,
@@ -643,13 +648,13 @@ export const OrganizerLeaderboard = () => {
       entry.name,
       entry.position,
       `Party ${partyLabel(entry.party_number)}`,
-      entry.preevent_scores?.toFixed(1) || '0',
+      preeventConverted(entry).toFixed(1),
       entry.jury_converted_score?.toFixed(1) || '0',
       entry.final_total_score?.toFixed(1) || '0',
       (studentAwards[entry.user_id]?.length || 0).toString(),
     ]);
     autoTable(pdf, {
-      head: [['Rank', 'Name', 'Position', 'Party', 'Pre(60)', 'Jury(40)', 'Total', 'Awards']],
+      head: [['Rank', 'Name', 'Position', 'Party', `Pre(${prePct})`, `Jury(${judgePct})`, 'Total', 'Awards']],
       body,
       startY: 42,
       styles: { fontSize: 9, cellPadding: 2 },
@@ -991,8 +996,8 @@ export const OrganizerLeaderboard = () => {
                   <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">Student</th>
                   <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">Constituency</th>
                   <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">City</th>
-                  <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">Pre (60)</th>
-                  <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">Jury (40)</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">Pre ({prePct})</th>
+                  <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">Jury ({judgePct})</th>
                   <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">
                     <span className="flex items-center justify-end gap-1">
                       <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>electric_bolt</span>
@@ -1077,14 +1082,14 @@ export const OrganizerLeaderboard = () => {
                         <span className="text-sm font-body text-on-surface-variant">{entry.city ? normalizeCity(entry.city) : '—'}</span>
                       </td>
 
-                      {/* Pre (60) */}
+                      {/* Pre (prePct) */}
                       <td className="px-5 py-3.5 text-right">
                         <span className="text-sm font-headline font-black tabular-nums text-on-surface">
-                          {entry.preevent_scores?.toFixed(1) || '0.0'}
+                          {preeventConverted(entry).toFixed(1)}
                         </span>
                       </td>
 
-                      {/* Jury (40) */}
+                      {/* Jury (judgePct) */}
                       <td className="px-5 py-3.5 text-right">
                         {!special ? (
                           <span className="text-sm font-headline font-black tabular-nums text-on-surface">

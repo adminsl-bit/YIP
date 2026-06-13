@@ -7,6 +7,8 @@ interface SystemSettings {
   assessments_locked: boolean;
   leaderboard_visible: boolean;
   question_hour_visible: boolean;
+  pre_event_weightage_enabled: boolean;
+  pre_event_weightage_pct: number;
 }
 
 export const useSystemSettings = () => {
@@ -15,7 +17,9 @@ export const useSystemSettings = () => {
     results_public: true,
     assessments_locked: false,
     leaderboard_visible: true,
-    question_hour_visible: true
+    question_hour_visible: true,
+    pre_event_weightage_enabled: true,
+    pre_event_weightage_pct: 60
   });
   const [loading, setLoading] = useState(true);
 
@@ -44,14 +48,18 @@ export const useSystemSettings = () => {
       const { data, error } = await supabase
         .from('system_settings')
         .select('*')
-        .in('setting_key', ['voting_enabled', 'results_public', 'assessments_locked', 'leaderboard_visible', 'question_hour_visible']);
+        .in('setting_key', ['voting_enabled', 'results_public', 'assessments_locked', 'leaderboard_visible', 'question_hour_visible', 'pre_event_weightage_enabled', 'pre_event_weightage_pct']);
 
       if (error) throw error;
 
       const settingsMap: Partial<SystemSettings> = {};
       data?.forEach((setting) => {
-        settingsMap[setting.setting_key as keyof SystemSettings] = 
-          setting.setting_value === 'true' || setting.setting_value === true;
+        if (setting.setting_key === 'pre_event_weightage_pct') {
+          settingsMap.pre_event_weightage_pct = Number(setting.setting_value);
+        } else {
+          settingsMap[setting.setting_key as keyof Omit<SystemSettings, 'pre_event_weightage_pct'>] =
+            setting.setting_value === 'true' || setting.setting_value === true;
+        }
       });
 
       setSettings(prev => ({ ...prev, ...settingsMap }));
