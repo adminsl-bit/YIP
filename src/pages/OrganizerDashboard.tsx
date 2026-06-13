@@ -43,6 +43,9 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { GlobalSquare } from "@/components/student/GlobalSquare";
 import { SupportChatWidget } from "@/components/shared/SupportChatWidget";
 import { QuestionHourHub } from "@/components/student/QuestionHourHub";
+import { AgendaView } from "@/components/student/AgendaView";
+import { StudentDocumentsTable } from "@/components/organizer/StudentDocumentsTable";
+import { MotionsHub } from "@/components/student/MotionsHub";
 
 interface DashboardStats {
   totalStudents: number;
@@ -167,8 +170,10 @@ const OrganizerDashboard = () => {
             <NavTrigger value="sessions"       icon="event_seat"          label="Sessions" />
             <NavTrigger value="polls"          icon="how_to_vote"         label="Ballot" />
             <NavTrigger value="question-hour"  icon="forum"               label="Question Hour" />
+            <NavTrigger value="motions"        icon="gavel"               label="Motions" />
             <NavTrigger value="square"         icon="forum"               label="Civic Chat" />
             <NavTrigger value="students"       icon="group"               label="Students" />
+            <NavTrigger value="documents"      icon="description"         label="Documents" />
             <NavTrigger value="bulk-import"    icon="upload_file"         label="Bulk Import" />
             <NavTrigger value="role-creator"   icon="manage_accounts"     label="Role Creator" />
             <NavTrigger value="security"       icon="security"            label="Security" />
@@ -312,6 +317,21 @@ const OrganizerDashboard = () => {
 
               <TabsContent value="sessions" className="m-0 space-y-10">
                 <PageHeader primary="Parliamentary" secondary="Sessions" icon={<Calendar className="w-3 h-3" />} subtitle="Agenda & Schedule Control" />
+
+                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem value="agenda-preview" className="border-none">
+                      <AccordionTrigger className="hover:no-underline py-0">
+                        <div className="flex items-center gap-4">
+                          <Calendar className="w-5 h-5 text-primary" />
+                          <h3 className="text-xl font-extrabold font-headline text-on-surface">Student Agenda Preview</h3>
+                        </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="pt-8"><AgendaView embedded /></AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </div>
+
                 <SessionManagement />
               </TabsContent>
 
@@ -324,8 +344,18 @@ const OrganizerDashboard = () => {
                 <QuestionHourHub />
               </TabsContent>
 
+              <TabsContent value="motions" className="m-0 space-y-10">
+                <PageHeader primary="Parliamentary" secondary="Motions" icon={<Gavel className="w-3 h-3" />} subtitle="Raise & Track Formal Motions" />
+                <MotionsHub embedded />
+              </TabsContent>
+
               <TabsContent value="students" className="m-0">
                 <OrganizerStudentList />
+              </TabsContent>
+
+              <TabsContent value="documents" className="m-0 space-y-10">
+                <PageHeader primary="Student" secondary="Documents" icon={<span className="material-symbols-outlined text-[12px]">description</span>} subtitle="Bills & Reference Material Vault" />
+                <StudentDocumentsTable />
               </TabsContent>
 
               <TabsContent value="bulk-import" className="m-0 space-y-8">

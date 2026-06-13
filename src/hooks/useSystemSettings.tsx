@@ -6,6 +6,7 @@ interface SystemSettings {
   results_public: boolean;
   assessments_locked: boolean;
   leaderboard_visible: boolean;
+  question_hour_visible: boolean;
 }
 
 export const useSystemSettings = () => {
@@ -13,7 +14,8 @@ export const useSystemSettings = () => {
     voting_enabled: false,
     results_public: true,
     assessments_locked: false,
-    leaderboard_visible: true
+    leaderboard_visible: true,
+    question_hour_visible: true
   });
   const [loading, setLoading] = useState(true);
 
@@ -42,7 +44,7 @@ export const useSystemSettings = () => {
       const { data, error } = await supabase
         .from('system_settings')
         .select('*')
-        .in('setting_key', ['voting_enabled', 'results_public', 'assessments_locked', 'leaderboard_visible']);
+        .in('setting_key', ['voting_enabled', 'results_public', 'assessments_locked', 'leaderboard_visible', 'question_hour_visible']);
 
       if (error) throw error;
 

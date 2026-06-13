@@ -11,8 +11,11 @@ import { QuestionHourHub } from '@/components/student/QuestionHourHub';
 import { GlobalSquare } from '@/components/student/GlobalSquare';
 import { BreakingNewsTicker } from '@/components/display/BreakingNewsTicker';
 import { SpeechTrackingView } from '@/components/student/SpeechTrackingView';
+import { AgendaView } from '@/components/student/AgendaView';
+import { StudentDocuments } from '@/components/student/StudentDocuments';
+import { MotionsHub } from '@/components/student/MotionsHub';
 
-type TabId = 'profile' | 'civic-wall' | 'tree' | 'ballot' | 'question-hour' | 'speeches' | 'messages';
+type TabId = 'profile' | 'civic-wall' | 'tree' | 'ballot' | 'question-hour' | 'speeches' | 'messages' | 'agenda' | 'motions' | 'documents';
 
 interface ManifestoItem {
   text: string;
@@ -22,9 +25,12 @@ const baseNavItems: { id: TabId; label: string; icon: string }[] = [
   { id: 'profile',       label: 'Profile',         icon: 'person' },
   { id: 'civic-wall',    label: 'Civic Wall',       icon: 'public' },
   { id: 'tree',          label: 'Parliament Tree',  icon: 'account_tree' },
+  { id: 'agenda',        label: 'Agenda',           icon: 'event_seat' },
+  { id: 'motions',       label: 'Motions',          icon: 'gavel' },
   { id: 'ballot',        label: 'Ballot',           icon: 'how_to_vote' },
   { id: 'question-hour', label: 'Question Hour',    icon: 'forum' },
   { id: 'speeches',      label: 'Speech Tracker',   icon: 'mic' },
+  { id: 'documents',     label: 'Documents',        icon: 'description' },
   { id: 'messages',      label: 'Civic Chat',       icon: 'chat' },
 ];
 
@@ -698,9 +704,12 @@ const StudentDashboard = () => {
       case 'profile':       return renderProfileTab();
       case 'civic-wall':   return <CivicWall />;
       case 'tree':          return <ParliamentTree />;
+      case 'agenda':        return <AgendaView />;
+      case 'motions':       return <MotionsHub />;
       case 'ballot':        return <PollVoting />;
       case 'question-hour': return <QuestionHourHub />;
       case 'speeches':      return <SpeechTrackerTabWrapper />;
+      case 'documents':     return <StudentDocuments />;
       default:              return renderProfileTab();
     }
   };

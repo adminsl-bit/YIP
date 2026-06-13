@@ -8,6 +8,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
+import { useSystemSettings } from '@/hooks/useSystemSettings';
+import { Switch } from '@/components/ui/switch';
 import { QuestionHourSummary } from '@/components/organizer/QuestionHourSummary';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
@@ -108,6 +110,8 @@ export const QuestionHourHub = () => {
   const myMinistry = getMinistryFromPosition(profile?.position);
   const isMinister = !!myMinistry;
   const isModerator = profile?.user_type === 'organizer' || profile?.user_type === 'super_admin' || hasRole('admin_student');
+  const { settings: systemSettings, loading: settingsLoading, refetch: refetchSettings } = useSystemSettings();
+  const [togglingVisibility, setTogglingVisibility] = useState(false);
 
   const [questions, setQuestions] = useState<Question[]>([]);
   const [loading, setLoading] = useState(true);
@@ -293,6 +297,38 @@ export const QuestionHourHub = () => {
     }
   };
 
+  // Organizer/admin toggle to show or hide Question Hour from students entirely
+  const handleToggleVisibility = async (visible: boolean) => {
+    if (!user) return;
+    setTogglingVisibility(true);
+    try {
+      const { error } = await supabase
+        .from('system_settings')
+        .upsert({
+          setting_key: 'question_hour_visible',
+          setting_value: visible,
+          description: 'Controls whether students can view and participate in Question Hour',
+          updated_by: user.id,
+        }, { onConflict: 'setting_key' });
+      if (error) throw error;
+
+      await supabase.rpc('log_audit_event', {
+        p_user_id: user.id,
+        p_action: 'setting_updated',
+        p_resource_type: 'system_setting',
+        p_resource_id: 'question_hour_visible',
+        p_details: { old_value: !visible, new_value: visible },
+      });
+
+      toast.success(visible ? 'Question Hour is now visible to students' : 'Question Hour is now hidden from students');
+      refetchSettings();
+    } catch {
+      toast.error('Failed to update Question Hour visibility');
+    } finally {
+      setTogglingVisibility(false);
+    }
+  };
+
   const allQuestions = viewFilter === 'assigned'
     ? questions
         .filter(q => myMinistry ? q.ministry === myMinistry : false)
@@ -306,16 +342,51 @@ export const QuestionHourHub = () => {
   return (
     <div>
       {/* Page Heading */}
-      <header className="mb-10">
-        <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
-          Legislative <span className="text-secondary">Question Hour</span>
-        </h1>
-        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
-          <span className="material-symbols-outlined text-[12px]">gavel</span>
-          Parliamentary Deliberation Protocol
-        </p>
+      <header className="mb-10 flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+            Legislative <span className="text-secondary">Question Hour</span>
+          </h1>
+          <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+            <span className="material-symbols-outlined text-[12px]">gavel</span>
+            Parliamentary Deliberation Protocol
+          </p>
+        </div>
+
+        {isModerator && (
+          <div className="flex items-center gap-3 bg-surface-container-low border border-outline-variant/10 rounded-2xl px-4 py-3">
+            <span
+              className="material-symbols-outlined text-[18px] text-primary"
+              style={{ fontVariationSettings: systemSettings.question_hour_visible ? "'FILL' 1" : "'FILL' 0" }}
+            >
+              {systemSettings.question_hour_visible ? 'visibility' : 'visibility_off'}
+            </span>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-on-surface font-headline">Visible to Students</p>
+              <p className="text-[10px] text-on-surface-variant/50 font-body">
+                {systemSettings.question_hour_visible ? 'Question Hour is open' : 'Hidden from students'}
+              </p>
+            </div>
+            <Switch
+              checked={systemSettings.question_hour_visible}
+              disabled={togglingVisibility}
+              onCheckedChange={handleToggleVisibility}
+            />
+          </div>
+        )}
       </header>
 
+    {!isModerator && !settingsLoading && !systemSettings.question_hour_visible ? (
+      <div className="py-24 flex flex-col items-center justify-center text-center px-8 bg-surface-container-lowest rounded-3xl border border-outline-variant/15 border-dashed">
+        <span className="material-symbols-outlined text-[40px] text-on-surface-variant/20 mb-4">visibility_off</span>
+        <h4 className="text-lg font-headline font-black text-on-surface-variant/40 uppercase tracking-tight mb-2">
+          Question Hour is Currently Closed
+        </h4>
+        <p className="text-xs text-on-surface-variant/30 max-w-sm leading-relaxed font-body">
+          The Speaker has not yet opened the floor for questions. Check back soon.
+        </p>
+      </div>
+    ) : (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start">
 
       {/* ── Left Sidebar ── */}
@@ -757,6 +828,8 @@ export const QuestionHourHub = () => {
           </AnimatePresence>
         )}
       </section>
+    </div>
+    )}
 
       {/* ── Delete Dialog ── */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
@@ -783,7 +856,6 @@ export const QuestionHourHub = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
     </div>
   );
 };
