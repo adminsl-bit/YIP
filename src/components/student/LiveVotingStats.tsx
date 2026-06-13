@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Users, TrendingUp, Clock, CheckCircle, XCircle, Minus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 interface VotingStats {
   totalEligibleVoters: number;
@@ -37,6 +38,7 @@ interface LiveVotingStatsProps {
 }
 
 export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }: LiveVotingStatsProps) => {
+  const { settings } = useSystemSettings();
   const [stats, setStats] = useState<VotingStats>({
     totalEligibleVoters: 0,
     yesVotes: 0,
@@ -229,10 +231,11 @@ export const LiveVotingStats = ({ pollId, refreshTrigger, showResultsPublicly }:
     return null;
   }
 
-  // Determine visibility from prop or fetched poll data
-  const isPublic = (typeof showResultsPublicly === 'boolean') 
-    ? showResultsPublicly 
-    : (poll as any)?.show_results_publicly === true;
+  // Determine visibility from prop or fetched poll data, always subject to the
+  // organizer's global "Show Results Publicly" override.
+  const isPublic = ((typeof showResultsPublicly === 'boolean')
+    ? showResultsPublicly
+    : (poll as any)?.show_results_publicly === true) && settings.results_public;
 
   if (!isPublic) {
     return (

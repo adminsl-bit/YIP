@@ -11,6 +11,7 @@ import { SubItemCarousel } from "@/components/display/SubItemCarousel";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/components/ui/use-toast";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 interface SessionItem {
   id: string;
@@ -67,6 +68,12 @@ const clockOffsetRef = useRef<number>(0);
   const { toast } = useToast();
   const canManagePolls = (profile?.user_type === 'organizer') || hasRole('admin_student');
 
+  // Global "Show Results Publicly" override — kept in a ref so the realtime
+  // subscription callbacks (set up once on mount) always read the latest value.
+  const { settings } = useSystemSettings();
+  const resultsPublicRef = useRef(true);
+  useEffect(() => { resultsPublicRef.current = settings.results_public; }, [settings.results_public]);
+
   // Active sub-item polls to display (may be multiple)
   const [activeSubItemPolls, setActiveSubItemPolls] = useState<Array<{ poll: Poll; results: Record<string, number> }>>([]);
 
@@ -113,7 +120,7 @@ const clockOffsetRef = useRef<number>(0);
           .eq('id', poll.id)
           .single();
         
-        if (currentPoll && (currentPoll.is_active || currentPoll.show_results_publicly)) {
+        if (currentPoll && (currentPoll.is_active || (currentPoll.show_results_publicly && resultsPublicRef.current))) {
           const results = await fetchPollResults(poll.id);
           setPollResults(results);
         } else {
@@ -134,7 +141,7 @@ const clockOffsetRef = useRef<number>(0);
               .eq('id', poll.id)
               .single();
             
-            if (currentPoll && (currentPoll.is_active || currentPoll.show_results_publicly)) {
+            if (currentPoll && (currentPoll.is_active || (currentPoll.show_results_publicly && resultsPublicRef.current))) {
               const results = await fetchPollResults(poll.id);
               return { poll, results };
             }
@@ -168,7 +175,7 @@ const clockOffsetRef = useRef<number>(0);
       if (pollError || !pollData) return { poll: null, results: {} };
 
       let results: Record<string, number> = {};
-      if (pollData.show_results_publicly) {
+      if (pollData.show_results_publicly && resultsPublicRef.current) {
         results = await fetchPollResults(pollData.id);
       }
 
@@ -295,7 +302,7 @@ setTimer(prev => prev
           // Only show polls that are either active OR have results publicly visible
           // But NEVER show both as false - that means the poll should be hidden
           const valid = (fetched.filter((f) => !!f.poll) as Array<{ poll: Poll; results: Record<string, number> }>)
-            .filter(({ poll }) => poll.is_active || poll.show_results_publicly);
+            .filter(({ poll }) => poll.is_active || (poll.show_results_publicly && resultsPublicRef.current));
 
           if (valid.length > 0) {
             setActiveSubItemPolls(valid);
@@ -310,10 +317,10 @@ setTimer(prev => prev
               .eq('id', (sessionData as any).poll_id)
               .single();
 
-            if (!pollError && pollData && (pollData.is_active || pollData.show_results_publicly)) {
+            if (!pollError && pollData && (pollData.is_active || (pollData.show_results_publicly && resultsPublicRef.current))) {
               setPoll(pollData as Poll);
               setActiveSubItemPolls([]);
-              if (pollData.show_results_publicly) {
+              if (pollData.show_results_publicly && resultsPublicRef.current) {
                 const results = await fetchPollResults(pollData.id);
                 setPollResults(results);
               } else {
@@ -339,10 +346,10 @@ setTimer(prev => prev
             .single();
 
           if (!pollError && pollData) {
-            if (pollData.is_active || pollData.show_results_publicly) {
+            if (pollData.is_active || (pollData.show_results_publicly && resultsPublicRef.current)) {
               setPoll(pollData as Poll);
               setActiveSubItemPolls([]);
-              if (pollData.show_results_publicly) {
+              if (pollData.show_results_publicly && resultsPublicRef.current) {
                 await fetchPollResults(pollData.id);
               } else {
                 setPollResults({});
@@ -693,13 +700,13 @@ useEffect(() => {
                       </div>
                     </div>
 
-                    {p.is_active && !p.show_results_publicly && (
+                    {p.is_active && !(p.show_results_publicly && settings.results_public) && (
                       <p className="text-xl sm:text-2xl lg:text-3xl text-center mt-8 text-muted-foreground font-medium">
                         Please cast your votes now
                       </p>
                     )}
 
-                    {p.show_results_publicly && p.options && (
+                    {p.show_results_publicly && settings.results_public && p.options && (
                       <div className="space-y-5 mt-8">
                         <h3 className="text-3xl sm:text-4xl font-semibold mb-6">Results:</h3>
                         {p.options.map((option: any) => {
@@ -763,13 +770,13 @@ useEffect(() => {
                 </div>
               </div>
 
-              {poll.is_active && !poll.show_results_publicly && (
+              {poll.is_active && !(poll.show_results_publicly && settings.results_public) && (
                 <p className="text-xl sm:text-2xl lg:text-3xl text-center mt-8 text-muted-foreground font-medium">
                   Please cast your votes now
                 </p>
               )}
 
-              {poll.show_results_publicly && poll.options && (
+              {poll.show_results_publicly && settings.results_public && poll.options && (
                 <div className="space-y-5 mt-8">
                   <h3 className="text-3xl sm:text-4xl font-semibold mb-6">Results:</h3>
                   {poll.options.map((option: any) => {

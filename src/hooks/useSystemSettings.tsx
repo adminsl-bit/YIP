@@ -11,7 +11,7 @@ interface SystemSettings {
 export const useSystemSettings = () => {
   const [settings, setSettings] = useState<SystemSettings>({
     voting_enabled: false,
-    results_public: false,
+    results_public: true,
     assessments_locked: false,
     leaderboard_visible: true
   });

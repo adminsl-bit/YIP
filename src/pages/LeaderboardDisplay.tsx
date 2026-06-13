@@ -163,6 +163,13 @@ const LeaderboardDisplay = () => {
 
   const fetchPollResults = async () => {
     try {
+      // Global "Show Results Publicly" override — when off, hide poll results
+      // here regardless of each poll's individual setting.
+      const { data: rpData } = await supabase
+        .from('system_settings').select('setting_value').eq('setting_key', 'results_public').limit(1);
+      const resultsPublic = rpData?.length ? (rpData[0].setting_value === true || rpData[0].setting_value === 'true') : true;
+      if (!resultsPublic) { setPollResults({}); return; }
+
       const { data: polls, error: pollsError } = await supabase
         .from('polls').select('*').eq('is_active', true).eq('show_results_publicly', true);
       if (pollsError) throw pollsError;

@@ -8,6 +8,7 @@ import { LiveVotingStats } from "@/components/student/LiveVotingStats";
 import { PostVotingAnalysis } from "@/components/student/PostVotingAnalysis";
 import { DetailedPollResults } from "@/components/student/DetailedPollResults";
 import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 interface Poll {
   id: string;
@@ -27,6 +28,7 @@ interface PollResult {
 }
 
 const PollDisplay = () => {
+  const { settings } = useSystemSettings();
   const [polls, setPolls] = useState<Poll[]>([]);
   const [results, setResults] = useState<Record<string, PollResult[]>>({});
   const [showDetailedResults, setShowDetailedResults] = useState(false);
@@ -329,9 +331,9 @@ const PollDisplay = () => {
             ) : (
               <>
                 {/* Live Voting Statistics */}
-                <LiveVotingStats 
-                  pollId={activePoll.id} 
-                  showResultsPublicly={activePoll.show_results_publicly}
+                <LiveVotingStats
+                  pollId={activePoll.id}
+                  showResultsPublicly={activePoll.show_results_publicly && settings.results_public}
                 />
 
                 {/* Post-Voting Analysis (shown only after poll is closed AND post-analysis is enabled) */}

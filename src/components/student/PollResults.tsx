@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Users, TrendingUp } from "lucide-react";
+import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 interface Poll {
   id: string;
@@ -21,13 +22,22 @@ interface PollResult {
 }
 
 export const PollResults = () => {
+  const { settings } = useSystemSettings();
   const [polls, setPolls] = useState<Poll[]>([]);
   const [results, setResults] = useState<Record<string, PollResult[]>>({});
   const [loading, setLoading] = useState(true);
 
+  // Global "Show Results Publicly" override — kept in a ref so the realtime
+  // subscription callbacks (set up once on mount) always read the latest value.
+  const resultsPublicRef = useRef(true);
+  useEffect(() => {
+    resultsPublicRef.current = settings.results_public;
+    fetchPublicPolls();
+  }, [settings.results_public]);
+
   useEffect(() => {
     fetchPublicPolls();
-    
+
     // Real-time updates for polls and votes
     const pollsChannel = supabase
       .channel('public_polls')
@@ -46,6 +56,15 @@ export const PollResults = () => {
 
   const fetchPublicPolls = async () => {
     try {
+      // Global "Show Results Publicly" override — when off, hide every poll's
+      // results regardless of the per-poll setting.
+      if (!resultsPublicRef.current) {
+        setPolls([]);
+        setResults({});
+        setLoading(false);
+        return;
+      }
+
       const { data: pollsData, error: pollsError } = await supabase
         .from('polls')
         .select('*')

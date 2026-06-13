@@ -290,7 +290,7 @@ export const PollVoting = () => {
                         <div className="w-1.5 h-1.5 bg-on-tertiary-container rounded-full animate-pulse" />
                         Live Results
                       </h3>
-                      {poll.show_results_publicly ? (
+                      {poll.show_results_publicly && settings.results_public ? (
                         <VoteBars pollId={poll.id} options={options} refreshTrigger={refreshTrigger} />
                       ) : (
                         <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">

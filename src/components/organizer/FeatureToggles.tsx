@@ -244,7 +244,7 @@ export const FeatureToggles = () => {
           <AccordionTrigger className="py-2 hover:no-underline opacity-60 hover:opacity-100 transition-opacity">
             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant font-headline">Advanced Jury Locks</span>
           </AccordionTrigger>
-          <AccordionContent className="pt-4 space-y-5">
+          <AccordionContent className="pt-4 pr-2 space-y-5">
 
             {/* Global lock row — same style as feature toggles */}
             <div className="flex items-center justify-between group">
