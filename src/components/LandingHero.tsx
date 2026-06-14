@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 export const LandingHero = () => {
   const navigate = useNavigate();
@@ -31,13 +32,14 @@ export const LandingHero = () => {
               Empowering the next generation of Indian leaders to debate, deliberate, and decide the national agenda in the most immersive high-fidelity parliamentary simulation.
             </p>
             <div className="flex flex-col md:flex-row items-center justify-center gap-3">
-              <button 
+              <button
                 onClick={() => navigate("/login")}
                 className="w-full md:w-auto px-5 py-2.5 bg-primary text-white rounded-full font-bold text-sm hover:scale-[1.02] transition-transform shadow-[0_12px_28px_rgba(19,41,143,0.25)]"
               >
                 Take Your Seat
               </button>
               {/* Watch Documentary Button removed as per previous request */}
+              <InstallPrompt />
             </div>
           </motion.div>
         </div>

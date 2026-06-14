@@ -868,7 +868,7 @@ export const OrganizerStudentList = () => {
           </div>
         ) : (
           /* Table View — surface-container-lowest "pops" off the surface-container-low section */
-          <div className="rounded-2xl overflow-hidden bg-surface-container-lowest shadow-[0_32px_32px_-12px_rgba(19,41,143,0.06)]">
+          <div className="rounded-2xl overflow-x-auto bg-surface-container-lowest shadow-[0_32px_32px_-12px_rgba(19,41,143,0.06)]">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-surface-container text-on-surface-variant uppercase text-[11px] font-black tracking-widest font-body">

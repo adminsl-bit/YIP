@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.delete-user]
 verify_jwt = true
+
+[functions.summarize-document]
+verify_jwt = true

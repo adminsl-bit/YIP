@@ -31,14 +31,20 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Disclaimer from "./pages/Disclaimer";
 import FAQ from "./pages/FAQ";
 import AdminInit from "./pages/AdminInit";
+import { OfflineBanner } from "./components/OfflineBanner";
+import { PendingSyncBadge } from "./components/PendingSyncBadge";
+import { SyncProvider } from "./lib/SyncProvider";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <SyncProvider>
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <OfflineBanner />
+      <PendingSyncBadge />
       <BrowserRouter>
         <AuthProvider>
           <Routes>
@@ -99,6 +105,7 @@ const App = () => (
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
+    </SyncProvider>
   </QueryClientProvider>
 );
 

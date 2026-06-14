@@ -14,6 +14,7 @@ import { SpeechTrackingView } from '@/components/student/SpeechTrackingView';
 import { AgendaView } from '@/components/student/AgendaView';
 import { StudentDocuments } from '@/components/student/StudentDocuments';
 import { MotionsHub } from '@/components/student/MotionsHub';
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 
 type TabId = 'profile' | 'civic-wall' | 'tree' | 'ballot' | 'question-hour' | 'speeches' | 'messages' | 'agenda' | 'motions' | 'documents';
 
@@ -39,6 +40,7 @@ const StudentDashboard = () => {
   const { toast } = useToast();
 
   const [activeTab, setActiveTab] = useState<TabId>('profile');
+  const [moreOpen, setMoreOpen] = useState(false);
 
   // Manifesto state
   const [isEditingManifesto, setIsEditingManifesto] = useState(false);
@@ -89,6 +91,11 @@ const StudentDashboard = () => {
   // Speaker & Deputy Speaker get a read-only view of the speech tracker
   const isSpeaker = /speaker/i.test(position);
   const navItems = isSpeaker ? baseNavItems : baseNavItems.filter(item => item.id !== 'speeches');
+  // Mobile bottom nav: keep the live-session essentials in the bar, tuck the rest behind "More"
+  const primaryTabIds: TabId[] = ['agenda', 'civic-wall', 'ballot', 'question-hour'];
+  const primaryNavItems = navItems.filter(item => primaryTabIds.includes(item.id));
+  const moreNavItems = navItems.filter(item => !primaryTabIds.includes(item.id));
+  const isMoreTabActive = moreNavItems.some(item => item.id === activeTab);
   // Admin students and journalists sit outside party politics — fixed role card, no manifesto
   const isStaffRole = /journalist|admin/i.test(position);
   const isJournalist = /journalist/i.test(position);
@@ -759,11 +766,11 @@ const StudentDashboard = () => {
 
       {/* ── Mobile Bottom Nav ── */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant md:hidden flex justify-around items-center h-16 z-50">
-        {navItems.map(item => (
+        {primaryNavItems.map(item => (
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
-            className={`p-2 transition-colors ${activeTab === item.id ? 'text-primary' : 'text-on-surface-variant'}`}
+            className={`flex flex-col items-center justify-center p-2 min-w-[3rem] min-h-[44px] transition-colors ${activeTab === item.id ? 'text-primary' : 'text-on-surface-variant'}`}
           >
             <span
               className="material-symbols-outlined text-[22px]"
@@ -773,10 +780,58 @@ const StudentDashboard = () => {
             </span>
           </button>
         ))}
+        <button
+          onClick={() => setMoreOpen(true)}
+          className={`flex flex-col items-center justify-center p-2 min-w-[3rem] min-h-[44px] transition-colors ${isMoreTabActive ? 'text-primary' : 'text-on-surface-variant'}`}
+        >
+          <span
+            className="material-symbols-outlined text-[22px]"
+            style={isMoreTabActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
+          >
+            more_horiz
+          </span>
+        </button>
       </div>
 
+      {/* ── Mobile "More" Drawer ── */}
+      <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>More</DrawerTitle>
+          </DrawerHeader>
+          <nav className="px-4 pb-8 space-y-1">
+            {moreNavItems.map(item => (
+              <button
+                key={item.id}
+                onClick={() => { setActiveTab(item.id); setMoreOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 text-left min-h-[44px] ${
+                  activeTab === item.id
+                    ? 'text-primary font-bold bg-primary/5'
+                    : 'text-on-surface-variant hover:bg-surface-container font-medium'
+                }`}
+              >
+                <span
+                  className="material-symbols-outlined text-[20px] shrink-0"
+                  style={activeTab === item.id ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                >
+                  {item.icon}
+                </span>
+                <span className="font-body text-sm whitespace-nowrap">{item.label}</span>
+              </button>
+            ))}
+            <button
+              onClick={() => signOut()}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left min-h-[44px] text-on-surface-variant hover:bg-error/5 hover:text-error font-medium transition-colors duration-200"
+            >
+              <span className="material-symbols-outlined text-[20px] shrink-0">logout</span>
+              <span className="font-body text-sm whitespace-nowrap">Sign Out</span>
+            </button>
+          </nav>
+        </DrawerContent>
+      </Drawer>
+
       {/* ── Main Content ── */}
-      <main className="flex-1 md:ml-64 p-8 pb-24 md:pb-8">
+      <main className="flex-1 md:ml-64 p-4 sm:p-6 md:p-8 pb-24 md:pb-8">
         <div className={activeTab === 'messages' ? '' : 'hidden'}>
           <GlobalSquare />
         </div>

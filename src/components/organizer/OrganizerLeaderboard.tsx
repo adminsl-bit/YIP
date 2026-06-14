@@ -988,7 +988,8 @@ export const OrganizerLeaderboard = () => {
             <p className="text-sm text-on-surface-variant/50 font-body">No students match your filters.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-surface-container-low/50">
@@ -1190,6 +1191,160 @@ export const OrganizerLeaderboard = () => {
               </tbody>
             </table>
           </div>
+
+          {/* ── Mobile/Tablet Card List (below lg) ── */}
+          <div className="lg:hidden divide-y divide-outline-variant/10">
+            {paginatedLeaderboard.map(entry => {
+              const initials = entry.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+              const status = getAssessmentStatus(entry);
+              const special = isSpecialRole(entry.position);
+              const entryAwards = studentAwards[entry.user_id] || [];
+              const nominations = awardVotes.filter(v => v.student_id === entry.user_id);
+              const totalJury = juryMembers.length || 1;
+              const isConsensus = nominations.length >= totalJury && totalJury > 1;
+
+              return (
+                <div key={entry.user_id} className="p-4 space-y-3">
+                  {/* Header: rank + photo + identity */}
+                  <div className="flex items-start gap-3">
+                    <div className="shrink-0 w-7 pt-1 text-center">
+                      {hasRealScores ? (
+                        entry.original_rank <= 3 ? (
+                          <span
+                            className="material-symbols-outlined"
+                            style={{
+                              fontSize: '20px',
+                              fontVariationSettings: "'FILL' 1",
+                              color: entry.original_rank === 1 ? '#f59e0b'
+                                : entry.original_rank === 2 ? '#94a3b8' : '#ea580c',
+                            }}
+                          >
+                            {entry.original_rank === 1 ? 'emoji_events'
+                              : entry.original_rank === 2 ? 'military_tech' : 'workspace_premium'}
+                          </span>
+                        ) : (
+                          <span className="text-sm font-headline font-black text-on-surface-variant/40">#{entry.original_rank}</span>
+                        )
+                      ) : (
+                        <span className="text-sm font-headline font-black text-on-surface-variant/30">—</span>
+                      )}
+                    </div>
+
+                    <div className="shrink-0">
+                      {entry.photo_url ? (
+                        <img src={entry.photo_url} alt={entry.name} className="w-10 h-10 rounded-xl object-cover bg-surface-container" />
+                      ) : (
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                          <span className="text-xs font-headline font-bold text-primary">{initials}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-headline font-bold text-sm text-on-surface">{entry.name}</span>
+                        <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md font-headline ${partyColor(entry.party_number)}`}>
+                          Party {partyLabel(entry.party_number)}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-outline font-body mt-0.5">
+                        {entry.position} · #{entry.serial_number}
+                      </p>
+                      {(entry.constituency || entry.city) && (
+                        <p className="text-[11px] text-on-surface-variant/50 font-body mt-0.5 truncate">
+                          {entry.constituency || '—'}{entry.city ? ` · ${normalizeCity(entry.city)}` : ''}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Scores */}
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="bg-surface-container-low/60 rounded-xl px-2 py-2 text-center">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-outline font-headline">Pre ({prePct})</p>
+                      <p className="text-sm font-headline font-black tabular-nums text-on-surface mt-0.5">{preeventConverted(entry).toFixed(1)}</p>
+                    </div>
+                    <div className="bg-surface-container-low/60 rounded-xl px-2 py-2 text-center">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-outline font-headline">Jury ({judgePct})</p>
+                      <p className="text-sm font-headline font-black tabular-nums text-on-surface mt-0.5">
+                        {!special ? entry.jury_converted_score?.toFixed(1) || '0.0' : '—'}
+                      </p>
+                    </div>
+                    <div className="bg-surface-container-low/60 rounded-xl px-2 py-2 text-center">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-outline font-headline flex items-center justify-center gap-0.5">
+                        <span className="material-symbols-outlined text-[11px]" style={{ fontVariationSettings: "'FILL' 1" }}>electric_bolt</span>
+                        Live
+                      </p>
+                      <p className="text-sm font-headline font-black tabular-nums text-on-surface mt-0.5">
+                        {special ? entry.organizer_manual_score?.toFixed(1) || '0.0' : '—'}
+                      </p>
+                    </div>
+                    <div className="bg-primary rounded-xl px-2 py-2 text-center">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-on-primary/70 font-headline">Total</p>
+                      <p className="text-sm font-headline font-black tabular-nums text-on-primary mt-0.5">{entry.final_total_score?.toFixed(1) || '0.0'}</p>
+                    </div>
+                  </div>
+
+                  {/* Status + Awards + Promote */}
+                  <div className="flex items-center justify-between gap-2">
+                    {special ? (
+                      <span className="px-3 py-1 bg-primary-fixed/30 text-on-primary-fixed-variant text-[10px] font-black uppercase tracking-wide rounded-full font-headline">
+                        Manual
+                      </span>
+                    ) : (
+                      <span className={`px-3 py-1 text-[10px] font-black uppercase tracking-wide rounded-full font-headline ${statusBadge(status)}`}>
+                        {statusLabel(status)}
+                      </span>
+                    )}
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setAwardModalStudent(entry)}
+                        className="group/aw inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[36px] rounded-xl hover:bg-amber-50 hover:border-amber-200 border border-outline-variant/20 bg-surface-container transition-all"
+                      >
+                        <span
+                          className="material-symbols-outlined text-[16px] text-amber-500"
+                          style={{ fontVariationSettings: entryAwards.length > 0 ? "'FILL' 1" : "'FILL' 0" }}
+                        >
+                          workspace_premium
+                        </span>
+                        <span className="text-xs font-headline font-black text-on-surface-variant group-hover/aw:text-amber-700 transition-colors">
+                          {entryAwards.length > 0 ? entryAwards.length : '+'}
+                        </span>
+                        {nominations.length > 0 && (
+                          <span className={`text-[10px] font-bold font-body ${isConsensus ? 'text-[#2bb87c]' : 'text-primary/60'}`}>
+                            {nominations.length}/{totalJury}
+                          </span>
+                        )}
+                      </button>
+
+                      {entry._inlinePromoted || inlinePromotedIds.has(entry.user_id) ? (
+                        <span className="material-symbols-outlined text-[20px] text-[#2bb87c] p-1.5" title="Already promoted" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                      ) : inlinePromotingId === entry.user_id ? (
+                        <span className="material-symbols-outlined text-[20px] text-primary animate-spin p-1.5">progress_activity</span>
+                      ) : !inlineDestEvent ? (
+                        <span className="material-symbols-outlined text-[20px] text-on-surface-variant/20 p-1.5" title="No higher-level event">arrow_circle_up</span>
+                      ) : entry.final_total_score == null || Number(entry.final_total_score) < 0.01 ? (
+                        <span className="material-symbols-outlined text-[20px] text-on-surface-variant/20 p-1.5" title="No score yet">block</span>
+                      ) : (
+                        <button
+                          type="button"
+                          title={`Promote to ${inlineDestEvent.name}`}
+                          onClick={e => { e.stopPropagation(); handleInlinePromote(entry); }}
+                          disabled={!!inlinePromotingId}
+                          className="p-1.5 min-h-[36px] min-w-[36px] rounded-lg text-primary hover:bg-primary hover:text-on-primary transition-all disabled:opacity-30"
+                        >
+                          <span className="material-symbols-outlined text-[20px]">arrow_circle_up</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          </>
         )}
 
         {/* Pagination */}

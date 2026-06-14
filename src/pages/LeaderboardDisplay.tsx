@@ -41,23 +41,23 @@ const LeaderRow = ({ leader, index }: { leader: AssessmentResult; index: number 
 
   return (
     <div
-      className={`flex items-center gap-5 px-6 py-4 rounded-[1.5rem] transition-all ${
+      className={`flex items-center gap-3 sm:gap-5 px-3 sm:px-6 py-3 sm:py-4 rounded-2xl sm:rounded-[1.5rem] transition-all ${
         isTop3
           ? `${rankCfg!.cardBg} ${rankCfg!.ring} shadow-md`
           : 'bg-surface-container-lowest border border-outline-variant/10 hover:border-primary/10'
       }`}
     >
       {/* Rank */}
-      <div className="shrink-0 w-14 flex items-center justify-center">
+      <div className="shrink-0 w-9 sm:w-14 flex items-center justify-center">
         {isTop3 ? (
           <span
-            className={`material-symbols-outlined ${rankCfg!.iconColor}`}
-            style={{ fontSize: '2.5rem', fontVariationSettings: "'FILL' 1" }}
+            className={`material-symbols-outlined text-[1.75rem] sm:text-[2.5rem] ${rankCfg!.iconColor}`}
+            style={{ fontVariationSettings: "'FILL' 1" }}
           >
             {rankCfg!.icon}
           </span>
         ) : (
-          <span className="text-2xl font-headline font-black text-on-surface-variant/40">
+          <span className="text-lg sm:text-2xl font-headline font-black text-on-surface-variant/40">
             #{index + 1}
           </span>
         )}
@@ -65,23 +65,23 @@ const LeaderRow = ({ leader, index }: { leader: AssessmentResult; index: number 
 
       {/* Name + meta */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-3 flex-wrap">
-          <h3 className={`font-headline font-black truncate ${isTop3 ? 'text-2xl text-on-surface' : 'text-xl text-on-surface'}`}>
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <h3 className={`font-headline font-black truncate ${isTop3 ? 'text-base sm:text-2xl text-on-surface' : 'text-sm sm:text-xl text-on-surface'}`}>
             {leader.student_name}
           </h3>
-          <span className={`px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest rounded-md font-headline ${partyColor(leader.party_number)}`}>
+          <span className={`px-2 sm:px-2.5 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest rounded-md font-headline ${partyColor(leader.party_number)}`}>
             Party {partyLabel(leader.party_number)}
           </span>
         </div>
-        <p className="text-sm text-on-surface-variant font-body mt-0.5">{leader.position}</p>
+        <p className="text-xs sm:text-sm text-on-surface-variant font-body mt-0.5 truncate">{leader.position}</p>
       </div>
 
       {/* Score */}
       <div className="shrink-0 text-right">
-        <span className={`font-headline font-black tabular-nums ${isTop3 ? 'text-4xl text-primary' : 'text-3xl text-on-surface'}`}>
+        <span className={`font-headline font-black tabular-nums ${isTop3 ? 'text-xl sm:text-4xl text-primary' : 'text-lg sm:text-3xl text-on-surface'}`}>
           {leader.total_score}
         </span>
-        <p className="text-[10px] text-on-surface-variant font-headline uppercase tracking-widest">pts</p>
+        <p className="text-[9px] sm:text-[10px] text-on-surface-variant font-headline uppercase tracking-widest">pts</p>
       </div>
     </div>
   );
@@ -93,25 +93,25 @@ const PollCard = ({ title, results }: { title: string; results: PollResult[] }) 
   const totalVotes = results.reduce((sum, r) => sum + r.vote_count, 0);
 
   return (
-    <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden shadow-[0_16px_40px_-12px_rgba(19,41,143,0.08)]">
+    <div className="bg-surface-container-lowest rounded-2xl sm:rounded-[2rem] overflow-hidden shadow-[0_16px_40px_-12px_rgba(19,41,143,0.08)]">
       <div className="h-1.5 bg-gradient-to-r from-primary to-primary-container" />
-      <div className="p-8 space-y-6">
-        <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-primary text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_vote</span>
-          <h3 className="text-2xl font-headline font-black text-on-surface -tracking-[0.02em]">{title}</h3>
-          <span className="ml-auto text-sm text-on-surface-variant font-body">{totalVotes} total votes</span>
+      <div className="p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <span className="material-symbols-outlined text-primary text-[20px] sm:text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_vote</span>
+          <h3 className="text-lg sm:text-xl md:text-2xl font-headline font-black text-on-surface -tracking-[0.02em]">{title}</h3>
+          <span className="ml-auto text-xs sm:text-sm text-on-surface-variant font-body">{totalVotes} total votes</span>
         </div>
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {results.map((result, i) => {
             const pct = Math.round((result.vote_count / maxVotes) * 100);
             const isLeading = i === 0;
             return (
               <div key={result.option_id} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className={`text-base font-body font-semibold ${isLeading ? 'text-primary' : 'text-on-surface'}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`text-sm sm:text-base font-body font-semibold ${isLeading ? 'text-primary' : 'text-on-surface'}`}>
                     {result.option_text}
                   </span>
-                  <span className={`text-lg font-headline font-black tabular-nums ${isLeading ? 'text-primary' : 'text-on-surface-variant'}`}>
+                  <span className={`text-base sm:text-lg font-headline font-black tabular-nums shrink-0 ${isLeading ? 'text-primary' : 'text-on-surface-variant'}`}>
                     {result.vote_count}
                   </span>
                 </div>
@@ -246,57 +246,57 @@ const LeaderboardDisplay = () => {
     <div className="h-screen civic-mesh-bg flex flex-col font-body antialiased overflow-hidden">
 
       {/* ── Top bar ── */}
-      <div className="shrink-0 px-8 pt-6 pb-3 flex items-center justify-between gap-6">
-        <div className="flex items-center gap-3">
+      <div className="shrink-0 px-4 sm:px-8 pt-4 sm:pt-6 pb-3 flex items-center justify-between gap-3 sm:gap-6">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <span
-            className="material-symbols-outlined text-primary"
-            style={{ fontSize: '2.5rem', fontVariationSettings: "'FILL' 1" }}
+            className="material-symbols-outlined text-primary text-[1.75rem] sm:text-[2.5rem] shrink-0"
+            style={{ fontVariationSettings: "'FILL' 1" }}
           >
             leaderboard
           </span>
-          <div>
-            <h1 className="text-3xl font-headline font-black text-on-surface -tracking-[0.03em] leading-none">Live Leaderboard</h1>
-            <p className="text-xs text-on-surface-variant font-medium mt-0.5">Young Indians Parliament · Real-time rankings</p>
+          <div className="min-w-0">
+            <h1 className="text-lg sm:text-2xl md:text-3xl font-headline font-black text-on-surface -tracking-[0.03em] leading-tight truncate">Live Leaderboard</h1>
+            <p className="text-[10px] sm:text-xs text-on-surface-variant font-medium mt-0.5 truncate">Young Indians Parliament · Real-time rankings</p>
           </div>
         </div>
 
         {/* Live pulse */}
-        <div className="flex items-center gap-2 bg-surface-container-lowest border border-outline-variant/20 rounded-full px-5 py-2.5 shadow-sm">
+        <div className="flex items-center gap-1.5 sm:gap-2 bg-surface-container-lowest border border-outline-variant/20 rounded-full px-3 sm:px-5 py-1.5 sm:py-2.5 shadow-sm shrink-0">
           <span className="w-2 h-2 rounded-full bg-tertiary-fixed-dim animate-pulse shrink-0" />
-          <span className="text-xs font-headline font-black text-on-surface uppercase tracking-wide">Live</span>
+          <span className="text-[10px] sm:text-xs font-headline font-black text-on-surface uppercase tracking-wide">Live</span>
         </div>
       </div>
 
       {/* ── Tab switcher ── */}
-      <div className="shrink-0 px-8 pb-4">
+      <div className="shrink-0 px-4 sm:px-8 pb-4">
         <div className="flex items-center gap-1 bg-surface-container rounded-2xl p-1 w-fit">
           <button
             onClick={() => setActiveTab('scoring')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-headline font-black uppercase tracking-wide transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-headline font-black uppercase tracking-wide transition-all ${
               activeTab === 'scoring'
                 ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-sm'
                 : 'text-on-surface-variant hover:text-primary'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+            <span className="material-symbols-outlined text-[16px] sm:text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
             Scoring Leaders
           </button>
           <button
             onClick={() => setActiveTab('voting')}
-            className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-headline font-black uppercase tracking-wide transition-all ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-headline font-black uppercase tracking-wide transition-all ${
               activeTab === 'voting'
                 ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-sm'
                 : 'text-on-surface-variant hover:text-primary'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_vote</span>
+            <span className="material-symbols-outlined text-[16px] sm:text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_vote</span>
             Voting Results
           </button>
         </div>
       </div>
 
       {/* ── Content ── */}
-      <div className="flex-1 px-8 pb-16 overflow-y-auto min-h-0">
+      <div className="flex-1 px-4 sm:px-8 pb-16 overflow-y-auto min-h-0">
 
         {/* Scoring Leaders */}
         {activeTab === 'scoring' && (

@@ -67,7 +67,7 @@ const Sessions = () => {
                 <p className="text-sm md:text-base text-on-surface-variant leading-relaxed mb-6">
                   Each round of The Assembly 2026 offers a truly immersive experience, where students step into the roles of parliamentarians and simulate real parliamentary procedures over two days.
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="p-4 bg-surface-container rounded-2xl border border-outline-variant/30">
                     <span className="material-symbols-outlined text-primary text-2xl mb-2 block">groups</span>
                     <h4 className="font-bold text-sm mb-1">Networking</h4>

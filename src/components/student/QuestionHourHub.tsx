@@ -12,6 +12,7 @@ import { useSystemSettings } from '@/hooks/useSystemSettings';
 import { Switch } from '@/components/ui/switch';
 import { QuestionHourSummary } from '@/components/organizer/QuestionHourSummary';
 import { toast } from 'sonner';
+import { executeOrQueue } from '@/lib/executeOrQueue';
 import { formatDistanceToNow } from 'date-fns';
 
 const MINISTRIES = [
@@ -211,18 +212,55 @@ export const QuestionHourHub = () => {
     const ministry = selectedMinistry || MINISTRIES[0];
     setSubmitting(true);
     try {
+      let queued = false;
       if (editingId) {
-        const { error } = await supabase.from('questions').update({ ministry, content: questionContent }).eq('id', editingId);
-        if (error) throw error;
-        toast.success('Question updated');
+        const res = await executeOrQueue({
+          table: 'questions',
+          type: 'update',
+          payload: { ministry, content: questionContent },
+          match: { id: editingId },
+          description: 'Question update',
+        });
+        if (res.error) throw res.error;
+        queued = res.queued;
+        if (queued) {
+          setQuestions(prev => prev.map(q => q.id === editingId ? { ...q, ministry, content: questionContent } : q));
+          toast.success("Saved offline — will sync once you're back online");
+        } else {
+          toast.success('Question updated');
+        }
       } else {
-        const { error } = await supabase.from('questions').insert({ user_id: user.id, ministry, content: questionContent, status: 'pending' });
-        if (error) throw error;
-        toast.success('Question submitted to the assembly');
+        const id = crypto.randomUUID();
+        const res = await executeOrQueue({
+          table: 'questions',
+          type: 'insert',
+          payload: { id, user_id: user.id, ministry, content: questionContent, status: 'pending' },
+          description: 'Question submission',
+        });
+        if (res.error) throw res.error;
+        queued = res.queued;
+        if (queued) {
+          setQuestions(prev => [{
+            id,
+            user_id: user.id,
+            ministry,
+            content: questionContent,
+            status: 'pending',
+            created_at: new Date().toISOString(),
+            profiles: profile,
+            votes_count: 0,
+            user_has_voted: false,
+            is_discussing: false,
+            supporters: [],
+          }, ...prev]);
+          toast.success("Saved offline — will sync once you're back online");
+        } else {
+          toast.success('Question submitted to the assembly');
+        }
       }
       setQuestionContent('');
       setEditingId(null);
-      fetchQuestions({ silent: true });
+      if (!queued) fetchQuestions({ silent: true });
     } catch {
       toast.error('Failed to process question');
     } finally {
@@ -247,12 +285,18 @@ export const QuestionHourHub = () => {
   const handleVote = async (questionId: string, hasVoted: boolean) => {
     if (!user) return;
     try {
-      if (hasVoted) {
-        await supabase.from('question_votes').delete().eq('question_id', questionId).eq('user_id', user.id);
+      const { queued } = await executeOrQueue(
+        hasVoted
+          ? { table: 'question_votes', type: 'delete', payload: {}, match: { question_id: questionId, user_id: user.id }, description: 'Remove question support' }
+          : { table: 'question_votes', type: 'insert', payload: { question_id: questionId, user_id: user.id }, description: 'Support question' }
+      );
+      if (queued) {
+        setQuestions(prev => prev.map(q => q.id === questionId
+          ? { ...q, votes_count: q.votes_count + (hasVoted ? -1 : 1), user_has_voted: !hasVoted }
+          : q));
       } else {
-        await supabase.from('question_votes').insert({ question_id: questionId, user_id: user.id });
+        fetchQuestions({ silent: true });
       }
-      fetchQuestions({ silent: true });
     } catch {
       toast.error('Protocol error');
     }

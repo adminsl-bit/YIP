@@ -207,18 +207,18 @@ export const ManualScoring = () => {
       {/* Scoring Weightage */}
       <div className="bg-surface-container-lowest rounded-[2rem] shadow-[0_32px_64px_-16px_rgba(19,41,143,0.1)] p-6 space-y-5">
         <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
               <span className="material-symbols-outlined text-[18px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>tune</span>
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="font-headline font-bold text-on-surface text-sm">Scoring Weightage</p>
               <p className="text-xs text-on-surface-variant font-body mt-0.5">
                 Control whether pre-event scores count toward the final leaderboard total.
               </p>
             </div>
           </div>
-          <Switch checked={systemSettings.pre_event_weightage_enabled} onCheckedChange={handleToggleWeightage} />
+          <Switch checked={systemSettings.pre_event_weightage_enabled} onCheckedChange={handleToggleWeightage} className="shrink-0" />
         </div>
 
         {systemSettings.pre_event_weightage_enabled ? (
@@ -284,7 +284,7 @@ export const ManualScoring = () => {
             return (
               <div
                 key={student.user_id}
-                className={`px-8 py-5 transition-colors ${hasAnyChanges ? 'bg-primary-container/[0.06]' : 'hover:bg-primary-container/[0.02]'}`}
+                className={`px-4 sm:px-8 py-4 sm:py-5 transition-colors ${hasAnyChanges ? 'bg-primary-container/[0.06]' : 'hover:bg-primary-container/[0.02]'}`}
               >
                 <div className="flex items-center gap-4 flex-wrap">
                   {/* Serial */}
@@ -324,7 +324,7 @@ export const ManualScoring = () => {
                   </div>
 
                   {/* Score inputs */}
-                  <div className="flex items-center gap-3 shrink-0">
+                  <div className="flex items-center gap-2 sm:gap-3 shrink-0">
                     <div className="flex flex-col items-center gap-1">
                       <p className="text-[9px] font-black uppercase tracking-[0.15em] text-on-surface-variant/50 font-headline whitespace-nowrap">Pre-Event / 60</p>
                       <input
@@ -332,7 +332,7 @@ export const ManualScoring = () => {
                         value={currentPreeventScore}
                         onChange={e => handlePreeventScoreChange(student.user_id, e.target.value)}
                         placeholder="0.00"
-                        className="w-24 h-11 bg-surface-container border-none rounded-2xl text-center text-lg font-bold text-on-surface font-headline focus:ring-2 focus:ring-primary/20 outline-none"
+                        className="w-20 sm:w-24 h-11 bg-surface-container border-none rounded-2xl text-center text-lg font-bold text-on-surface font-headline focus:ring-2 focus:ring-primary/20 outline-none"
                       />
                     </div>
                     <div className="flex flex-col items-center gap-1">
@@ -343,10 +343,10 @@ export const ManualScoring = () => {
                           value={currentLiveScore}
                           onChange={e => handleLiveScoreChange(student.user_id, e.target.value)}
                           placeholder="0.00"
-                          className="w-24 h-11 bg-surface-container border-none rounded-2xl text-center text-lg font-bold text-on-surface font-headline focus:ring-2 focus:ring-primary/20 outline-none"
+                          className="w-20 sm:w-24 h-11 bg-surface-container border-none rounded-2xl text-center text-lg font-bold text-on-surface font-headline focus:ring-2 focus:ring-primary/20 outline-none"
                         />
                       ) : (
-                        <div className="w-24 h-11 flex items-center justify-center text-on-surface-variant/30 font-body text-sm">—</div>
+                        <div className="w-20 sm:w-24 h-11 flex items-center justify-center text-on-surface-variant/30 font-body text-sm">—</div>
                       )}
                     </div>
                     <div className="flex flex-col items-center gap-1">
@@ -368,12 +368,12 @@ export const ManualScoring = () => {
         </div>
 
         {totalPages > 1 && (
-          <div className="px-6 py-4 border-t border-outline-variant/10 flex items-center justify-between">
+          <div className="px-4 sm:px-6 py-4 border-t border-outline-variant/10 flex items-center justify-between flex-wrap gap-3">
             <span className="text-xs text-outline font-body">
               Page <span className="font-bold text-on-surface">{currentPage}</span> of{' '}
               <span className="font-bold text-on-surface">{totalPages}</span>
             </span>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-wrap justify-end">
               <button
                 type="button"
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}

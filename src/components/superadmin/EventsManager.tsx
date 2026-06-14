@@ -7,6 +7,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { CommitteePartyEditor, defaultCommittees, defaultParties } from './CommitteePartyEditor';
+import { ZONES, getZoneId, getStateForCity } from '@/lib/regions';
 
 interface EventRow {
   id: string;
@@ -14,6 +15,7 @@ interface EventRow {
   level: string;
   city: string | null;
   state: string | null;
+  zone: string | null;
   parent_event_id: string | null;
   status: string;
   participant_count: number;
@@ -77,6 +79,7 @@ const blankForm = {
   level: 'city' as 'city' | 'regional' | 'national',
   city: '',
   state: '',
+  zone: '',
   parent_event_id: '',
   status: 'upcoming' as 'upcoming' | 'active' | 'completed',
 };
@@ -195,6 +198,7 @@ export const EventsManager = () => {
     const payload: Record<string, unknown> = { name: form.name.trim(), level: form.level, status: form.status };
     if (form.city)             payload.city             = form.city;
     if (form.state)            payload.state            = form.state;
+    if (form.zone)             payload.zone             = form.zone;
     if (form.parent_event_id)  payload.parent_event_id  = form.parent_event_id;
     const { data: newEvent, error } = await supabase.from('events').insert(payload).select('id').single();
     if (!error && newEvent) {
@@ -214,7 +218,7 @@ export const EventsManager = () => {
   const openEdit = async (ev: EventRow) => {
     setEditEvent(ev);
     setEditStep(1);
-    setEditForm({ name: ev.name, level: ev.level as EditForm['level'], city: ev.city || '', state: ev.state || '', parent_event_id: ev.parent_event_id || '', status: ev.status as EditForm['status'] });
+    setEditForm({ name: ev.name, level: ev.level as EditForm['level'], city: ev.city || '', state: ev.state || '', zone: ev.zone || getZoneId(ev.state) || '', parent_event_id: ev.parent_event_id || '', status: ev.status as EditForm['status'] });
     setLoadingStaff(true);
     const { data } = await supabase
       .from('profiles')
@@ -244,7 +248,7 @@ export const EventsManager = () => {
 
     const { error } = await supabase.from('events').update({
       name: editForm.name.trim(), level: editForm.level, status: editForm.status,
-      city: editForm.city || null, state: editForm.state || null,
+      city: editForm.city || null, state: editForm.state || null, zone: editForm.zone || null,
       parent_event_id: editForm.parent_event_id || null,
     }).eq('id', editEvent.id);
 
@@ -353,16 +357,33 @@ export const EventsManager = () => {
       {/* City + State */}
       <div className={`grid grid-cols-1 gap-6 ${f.level === 'city' ? 'md:grid-cols-2' : ''}`}>
         {f.level === 'city' && (
-          <SelectField label="City" value={f.city} onChange={v => setF(prev => ({ ...prev, city: v }))}>
+          <SelectField
+            label="City"
+            value={f.city}
+            onChange={v => setF(prev => {
+              const state = getStateForCity(v) || prev.state;
+              return { ...prev, city: v, state, zone: getZoneId(state) || prev.zone };
+            })}
+          >
             <option value="">Select city</option>
             {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
           </SelectField>
         )}
-        <SelectField label="State" value={f.state} onChange={v => setF(prev => ({ ...prev, state: v }))}>
+        <SelectField
+          label="State"
+          value={f.state}
+          onChange={v => setF(prev => ({ ...prev, state: v, zone: getZoneId(v) || prev.zone }))}
+        >
           <option value="">Select state</option>
           {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
         </SelectField>
       </div>
+
+      {/* Zone */}
+      <SelectField label="Zone" value={f.zone} onChange={v => setF(prev => ({ ...prev, zone: v }))}>
+        <option value="">Select zone</option>
+        {ZONES.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
+      </SelectField>
 
       {/* Parent — city events roll up to a regional event */}
       {f.level === 'city' && parentOptions(f.level, excludeId).length > 0 && (

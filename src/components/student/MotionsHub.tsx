@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { toast } from 'sonner';
+import { executeOrQueue } from '@/lib/executeOrQueue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -219,20 +220,45 @@ export const MotionsHub = ({ embedded = false }: MotionsHubProps) => {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.from('motions' as any).insert({
-        event_id: eventId,
-        motion_type: motionType,
-        subject: subject.trim(),
-        details: details.trim() || null,
-        raised_by: targetRaisedBy,
-        created_by: user.id,
-        status: 'pending',
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      const { error, queued } = await executeOrQueue({
+        table: 'motions',
+        type: 'insert',
+        payload: {
+          id,
+          event_id: eventId,
+          motion_type: motionType,
+          subject: subject.trim(),
+          details: details.trim() || null,
+          raised_by: targetRaisedBy,
+          created_by: user.id,
+          status: 'pending',
+        },
+        description: `Motion: ${MOTION_TYPES[motionType].label}`,
       });
       if (error) throw error;
-      toast.success('Motion raised');
       resetForm();
       setFormOpen(false);
-      fetchMotions();
+      if (queued) {
+        setMotions(prev => [{
+          id,
+          event_id: eventId,
+          motion_type: motionType,
+          subject: subject.trim(),
+          details: details.trim() || null,
+          raised_by: targetRaisedBy,
+          created_by: user.id,
+          status: 'pending',
+          outcome: null,
+          created_at: now,
+          updated_at: now,
+        }, ...prev]);
+        toast.success("Saved offline — will sync once you're back online");
+      } else {
+        toast.success('Motion raised');
+        fetchMotions();
+      }
     } catch (err: any) {
       toast.error(err.message || 'Failed to raise motion');
     } finally {

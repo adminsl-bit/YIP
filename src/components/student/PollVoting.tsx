@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { toast } from "@/hooks/use-toast";
+import { executeOrQueue } from "@/lib/executeOrQueue";
 import { motion } from "framer-motion";
 import jsPDF from "jspdf";
 
@@ -78,14 +79,21 @@ export const PollVoting = () => {
     if (!choice) return;
     setSubmitting(poll.id);
     try {
-      const { error } = await supabase
-        .from('poll_votes')
-        .insert({ poll_id: poll.id, voter_id: user.id, option_id: choice });
+      const { error, queued } = await executeOrQueue({
+        table: 'poll_votes',
+        type: 'insert',
+        payload: { id: crypto.randomUUID(), poll_id: poll.id, voter_id: user.id, option_id: choice },
+        description: `Vote for "${poll.title}"`,
+      });
       if (error) throw error;
       setUserVotes(prev => ({ ...prev, [poll.id]: choice }));
       setSelectedOptions(prev => ({ ...prev, [poll.id]: '' }));
       setRefreshTrigger(prev => prev + 1);
-      toast({ title: 'Vote recorded', description: `You voted: ${choice}` });
+      if (queued) {
+        toast({ title: 'Saved offline', description: 'Your vote will sync once you\'re back online.' });
+      } else {
+        toast({ title: 'Vote recorded', description: `You voted: ${choice}` });
+      }
     } catch (err: any) {
       toast({ title: 'Error', description: err.message || 'Failed to cast vote', variant: 'destructive' });
     } finally {

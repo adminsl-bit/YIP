@@ -6,15 +6,17 @@ import { SuperAdminRoleCreator } from '@/components/superadmin/SuperAdminRoleCre
 import { EventLeaderboard } from '@/components/organizer/EventLeaderboard';
 import { SecurityLogsManager } from '@/components/organizer/SecurityLogsManager';
 import { SuperAdminStudentView } from '@/components/superadmin/SuperAdminStudentView';
+import { ZonesDashboard } from '@/components/superadmin/ZonesDashboard';
 import { SupportChatWidget } from '@/components/shared/SupportChatWidget';
 
-type TabId = 'overview' | 'events' | 'roles' | 'students' | 'leaderboard' | 'security';
+type TabId = 'overview' | 'events' | 'roles' | 'students' | 'zones' | 'leaderboard' | 'security';
 
 const navItems: { id: TabId; label: string; icon: string }[] = [
   { id: 'overview',    label: 'Global Overview',     icon: 'public' },
   { id: 'events',      label: 'Events',               icon: 'event' },
   { id: 'roles',       label: 'Organizers & Roles',   icon: 'manage_accounts' },
   { id: 'students',    label: 'Students',             icon: 'group' },
+  { id: 'zones',       label: 'Zones & Impact',       icon: 'map' },
   { id: 'leaderboard', label: 'Performance',          icon: 'leaderboard' },
   { id: 'security',    label: 'Security',             icon: 'security' },
 ];
@@ -42,6 +44,7 @@ const SuperAdminDashboard = () => {
           <SuperAdminStudentView />
         </div>
       );
+      case 'zones':       return <ZonesDashboard />;
       case 'leaderboard': return (
         <div className="space-y-8">
           <header>
@@ -78,7 +81,7 @@ const SuperAdminDashboard = () => {
     <div className="flex min-h-screen bg-[#F3F4F6] font-body antialiased">
 
       {/* ── Left Sidebar ── */}
-      <aside className="hidden md:flex flex-col h-screen w-64 fixed z-50 bg-white border-r border-outline-variant py-6 px-4">
+      <aside className="hidden md:flex flex-col h-screen w-64 fixed z-50 bg-white border-r border-outline-variant py-6 px-4 print:hidden">
         <div className="mb-8 px-2 pt-2">
           <h1 className="font-headline font-bold text-on-surface text-lg">The Civic Canvas</h1>
           <p className="font-body text-on-surface-variant text-xs font-medium">Super Admin Portal</p>
@@ -129,7 +132,7 @@ const SuperAdminDashboard = () => {
       </aside>
 
       {/* ── Mobile Bottom Nav ── */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant md:hidden flex justify-around items-center h-16 z-50">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant md:hidden flex justify-around items-center h-16 z-50 print:hidden">
         {navItems.map(item => (
           <button
             key={item.id}
@@ -147,11 +150,13 @@ const SuperAdminDashboard = () => {
       </div>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 md:ml-64 p-8 pb-24 md:pb-8">
+      <main className="flex-1 md:ml-64 p-8 pb-24 md:pb-8 print:ml-0 print:p-0">
         {renderTabContent()}
       </main>
 
-      <SupportChatWidget />
+      <div className="print:hidden">
+        <SupportChatWidget />
+      </div>
     </div>
   );
 };

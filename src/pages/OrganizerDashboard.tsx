@@ -46,6 +46,7 @@ import { QuestionHourHub } from "@/components/student/QuestionHourHub";
 import { AgendaView } from "@/components/student/AgendaView";
 import { StudentDocumentsTable } from "@/components/organizer/StudentDocumentsTable";
 import { MotionsHub } from "@/components/student/MotionsHub";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
 interface DashboardStats {
   totalStudents: number;
@@ -58,6 +59,7 @@ const OrganizerDashboard = () => {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("controls");
+  const [moreOpen, setMoreOpen] = useState(false);
   const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
     totalJury: 0,
@@ -149,6 +151,31 @@ const OrganizerDashboard = () => {
       toast({ title: "Error", description: "Failed to reset.", variant: "destructive" });
     }
   };
+
+  // Mobile nav: a few primary tabs in the bottom bar, everything else behind "More"
+  const primaryMobileNavItems: { value: string; icon: string; label: string }[] = [
+    { value: 'controls', icon: 'dashboard_customize', label: 'Controls' },
+    { value: 'timer',    icon: 'timer',               label: 'Timer' },
+    { value: 'polls',    icon: 'how_to_vote',         label: 'Ballot' },
+    { value: 'square',   icon: 'forum',               label: 'Civic Chat' },
+  ];
+  const moreMobileNavItems: { value: string; icon: string; label: string }[] = [
+    { value: 'sessions',       icon: 'event_seat',         label: 'Sessions' },
+    { value: 'question-hour',  icon: 'forum',               label: 'Question Hour' },
+    { value: 'motions',        icon: 'gavel',               label: 'Motions' },
+    { value: 'students',       icon: 'group',               label: 'Students' },
+    { value: 'documents',      icon: 'description',         label: 'Documents' },
+    { value: 'bulk-import',     icon: 'upload_file',        label: 'Bulk Import' },
+    { value: 'role-creator',    icon: 'manage_accounts',    label: 'Role Creator' },
+    { value: 'security',        icon: 'security',           label: 'Security' },
+    { value: 'leaderboard',     icon: 'leaderboard',        label: 'Leaderboard' },
+    { value: 'awards',          icon: 'emoji_events',       label: 'Awards' },
+    { value: 'photos',          icon: 'photo_library',      label: 'Photos' },
+    { value: 'speeches',        icon: 'record_voice_over',  label: 'Speeches' },
+    { value: 'news',            icon: 'campaign',           label: 'Breaking News' },
+    { value: 'manual-scoring',  icon: 'edit_note',          label: 'Manual Scoring' },
+  ];
+  const isMoreTabActive = moreMobileNavItems.some(item => item.value === activeTab);
 
   return (
     <div className="flex min-h-screen bg-[#F3F4F6] font-body text-on-surface antialiased">
@@ -443,24 +470,12 @@ const OrganizerDashboard = () => {
       </Tabs>
 
       {/* ── Mobile Bottom Nav ── */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant z-50 flex items-center justify-around h-16 overflow-x-auto px-1">
-        {([
-          { value: 'controls',       icon: 'dashboard_customize' },
-          { value: 'timer',          icon: 'timer' },
-          { value: 'sessions',       icon: 'event_seat' },
-          { value: 'polls',          icon: 'how_to_vote' },
-          { value: 'square',         icon: 'forum' },
-          { value: 'students',       icon: 'group' },
-          { value: 'security',       icon: 'security' },
-          { value: 'leaderboard',    icon: 'leaderboard' },
-          { value: 'awards',         icon: 'emoji_events' },
-          { value: 'speeches',       icon: 'record_voice_over' },
-          { value: 'news',           icon: 'campaign' },
-        ] as { value: string; icon: string }[]).map(item => (
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-outline-variant z-50 flex items-center justify-around h-16 px-1">
+        {primaryMobileNavItems.map(item => (
           <button
             key={item.value}
             onClick={() => setActiveTab(item.value)}
-            className={`flex flex-col items-center justify-center p-2 min-w-[3rem] transition-colors ${
+            className={`flex flex-col items-center justify-center p-2 min-w-[3rem] min-h-[44px] transition-colors ${
               activeTab === item.value ? 'text-primary' : 'text-on-surface-variant'
             }`}
           >
@@ -472,7 +487,57 @@ const OrganizerDashboard = () => {
             </span>
           </button>
         ))}
+        <button
+          onClick={() => setMoreOpen(true)}
+          className={`flex flex-col items-center justify-center p-2 min-w-[3rem] min-h-[44px] transition-colors ${
+            isMoreTabActive ? 'text-primary' : 'text-on-surface-variant'
+          }`}
+        >
+          <span
+            className="material-symbols-outlined text-[22px]"
+            style={isMoreTabActive ? { fontVariationSettings: "'FILL' 1" } : undefined}
+          >
+            more_horiz
+          </span>
+        </button>
       </div>
+
+      {/* ── Mobile "More" Drawer ── */}
+      <Drawer open={moreOpen} onOpenChange={setMoreOpen}>
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>More</DrawerTitle>
+          </DrawerHeader>
+          <nav className="px-4 pb-8 space-y-1 max-h-[60vh] overflow-y-auto">
+            {moreMobileNavItems.map(item => (
+              <button
+                key={item.value}
+                onClick={() => { setActiveTab(item.value); setMoreOpen(false); }}
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 text-left min-h-[44px] ${
+                  activeTab === item.value
+                    ? 'text-primary font-bold bg-primary/5'
+                    : 'text-on-surface-variant hover:bg-surface-container font-medium'
+                }`}
+              >
+                <span
+                  className="material-symbols-outlined text-[20px] shrink-0"
+                  style={activeTab === item.value ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                >
+                  {item.icon}
+                </span>
+                <span className="font-body text-sm whitespace-nowrap">{item.label}</span>
+              </button>
+            ))}
+            <button
+              onClick={signOut}
+              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left min-h-[44px] text-on-surface-variant hover:bg-error/5 hover:text-error font-medium transition-colors duration-200"
+            >
+              <LogOut className="w-5 h-5 shrink-0" />
+              <span className="font-body text-sm whitespace-nowrap">Sign Out</span>
+            </button>
+          </nav>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 };

@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AssessmentForm, ComponentScore } from "./AssessmentForm";
 import { toast } from "@/hooks/use-toast";
+import { executeOrQueue } from "@/lib/executeOrQueue";
 
 const PARTY_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
 const PAGE_SIZE = 10;
@@ -305,37 +306,73 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       const existing = allAssessments.find(
         a => a.student_id === selectedStudent.user_id && !a.session_id
       );
+      const submittedAt = status === 'submitted' ? new Date().toISOString() : null;
+      let queued = false;
 
       if (existing) {
-        const { error } = await supabase.from('assessments').update({
-          scores: scoresJson,
-          total_score: totalScore,
-          seat_role: getSeatRole(selectedStudent.position),
-          status,
-          notes,
-          submitted_at: status === 'submitted' ? new Date().toISOString() : null,
-        }).eq('id', existing.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('assessments').insert({
-          jury_id: juryId,
-          student_id: selectedStudent.user_id,
-          session_id: null,
-          seat_role: getSeatRole(selectedStudent.position),
-          scores: scoresJson,
-          total_score: totalScore,
-          status,
-          notes,
-          submitted_at: status === 'submitted' ? new Date().toISOString() : null,
+        const res = await executeOrQueue({
+          table: 'assessments',
+          type: 'update',
+          payload: {
+            scores: scoresJson,
+            total_score: totalScore,
+            seat_role: getSeatRole(selectedStudent.position),
+            status,
+            notes,
+            submitted_at: submittedAt,
+          },
+          match: { id: existing.id },
+          description: `Assessment for ${selectedStudent.name}`,
         });
-        if (error) throw error;
+        if (res.error) throw res.error;
+        queued = res.queued;
+        if (queued) {
+          setAllAssessments(prev => prev.map(a => a.id === existing.id
+            ? { ...a, scores: scoresJson, total_score: totalScore, status, notes, updated_at: submittedAt ?? a.updated_at }
+            : a));
+        }
+      } else {
+        const id = crypto.randomUUID();
+        const res = await executeOrQueue({
+          table: 'assessments',
+          type: 'insert',
+          payload: {
+            id,
+            jury_id: juryId,
+            student_id: selectedStudent.user_id,
+            session_id: null,
+            seat_role: getSeatRole(selectedStudent.position),
+            scores: scoresJson,
+            total_score: totalScore,
+            status,
+            notes,
+            submitted_at: submittedAt,
+          },
+          description: `Assessment for ${selectedStudent.name}`,
+        });
+        if (res.error) throw res.error;
+        queued = res.queued;
+        if (queued) {
+          setAllAssessments(prev => [...prev, {
+            id,
+            student_id: selectedStudent.user_id,
+            scores: scoresJson,
+            total_score: totalScore,
+            status,
+            notes,
+            updated_at: submittedAt ?? new Date().toISOString(),
+            session_id: undefined,
+          } as Assessment]);
+        }
       }
 
       toast({
         title: status === 'submitted' ? "Scores Submitted" : "Draft Saved",
-        description: `${status === 'submitted' ? 'All scores submitted' : 'Draft saved'} for ${selectedStudent.name}`,
+        description: queued
+          ? "Saved offline — will sync once you're back online."
+          : `${status === 'submitted' ? 'All scores submitted' : 'Draft saved'} for ${selectedStudent.name}`,
       });
-      await fetchAllAssessments();
+      if (!queued) await fetchAllAssessments();
       if (status === 'submitted') setSelectedStudent(null);
     } catch (err: any) {
       toast({ title: "Submission Failed", description: err?.message || "Failed to save.", variant: "destructive" });
@@ -353,21 +390,44 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     setNominationLoading(true);
     try {
       const existing = getMyAwardVote(nominatingStudent.user_id);
+      let queued = false;
+
       if (existing) {
-        await supabase.from('award_votes').delete().eq('id', existing.id);
-      }
-      if (selectedAwardId) {
-        const { error } = await supabase.from('award_votes').insert({
-          award_id: selectedAwardId,
-          student_id: nominatingStudent.user_id,
-          jury_id: juryId,
+        const res = await executeOrQueue({
+          table: 'award_votes',
+          type: 'delete',
+          payload: {},
+          match: { id: existing.id },
+          description: 'Remove award nomination',
         });
-        if (error) throw error;
-        toast({ title: 'Award nomination saved' });
-      } else {
-        toast({ title: 'Nomination removed' });
+        if (res.queued) queued = true;
       }
-      await fetchAllAwardVotes();
+
+      let newVoteId: string | null = null;
+      if (selectedAwardId) {
+        newVoteId = crypto.randomUUID();
+        const res = await executeOrQueue({
+          table: 'award_votes',
+          type: 'insert',
+          payload: { id: newVoteId, award_id: selectedAwardId, student_id: nominatingStudent.user_id, jury_id: juryId },
+          description: 'Award nomination',
+        });
+        if (res.error) throw res.error;
+        if (res.queued) queued = true;
+      }
+
+      if (queued) {
+        setAllAwardVotes(prev => {
+          const next = existing ? prev.filter(v => v.id !== existing.id) : prev;
+          return newVoteId
+            ? [...next, { id: newVoteId, award_id: selectedAwardId, student_id: nominatingStudent.user_id, jury_id: juryId, created_at: new Date().toISOString() }]
+            : next;
+        });
+        toast({ title: "Saved offline", description: "Your nomination will sync once you're back online." });
+      } else {
+        toast({ title: selectedAwardId ? 'Award nomination saved' : 'Nomination removed' });
+        await fetchAllAwardVotes();
+      }
       setNominatingStudent(null);
       setSelectedAwardId('');
     } catch (err: any) {
@@ -498,7 +558,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
         </div>
       ) : (
         <div className="bg-surface-container-lowest rounded-3xl overflow-hidden shadow-[0_4px_24px_-4px_rgba(19,41,143,0.06)] border border-outline-variant/10">
-          <div className="overflow-x-auto">
+          <div className="hidden lg:block overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-surface-container-low/50 border-b border-outline-variant/20">
@@ -664,6 +724,136 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
                 })}
               </tbody>
             </table>
+          </div>
+
+          {/* ── Mobile/Tablet Card List (below lg) ── */}
+          <div className="lg:hidden divide-y divide-outline-variant/10">
+            {paginatedStudents.map((student, idx) => {
+              const status   = getOverallStatus(student.user_id);
+              const avgScore = getAvgScore(student.user_id);
+              const rank     = studentRanks[student.user_id];
+              const myVote   = getMyAwardVote(student.user_id);
+              const allVotes = getStudentAwardVotes(student.user_id);
+              const myAwardName = myVote ? awards.find(a => a.id === myVote.award_id)?.name : null;
+              const totalJury = juryMembers.length || 1;
+
+              const votesByAward: Record<string, number> = {};
+              allVotes.forEach(v => { votesByAward[v.award_id] = (votesByAward[v.award_id] || 0) + 1; });
+              const topAwardId = Object.keys(votesByAward).sort((a, b) => votesByAward[b] - votesByAward[a])[0];
+              const topAwardCount = topAwardId ? votesByAward[topAwardId] : 0;
+              const isConsensus = topAwardCount >= totalJury && totalJury > 1;
+
+              return (
+                <div key={student.id} className="p-4 space-y-3">
+                  {/* Identity */}
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold font-headline shrink-0 ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}>
+                      {getInitials(student.name)}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-headline font-bold text-on-surface text-sm">{student.name}</span>
+                        {rank !== undefined && (
+                          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-extrabold font-headline shrink-0 ${rankStyle(rank)}`}>
+                            {rank}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap mt-1">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-primary/10 text-primary font-body whitespace-nowrap">
+                          {getPartyLabel(student)}
+                        </span>
+                        <span className="text-xs text-on-surface-variant/60 font-body truncate">{student.position}</span>
+                      </div>
+                      {(student.constituency || student.state) && (
+                        <p className="text-[11px] text-on-surface-variant/50 font-body mt-0.5 truncate">
+                          {student.constituency || student.state}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Score + Status + Award */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-4">
+                      <div>
+                        {avgScore !== null ? (
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-lg font-extrabold font-headline text-[#42d59a]">{avgScore.toFixed(1)}</span>
+                            <span className="text-[10px] text-on-surface-variant/40 font-body">/ 100</span>
+                          </div>
+                        ) : <span className="text-xs italic text-on-surface-variant/30 font-body">— / 100</span>}
+                      </div>
+
+                      {status === 'scored' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#42d59a]/10 text-[#42d59a] font-body whitespace-nowrap">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#42d59a] shrink-0" />Scored
+                        </span>
+                      )}
+                      {status === 'in_progress' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary/8 text-primary font-body whitespace-nowrap">
+                          <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />In Progress
+                        </span>
+                      )}
+                      {status === 'not_started' && (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-surface-container text-on-surface-variant/50 font-body whitespace-nowrap">
+                          <span className="w-1.5 h-1.5 rounded-full bg-outline-variant shrink-0" />Pending
+                        </span>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => openNominationModal(student)}
+                      title={myAwardName ? `You nominated: ${myAwardName}` : 'Nominate an award'}
+                      className="flex flex-col items-center gap-0.5 group p-1.5 min-h-[44px] min-w-[44px] justify-center"
+                    >
+                      {myVote ? (
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span
+                            className="material-symbols-outlined text-[20px] text-primary group-hover:scale-110 transition-transform"
+                            style={{ fontVariationSettings: "'FILL' 1" }}
+                          >workspace_premium</span>
+                          {topAwardCount > 0 && (
+                            <span className={`text-[10px] font-bold font-body px-1.5 py-0.5 rounded-full ${
+                              isConsensus
+                                ? 'bg-[#42d59a]/15 text-[#2bb87c]'
+                                : topAwardCount >= Math.ceil(totalJury / 2)
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-outline-variant/20 text-on-surface-variant'
+                            }`}>
+                              {topAwardCount}/{totalJury}
+                            </span>
+                          )}
+                        </div>
+                      ) : allVotes.length > 0 ? (
+                        <div className="flex flex-col items-center gap-0.5">
+                          <span className="material-symbols-outlined text-[20px] text-on-surface-variant/40 group-hover:text-primary transition-colors">workspace_premium</span>
+                          <span className="text-[10px] font-bold font-body px-1.5 py-0.5 rounded-full bg-outline-variant/20 text-on-surface-variant/60">
+                            {allVotes.length}/{totalJury}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="material-symbols-outlined text-[20px] text-on-surface-variant/25 group-hover:text-primary transition-colors">workspace_premium</span>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Action */}
+                  <button
+                    onClick={() => setSelectedStudent(student)}
+                    className={`w-full px-4 py-2.5 min-h-[44px] rounded-full text-xs font-bold font-body transition-all ${
+                      status === 'scored'
+                        ? 'border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container hover:text-primary'
+                        : status === 'in_progress'
+                        ? 'bg-primary/10 text-primary border border-primary/20 hover:bg-primary/15'
+                        : 'bg-primary text-on-primary hover:bg-primary/90 shadow-[0_2px_8px_rgba(19,41,143,0.2)]'
+                    }`}
+                  >
+                    {status === 'scored' ? 'Review' : status === 'in_progress' ? 'Resume' : 'Begin'}
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           {totalPages > 1 && (

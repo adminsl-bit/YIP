@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { extractTextFromFile, buildSummary } from '@/lib/documentSummary';
-import { FileText, Upload, Download, Trash2, Sparkles, FolderOpen } from 'lucide-react';
+import { extractTextFromFile, buildSummary, requestAiSummary } from '@/lib/documentSummary';
+import { FileText, Upload, Download, Trash2, Sparkles, FolderOpen, WandSparkles } from 'lucide-react';
 
 const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = ['.pdf', '.docx'];
@@ -44,7 +44,7 @@ export const StudentDocuments = () => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [summarizingId, setSummarizingId] = useState<string | null>(null);
-  const [summaryDialog, setSummaryDialog] = useState<{ open: boolean; fileName: string; summary: string; wordCount: number } | null>(null);
+  const [summaryDialog, setSummaryDialog] = useState<{ open: boolean; fileName: string; summary: string; wordCount: number; fullText: string; aiSummary: string | null; aiLoading: boolean } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchDocuments = async () => {
@@ -150,11 +150,27 @@ export const StudentDocuments = () => {
       const text = await extractTextFromFile(file);
       const { summary, wordCount } = buildSummary(text);
 
-      setSummaryDialog({ open: true, fileName: doc.file_name, summary, wordCount });
+      setSummaryDialog({ open: true, fileName: doc.file_name, summary, wordCount, fullText: text, aiSummary: null, aiLoading: false });
     } catch (err: any) {
       toast.error(err.message || 'Could not generate summary');
     } finally {
       setSummarizingId(null);
+    }
+  };
+
+  const handleAiSummarize = async () => {
+    if (!summaryDialog) return;
+    if (!navigator.onLine) {
+      toast.error('AI summary requires an internet connection.');
+      return;
+    }
+    setSummaryDialog(prev => prev && { ...prev, aiLoading: true });
+    try {
+      const aiSummary = await requestAiSummary(summaryDialog.fullText);
+      setSummaryDialog(prev => prev && { ...prev, aiSummary, aiLoading: false });
+    } catch (err: any) {
+      toast.error(err.message || 'AI summary failed — please try again.');
+      setSummaryDialog(prev => prev && { ...prev, aiLoading: false });
     }
   };
 
@@ -247,14 +263,41 @@ export const StudentDocuments = () => {
               {summaryDialog?.fileName} · auto-extracted preview
             </DialogDescription>
           </DialogHeader>
-          <p className="font-body text-on-surface text-sm leading-relaxed max-h-[50vh] overflow-y-auto whitespace-pre-wrap">
-            {summaryDialog?.summary}
-          </p>
-          {summaryDialog && (
-            <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-widest font-headline">
-              {summaryDialog.wordCount.toLocaleString()} words total
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            <p className="font-body text-on-surface text-sm leading-relaxed whitespace-pre-wrap">
+              {summaryDialog?.summary}
             </p>
-          )}
+            {summaryDialog && (
+              <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-widest font-headline">
+                {summaryDialog.wordCount.toLocaleString()} words total
+              </p>
+            )}
+
+            <div className="pt-4 border-t border-outline-variant/10 space-y-3">
+              {summaryDialog?.aiSummary ? (
+                <>
+                  <p className="text-[10px] text-primary font-black uppercase tracking-widest font-headline flex items-center gap-1.5">
+                    <WandSparkles className="w-3 h-3" />
+                    AI Summary
+                  </p>
+                  <p className="font-body text-on-surface text-sm leading-relaxed whitespace-pre-wrap">
+                    {summaryDialog.aiSummary}
+                  </p>
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAiSummarize}
+                  disabled={summaryDialog?.aiLoading}
+                  className="rounded-xl font-bold text-xs"
+                >
+                  <WandSparkles className="w-3.5 h-3.5 mr-1.5" />
+                  {summaryDialog?.aiLoading ? 'Generating AI summary…' : 'Generate AI Summary'}
+                </Button>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

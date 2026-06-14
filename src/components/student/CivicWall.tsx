@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
+import { executeOrQueue } from '@/lib/executeOrQueue';
 import { formatDistanceToNow } from 'date-fns';
 import {
   AlertDialog,
@@ -320,10 +321,15 @@ export const CivicWall = () => {
     let mediaType: 'image' | 'video' | null = attachedType;
 
     if (attachedFile) {
+      if (!navigator.onLine) {
+        toast({ title: "Offline", description: "Posts with photos or videos need a connection. Try a text-only post, or wait until you're back online.", variant: "destructive" });
+        setIsPosting(false);
+        return;
+      }
       try {
         const ext = attachedFile.name.split('.').pop();
         const path = `${user.id}/${Date.now()}_post.${ext}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from('civic_media')
           .upload(path, attachedFile, {
@@ -342,22 +348,39 @@ export const CivicWall = () => {
       }
     }
 
-    const { error } = await supabase.from('civic_posts').insert({
-      user_id: user.id,
-      content: newPost,
-      media_url: mediaUrl,
-      media_type: mediaType
+    const id = crypto.randomUUID();
+    const { error, queued } = await executeOrQueue({
+      table: 'civic_posts',
+      type: 'insert',
+      payload: { id, user_id: user.id, content: newPost, media_url: mediaUrl, media_type: mediaType },
+      description: 'Civic Wall post',
     });
 
     if (!error) {
+      const postedContent = newPost;
       setNewPost('');
       setAttachedFile(null);
       setAttachedType(null);
       setAttachedUrl(null);
       if (imageInputRef.current) imageInputRef.current.value = '';
       if (videoInputRef.current) videoInputRef.current.value = '';
-      fetchPosts();
-      toast({ title: "Broadcast Successful", description: "Your motion has been added to the assembly wall." });
+      if (queued) {
+        setPosts(prev => [{
+          id,
+          content: postedContent,
+          media_url: mediaUrl,
+          media_type: mediaType,
+          created_at: new Date().toISOString(),
+          user_id: user.id,
+          profiles: profile as any,
+          civic_likes: [],
+          civic_comments: [],
+        }, ...prev]);
+        toast({ title: "Saved offline", description: "Your post will be broadcast once you're back online." });
+      } else {
+        fetchPosts();
+        toast({ title: "Broadcast Successful", description: "Your motion has been added to the assembly wall." });
+      }
     } else {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -366,13 +389,22 @@ export const CivicWall = () => {
 
   const handleLikePost = async (postId: string) => {
     if (!user) return;
-    const { data: existing } = await supabase.from('civic_likes').select('id').eq('post_id', postId).eq('user_id', user.id).single();
-    if (existing) {
-      await supabase.from('civic_likes').delete().eq('id', existing.id);
-    } else {
-      await supabase.from('civic_likes').insert({ post_id: postId, user_id: user.id });
-    }
-    fetchPosts();
+    const alreadyLiked = posts.find(p => p.id === postId)?.civic_likes?.some(l => l.user_id === user.id);
+
+    const { queued } = await executeOrQueue(
+      alreadyLiked
+        ? { table: 'civic_likes', type: 'delete', payload: {}, match: { post_id: postId, user_id: user.id }, description: 'Remove acknowledgement' }
+        : { table: 'civic_likes', type: 'insert', payload: { post_id: postId, user_id: user.id }, description: 'Acknowledge post' }
+    );
+
+    setPosts(prev => prev.map(p => p.id === postId ? {
+      ...p,
+      civic_likes: alreadyLiked
+        ? (p.civic_likes ?? []).filter(l => l.user_id !== user.id)
+        : [...(p.civic_likes ?? []), { user_id: user.id }],
+    } : p));
+
+    if (!queued) fetchPosts();
   };
 
   const handleDeletePost = async (id: string) => {
@@ -390,15 +422,31 @@ export const CivicWall = () => {
     const text = commentInputs[postId]?.trim();
     if (!text || !user) return;
     setIsSubmittingComment(true);
-    const { error } = await supabase.from('civic_comments').insert({
-      post_id: postId,
-      user_id: user.id,
-      content: text
+    const id = crypto.randomUUID();
+    const { error, queued } = await executeOrQueue({
+      table: 'civic_comments',
+      type: 'insert',
+      payload: { id, post_id: postId, user_id: user.id, content: text },
+      description: 'Civic Wall comment',
     });
     if (!error) {
       setCommentInputs(prev => ({ ...prev, [postId]: '' }));
-      fetchPosts();
-      toast({ title: "Comment Broadcasted", description: "Your perspective is now visible to the assembly." });
+      if (queued) {
+        setPosts(prev => prev.map(p => p.id === postId ? {
+          ...p,
+          civic_comments: [...(p.civic_comments ?? []), {
+            id,
+            user_id: user.id,
+            content: text,
+            created_at: new Date().toISOString(),
+            profiles: profile as any,
+          }],
+        } : p));
+        toast({ title: "Saved offline", description: "Your comment will sync once you're back online." });
+      } else {
+        fetchPosts();
+        toast({ title: "Comment Broadcasted", description: "Your perspective is now visible to the assembly." });
+      }
     } else {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     }
@@ -561,27 +609,27 @@ export const CivicWall = () => {
                   
                   <div className="h-[1px] bg-outline-variant/15 w-full mb-4"></div>
                   
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex gap-2">
-                      <button 
+                      <button
                         onClick={() => imageInputRef.current?.click()}
-                        className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-surface-container-high/50 text-on-surface-variant text-sm font-semibold transition-all"
+                        className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full hover:bg-surface-container-high/50 text-on-surface-variant text-sm font-semibold transition-all"
                       >
                         <span className="material-symbols-outlined text-primary text-xl">image</span>
                         <span>Image</span>
                       </button>
-                      <button 
+                      <button
                         onClick={() => { setVideoSource('upload'); setShowVideoDialog(true); }}
-                        className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-surface-container-high/50 text-on-surface-variant text-sm font-semibold transition-all"
+                        className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full hover:bg-surface-container-high/50 text-on-surface-variant text-sm font-semibold transition-all"
                       >
                         <span className="material-symbols-outlined text-secondary text-xl">videocam</span>
                         <span>Video</span>
                       </button>
                     </div>
-                    <button 
+                    <button
                       onClick={handleCreatePost}
                       disabled={isPosting || (!newPost.trim() && !attachedFile && !attachedUrl)}
-                      className="bg-gradient-to-br from-primary to-primary-container text-white px-8 py-2 rounded-full font-bold shadow-md hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-40"
+                      className="bg-gradient-to-br from-primary to-primary-container text-white px-6 sm:px-8 py-2 rounded-full font-bold shadow-md hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-40"
                     >
                       {isPosting ? <span className="material-symbols-outlined text-[16px] animate-spin">refresh</span> : 'Post'}
                     </button>
