@@ -13,8 +13,9 @@ import { QuestionHourHub } from '@/components/student/QuestionHourHub';
 import { AgendaView } from '@/components/student/AgendaView';
 import { StudentDocuments } from '@/components/student/StudentDocuments';
 import { MotionsHub } from '@/components/student/MotionsHub';
+import { StudentDocumentsTable } from '@/components/organizer/StudentDocumentsTable';
 
-type TabId = 'profile' | 'civic-wall' | 'tree' | 'messages' | 'speeches' | 'sessions' | 'polls' | 'timer' | 'question-hour' | 'agenda' | 'motions' | 'documents';
+type TabId = 'profile' | 'civic-wall' | 'tree' | 'messages' | 'speeches' | 'sessions' | 'polls' | 'timer' | 'question-hour' | 'agenda' | 'motions' | 'documents' | 'bills-queue';
 
 const navItems: { id: TabId; label: string; icon: string; exclusive?: boolean }[] = [
   { id: 'profile',       label: 'Profile',         icon: 'person' },
@@ -28,6 +29,7 @@ const navItems: { id: TabId; label: string; icon: string; exclusive?: boolean }[
   { id: 'sessions',      label: 'Sessions',         icon: 'event_seat', exclusive: true },
   { id: 'polls',         label: 'Ballot',           icon: 'how_to_vote', exclusive: true },
   { id: 'timer',         label: 'Timer',            icon: 'timer', exclusive: true },
+  { id: 'bills-queue',   label: 'Bills Queue',      icon: 'gavel', exclusive: true },
   { id: 'documents',     label: 'Documents',        icon: 'description' },
 ];
 
@@ -47,6 +49,7 @@ export const AdminStudentDashboard = () => {
       case 'sessions':   return <SessionsTabWrapper />;
       case 'polls':      return <PollsTabWrapper />;
       case 'timer':      return <TimerManagement />;
+      case 'bills-queue': return <BillsQueueTabWrapper />;
       case 'documents':  return <StudentDocuments />;
       default:           return <StudentProfile isOwnProfile />;
     }
@@ -173,6 +176,22 @@ const SessionsTabWrapper = () => (
       </p>
     </header>
     <SessionManagement />
+  </div>
+);
+
+// Wrapper to give the bills queue tab a proper page heading
+const BillsQueueTabWrapper = () => (
+  <div>
+    <header className="mb-10">
+      <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+        Bills <span className="text-secondary">Queue</span>
+      </h1>
+      <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+        <span className="material-symbols-outlined text-[12px]">gavel</span>
+        Discussion Order & Bill Submissions
+      </p>
+    </header>
+    <StudentDocumentsTable />
   </div>
 );
 

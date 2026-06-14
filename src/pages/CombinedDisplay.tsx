@@ -3,8 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import TimerDisplay from "./TimerDisplay";
 import { DetailedPollResults } from "@/components/student/DetailedPollResults";
 import { BreakingNewsTicker } from "@/components/display/BreakingNewsTicker";
+import { QuestionHourDisplay } from "@/components/display/QuestionHourDisplay";
+import { BillsDisplay } from "@/components/display/BillsDisplay";
 
-type Tab = 'timer' | 'polls';
+type Tab = 'timer' | 'polls' | 'questions' | 'bills';
 
 interface Poll {
   id: string;
@@ -81,6 +83,28 @@ const CombinedDisplay = () => {
             <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_vote</span>
             Poll Results
           </button>
+          <button
+            onClick={() => setTab('questions')}
+            className={`flex items-center gap-2 px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all font-headline ${
+              tab === 'questions'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-on-surface-variant hover:text-primary'
+            }`}
+          >
+            <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>forum</span>
+            Question Hour
+          </button>
+          <button
+            onClick={() => setTab('bills')}
+            className={`flex items-center gap-2 px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all font-headline ${
+              tab === 'bills'
+                ? 'bg-primary text-white shadow-sm'
+                : 'text-on-surface-variant hover:text-primary'
+            }`}
+          >
+            <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>gavel</span>
+            Bills
+          </button>
         </div>
 
         {/* Active poll badge */}
@@ -129,6 +153,22 @@ const CombinedDisplay = () => {
             isActive={activePoll.is_active}
           />
         )}
+      </div>
+
+      {/* ── Question Hour tab ── */}
+      <div
+        className={`overflow-hidden ${tab !== 'questions' ? 'hidden' : ''}`}
+        style={{ height: `calc(100vh - ${TAB_H}px)` }}
+      >
+        <QuestionHourDisplay />
+      </div>
+
+      {/* ── Bills tab ── */}
+      <div
+        className={`overflow-hidden ${tab !== 'bills' ? 'hidden' : ''}`}
+        style={{ height: `calc(100vh - ${TAB_H}px)` }}
+      >
+        <BillsDisplay />
       </div>
 
       <BreakingNewsTicker />

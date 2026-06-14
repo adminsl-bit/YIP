@@ -45,6 +45,7 @@ import { SupportChatWidget } from "@/components/shared/SupportChatWidget";
 import { QuestionHourHub } from "@/components/student/QuestionHourHub";
 import { AgendaView } from "@/components/student/AgendaView";
 import { StudentDocumentsTable } from "@/components/organizer/StudentDocumentsTable";
+import { SchoolsManager } from "@/components/organizer/SchoolsManager";
 import { MotionsHub } from "@/components/student/MotionsHub";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 
@@ -200,6 +201,7 @@ const OrganizerDashboard = () => {
             <NavTrigger value="motions"        icon="gavel"               label="Motions" />
             <NavTrigger value="square"         icon="forum"               label="Civic Chat" />
             <NavTrigger value="students"       icon="group"               label="Students" />
+            <NavTrigger value="schools"        icon="school"              label="Schools" />
             <NavTrigger value="documents"      icon="description"         label="Documents" />
             <NavTrigger value="bulk-import"    icon="upload_file"         label="Bulk Import" />
             <NavTrigger value="role-creator"   icon="manage_accounts"     label="Role Creator" />
@@ -378,6 +380,11 @@ const OrganizerDashboard = () => {
 
               <TabsContent value="students" className="m-0">
                 <OrganizerStudentList />
+              </TabsContent>
+
+              <TabsContent value="schools" className="m-0 space-y-10">
+                <PageHeader primary="Participating" secondary="Schools" icon={<span className="material-symbols-outlined text-[12px]">school</span>} subtitle="Onboarding School Directory" />
+                <SchoolsManager />
               </TabsContent>
 
               <TabsContent value="documents" className="m-0 space-y-10">

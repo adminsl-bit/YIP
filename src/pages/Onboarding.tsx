@@ -4,12 +4,19 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, ArrowRight, ArrowLeft, User, MapPin, Landmark, Sparkles, CheckCircle2 } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, User, MapPin, Landmark, Sparkles, CheckCircle2, GraduationCap } from "lucide-react";
+
+const OTHER_SCHOOL = '__other__';
 
 interface ActiveEventCity {
   id: string;
   city: string;
   state: string;
+}
+
+interface EventSchool {
+  id: string;
+  name: string;
 }
 
 const STATE_REGION: Record<string, string> = {
@@ -43,7 +50,11 @@ const Onboarding = () => {
     name: '',
     state: '',
     city: '',
+    school: '',
+    schoolOther: '',
   });
+
+  const [eventSchools, setEventSchools] = useState<EventSchool[]>([]);
 
   // Assigned Details (derived on submission)
   const [assignedDetails, setAssignedDetails] = useState<{
@@ -99,6 +110,27 @@ const Onboarding = () => {
       state: match?.state || prev.state,
     }));
     setSelectedEventId(match?.id || null);
+  };
+
+  // Load the school list configured by the organizer for the chosen event
+  useEffect(() => {
+    if (!selectedEventId) {
+      setEventSchools([]);
+      return;
+    }
+    supabase
+      .from('event_schools' as any)
+      .select('id, name')
+      .eq('event_id', selectedEventId)
+      .order('display_order')
+      .then(({ data }) => setEventSchools((data as any) || []));
+  }, [selectedEventId]);
+
+  const getSchoolValue = () => {
+    if (eventSchools.length === 0 || formData.school === OTHER_SCHOOL) {
+      return formData.schoolOther.trim();
+    }
+    return formData.school.trim();
   };
 
   const handleSubmit = async () => {
@@ -193,6 +225,7 @@ const Onboarding = () => {
         name: formData.name.trim(),
         state: formData.state.trim(),
         city: formData.city.trim(),
+        school: getSchoolValue() || null,
         constituency: constituency,
         position: 'Member of Parliament',
         party_name: partyName,
@@ -389,6 +422,50 @@ const Onboarding = () => {
                   </div>
                 </motion.div>
               )}
+
+              {/* School — drawn from the organizer's school list for this event */}
+              {formData.city && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="space-y-2"
+                >
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">School</label>
+                  <div className="relative group">
+                    <GraduationCap className="absolute left-6 top-1/2 -translate-y-1/2 w-6 h-6 text-slate-300 group-focus-within:text-primary transition-colors z-10" />
+                    {eventSchools.length > 0 && (
+                      <>
+                        <select
+                          name="school"
+                          className="w-full pl-16 pr-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-primary/10 transition-all font-bold text-slate-800 shadow-inner z-10 appearance-none cursor-pointer"
+                          value={formData.school}
+                          onChange={handleInputChange}
+                          required
+                        >
+                          <option value="" disabled>Select your school</option>
+                          {eventSchools.map(s => (
+                            <option key={s.id} value={s.name}>{s.name}</option>
+                          ))}
+                          <option value={OTHER_SCHOOL}>Other (not listed)</option>
+                        </select>
+                        <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+                          <ArrowRight className="w-4 h-4 text-slate-300 rotate-90" />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  {(eventSchools.length === 0 || formData.school === OTHER_SCHOOL) && (
+                    <input
+                      name="schoolOther"
+                      className="relative w-full pl-6 pr-6 py-5 bg-slate-50 border-2 border-transparent rounded-2xl focus:bg-white focus:border-primary/10 transition-all font-bold text-slate-800 placeholder:text-slate-300 shadow-inner z-10"
+                      placeholder="Enter your school name"
+                      value={formData.schoolOther}
+                      onChange={handleInputChange}
+                      required
+                    />
+                  )}
+                </motion.div>
+              )}
             </div>
 
             <div className="flex gap-4">
@@ -400,7 +477,7 @@ const Onboarding = () => {
               </button>
               <button
                 onClick={handleSubmit}
-                disabled={isSubmitting || !formData.state || !formData.city}
+                disabled={isSubmitting || !formData.state || !formData.city || !getSchoolValue()}
                 className="flex-[2] py-6 bg-[#13298f] text-white rounded-[2.5rem] font-black uppercase tracking-[0.2em] text-sm shadow-2xl shadow-[#13298f]/20 hover:scale-[1.02] hover:shadow-[#13298f]/40 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-30 disabled:hover:scale-100"
               >
                 {isSubmitting ? (

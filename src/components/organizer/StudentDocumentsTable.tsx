@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { extractTextFromFile, buildSummary, requestAiSummary } from '@/lib/documentSummary';
-import { FileText, Download, Sparkles, WandSparkles } from 'lucide-react';
+import { FileText, Download, Sparkles, WandSparkles, ListPlus, X, Play, SkipForward, Gavel } from 'lucide-react';
 
 interface StudentDocument {
   id: string;
@@ -22,6 +22,9 @@ interface StudentDocument {
   file_type: string | null;
   file_size: number | null;
   created_at: string;
+  is_selected: boolean;
+  discussion_order: number | null;
+  is_discussing: boolean;
 }
 
 interface ProfileLite {
@@ -112,6 +115,58 @@ export const StudentDocumentsTable = () => {
     docxCount: documents.filter(d => fileExt(d.file_name) === 'DOCX').length,
   }), [documents]);
 
+  // Bills selected for discussion, ordered by their queue position
+  const selectedDocs = useMemo(
+    () => documents
+      .filter(d => d.is_selected)
+      .sort((a, b) => (a.discussion_order ?? 0) - (b.discussion_order ?? 0)),
+    [documents]
+  );
+  const currentDocIndex = selectedDocs.findIndex(d => d.is_discussing);
+
+  const handleToggleQueue = async (doc: StudentDocument) => {
+    try {
+      if (doc.is_selected) {
+        const { error } = await supabase
+          .from('student_documents' as any)
+          .update({ is_selected: false, is_discussing: false, discussion_order: null })
+          .eq('id', doc.id);
+        if (error) throw error;
+      } else {
+        const maxOrder = documents.reduce((max, d) => Math.max(max, d.discussion_order ?? 0), 0);
+        const { error } = await supabase
+          .from('student_documents' as any)
+          .update({ is_selected: true, discussion_order: maxOrder + 1 })
+          .eq('id', doc.id);
+        if (error) throw error;
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Could not update discussion queue');
+    }
+  };
+
+  const handleAdvance = async () => {
+    try {
+      if (currentDocIndex !== -1) {
+        const { error } = await supabase
+          .from('student_documents' as any)
+          .update({ is_discussing: false })
+          .eq('id', selectedDocs[currentDocIndex].id);
+        if (error) throw error;
+      }
+      const next = selectedDocs[currentDocIndex + 1];
+      if (next) {
+        const { error } = await supabase
+          .from('student_documents' as any)
+          .update({ is_discussing: true })
+          .eq('id', next.id);
+        if (error) throw error;
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Could not advance discussion queue');
+    }
+  };
+
   const handleSummarize = async (doc: StudentDocument) => {
     setSummarizingId(doc.id);
     try {
@@ -171,6 +226,70 @@ export const StudentDocumentsTable = () => {
           <p className="font-body text-on-surface-variant font-medium">No documents uploaded by students yet.</p>
         </div>
       ) : (
+        <>
+        {/* Discussion queue */}
+        <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm p-6">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div className="flex items-center gap-2">
+              <Gavel className="w-4 h-4 text-primary" />
+              <h2 className="text-lg font-extrabold font-headline text-on-surface">Discussion Queue</h2>
+            </div>
+            <Button
+              onClick={handleAdvance}
+              disabled={selectedDocs.length === 0}
+              className="bg-primary hover:bg-primary/90 text-white font-bold rounded-2xl text-xs"
+            >
+              {currentDocIndex === -1 ? (
+                <><Play className="w-3.5 h-3.5 mr-1.5" /> Start Discussion</>
+              ) : currentDocIndex < selectedDocs.length - 1 ? (
+                <><SkipForward className="w-3.5 h-3.5 mr-1.5" /> Next Bill</>
+              ) : (
+                <><X className="w-3.5 h-3.5 mr-1.5" /> Finish Discussion</>
+              )}
+            </Button>
+          </div>
+
+          {selectedDocs.length === 0 ? (
+            <p className="font-body text-on-surface-variant text-sm">
+              No bills selected yet — use "Add to Queue" on a document below to build the discussion order.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {selectedDocs.map((doc, idx) => {
+                const p = profiles[doc.user_id];
+                const stateLabel = doc.is_discussing ? 'Discussing' : idx < currentDocIndex ? 'Done' : idx === currentDocIndex + 1 ? 'Up Next' : 'Queued';
+                const stateCls = doc.is_discussing
+                  ? 'bg-secondary/15 text-secondary'
+                  : idx < currentDocIndex
+                  ? 'bg-surface-variant text-on-surface-variant'
+                  : 'bg-primary/10 text-primary';
+                return (
+                  <div
+                    key={doc.id}
+                    className={`flex items-center gap-4 px-4 py-3 rounded-2xl ${doc.is_discussing ? 'bg-secondary/5 border border-secondary/20' : 'bg-surface-container-low'}`}
+                  >
+                    <span className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black text-xs shrink-0">
+                      {idx + 1}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-bold font-headline text-on-surface text-sm truncate">{doc.file_name}</p>
+                      <p className="text-[10px] text-on-surface-variant/60 font-black uppercase tracking-widest font-headline mt-0.5">
+                        Moved by {p?.name || 'Unknown'} {p?.party_name ? `· ${p.party_name}` : p?.committee ? `· ${p.committee}` : ''}
+                      </p>
+                    </div>
+                    <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full font-headline shrink-0 ${stateCls}`}>
+                      {stateLabel}
+                    </span>
+                    <Button variant="ghost" size="icon" className="rounded-xl text-error hover:text-error shrink-0" onClick={() => handleToggleQueue(doc)}>
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
         <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm overflow-hidden">
           <Table>
             <TableHeader>
@@ -218,6 +337,18 @@ export const StudentDocumentsTable = () => {
                             <Download className="w-4 h-4" />
                           </Button>
                         </a>
+                        <Button
+                          variant={doc.is_selected ? 'secondary' : 'outline'}
+                          size="sm"
+                          onClick={() => handleToggleQueue(doc)}
+                          className="rounded-xl font-bold text-xs"
+                        >
+                          {doc.is_selected ? (
+                            <><X className="w-3.5 h-3.5 mr-1.5" /> In Queue</>
+                          ) : (
+                            <><ListPlus className="w-3.5 h-3.5 mr-1.5" /> Add to Queue</>
+                          )}
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -226,6 +357,7 @@ export const StudentDocumentsTable = () => {
             </TableBody>
           </Table>
         </div>
+        </>
       )}
 
       {/* Summary dialog */}
