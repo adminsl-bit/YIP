@@ -24,13 +24,15 @@ interface ZoneStats {
   events: number;
   chapters: number;
   participants: number;
+  schools: number;
   resultsPublished: number;
 }
 
-const emptyStats = (): ZoneStats => ({ events: 0, chapters: 0, participants: 0, resultsPublished: 0 });
+const emptyStats = (): ZoneStats => ({ events: 0, chapters: 0, participants: 0, schools: 0, resultsPublished: 0 });
 
 export const ZonesDashboard = () => {
   const [events, setEvents] = useState<EventRow[]>([]);
+  const [schoolEventIds, setSchoolEventIds] = useState<string[]>([]);
   const [rmNames, setRmNames] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [editingZone, setEditingZone] = useState<ZoneId | null>(null);
@@ -38,9 +40,10 @@ export const ZonesDashboard = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: eventData, error: eventError }, { data: zoneData, error: zoneError }] = await Promise.all([
+      const [{ data: eventData, error: eventError }, { data: zoneData, error: zoneError }, { data: schoolData }] = await Promise.all([
         supabase.rpc('list_events_for_super_admin'),
         supabase.from('zone_managers' as any).select('zone_id, rm_name'),
+        supabase.from('event_schools' as any).select('event_id'),
       ]);
       if (!eventError && eventData) setEvents(eventData as EventRow[]);
       if (!zoneError && zoneData) {
@@ -48,6 +51,7 @@ export const ZonesDashboard = () => {
         (zoneData as any[]).forEach(row => { if (row.rm_name) map[row.zone_id] = row.rm_name; });
         setRmNames(map);
       }
+      if (schoolData) setSchoolEventIds((schoolData as any[]).map(row => row.event_id as string));
       setLoading(false);
     };
     load();
@@ -73,15 +77,17 @@ export const ZonesDashboard = () => {
     };
     ZONES.forEach(zone => {
       const zoneEvents = eventsByZone.map[zone.id];
+      const zoneEventIds = new Set(zoneEvents.map(e => e.id));
       stats[zone.id] = {
         events: zoneEvents.length,
         chapters: new Set(zoneEvents.map(e => e.city).filter(Boolean)).size,
         participants: zoneEvents.reduce((s, e) => s + (e.participant_count || 0), 0),
+        schools: schoolEventIds.filter(eventId => zoneEventIds.has(eventId)).length,
         resultsPublished: zoneEvents.filter(e => e.status === 'completed').length,
       };
     });
     return stats;
-  }, [eventsByZone]);
+  }, [eventsByZone, schoolEventIds]);
 
   const kpi = useMemo(() => {
     const activeZones = ZONES.filter(z => zoneStats[z.id].events > 0).length;
@@ -94,9 +100,10 @@ export const ZonesDashboard = () => {
   const impactStory = useMemo(() => {
     const statesCovered = new Set(events.map(e => e.state).filter(Boolean)).size;
     const chaptersTotal = new Set(events.map(e => e.city).filter(Boolean)).size;
+    const schoolsTotal = schoolEventIds.length;
     const leadingZone = [...ZONES].sort((a, b) => zoneStats[b.id].participants - zoneStats[a.id].participants)[0];
-    return { statesCovered, chaptersTotal, leadingZone };
-  }, [events, zoneStats]);
+    return { statesCovered, chaptersTotal, schoolsTotal, leadingZone };
+  }, [events, zoneStats, schoolEventIds]);
 
   const startEdit = (zoneId: ZoneId) => {
     setEditingZone(zoneId);
@@ -225,7 +232,7 @@ export const ZonesDashboard = () => {
                 </div>
 
                 {/* Stats row */}
-                <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="grid grid-cols-4 gap-2 text-center">
                   <div className="bg-surface-container/50 rounded-xl py-3">
                     <p className="text-xl font-black font-headline text-on-surface leading-none">{stats.events}</p>
                     <p className="text-[9px] text-on-surface-variant/60 font-black uppercase tracking-widest font-headline mt-1">Events</p>
@@ -237,6 +244,10 @@ export const ZonesDashboard = () => {
                   <div className="bg-surface-container/50 rounded-xl py-3">
                     <p className="text-xl font-black font-headline text-on-surface leading-none">{stats.participants}</p>
                     <p className="text-[9px] text-on-surface-variant/60 font-black uppercase tracking-widest font-headline mt-1">Students</p>
+                  </div>
+                  <div className="bg-surface-container/50 rounded-xl py-3">
+                    <p className="text-xl font-black font-headline text-on-surface leading-none">{stats.schools}</p>
+                    <p className="text-[9px] text-on-surface-variant/60 font-black uppercase tracking-widest font-headline mt-1">Schools</p>
                   </div>
                 </div>
 
@@ -279,7 +290,7 @@ export const ZonesDashboard = () => {
             )}
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="bg-surface-container/40 rounded-2xl p-5 border border-outline-variant/10">
               <p className="text-2xl font-black font-headline text-on-surface leading-none">{impactStory.statesCovered}</p>
               <p className="text-[10px] text-on-surface-variant font-body mt-1.5">States represented</p>
@@ -287,6 +298,10 @@ export const ZonesDashboard = () => {
             <div className="bg-surface-container/40 rounded-2xl p-5 border border-outline-variant/10">
               <p className="text-2xl font-black font-headline text-on-surface leading-none">{impactStory.chaptersTotal}</p>
               <p className="text-[10px] text-on-surface-variant font-body mt-1.5">City chapters active</p>
+            </div>
+            <div className="bg-surface-container/40 rounded-2xl p-5 border border-outline-variant/10">
+              <p className="text-2xl font-black font-headline text-on-surface leading-none">{impactStory.schoolsTotal}</p>
+              <p className="text-[10px] text-on-surface-variant font-body mt-1.5">Schools reached</p>
             </div>
             <div className="bg-surface-container/40 rounded-2xl p-5 border border-outline-variant/10">
               <p className="text-2xl font-black font-headline text-on-surface leading-none">{kpi.totalParticipants}</p>

@@ -1,13 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { getLocationColumns, getZoneId, getZoneConfig } from '@/lib/regions';
 
 interface EventOption {
   id: string;
   name: string;
   level: string;
   status: string;
+  city: string | null;
+  state: string | null;
 }
 
 interface RankedEntry {
@@ -17,6 +20,7 @@ interface RankedEntry {
   party_number: number;
   constituency: string | null;
   state: string | null;
+  school: string | null;
   serial_number: number;
   photo_url: string | null;
   avg_jury_score: number | null;
@@ -42,7 +46,7 @@ export const EventLeaderboard = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.from('events').select('id, name, level, status').order('created_at')
+    supabase.from('events').select('id, name, level, status, city, state').order('created_at')
       .then(({ data }) => {
         if (data) setEvents(data as EventOption[]);
         setLoadingEvents(false);
@@ -81,6 +85,12 @@ export const EventLeaderboard = () => {
     if (selectedEvent) fetchLeaderboard(selectedEvent);
     else setLeaderboard([]);
   }, [selectedEvent, fetchLeaderboard]);
+
+  const selectedEventInfo = events.find(e => e.id === selectedEvent);
+  const locationColumns = useMemo(() => getLocationColumns(selectedEventInfo?.level), [selectedEventInfo?.level]);
+  const eventZoneLabel = selectedEventInfo?.state
+    ? (getZoneId(selectedEventInfo.state) ? getZoneConfig(getZoneId(selectedEventInfo.state)!).name : '—')
+    : '—';
 
   const sourceLevel  = events.find(e => e.id === selectedEvent)?.level;
   // Pick the nearest higher-level event (any level above current)
@@ -157,6 +167,16 @@ export const EventLeaderboard = () => {
                   <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Rank</th>
                   <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Participant</th>
                   <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Constituency</th>
+                  <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">School</th>
+                  {locationColumns.includes('city') && (
+                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">City</th>
+                  )}
+                  {locationColumns.includes('state') && (
+                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">State</th>
+                  )}
+                  {locationColumns.includes('zone') && (
+                    <th className="px-5 py-3.5 text-left text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Zone</th>
+                  )}
                   <th className="px-5 py-3.5 text-right text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Pre-event</th>
                   <th className="px-5 py-3.5 text-right text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Jury Avg</th>
                   <th className="px-5 py-3.5 text-right text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline">Final</th>
@@ -226,6 +246,32 @@ export const EventLeaderboard = () => {
                       <td className="px-5 py-3.5 text-on-surface-variant text-xs max-w-[140px] truncate">
                         {entry.constituency || '—'}
                       </td>
+
+                      {/* School */}
+                      <td className="px-5 py-3.5 text-on-surface-variant text-xs max-w-[160px] truncate">
+                        {entry.school || '—'}
+                      </td>
+
+                      {/* City */}
+                      {locationColumns.includes('city') && (
+                        <td className="px-5 py-3.5 text-on-surface-variant text-xs">
+                          {selectedEventInfo?.city || '—'}
+                        </td>
+                      )}
+
+                      {/* State */}
+                      {locationColumns.includes('state') && (
+                        <td className="px-5 py-3.5 text-on-surface-variant text-xs">
+                          {selectedEventInfo?.state || '—'}
+                        </td>
+                      )}
+
+                      {/* Zone */}
+                      {locationColumns.includes('zone') && (
+                        <td className="px-5 py-3.5 text-on-surface-variant text-xs">
+                          {eventZoneLabel}
+                        </td>
+                      )}
 
                       {/* Pre-event */}
                       <td className="px-5 py-3.5 text-right font-headline font-bold tabular-nums text-on-surface">

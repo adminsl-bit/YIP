@@ -897,6 +897,7 @@ export type Database = {
           award_ids: string[] | null
           city: string | null
           constituency: string | null
+          event_id: string | null
           final_total_score: number | null
           jury_average_score: number | null
           jury_converted_score: number | null
@@ -907,6 +908,7 @@ export type Database = {
           photo_url: string | null
           position: string | null
           preevent_scores: number | null
+          school: string | null
           serial_number: number | null
           state: string | null
           user_id: string | null

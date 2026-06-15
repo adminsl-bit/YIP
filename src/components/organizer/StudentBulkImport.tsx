@@ -6,19 +6,23 @@ import { toast } from "sonner";
 import * as XLSX from 'xlsx';
 
 interface StudentData {
-  serialNumber: number;
-  loginId: string;
-  name: string;
-  seatRole: string;
-  alliance?: string;
-  party?: string;
-  partyName?: string;
-  committee?: string;
-  constituency?: string;
-  state?: string;
-  city?: string;
-  password: string;
+  // Full import
+  name?: string;
+  school?: string;
+  email?: string;
+  phone?: string;
+  // Scores-only import
+  serialNumber?: number;
   preeventScores?: number;
+}
+
+interface ImportCredential {
+  serialNumber: number;
+  name: string;
+  school: string;
+  email: string;
+  phone?: string;
+  password: string;
 }
 
 export const StudentBulkImport = () => {
@@ -33,20 +37,8 @@ export const StudentBulkImport = () => {
     success: number;
     failed: number;
     errors: string[];
+    credentials?: ImportCredential[];
   } | null>(null);
-
-  const convertGoogleDriveUrl = (url: string): string => {
-    if (!url || !url.includes('drive.google.com')) return url;
-    
-    // Extract file ID from various Google Drive URL formats
-    const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9-_]+)/);
-    if (fileIdMatch) {
-      const fileId = fileIdMatch[1];
-      return `https://drive.google.com/uc?export=view&id=${fileId}`;
-    }
-    
-    return url;
-  };
 
   const parseExcelFile = (file: File, mode: 'full' | 'scores-only' = 'full'): Promise<StudentData[]> => {
     return new Promise((resolve, reject) => {
@@ -68,51 +60,41 @@ export const StudentBulkImport = () => {
                 const exact = findKey(name);
                 if (exact) return row[exact];
               }
-              // Loose match: allow headers like "Party Code" or "Party Letter"
+              // Loose match: allow headers like "Email ID" or "Phone Number"
               const targets = possibleNames.map(n => n.trim().toLowerCase());
               const loose = keys.find(k => targets.some(t => k.toString().trim().toLowerCase().includes(t)));
               if (loose) return row[loose];
               return '';
             };
 
-            const serialNumber = getColumnValue(['Serial no', 'serial_no', 'S.No', 'Serial No', 'SNo']);
-            const loginId = getColumnValue(['Login', 'login', 'login_id', 'Login ID']);
-            const name = getColumnValue(['Name', 'name', 'student_name']);
-            const seatRole = getColumnValue(['seat role', 'seat_role', 'Seat Role', 'Role']);
-            const alliance = getColumnValue(['Alliance', 'alliance']);
-            const party = getColumnValue(['Party', 'party', 'PARTY', 'Party Code', 'party code', 'Party Letter', 'party letter', 'Party (A-E)']);
-            const partyName = getColumnValue(['Party Name', 'party_name']);
-            const committee = getColumnValue(['Committee', 'committee']);
-            const constituency = getColumnValue(['constituency', 'Constituency']);
-            const state = getColumnValue(['state', 'State']);
-            const city = getColumnValue(['home city', 'city', 'City', 'Home City']);
-            const password = getColumnValue(['password', 'Password']);
-            const preeventScores = getColumnValue(['Preevent scores', 'preevent_scores', 'Pre-event scores']);
-
             if (mode === 'scores-only') {
+              const serialNumber = getColumnValue(['Serial no', 'serial_no', 'S.No', 'Serial No', 'SNo']);
+              const preeventScores = getColumnValue(['Preevent scores', 'preevent_scores', 'Pre-event scores']);
+
               if (!serialNumber) {
                 throw new Error(`Row ${index + 2}: Missing required field (Serial no)`);
               }
-            } else {
-              if (!name || !serialNumber || !loginId || !password) {
-                throw new Error(`Row ${index + 2}: Missing required fields (Serial no, Login, Name, or Password)`);
-              }
+
+              return {
+                serialNumber: parseInt(serialNumber.toString()) || index + 1,
+                preeventScores: preeventScores ? parseFloat(preeventScores.toString()) : undefined,
+              };
+            }
+
+            const name = getColumnValue(['Name', 'name', 'student_name', 'Student Name']);
+            const school = getColumnValue(['School', 'school', 'School Name', 'school name']);
+            const email = getColumnValue(['Email', 'email', 'Email ID', 'email id', 'Email Address']);
+            const phone = getColumnValue(['Phone', 'phone', 'Phone Number', 'phone number', 'Mobile', 'mobile number']);
+
+            if (!name || !school || !email) {
+              throw new Error(`Row ${index + 2}: Missing required field (Name, School, or Email)`);
             }
 
             return {
-              serialNumber: parseInt(serialNumber.toString()) || index + 1,
-              loginId: loginId.toString().trim(),
               name: name.toString().trim(),
-              seatRole: seatRole?.toString().trim() || 'Member of Parliament',
-              alliance: alliance?.toString().trim(),
-              party: party?.toString().trim(),
-              partyName: partyName?.toString().trim(),
-              committee: committee?.toString().trim(),
-              constituency: constituency?.toString().trim(),
-              state: state?.toString().trim(),
-              city: city?.toString().trim(),
-              password: password.toString().trim(),
-              preeventScores: preeventScores ? parseFloat(preeventScores.toString()) : undefined,
+              school: school.toString().trim(),
+              email: email.toString().trim(),
+              phone: phone ? phone.toString().trim() : undefined,
             };
           });
 
@@ -127,8 +109,8 @@ export const StudentBulkImport = () => {
   };
 
   const importStudents = async (students: StudentData[]) => {
-    const results = { success: 0, failed: 0, errors: [] as string[] };
-    
+    const results = { success: 0, failed: 0, errors: [] as string[], credentials: [] as ImportCredential[] };
+
     try {
       // Get current session for authorization
       const { data: { session } } = await supabase.auth.getSession();
@@ -171,7 +153,7 @@ export const StudentBulkImport = () => {
       const students = await parseExcelFile(file, importMode);
       const importResults = await importStudents(students);
       setResults(importResults);
-      
+
       if (importResults.success > 0) {
         toast.success(`Successfully imported ${importResults.success} students`);
       }
@@ -251,9 +233,9 @@ export const StudentBulkImport = () => {
         toast.success(`Downloaded ${rows.length} students — fill in "Preevent scores" and re-upload`);
       } else {
         const template = [
-          { 'Serial no': 1, 'Name': 'John Doe', 'seat role': 'Member of Parliament', 'Alliance': 'Ruling', 'Party': 'A', 'Party Name': 'SAMPLE PARTY', 'Committee': '1', 'constituency': 'Mumbai Central', 'state': 'Maharashtra', 'home city': 'Mumbai', 'Login': 'YIP0001', 'password': 'student123', 'Preevent scores': '' },
-          { 'Serial no': 2, 'Name': 'Jane Smith', 'seat role': 'Administrator', 'Alliance': 'Neutral', 'Party': 'No Party', 'Party Name': 'No Party', 'Committee': '1', 'constituency': 'Delhi', 'state': 'NCT Delhi', 'home city': 'Delhi', 'Login': 'YIP0002', 'password': 'admin123', 'Preevent scores': '' },
-          { 'Serial no': 3, 'Name': 'Bob Reporter', 'seat role': 'Journalist', 'Alliance': 'Neutral', 'Party': 'No Party', 'Party Name': 'No Party', 'Committee': '1', 'constituency': 'Bangalore', 'state': 'Karnataka', 'home city': 'Bangalore', 'Login': 'YIP0003', 'password': 'journalist123', 'Preevent scores': '' },
+          { 'Name': 'John Doe', 'School': 'Delhi Public School', 'Email': 'john.doe@example.com', 'Phone': '9876543210' },
+          { 'Name': 'Jane Smith', 'School': "St. Xavier's School", 'Email': 'jane.smith@example.com', 'Phone': '9876543211' },
+          { 'Name': 'Asha Rao', 'School': 'Bishop Cotton School', 'Email': 'asha.rao@example.com', 'Phone': '9876543212' },
         ];
         const ws = XLSX.utils.json_to_sheet(template);
         const wb = XLSX.utils.book_new();
@@ -266,6 +248,24 @@ export const StudentBulkImport = () => {
     } finally {
       setIsDownloadingTemplate(false);
     }
+  };
+
+  const downloadCredentials = () => {
+    if (!results?.credentials || results.credentials.length === 0) return;
+
+    const rows = results.credentials.map(c => ({
+      'Serial No': c.serialNumber,
+      'Name': c.name,
+      'School': c.school,
+      'Email (Login)': c.email,
+      'Password': c.password,
+      'Phone': c.phone || '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Credentials');
+    XLSX.writeFile(wb, 'student_login_credentials.xlsx');
+    toast.success(`Downloaded login credentials for ${rows.length} students`);
   };
 
   return (
@@ -307,7 +307,7 @@ export const StudentBulkImport = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-body">
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-error mb-2 font-headline">Required</p>
-                {['Serial no', 'Name', 'seat role', 'Login', 'password'].map(col => (
+                {['Name', 'School', 'Email'].map(col => (
                   <div key={col} className="flex items-center gap-2 py-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-error shrink-0" />
                     <span className="font-mono text-xs text-on-surface">{col}</span>
@@ -316,7 +316,7 @@ export const StudentBulkImport = () => {
               </div>
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/60 mb-2 font-headline">Optional</p>
-                {['Alliance', 'Party', 'Party Name', 'Committee', 'constituency', 'state', 'home city', 'Preevent scores'].map(col => (
+                {['Phone'].map(col => (
                   <div key={col} className="flex items-center gap-2 py-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-outline shrink-0" />
                     <span className="font-mono text-xs text-on-surface-variant">{col}</span>
@@ -324,8 +324,10 @@ export const StudentBulkImport = () => {
                 ))}
               </div>
               <div className="md:col-span-2 mt-1 pt-3 border-t border-outline-variant/10 space-y-1 text-xs text-on-surface-variant font-body">
-                <p><span className="font-bold text-on-surface">Role logic:</span> "Administrator" → admin access · "Journalist" → publishing access · others → student</p>
-                <p><span className="font-bold text-on-surface">Re-upload safe:</span> Existing students are updated, not duplicated</p>
+                <p><span className="font-bold text-on-surface">Auto-generated by the app:</span> Login (student's email), a permanent 6-digit password, position (Member of Parliament), party, committee and constituency.</p>
+                <p><span className="font-bold text-on-surface">School:</span> New school names are automatically added to the event's school directory.</p>
+                <p><span className="font-bold text-on-surface">Re-upload safe:</span> Existing students are matched by email and updated, not duplicated.</p>
+                <p><span className="font-bold text-on-surface">After import:</span> download the credentials sheet to share each student's login email and password.</p>
               </div>
             </div>
           ) : (
@@ -430,6 +432,27 @@ export const StudentBulkImport = () => {
                 </div>
               </div>
             </div>
+
+            {results.credentials && results.credentials.length > 0 && (
+              <div className="bg-primary/5 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary font-headline flex items-center gap-1.5 mb-1">
+                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>key</span>
+                    New Login Credentials
+                  </p>
+                  <p className="text-sm text-on-surface-variant font-body">
+                    {results.credentials.length} new student account{results.credentials.length === 1 ? '' : 's'} created. Download the sheet to share login emails and 6-digit passwords.
+                  </p>
+                </div>
+                <button
+                  onClick={downloadCredentials}
+                  className="shrink-0 flex items-center gap-2 py-3 px-5 rounded-2xl bg-primary text-white font-bold text-sm transition-all hover:bg-primary/90 active:scale-95 font-body shadow-[0_4px_12px_rgba(19,41,143,0.25)]"
+                >
+                  <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>download</span>
+                  Download Credentials
+                </button>
+              </div>
+            )}
 
             {results.errors.length > 0 && (
               <div className="bg-error/5 rounded-2xl p-5 space-y-2">

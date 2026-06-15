@@ -44,7 +44,7 @@ export const ZONES: ZoneConfig[] = [
       'Dadra and Nagar Haveli and Daman and Diu',
     ],
     icon: 'west',
-    color: 'text-on-tertiary-fixed-variant',
+    color: 'text-on-tertiary-container',
     bg: 'bg-tertiary/10',
   },
   {
@@ -117,3 +117,50 @@ export const CITY_STATE: Record<string, string> = {
 
 export const getStateForCity = (city?: string | null): string | null =>
   city ? CITY_STATE[city] ?? null : null;
+
+// ── Cross-zone constituency allocation ──────────────────────────
+// Bulk-imported students are assigned a "seat" constituency from the
+// opposite half of the country to their event's home state — students at
+// a southern event (south_tn / south_other) get northern constituencies,
+// and vice versa. This is purely flavour data for the simulation, not a
+// real electoral mapping.
+const SOUTH_ZONES: ZoneId[] = ['south_tn', 'south_other'];
+
+const NORTHERN_CONSTITUENCIES = [
+  'New Delhi', 'Amritsar', 'Lucknow', 'Varanasi', 'Jaipur', 'Chandigarh',
+  'Patna Sahib', 'Kolkata Dakshin', 'Bhubaneswar', 'Ranchi', 'Indore',
+  'Bhopal', 'Mumbai North', 'Pune', 'Ahmedabad East', 'Panaji', 'Shimla',
+  'Dehradun', 'Guwahati', 'Shillong',
+];
+
+const SOUTHERN_CONSTITUENCIES = [
+  'Chennai South', 'Madurai', 'Coimbatore', 'Puducherry', 'Bengaluru Central',
+  'Mysuru', 'Hyderabad', 'Warangal', 'Visakhapatnam', 'Vijayawada',
+  'Thiruvananthapuram', 'Ernakulam', 'Mangaluru', 'Tiruchirappalli',
+  'Kanyakumari', 'Hubli-Dharwad', 'Kurnool', 'Kozhikode', 'Salem', 'Madikeri',
+];
+
+/** Returns the constituency pool from the opposite half of the country to `state`. */
+export const getCrossZoneConstituencyPool = (state?: string | null): string[] => {
+  const zone = getZoneId(state);
+  return zone && SOUTH_ZONES.includes(zone) ? NORTHERN_CONSTITUENCIES : SOUTHERN_CONSTITUENCIES;
+};
+
+/** Deterministically picks a cross-zone constituency for the given index (e.g. serial number). */
+export const getCrossZoneConstituency = (state: string | null | undefined, index: number): string => {
+  const pool = getCrossZoneConstituencyPool(state);
+  return pool[((index % pool.length) + pool.length) % pool.length];
+};
+
+// ── Level-based location columns ─────────────────────────────────
+// "School" is always shown alongside student data. Additional location
+// columns progressively appear based on the event's level: city events show
+// just the school, regional events add City + State, and national events
+// also add the Zone.
+export type LocationColumn = 'city' | 'state' | 'zone';
+
+export const getLocationColumns = (level?: string | null): LocationColumn[] => {
+  if (level === 'national') return ['city', 'state', 'zone'];
+  if (level === 'regional') return ['city', 'state'];
+  return [];
+};

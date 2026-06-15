@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { KeyRound, Eye, EyeOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { getZoneId, getZoneConfig } from '@/lib/regions';
 
 const ITEMS_PER_PAGE = 25;
 
@@ -40,6 +41,11 @@ const REGION_CONFIG: Record<string, { icon: string; color: string; bg: string }>
 
 const getRegion = (state?: string) => (state ? (STATE_REGION[state] ?? 'Other') : 'Other');
 
+const zoneLabel = (state?: string | null) => {
+  const zoneId = getZoneId(state);
+  return zoneId ? getZoneConfig(zoneId).name : '—';
+};
+
 interface Student {
   id: string;
   user_id: string;
@@ -52,6 +58,7 @@ interface Student {
   constituency?: string;
   state?: string;
   city?: string;
+  school?: string | null;
   photo_url?: string;
   user_type: string;
   is_active?: boolean;
@@ -154,6 +161,7 @@ export const SuperAdminStudentView = () => {
         (s.constituency || '').toLowerCase().includes(q) ||
         (s.city || '').toLowerCase().includes(q) ||
         (s.state || '').toLowerCase().includes(q) ||
+        (s.school || '').toLowerCase().includes(q) ||
         s.serial_number.toString().includes(q) ||
         (s.position || '').toLowerCase().includes(q)
       );
@@ -415,7 +423,7 @@ export const SuperAdminStudentView = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="bg-surface-container/30 border-b border-surface-variant/30">
-                {['Delegate', 'ID', 'Role', 'City / Chapter', 'Constituency', 'State', 'Status', 'Actions'].map(h => (
+                {['Delegate', 'ID', 'Role', 'School', 'City / Chapter', 'Constituency', 'State', 'Zone', 'Status', 'Actions'].map(h => (
                   <th key={h} className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/60 font-headline whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -423,7 +431,7 @@ export const SuperAdminStudentView = () => {
             <tbody className="divide-y divide-surface-variant/20">
               {paginated.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-16 text-center">
+                  <td colSpan={10} className="py-16 text-center">
                     <span className="material-symbols-outlined text-[48px] text-outline/30 block mb-3">group_off</span>
                     <p className="text-sm text-on-surface-variant/50 font-body">No delegates match your filters.</p>
                   </td>
@@ -451,6 +459,8 @@ export const SuperAdminStudentView = () => {
                     </td>
                     {/* Role */}
                     <td className="px-6 py-4">{roleChip(s.position)}</td>
+                    {/* School */}
+                    <td className="px-6 py-4 text-sm text-on-surface-variant font-body max-w-[160px] truncate">{s.school || '—'}</td>
                     {/* City */}
                     <td className="px-6 py-4">
                       <button
@@ -465,6 +475,8 @@ export const SuperAdminStudentView = () => {
                     <td className="px-6 py-4 text-sm text-on-surface-variant font-body max-w-[140px] truncate">{s.constituency || '—'}</td>
                     {/* State */}
                     <td className="px-6 py-4 text-sm text-on-surface-variant font-body whitespace-nowrap">{s.state || '—'}</td>
+                    {/* Zone */}
+                    <td className="px-6 py-4 text-sm text-on-surface-variant font-body whitespace-nowrap">{zoneLabel(s.state)}</td>
                     {/* Status */}
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold font-body ${
@@ -549,8 +561,10 @@ export const SuperAdminStudentView = () => {
               { icon: 'groups',         label: 'Party',        value: partyLabel(viewingStudent.party_number, viewingStudent.party_name) },
               { icon: 'account_balance',label: 'Committee',    value: viewingStudent.committee || '—' },
               { icon: 'location_on',    label: 'Constituency', value: viewingStudent.constituency || '—' },
+              { icon: 'school',         label: 'School',       value: viewingStudent.school || '—' },
               { icon: 'location_city',  label: 'City',         value: viewingStudent.city || '—' },
               { icon: 'map',            label: 'State',        value: viewingStudent.state || '—' },
+              { icon: 'explore',        label: 'Zone',         value: zoneLabel(viewingStudent.state) },
             ];
             return (
               <div className="pt-6">

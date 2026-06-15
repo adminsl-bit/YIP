@@ -8,6 +8,7 @@ import { toast } from "@/hooks/use-toast";
 import { StudentEditDialog } from "./StudentEditDialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { getLocationColumns, getZoneId, getZoneConfig } from "@/lib/regions";
 
 const ITEMS_PER_PAGE = 20;
 
@@ -31,6 +32,7 @@ interface Student {
   constituency?: string;
   state?: string;
   city?: string;
+  school?: string | null;
   photo_url?: string;
   user_type: string;
   is_active?: boolean;
@@ -103,6 +105,25 @@ export const OrganizerStudentList = () => {
         setEventCommittees((data ?? []).map((r: { name: string }) => r.name));
       });
   }, [profile?.event_id]);
+
+  // Event's own level/city/state/zone — students inherit these for the
+  // School/City/State/Zone display columns (see lib/regions.ts).
+  const [eventInfo, setEventInfo] = useState<{ level: string; city: string | null; state: string | null } | null>(null);
+
+  useEffect(() => {
+    if (!profile?.event_id) { setEventInfo(null); return; }
+    supabase
+      .from('events')
+      .select('level, city, state')
+      .eq('id', profile.event_id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setEventInfo(data ?? null);
+      });
+  }, [profile?.event_id]);
+
+  const locationColumns = useMemo(() => getLocationColumns(eventInfo?.level), [eventInfo?.level]);
+  const eventZoneLabel = eventInfo?.state ? getZoneId(eventInfo.state) ? getZoneConfig(getZoneId(eventInfo.state)!).name : '—' : '—';
 
   const handleSyncEventId = async () => {
     if (!profile?.event_id) {
@@ -853,6 +874,15 @@ export const OrganizerStudentList = () => {
                       <p className="text-[9px] font-black text-on-surface-variant uppercase mb-1 tracking-widest font-body">Constituency</p>
                       <p className="text-xs font-bold text-on-surface font-body truncate">{student.constituency || '—'}</p>
                     </div>
+                    <div className="col-span-2 bg-surface-container p-3 rounded-2xl">
+                      <p className="text-[9px] font-black text-on-surface-variant uppercase mb-1 tracking-widest font-body">School</p>
+                      <p className="text-xs font-bold text-on-surface font-body truncate">{student.school || '—'}</p>
+                      {locationColumns.length > 0 && (
+                        <p className="text-[10px] text-on-surface-variant font-body mt-0.5 truncate">
+                          {[eventInfo?.city, locationColumns.includes('state') ? eventInfo?.state : null, locationColumns.includes('zone') ? eventZoneLabel : null].filter(Boolean).join(' · ')}
+                        </p>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 flex-1">
@@ -875,6 +905,10 @@ export const OrganizerStudentList = () => {
                   <th className="px-8 py-5">Student</th>
                   <th className="px-6 py-5">ID</th>
                   <th className="px-6 py-5">Role</th>
+                  <th className="px-6 py-5">School</th>
+                  {locationColumns.includes('city') && <th className="px-6 py-5">City</th>}
+                  {locationColumns.includes('state') && <th className="px-6 py-5">State</th>}
+                  {locationColumns.includes('zone') && <th className="px-6 py-5">Zone</th>}
                   <th className="px-6 py-5">Constituency & Committee</th>
                   <th className="px-6 py-5">Performance</th>
                   <th className="px-6 py-5 text-right">Actions</th>
@@ -916,6 +950,24 @@ export const OrganizerStudentList = () => {
                           {student.position || 'Delegate'}
                         </span>
                       </td>
+                      <td className="px-6 py-4">
+                        <span className="text-sm font-semibold text-on-surface font-body truncate max-w-[160px] block">{student.school || <span className="text-on-surface-variant/40 italic text-xs">—</span>}</span>
+                      </td>
+                      {locationColumns.includes('city') && (
+                        <td className="px-6 py-4">
+                          <span className="text-sm font-medium text-on-surface-variant font-body">{eventInfo?.city || '—'}</span>
+                        </td>
+                      )}
+                      {locationColumns.includes('state') && (
+                        <td className="px-6 py-4">
+                          <span className="text-sm font-medium text-on-surface-variant font-body">{eventInfo?.state || '—'}</span>
+                        </td>
+                      )}
+                      {locationColumns.includes('zone') && (
+                        <td className="px-6 py-4">
+                          <span className="text-sm font-medium text-on-surface-variant font-body">{eventZoneLabel}</span>
+                        </td>
+                      )}
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1 min-w-[140px]">
                           <div className="flex items-center gap-1.5">
@@ -1060,6 +1112,7 @@ export const OrganizerStudentList = () => {
               { icon: 'groups', label: 'Party', value: partyLabel(viewingStudent.party_number, viewingStudent.party_name) },
               { icon: 'account_balance', label: 'Committee', value: viewingStudent.committee || '—' },
               { icon: 'location_on', label: 'Constituency', value: viewingStudent.constituency || '—' },
+              { icon: 'school', label: 'School', value: viewingStudent.school || '—' },
               { icon: 'map', label: 'State', value: viewingStudent.state || '—' },
               { icon: 'location_city', label: 'City', value: viewingStudent.city || '—' },
             ];

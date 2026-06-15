@@ -6,17 +6,17 @@ import { SuperAdminRoleCreator } from '@/components/superadmin/SuperAdminRoleCre
 import { EventLeaderboard } from '@/components/organizer/EventLeaderboard';
 import { SecurityLogsManager } from '@/components/organizer/SecurityLogsManager';
 import { SuperAdminStudentView } from '@/components/superadmin/SuperAdminStudentView';
-import { ZonesDashboard } from '@/components/superadmin/ZonesDashboard';
+import { ImpactStory } from '@/components/superadmin/ImpactStory';
 import { SupportChatWidget } from '@/components/shared/SupportChatWidget';
 
-type TabId = 'overview' | 'events' | 'roles' | 'students' | 'zones' | 'leaderboard' | 'security';
+type TabId = 'overview' | 'events' | 'roles' | 'students' | 'impact' | 'leaderboard' | 'security';
 
 const navItems: { id: TabId; label: string; icon: string }[] = [
   { id: 'overview',    label: 'Global Overview',     icon: 'public' },
   { id: 'events',      label: 'Events',               icon: 'event' },
   { id: 'roles',       label: 'Organizers & Roles',   icon: 'manage_accounts' },
   { id: 'students',    label: 'Students',             icon: 'group' },
-  { id: 'zones',       label: 'Zones & Impact',       icon: 'map' },
+  { id: 'impact',      label: 'Impact Story',         icon: 'auto_stories' },
   { id: 'leaderboard', label: 'Performance',          icon: 'leaderboard' },
   { id: 'security',    label: 'Security',             icon: 'security' },
 ];
@@ -44,7 +44,7 @@ const SuperAdminDashboard = () => {
           <SuperAdminStudentView />
         </div>
       );
-      case 'zones':       return <ZonesDashboard />;
+      case 'impact':      return <ImpactStory />;
       case 'leaderboard': return (
         <div className="space-y-8">
           <header>

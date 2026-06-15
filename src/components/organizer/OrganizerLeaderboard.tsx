@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
+import { getLocationColumns, getZoneId, getZoneConfig } from "@/lib/regions";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -15,6 +16,8 @@ interface LeaderboardEntry {
   constituency: string;
   state: string;
   city: string;
+  school?: string | null;
+  event_id?: string | null;
   photo_url?: string;
   preevent_scores: number;
   jury_average_score: number;
@@ -240,6 +243,25 @@ export const OrganizerLeaderboard = () => {
   const [inlinePromotedIds, setInlinePromotedIds] = useState<Set<string>>(new Set());
 
   const { toast } = useToast();
+
+  // Event's own level/state — drives the conditional State/Zone columns
+  // (City is already shown unconditionally below; School is always shown).
+  const [eventInfo, setEventInfo] = useState<{ level: string; state: string | null } | null>(null);
+
+  useEffect(() => {
+    if (!profile?.event_id) { setEventInfo(null); return; }
+    supabase
+      .from('events')
+      .select('level, state')
+      .eq('id', profile.event_id)
+      .maybeSingle()
+      .then(({ data }) => {
+        setEventInfo(data ?? null);
+      });
+  }, [profile?.event_id]);
+
+  const locationColumns = useMemo(() => getLocationColumns(eventInfo?.level), [eventInfo?.level]);
+  const eventZoneLabel = eventInfo?.state ? (getZoneId(eventInfo.state) ? getZoneConfig(getZoneId(eventInfo.state)!).name : '—') : '—';
 
   // Reset to page 1 whenever filters change
   useEffect(() => {
@@ -624,6 +646,7 @@ export const OrganizerLeaderboard = () => {
       'Assessment Count': entry.assessment_count,
       'Juries Submitted': `${entry.jury_count_submitted || 0} / ${juryMembers.length}`,
       Constituency: entry.constituency || '',
+      School: entry.school || '',
       State: entry.state || '',
       'Home City': entry.city || '',
       Awards: (studentAwards[entry.user_id] || []).map(a => a.name).join(', ') || 'No awards',
@@ -996,7 +1019,14 @@ export const OrganizerLeaderboard = () => {
                   <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline w-16">Rank</th>
                   <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">Student</th>
                   <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">Constituency</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">School</th>
                   <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">City</th>
+                  {locationColumns.includes('state') && (
+                    <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">State</th>
+                  )}
+                  {locationColumns.includes('zone') && (
+                    <th className="px-5 py-3 text-left text-[11px] font-black uppercase tracking-widest text-outline font-headline">Zone</th>
+                  )}
                   <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">Pre ({prePct})</th>
                   <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">Jury ({judgePct})</th>
                   <th className="px-5 py-3 text-right text-[11px] font-black uppercase tracking-widest text-outline font-headline">
@@ -1078,10 +1108,29 @@ export const OrganizerLeaderboard = () => {
                         <span className="text-sm font-body text-on-surface-variant">{entry.constituency || '—'}</span>
                       </td>
 
+                      {/* School */}
+                      <td className="px-5 py-3.5">
+                        <span className="text-sm font-body text-on-surface-variant">{entry.school || '—'}</span>
+                      </td>
+
                       {/* City */}
                       <td className="px-5 py-3.5">
                         <span className="text-sm font-body text-on-surface-variant">{entry.city ? normalizeCity(entry.city) : '—'}</span>
                       </td>
+
+                      {/* State */}
+                      {locationColumns.includes('state') && (
+                        <td className="px-5 py-3.5">
+                          <span className="text-sm font-body text-on-surface-variant">{eventInfo?.state || '—'}</span>
+                        </td>
+                      )}
+
+                      {/* Zone */}
+                      {locationColumns.includes('zone') && (
+                        <td className="px-5 py-3.5">
+                          <span className="text-sm font-body text-on-surface-variant">{eventZoneLabel}</span>
+                        </td>
+                      )}
 
                       {/* Pre (prePct) */}
                       <td className="px-5 py-3.5 text-right">
@@ -1250,9 +1299,13 @@ export const OrganizerLeaderboard = () => {
                       <p className="text-[11px] text-outline font-body mt-0.5">
                         {entry.position} · #{entry.serial_number}
                       </p>
-                      {(entry.constituency || entry.city) && (
+                      {(entry.constituency || entry.city || entry.school) && (
                         <p className="text-[11px] text-on-surface-variant/50 font-body mt-0.5 truncate">
-                          {entry.constituency || '—'}{entry.city ? ` · ${normalizeCity(entry.city)}` : ''}
+                          {entry.constituency || '—'}
+                          {entry.school ? ` · ${entry.school}` : ''}
+                          {entry.city ? ` · ${normalizeCity(entry.city)}` : ''}
+                          {locationColumns.includes('state') && eventInfo?.state ? ` · ${eventInfo.state}` : ''}
+                          {locationColumns.includes('zone') ? ` · ${eventZoneLabel}` : ''}
                         </p>
                       )}
                     </div>
