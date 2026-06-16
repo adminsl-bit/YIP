@@ -70,7 +70,7 @@ export const SuperAdminRoleCreator = () => {
   const [selectedEvent, setSelectedEvent] = useState('');
 
   // Create form
-  const [selectedRole, setSelectedRole]   = useState<RoleType>('organizer');
+  const [selectedRole, setSelectedRole]   = useState<RoleType>('jury');
   const [count, setCount]                 = useState(1);
   const [password, setPassword]           = useState('');
   const [isCreating, setIsCreating]       = useState(false);
@@ -96,7 +96,7 @@ export const SuperAdminRoleCreator = () => {
   const [isResetting, setIsResetting]   = useState(false);
 
   // Filters
-  const [roleFilter, setRoleFilter]   = useState<RoleFilter>('organizer');
+  const [roleFilter, setRoleFilter]   = useState<RoleFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
 
   const config = roleConfigs[selectedRole];
