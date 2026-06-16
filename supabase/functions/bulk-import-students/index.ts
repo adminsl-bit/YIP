@@ -46,50 +46,61 @@ function getZoneId(state?: string | null): ZoneId | null {
 }
 
 // Cities used as constituency seeds, grouped by zone.
+// Sized so ALL zones combined (~215 cities) comfortably exceeds the largest
+// expected event without needing directional suffixes.
 const ZONE_CITIES: Record<ZoneId, string[]> = {
   north: [
     'Delhi', 'Lucknow', 'Kanpur', 'Varanasi', 'Allahabad', 'Agra', 'Meerut', 'Ghaziabad', 'Noida', 'Bareilly',
     'Gorakhpur', 'Amritsar', 'Ludhiana', 'Jalandhar', 'Patiala', 'Chandigarh', 'Faridabad', 'Gurugram', 'Rohtak', 'Hisar',
     'Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Bikaner', 'Ajmer', 'Dehradun', 'Shimla', 'Srinagar', 'Jammu',
+    'Mathura', 'Aligarh', 'Moradabad', 'Saharanpur', 'Haridwar', 'Karnal', 'Panipat', 'Ambala', 'Bathinda', 'Jhansi',
+    'Rae Bareli', 'Muzaffarnagar', 'Firozabad', 'Leh', 'Haldwani', 'Firozpur', 'Yamunanagar', 'Sonipat', 'Rampur', 'Gurdaspur',
   ],
   east: [
     'Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Darbhanga', 'Kolkata', 'Howrah', 'Asansol', 'Siliguri',
     'Bhubaneswar', 'Cuttack', 'Ranchi', 'Jamshedpur', 'Dhanbad', 'Port Blair',
+    'Durgapur', 'Malda', 'Bardhaman', 'Jalpaiguri', 'Samastipur', 'Arrah', 'Begusarai', 'Purnia', 'Deoghar',
+    'Bokaro', 'Hazaribagh', 'Berhampur', 'Sambalpur', 'Rourkela', 'Balasore',
   ],
   west: [
     'Bhopal', 'Indore', 'Gwalior', 'Jabalpur', 'Raipur', 'Bilaspur', 'Nagpur', 'Pune', 'Mumbai', 'Nashik',
     'Surat', 'Ahmedabad', 'Vadodara', 'Rajkot', 'Panaji',
+    'Amravati', 'Aurangabad', 'Kolhapur', 'Nanded', 'Latur', 'Akola', 'Jalgaon', 'Solapur',
+    'Bhavnagar', 'Jamnagar', 'Bhuj', 'Anand', 'Morbi', 'Rewa', 'Satna',
   ],
-  northeast: ['Guwahati', 'Shillong', 'Agartala', 'Imphal', 'Aizawl', 'Kohima', 'Itanagar', 'Gangtok', 'Dibrugarh', 'Silchar'],
-  south_tn: ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli', 'Erode', 'Vellore', 'Thanjavur', 'Dindigul', 'Puducherry'],
+  northeast: [
+    'Guwahati', 'Shillong', 'Agartala', 'Imphal', 'Aizawl', 'Kohima', 'Itanagar', 'Gangtok', 'Dibrugarh', 'Silchar',
+    'Tezpur', 'Jorhat', 'Nagaon', 'Dimapur', 'Tura', 'Mokokchung', 'Pasighat', 'North Lakhimpur', 'Bongaigaon', 'Dhubri',
+  ],
+  south_tn: [
+    'Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli', 'Erode', 'Vellore', 'Thanjavur', 'Dindigul', 'Puducherry',
+    'Tirupur', 'Nagercoil', 'Kumbakonam', 'Karur', 'Thoothukudi', 'Villupuram', 'Cuddalore', 'Dharmapuri', 'Namakkal', 'Sivakasi',
+  ],
   south_other: [
     'Bengaluru', 'Mysuru', 'Mangaluru', 'Belagavi', 'Hubli-Dharwad', 'Davanagere', 'Shivamogga', 'Bellary', 'Tumkur', 'Kalaburagi',
     'Hyderabad', 'Warangal', 'Karimnagar', 'Nizamabad', 'Khammam', 'Mahbubnagar', 'Visakhapatnam', 'Vijayawada', 'Guntur', 'Tirupati',
     'Kakinada', 'Nellore', 'Kurnool', 'Rajahmundry', 'Anantapur', 'Thiruvananthapuram', 'Kochi', 'Kozhikode', 'Thrissur', 'Kollam',
     'Kannur', 'Alappuzha', 'Palakkad', 'Kottayam', 'Malappuram',
+    'Vizianagaram', 'Ongole', 'Machilipatnam', 'Eluru', 'Kadapa', 'Adilabad', 'Sangareddy', 'Bidar',
+    'Vijayapura', 'Udupi', 'Hassan', 'Mandya', 'Chitradurga', 'Raichur', 'Idukki',
   ],
 };
 
 const ALL_ZONE_IDS: ZoneId[] = ['north', 'east', 'west', 'northeast', 'south_tn', 'south_other'];
 
-// Cities from every zone EXCEPT `eventZone` (or every zone, if the event's
-// zone couldn't be determined).
+// Return all cities, putting other-zone cities first so the simulation
+// flavour of "representing a constituency outside your own region" is
+// preserved for the majority of delegates even in large events.
 function citiesFromOtherZones(eventZone: ZoneId | null): string[] {
-  const zones = eventZone ? ALL_ZONE_IDS.filter(z => z !== eventZone) : ALL_ZONE_IDS;
-  return zones.flatMap(z => ZONE_CITIES[z]);
+  const others = eventZone ? ALL_ZONE_IDS.filter(z => z !== eventZone) : ALL_ZONE_IDS;
+  const own    = eventZone ? [eventZone] : [];
+  return [...others, ...own].flatMap(z => ZONE_CITIES[z]);
 }
 
-// Each base city is combined with a directional suffix (the way real Lok
-// Sabha seats are named, e.g. "Mumbai North", "Chennai South") to build a
-// pool large enough that even large events don't run out of unique names.
-const CONSTITUENCY_SUFFIXES = ['', ' North', ' South', ' East', ' West', ' Central'];
-
+// No directional suffixes — each city name is used as-is.
+// If the pool is exhausted (events > ~215 students) the picker appends "(2)", "(3)" etc.
 function buildConstituencyPool(cities: string[]): string[] {
-  const pool: string[] = [];
-  for (const suffix of CONSTITUENCY_SUFFIXES) {
-    for (const city of cities) pool.push(`${city}${suffix}`);
-  }
-  return pool;
+  return [...cities];
 }
 
 // Returns a function that hands out the next unused constituency from the
