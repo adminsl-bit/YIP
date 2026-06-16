@@ -141,7 +141,7 @@ const Register = () => {
           </div>
           <h1 className="text-3xl font-black font-headline text-slate-900 leading-tight">Registration Closed</h1>
           <p className="text-slate-500 font-medium leading-relaxed">
-            The national delegate enrollment phase has concluded. Please contact the Parliament Secretariat for manual registration inquiries.
+            Self-registration is currently closed for this session. Please talk to your organizer to get logged in.
           </p>
           <Link to="/" className="inline-block mt-4 text-primary font-bold hover:underline">
             Back to Hall

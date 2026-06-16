@@ -108,7 +108,10 @@ export const ImpactStory = () => {
   const [baselineDraft, setBaselineDraft] = useState({ year: 2014, hubs: 12, students: 500 });
 
   const reportRef = useRef<HTMLDivElement>(null);
+  const posterRef = useRef<HTMLDivElement>(null);
+  const pdfRef    = useRef<HTMLDivElement>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const [exportingPoster, setExportingPoster] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -134,7 +137,7 @@ export const ImpactStory = () => {
       ] = await Promise.all([
         supabase.rpc('list_events_for_super_admin'),
         supabase.from('event_schools' as any).select('id', { count: 'exact', head: true }),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'student'),
+        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'student').not('event_id', 'is', null),
         supabase.from('motions' as any).select('id, event_id, subject, details, status, updated_at'),
         supabase.from('session_items').select('id, status'),
         supabase.from('impact_story_settings' as any).select('*').maybeSingle(),
@@ -347,68 +350,102 @@ export const ImpactStory = () => {
   };
 
   const exportToPDF = async () => {
-    const container = reportRef.current;
+    const container = pdfRef.current;
     if (!container) return;
     setExportingPdf(true);
     try {
-      const hideEls = container.querySelectorAll<HTMLElement>('.export-hide');
-      hideEls.forEach(el => { el.style.visibility = 'hidden'; });
+      const pdf  = new jsPDF('p', 'mm', 'a4');
+      const pdfW = pdf.internal.pageSize.getWidth();   // 210 mm
+      const pdfH = pdf.internal.pageSize.getHeight();  // 297 mm
+      const headerH = 12; // mm — branded strip at top of every page
+      const margin  = 12; // mm side / bottom margin
+      const usableW = pdfW - margin * 2;
+      const usableH = pdfH - headerH - margin;
 
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 8;
-      const usableWidth = pdfWidth - margin * 2;
-      const pageContentHeight = pdfHeight - margin * 2;
-      const sectionGap = 4;
+      // Dedicated PDF layout captured at scale 2 — 2200px wide canvas, ~300 DPI on A4
+      const fullCanvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        logging: false,
+        allowTaint: false,
+      });
 
-      // Capture each top-level section separately so cards/sections never
-      // get sliced in half across a page boundary.
-      const sections = Array.from(container.children) as HTMLElement[];
-      let y = margin;
+      const pxPerMM = fullCanvas.width / usableW;
+      const pageHpx = usableH * pxPerMM;
+      let renderedPx = 0;
+      let pageNum    = 0;
 
-      for (const section of sections) {
-        const canvas = await html2canvas(section, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
-        const imgHeight = (canvas.height * usableWidth) / canvas.width;
+      while (renderedPx < fullCanvas.height) {
+        if (pageNum > 0) pdf.addPage();
 
-        if (imgHeight > pageContentHeight) {
-          // Section taller than a full page — slice it across pages.
-          if (y > margin) { pdf.addPage(); y = margin; }
-          const pxPerMM = canvas.width / usableWidth;
-          const pageHeightPx = pageContentHeight * pxPerMM;
-          let renderedPx = 0;
-          while (renderedPx < canvas.height) {
-            const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx);
-            const sliceCanvas = document.createElement('canvas');
-            sliceCanvas.width = canvas.width;
-            sliceCanvas.height = sliceHeightPx;
-            sliceCanvas.getContext('2d')?.drawImage(canvas, 0, renderedPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
-            const sliceHeightMM = sliceHeightPx / pxPerMM;
-            pdf.addImage(sliceCanvas.toDataURL('image/png'), 'PNG', margin, margin, usableWidth, sliceHeightMM);
-            renderedPx += sliceHeightPx;
-            y = margin + sliceHeightMM;
-            if (renderedPx < canvas.height) { pdf.addPage(); y = margin; }
-          }
-          y += sectionGap;
-        } else {
-          if (y > margin && y + imgHeight > pdfHeight - margin) {
-            pdf.addPage();
-            y = margin;
-          }
-          pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, y, usableWidth, imgHeight);
-          y += imgHeight + sectionGap;
-        }
+        // Branded header bar on every page
+        pdf.setFillColor(19, 41, 143);
+        pdf.rect(0, 0, pdfW, headerH, 'F');
+        // Rainbow accent line at very top
+        const rainbowSegs = [
+          [245, 158, 11], [239, 68, 68], [139, 92, 246], [6, 182, 212],
+        ] as [number, number, number][];
+        const segW = pdfW / rainbowSegs.length;
+        rainbowSegs.forEach(([r, g, b], i) => {
+          pdf.setFillColor(r, g, b);
+          pdf.rect(i * segW, 0, segW, 1.5, 'F');
+        });
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text('YOUNG INDIANS PARLIAMENT', margin, 8.5);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7);
+        const dateStr = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+        pdf.text(`National Impact Report · ${dateStr} · Page ${pageNum + 1}`, pdfW - margin, 8.5, { align: 'right' });
+
+        const sliceH = Math.min(pageHpx, fullCanvas.height - renderedPx);
+        const slice  = document.createElement('canvas');
+        slice.width  = fullCanvas.width;
+        slice.height = sliceH;
+        slice.getContext('2d')!.drawImage(
+          fullCanvas, 0, renderedPx, fullCanvas.width, sliceH,
+          0, 0, fullCanvas.width, sliceH
+        );
+        pdf.addImage(slice.toDataURL('image/png'), 'PNG', margin, headerH, usableW, sliceH / pxPerMM);
+        renderedPx += sliceH;
+        pageNum++;
       }
-
-      hideEls.forEach(el => { el.style.visibility = ''; });
 
       pdf.save(`yip-impact-story-${new Date().toISOString().split('T')[0]}.pdf`);
       toast({ title: 'Impact Story exported', description: 'PDF downloaded successfully.' });
     } catch (err: any) {
-      container.querySelectorAll<HTMLElement>('.export-hide').forEach(el => { el.style.visibility = ''; });
       toast({ title: 'Export failed', description: err?.message || 'Please try again.', variant: 'destructive' });
     } finally {
       setExportingPdf(false);
+    }
+  };
+
+  const exportPoster = async () => {
+    const container = posterRef.current;
+    if (!container) return;
+    setExportingPoster(true);
+    try {
+      const canvas = await html2canvas(container, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#13298f',
+        logging: false,
+        width: 1080,
+        height: 1350,
+        windowWidth: 1080,
+        windowHeight: 1350,
+      });
+      const link = document.createElement('a');
+      link.download = `yip-impact-poster-${new Date().toISOString().split('T')[0]}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      toast({ title: 'Poster downloaded!', description: 'Share it on Instagram, WhatsApp or socials.' });
+    } catch (err: any) {
+      toast({ title: 'Export failed', description: err?.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setExportingPoster(false);
     }
   };
 
@@ -477,14 +514,24 @@ export const ImpactStory = () => {
             Live National Impact — Built From Real Data
           </p>
         </div>
-        <button
-          onClick={exportToPDF}
-          disabled={exportingPdf}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary text-white font-headline font-bold text-sm shrink-0 hover:bg-primary/90 transition-colors disabled:opacity-50"
-        >
-          {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-          {exportingPdf ? 'Exporting…' : 'Download PDF'}
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={exportPoster}
+            disabled={exportingPoster}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-secondary text-on-secondary font-headline font-bold text-sm hover:bg-secondary/90 transition-colors disabled:opacity-50"
+          >
+            {exportingPoster ? <Loader2 className="w-4 h-4 animate-spin" /> : <span className="material-symbols-outlined text-[18px]">image</span>}
+            {exportingPoster ? 'Generating…' : 'Download Poster'}
+          </button>
+          <button
+            onClick={exportToPDF}
+            disabled={exportingPdf}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-primary text-white font-headline font-bold text-sm hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            {exportingPdf ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {exportingPdf ? 'Exporting…' : 'Download PDF'}
+          </button>
+        </div>
       </header>
 
       {/* Exportable storyboard */}
@@ -1046,6 +1093,420 @@ export const ImpactStory = () => {
         </div>
 
       </div>
+
+      {/* ── Off-screen shareable poster (1080×1350 Instagram portrait) ── */}
+      {/* All children use position:absolute with explicit px coords to avoid     */}
+      {/* html2canvas miscomputing height:100% for fixed off-screen containers.   */}
+      <div
+        ref={posterRef}
+        aria-hidden="true"
+        style={{
+          position: 'fixed', left: '-9999px', top: 0,
+          width: '1080px', height: '1350px',
+          overflow: 'hidden',
+          background: 'linear-gradient(145deg, #0c1b6e 0%, #13298f 40%, #190e68 100%)',
+          fontFamily: "'Plus Jakarta Sans', 'Manrope', system-ui, sans-serif",
+        }}
+      >
+        {/* Decorative blobs */}
+        <div style={{ position: 'absolute', top: -130, right: -110, width: 480, height: 480, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+        <div style={{ position: 'absolute', bottom: 80, left: -160, width: 540, height: 540, borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
+        <div style={{ position: 'absolute', top: 500, right: 80, width: 180, height: 180, borderRadius: '50%', background: 'rgba(251,191,36,0.07)' }} />
+
+        {/* Rainbow top bar */}
+        <div style={{ position: 'absolute', top: 0, left: 0, width: 1080, height: 7, background: 'linear-gradient(90deg,#f59e0b,#ef4444,#8b5cf6,#06b6d4)' }} />
+
+        {/* Brand — left */}
+        <div style={{ position: 'absolute', top: 55, left: 80 }}>
+          <div style={{ color: '#fff', fontWeight: 900, fontSize: 28, letterSpacing: '0.05em', lineHeight: 1.1 }}>YOUNG INDIANS</div>
+          <div style={{ color: '#fff', fontWeight: 900, fontSize: 28, letterSpacing: '0.05em', lineHeight: 1.1 }}>PARLIAMENT</div>
+          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, letterSpacing: '0.35em', fontWeight: 700, marginTop: 6, textTransform: 'uppercase' }}>National Impact Report</div>
+        </div>
+
+        {/* Brand — right */}
+        <div style={{ position: 'absolute', top: 62, right: 80, textAlign: 'right' }}>
+          <div style={{ color: '#fbbf24', fontSize: 12, fontWeight: 800, letterSpacing: '0.28em', textTransform: 'uppercase' }}>#YIPParliament</div>
+          <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, marginTop: 6 }}>Debate · Legislate · Lead</div>
+        </div>
+
+        {/* Divider */}
+        <div style={{ position: 'absolute', top: 192, left: 80, width: 920, height: 1, background: 'rgba(255,255,255,0.12)' }} />
+
+        {/* Hero label */}
+        <div style={{ position: 'absolute', top: 218, left: 80, width: 920, textAlign: 'center', color: 'rgba(255,255,255,0.45)', fontSize: 13, fontWeight: 700, letterSpacing: '0.35em', textTransform: 'uppercase' }}>
+          Empowering India's Future Leaders
+        </div>
+
+        {/* Hero number */}
+        <div style={{ position: 'absolute', top: 248, left: 80, width: 920, textAlign: 'center', color: '#fff', fontSize: 138, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.03em' }}>
+          {totalStudents.toLocaleString()}
+        </div>
+
+        {/* "Students Empowered" subtitle */}
+        <div style={{ position: 'absolute', top: 400, left: 80, width: 920, textAlign: 'center', color: '#fbbf24', fontSize: 34, fontWeight: 800, letterSpacing: '0.01em' }}>
+          Students Empowered
+        </div>
+
+        {/* Stats row 1 — Schools & Cities */}
+        <div style={{ position: 'absolute', top: 478, left: 80, width: 452, height: 185, background: 'rgba(255,255,255,0.07)', borderRadius: 28, borderTop: '3px solid #60a5fa', padding: '32px 36px', boxSizing: 'border-box' }}>
+          <div style={{ color: '#60a5fa', fontSize: 60, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.02em' }}>{totalSchools.toLocaleString()}</div>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: 700, marginTop: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Schools Reached</div>
+        </div>
+        <div style={{ position: 'absolute', top: 478, left: 548, width: 452, height: 185, background: 'rgba(255,255,255,0.07)', borderRadius: 28, borderTop: '3px solid #34d399', padding: '32px 36px', boxSizing: 'border-box' }}>
+          <div style={{ color: '#34d399', fontSize: 60, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.02em' }}>{cities.toLocaleString()}</div>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: 700, marginTop: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Cities Covered</div>
+        </div>
+
+        {/* Stats row 2 — Bills */}
+        <div style={{ position: 'absolute', top: 681, left: 80, width: 452, height: 185, background: 'rgba(255,255,255,0.07)', borderRadius: 28, borderTop: '3px solid #f472b6', padding: '32px 36px', boxSizing: 'border-box' }}>
+          <div style={{ color: '#f472b6', fontSize: 60, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.02em' }}>{motions.length.toLocaleString()}</div>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: 700, marginTop: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Bills Documented</div>
+        </div>
+        <div style={{ position: 'absolute', top: 681, left: 548, width: 452, height: 185, background: 'rgba(255,255,255,0.07)', borderRadius: 28, borderTop: '3px solid #fbbf24', padding: '32px 36px', boxSizing: 'border-box' }}>
+          <div style={{ color: '#fbbf24', fontSize: 60, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.02em' }}>{approvedMotions.toLocaleString()}</div>
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, fontWeight: 700, marginTop: 8, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Bills Passed</div>
+        </div>
+
+        {/* Secondary strip — 4 equal boxes (each ≈ 219px, 14px gaps, 80px margins) */}
+        {[
+          { label: 'States',        value: statesRepresented  },
+          { label: 'Sessions Done', value: sessionsCompleted  },
+          { label: 'Approval Rate', value: `${approvalRate}%` },
+          { label: 'City Chapters', value: cities             },
+        ].map((s, i) => (
+          <div key={s.label} style={{
+            position: 'absolute', top: 898,
+            left: 80 + i * 233,
+            width: 219, height: 112,
+            background: 'rgba(255,255,255,0.06)', borderRadius: 20,
+            border: '1px solid rgba(255,255,255,0.08)',
+            textAlign: 'center', boxSizing: 'border-box', padding: '18px 10px',
+          }}>
+            <div style={{ color: '#fff', fontSize: 32, fontWeight: 900, lineHeight: 1 }}>{s.value}</div>
+            <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 10, fontWeight: 700, marginTop: 6, textTransform: 'uppercase', letterSpacing: '0.1em' }}>{s.label}</div>
+          </div>
+        ))}
+
+        {/* Tagline */}
+        <div style={{ position: 'absolute', top: 1060, left: 80, width: 920, textAlign: 'center', color: 'rgba(255,255,255,0.22)', fontSize: 18, fontWeight: 800, letterSpacing: '0.25em', textTransform: 'uppercase' }}>
+          DEBATE &nbsp;·&nbsp; LEGISLATE &nbsp;·&nbsp; LEAD
+        </div>
+
+        {/* Footer divider */}
+        <div style={{ position: 'absolute', top: 1268, left: 80, width: 920, height: 1, background: 'rgba(255,255,255,0.1)' }} />
+
+        {/* Footer left */}
+        <div style={{ position: 'absolute', top: 1287, left: 80, color: 'rgba(255,255,255,0.35)', fontSize: 12, fontWeight: 600, letterSpacing: '0.06em' }}>
+          Young Indians Parliament · CII
+        </div>
+
+        {/* Footer right */}
+        <div style={{ position: 'absolute', top: 1291, right: 80, display: 'flex', alignItems: 'center', gap: 7 }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
+          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, fontWeight: 600 }}>Live Data</div>
+        </div>
+      </div>
+
+      {/* ── Off-screen PDF layout (1100px fixed width, no Tailwind — all inline styles) ─────────
+           Normal flow layout so html2canvas derives height from content, not percentage.
+           Captured by exportToPDF(); sliced into A4 pages with a jsPDF header overlay.        */}
+      <div
+        ref={pdfRef}
+        aria-hidden="true"
+        style={{
+          position: 'fixed', left: '-9999px', top: 0,
+          width: '1100px',
+          backgroundColor: '#ffffff',
+          fontFamily: "'Plus Jakarta Sans', 'Manrope', system-ui, sans-serif",
+        }}
+      >
+        {/* ── Hero ── */}
+        <div style={{ background: 'linear-gradient(135deg, #081552 0%, #13298f 55%, #1e40af 100%)', padding: '52px 56px 44px' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 44 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '4px 14px', borderRadius: 100, border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(255,255,255,0.08)', marginBottom: 20 }}>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#22c55e' }} />
+                <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.25em' }}>Live National Impact</span>
+              </div>
+              <div style={{ color: '#ffffff', fontSize: 50, fontWeight: 900, lineHeight: 1.05, letterSpacing: '-0.02em', marginBottom: 20 }}>
+                {totalStudents.toLocaleString()}+<br />
+                <span style={{ color: '#86efac' }}>Future Leaders</span><br />
+                Empowered
+              </div>
+              <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: 14, fontWeight: 500, lineHeight: 1.7, maxWidth: 420 }}>
+                Across{' '}
+                <span style={{ color: '#fff', fontWeight: 700 }}>{totalSchools} schools</span>
+                {' '}and{' '}
+                <span style={{ color: '#fff', fontWeight: 700 }}>{cities} cities</span>,
+                {' '}YIP Parliament gives young Indians a real chamber to debate, legislate, and lead — from city hubs to the National Summit.
+              </div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 8 }}>
+              {[
+                { v: motions.length.toLocaleString(), l: 'Bills Documented', c: '#93c5fd' },
+                { v: approvedMotions.toLocaleString(), l: 'Bills Passed', c: '#86efac' },
+                { v: `${approvalRate}%`, l: 'Approval Rate', c: '#fbbf24' },
+              ].map(s => (
+                <div key={s.l} style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 18, padding: '20px 28px', border: '1px solid rgba(255,255,255,0.15)', minWidth: 192 }}>
+                  <div style={{ color: s.c, fontSize: 34, fontWeight: 900, lineHeight: 1 }}>{s.v}</div>
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: 8 }}>{s.l}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Foundation Stats ── */}
+        <div style={{ padding: '28px 56px', background: '#f2f4f6', borderBottom: '1px solid #e0e3e5' }}>
+          <div style={{ display: 'flex', gap: 14 }}>
+            {foundationStats.map(s => (
+              <div key={s.label} style={{ flex: 1, background: '#ffffff', borderRadius: 14, padding: '20px 22px', border: '1px solid #e6e8ea' }}>
+                <div style={{ fontSize: 28, fontWeight: 900, color: '#13298f', lineHeight: 1, marginBottom: 7 }}>{s.value}</div>
+                <div style={{ fontSize: 9.5, fontWeight: 700, color: '#757684', textTransform: 'uppercase', letterSpacing: '0.09em' }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Reach Across the Network ── */}
+        <div style={{ padding: '40px 56px', background: '#ffffff' }}>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 21, fontWeight: 800, color: '#13298f', letterSpacing: '-0.01em' }}>Reach Across the Network</div>
+            <div style={{ width: 48, height: 3, borderRadius: 2, background: '#ac3509', marginTop: 8 }} />
+          </div>
+          <div style={{ display: 'flex', gap: 18 }}>
+            {[
+              { value: participantsByLevel.city,     label: 'City Hub Delegates',   sub: `${cityEvents.length} events across ${cities} cities`, c: '#13298f', bg: '#e8ecf8', bc: '#c7d0ef' },
+              { value: participantsByLevel.regional,  label: 'Regional Delegates',   sub: `${regionalEvents.length} regional assemblies`,         c: '#ac3509', bg: '#fdf0ec', bc: '#f4c5b5' },
+              { value: participantsByLevel.national,  label: 'National Delegates',   sub: `${nationalEvents.length} national events`,             c: '#003e29', bg: '#e8f5ee', bc: '#b5ddc7' },
+            ].map(col => (
+              <div key={col.label} style={{ flex: 1, borderRadius: 18, padding: '28px 28px', background: col.bg, border: `1px solid ${col.bc}` }}>
+                <div style={{ fontSize: 42, fontWeight: 900, color: col.c, lineHeight: 1 }}>{col.value.toLocaleString()}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: col.c, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 12, marginBottom: 8 }}>{col.label}</div>
+                <div style={{ fontSize: 11, color: '#454653', fontWeight: 500 }}>{col.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Civic Engagement in Numbers ── */}
+        <div style={{ padding: '40px 56px', background: '#f7f9fb' }}>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 21, fontWeight: 800, color: '#13298f', letterSpacing: '-0.01em' }}>Civic Engagement in Numbers</div>
+            <div style={{ width: 48, height: 3, borderRadius: 2, background: '#ac3509', marginTop: 8 }} />
+          </div>
+          <div style={{ display: 'flex', gap: 14 }}>
+            {[
+              { v: `${sessionsCompleted}/${totalSessions}`, l: 'Sessions Conducted', c: '#13298f' },
+              { v: totalPolls,                              l: 'Polls Run',           c: '#ac3509' },
+              { v: `${voterTurnout}%`,                     l: 'Voter Turnout',       c: '#003e29' },
+              { v: totalSpeeches,                          l: 'Speeches Recorded',   c: '#13298f' },
+              { v: totalChatMessages,                      l: 'Civic Square Msgs',   c: '#ac3509' },
+            ].map(s => (
+              <div key={s.l} style={{ flex: 1, background: '#ffffff', borderRadius: 14, padding: '20px 18px', border: '1px solid #e6e8ea', textAlign: 'center' }}>
+                <div style={{ fontSize: 26, fontWeight: 900, color: s.c, lineHeight: 1, marginBottom: 8 }}>{s.v}</div>
+                <div style={{ fontSize: 9.5, fontWeight: 700, color: '#757684', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Inside the Chamber ── */}
+        <div style={{ padding: '40px 56px', background: '#ffffff' }}>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 21, fontWeight: 800, color: '#13298f', letterSpacing: '-0.01em' }}>Inside the Chamber</div>
+            <div style={{ width: 48, height: 3, borderRadius: 2, background: '#ac3509', marginTop: 8 }} />
+          </div>
+          <div style={{ display: 'flex', gap: 14, marginBottom: 24 }}>
+            {[
+              { v: motions.length,   l: 'Total Motions', c: '#191c1e' },
+              { v: approvedMotions,  l: 'Passed',        c: '#003e29' },
+              { v: pendingMotions,   l: 'Under Review',  c: '#ac3509' },
+              { v: rejectedMotions,  l: 'Rejected',      c: '#ba1a1a' },
+            ].map(s => (
+              <div key={s.l} style={{ flex: 1, background: '#f7f9fb', borderRadius: 14, padding: '18px 20px', border: '1px solid #e6e8ea', textAlign: 'center' }}>
+                <div style={{ fontSize: 30, fontWeight: 900, color: s.c, lineHeight: 1, marginBottom: 6 }}>{s.v}</div>
+                <div style={{ fontSize: 9.5, fontWeight: 700, color: '#757684', textTransform: 'uppercase', letterSpacing: '0.08em' }}>{s.l}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ background: '#f2f4f6', borderRadius: 12, padding: '20px 24px', marginBottom: recentMotions.length > 0 ? 20 : 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#191c1e' }}>Resolutions: Passed vs Failed</div>
+              <div style={{ display: 'flex', gap: 20 }}>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: '#003e29', lineHeight: 1 }}>{approvedMotions}</div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: '#757684', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 2 }}>Passed</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 20, fontWeight: 900, color: '#ba1a1a', lineHeight: 1 }}>{rejectedMotions}</div>
+                  <div style={{ fontSize: 9, fontWeight: 700, color: '#757684', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 2 }}>Failed</div>
+                </div>
+              </div>
+            </div>
+            <div style={{ height: 10, borderRadius: 5, overflow: 'hidden', background: '#e0e3e5', display: 'flex' }}>
+              <div style={{ height: '100%', background: '#003e29', width: `${passRate}%` }} />
+              <div style={{ height: '100%', background: '#ba1a1a', width: `${failRate}%` }} />
+            </div>
+          </div>
+          {recentMotions.length > 0 && (
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#454653', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 }}>Recent Motions</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {recentMotions.map(m => {
+                  const display = STATUS_DISPLAY[m.status] ?? STATUS_DISPLAY.pending;
+                  return (
+                    <div key={m.id} style={{ background: '#f7f9fb', borderRadius: 12, padding: '14px 18px', display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#191c1e', marginBottom: 4 }}>{m.subject}</div>
+                        <div style={{ fontSize: 11, color: '#757684', lineHeight: 1.5 }}>
+                          {m.details ? m.details.slice(0, 120) + (m.details.length > 120 ? '…' : '') : 'Raised in an event — awaiting committee review.'}
+                        </div>
+                      </div>
+                      <div style={{ flexShrink: 0, padding: '4px 10px', borderRadius: 6, background: '#e8ecf8', fontSize: 9, fontWeight: 700, color: '#13298f', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        {display.label}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Diversity & Representation ── */}
+        <div style={{ padding: '40px 56px', background: '#f7f9fb' }}>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 21, fontWeight: 800, color: '#13298f', letterSpacing: '-0.01em' }}>Diversity & Representation</div>
+            <div style={{ width: 48, height: 3, borderRadius: 2, background: '#ac3509', marginTop: 8 }} />
+          </div>
+          <div style={{ display: 'flex', gap: 14 }}>
+            {diversityStats.map(s => (
+              <div key={s.label} style={{ flex: 1, background: '#ffffff', borderRadius: 14, padding: '20px 22px', border: '1px solid #e6e8ea' }}>
+                <div style={{ fontSize: 28, fontWeight: 900, color: '#13298f', lineHeight: 1, marginBottom: 7 }}>{s.value}</div>
+                <div style={{ fontSize: 9.5, fontWeight: 700, color: '#757684', textTransform: 'uppercase', letterSpacing: '0.09em' }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Program Capacity & Rigor ── */}
+        <div style={{ padding: '40px 56px', background: '#ffffff' }}>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 21, fontWeight: 800, color: '#13298f', letterSpacing: '-0.01em' }}>Program Capacity & Rigor</div>
+            <div style={{ width: 48, height: 3, borderRadius: 2, background: '#ac3509', marginTop: 8 }} />
+          </div>
+          <div style={{ display: 'flex', gap: 14 }}>
+            {capacityStats.map(s => (
+              <div key={s.label} style={{ flex: 1, background: '#f7f9fb', borderRadius: 14, padding: '20px 22px', border: '1px solid #e6e8ea' }}>
+                <div style={{ fontSize: 28, fontWeight: 900, color: '#13298f', lineHeight: 1, marginBottom: 7 }}>{s.value}</div>
+                <div style={{ fontSize: 9.5, fontWeight: 700, color: '#757684', textTransform: 'uppercase', letterSpacing: '0.09em' }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── Award Winners by Segment ── */}
+        <div style={{ padding: '40px 56px', background: '#f7f9fb' }}>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 21, fontWeight: 800, color: '#13298f', letterSpacing: '-0.01em' }}>Award Winners by Segment</div>
+            <div style={{ width: 48, height: 3, borderRadius: 2, background: '#ac3509', marginTop: 8 }} />
+          </div>
+          <div style={{ display: 'flex', gap: 18 }}>
+            {LEVELS.map(level => {
+              const meta  = LEVEL_META[level];
+              const data  = winnersByLevel[level];
+              const lc: Record<string, string> = { city: '#13298f', regional: '#ac3509', national: '#003e29' };
+              const lbg: Record<string, string> = { city: '#e8ecf8', regional: '#fdf0ec', national: '#e8f5ee' };
+              return (
+                <div key={level} style={{ flex: 1, background: '#ffffff', borderRadius: 18, padding: '24px 24px', border: '1px solid #e6e8ea' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#454653', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{meta.label}</div>
+                    <div style={{ padding: '3px 10px', borderRadius: 100, background: lbg[level], fontSize: 10, fontWeight: 700, color: lc[level] }}>
+                      {data.count} Winner{data.count !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                  {data.names.length > 0 ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {data.names.slice(0, 6).map((name, i) => (
+                        <span key={i} style={{ padding: '4px 10px', borderRadius: 100, background: lbg[level], fontSize: 11, fontWeight: 600, color: lc[level] }}>{name}</span>
+                      ))}
+                      {data.names.length > 6 && (
+                        <span style={{ padding: '4px 10px', borderRadius: 100, background: '#f2f4f6', fontSize: 11, fontWeight: 600, color: '#757684' }}>+{data.names.length - 6} more</span>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 12, color: '#757684' }}>No award winners yet.</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ── Growth Narrative ── */}
+        <div style={{ background: '#0f172a', padding: '40px 56px' }}>
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ fontSize: 21, fontWeight: 800, color: '#ffffff', letterSpacing: '-0.01em' }}>The Evolution of Voice</div>
+            <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: 500, marginTop: 8, lineHeight: 1.6 }}>
+              From a dialogue forum to a nationwide policy-driving powerhouse — {totalDelegates} delegates trained across {events.length} event{events.length !== 1 ? 's' : ''}.
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 20 }}>
+            <div style={{ flex: 1, background: 'rgba(255,255,255,0.07)', borderRadius: 18, padding: '24px 28px', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 20 }}>Initial Phase ({settings.baseline_year})</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                {[
+                  { val: settings.baseline_hubs,     label: 'Hubs',     pct: Math.min(100, (settings.baseline_hubs / maxHubs) * 100) },
+                  { val: settings.baseline_students,  label: 'Students', pct: Math.min(100, (settings.baseline_students / maxStudents) * 100) },
+                ].map(row => (
+                  <div key={row.label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+                      <span style={{ fontSize: 32, fontWeight: 900, color: '#fff', lineHeight: 1 }}>{row.val}</span>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase' }}>{row.label}</span>
+                    </div>
+                    <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', background: 'rgba(255,255,255,0.4)', width: `${row.pct}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ flex: 1, background: 'rgba(19,41,143,0.4)', borderRadius: 18, padding: '24px 28px', border: '1px solid rgba(99,130,255,0.25)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#86efac', textTransform: 'uppercase', letterSpacing: '0.2em', marginBottom: 20 }}>Present Day ({currentYear})</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                {[
+                  { val: `${currentHubs}+`,                   label: 'Hubs',     pct: Math.min(100, (currentHubs / maxHubs) * 100) },
+                  { val: `${totalStudents.toLocaleString()}+`, label: 'Students', pct: Math.min(100, (totalStudents / maxStudents) * 100) },
+                ].map(row => (
+                  <div key={row.label}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 8 }}>
+                      <span style={{ fontSize: 32, fontWeight: 900, color: '#fff', lineHeight: 1 }}>{row.val}</span>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.4)', fontWeight: 600, textTransform: 'uppercase' }}>{row.label}</span>
+                    </div>
+                    <div style={{ height: 4, borderRadius: 2, background: 'rgba(255,255,255,0.1)', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', background: '#86efac', width: `${row.pct}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Footer ── */}
+        <div style={{ padding: '20px 56px', background: '#13298f', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: 700 }}>Young Indians Parliament · CII</div>
+          <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>
+            Generated from live data · {new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#22c55e' }} />
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 600 }}>Live Data</div>
+          </div>
+        </div>
+      </div>
+
     </div>
   );
 };

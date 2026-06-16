@@ -39,6 +39,8 @@ interface Student {
   last_login_at?: string;
   session_id?: string;
   created_at?: string;
+  login_code?: string | null;
+  email?: string | null;
 }
 
 interface Assessment {
@@ -153,10 +155,12 @@ export const OrganizerStudentList = () => {
   const [showRegisterDialog, setShowRegisterDialog] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [registerForm, setRegisterForm] = useState({
-    name: '', loginId: '', password: '', seatRole: 'Member of Parliament',
+    name: '', email: '', school: '', seatRole: 'Member of Parliament',
     alliance: 'Neutral', party: 'A', partyName: '', committee: '',
     constituency: '', state: '', city: '',
   });
+  const [lastRegisteredCredential, setLastRegisteredCredential] = useState<{ name: string; email: string; code: string } | null>(null);
+  const [emailingStudentId, setEmailingStudentId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchStudents();
@@ -352,12 +356,15 @@ export const OrganizerStudentList = () => {
   };
 
   const getSeatRole = (position: string): string => {
-    const pos = position.toLowerCase();
+    const pos = (position ?? '').toLowerCase();
     if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
     if (pos.includes('speaker')) return 'speaker';
     if (pos.includes('administrator') || pos.includes('admin')) return 'administrator';
     if (pos.includes('journalist')) return 'journalist';
-    if (pos.includes('minister') || pos.includes('shadow minister')) return 'minister';
+    if (pos.includes('prime minister')) return 'prime_minister';
+    if (pos.includes('leader of opposition')) return 'leader_of_opposition';
+    if (pos.includes('party leader')) return 'party_leader';
+    if (pos.includes('minister')) return 'minister';
     return 'mp';
   };
 
@@ -548,8 +555,8 @@ export const OrganizerStudentList = () => {
 
   const handleRegisterStudent = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!registerForm.name || !registerForm.loginId || !registerForm.password) {
-      toast({ title: "Missing fields", description: "Name, Login ID and Password are required.", variant: "destructive" });
+    if (!registerForm.name || !registerForm.email) {
+      toast({ title: "Missing fields", description: "Name and Email are required.", variant: "destructive" });
       return;
     }
     setIsRegistering(true);
@@ -562,27 +569,26 @@ export const OrganizerStudentList = () => {
         body: JSON.stringify({
           mode: 'full',
           event_id: profile?.event_id ?? null,
+          is_last_batch: true,
           students: [{
-            serialNumber: nextSerial,
-            loginId: registerForm.loginId,
             name: registerForm.name,
-            seatRole: registerForm.seatRole,
-            alliance: registerForm.alliance,
-            party: registerForm.party,
-            partyName: registerForm.partyName,
-            committee: registerForm.committee,
-            constituency: registerForm.constituency,
-            state: registerForm.state,
-            city: registerForm.city,
-            password: registerForm.password,
+            email: registerForm.email,
+            school: registerForm.school || 'Independent',
+            phone: '',
           }]
         }),
       });
       const result = await res.json();
-      if (result.success > 0) {
-        toast({ title: "Student registered", description: `${registerForm.name} added with ID ${nextSerial.toString().padStart(3, '0')}` });
+      if (result.success > 0 && result.credentials?.[0]) {
+        const cred = result.credentials[0];
+        setLastRegisteredCredential({ name: cred.name, email: cred.email, code: cred.password });
+        setRegisterForm({ name: '', email: '', school: '', seatRole: 'Member of Parliament', alliance: 'Neutral', party: 'A', partyName: '', committee: '', constituency: '', state: '', city: '' });
+        fetchStudents();
+      } else if (result.success > 0) {
+        // Existing student updated (re-registration)
+        toast({ title: "Student updated", description: `${registerForm.name}'s profile has been updated.` });
         setShowRegisterDialog(false);
-        setRegisterForm({ name: '', loginId: '', password: '', seatRole: 'Member of Parliament', alliance: 'Neutral', party: 'A', partyName: '', committee: '', constituency: '', state: '', city: '' });
+        setRegisterForm({ name: '', email: '', school: '', seatRole: 'Member of Parliament', alliance: 'Neutral', party: 'A', partyName: '', committee: '', constituency: '', state: '', city: '' });
         fetchStudents();
       } else {
         throw new Error(result.errors?.[0] || 'Registration failed');
@@ -591,6 +597,36 @@ export const OrganizerStudentList = () => {
       toast({ title: "Error", description: err instanceof Error ? err.message : 'Unknown error', variant: "destructive" });
     } finally {
       setIsRegistering(false);
+    }
+  };
+
+  const handleSendStudentEmail = async (student: Student) => {
+    if (!student.login_code || !student.email) {
+      toast({ title: "Cannot send email", description: "Student has no login code or email on record.", variant: "destructive" });
+      return;
+    }
+    setEmailingStudentId(student.user_id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No active session');
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-login-emails`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({
+          credentials: [{ name: student.name, email: student.email, password: student.login_code }],
+          site_url: window.location.origin,
+        }),
+      });
+      const result = await res.json();
+      if (result.sent > 0) {
+        toast({ title: "Email sent", description: `Login details sent to ${student.name}` });
+      } else {
+        throw new Error(result.errors?.[0] || result.error || 'Failed to send email');
+      }
+    } catch (err) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : 'Failed to send email', variant: "destructive" });
+    } finally {
+      setEmailingStudentId(null);
     }
   };
 
@@ -744,6 +780,9 @@ export const OrganizerStudentList = () => {
             <span className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 font-headline pr-1">Role</span>
             {([
               { value: 'all', label: 'All', icon: 'groups' },
+              { value: 'prime_minister', label: 'PM', icon: 'workspace_premium' },
+              { value: 'leader_of_opposition', label: 'LOP', icon: 'campaign' },
+              { value: 'party_leader', label: 'Party Leader', icon: 'star' },
               { value: 'speaker', label: 'Speaker', icon: 'gavel' },
               { value: 'deputy_speaker', label: 'Dy. Speaker', icon: 'supervised_user_circle' },
               { value: 'minister', label: 'Minister', icon: 'account_balance' },
@@ -845,6 +884,9 @@ export const OrganizerStudentList = () => {
                       <div>
                         <p className="font-bold text-on-surface text-sm font-headline leading-tight">{student.name}</p>
                         <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 mt-1 inline-block font-body ${
+                          roleKey === 'prime_minister' ? 'bg-amber-500/15 text-amber-700' :
+                          roleKey === 'leader_of_opposition' ? 'bg-orange-500/15 text-orange-700' :
+                          roleKey === 'party_leader' ? 'bg-violet-500/15 text-violet-700' :
                           roleKey === 'speaker' ? 'bg-error/10 text-error' :
                           roleKey === 'minister' ? 'bg-tertiary-container/10 text-tertiary-container' :
                           roleKey === 'journalist' ? 'bg-secondary-fixed/30 text-secondary' :
@@ -904,6 +946,7 @@ export const OrganizerStudentList = () => {
                 <tr className="bg-surface-container text-on-surface-variant uppercase text-[11px] font-black tracking-widest font-body">
                   <th className="px-8 py-5">Student</th>
                   <th className="px-6 py-5">ID</th>
+                  <th className="px-6 py-5">Login Code</th>
                   <th className="px-6 py-5">Role</th>
                   <th className="px-6 py-5">School</th>
                   {locationColumns.includes('city') && <th className="px-6 py-5">City</th>}
@@ -941,7 +984,24 @@ export const OrganizerStudentList = () => {
                         <span className="font-mono text-xs font-bold text-primary bg-primary/8 px-2.5 py-1 rounded-lg">#{student.serial_number.toString().padStart(3, '0')}</span>
                       </td>
                       <td className="px-6 py-4">
+                        {student.login_code ? (
+                          <button
+                            type="button"
+                            onClick={() => { navigator.clipboard.writeText(student.login_code!); toast({ title: 'Copied', description: `Login code for ${student.name} copied` }); }}
+                            className="font-mono text-sm font-black tracking-[0.2em] text-on-surface bg-surface-container px-3 py-1.5 rounded-lg hover:bg-surface-container-high transition-colors cursor-copy"
+                            title="Click to copy"
+                          >
+                            {student.login_code}
+                          </button>
+                        ) : (
+                          <span className="text-on-surface-variant/30 italic text-xs font-body">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-tight font-body ${
+                          roleKey === 'prime_minister' ? 'bg-amber-500/15 text-amber-700' :
+                          roleKey === 'leader_of_opposition' ? 'bg-orange-500/15 text-orange-700' :
+                          roleKey === 'party_leader' ? 'bg-violet-500/15 text-violet-700' :
                           roleKey === 'speaker' ? 'bg-error/10 text-error' :
                           roleKey === 'minister' ? 'bg-tertiary-container/10 text-tertiary-container' :
                           roleKey === 'journalist' ? 'bg-secondary-fixed/30 text-secondary' :
@@ -993,6 +1053,20 @@ export const OrganizerStudentList = () => {
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => handleSendStudentEmail(student)}
+                                disabled={!student.login_code || !student.email || emailingStudentId === student.user_id}
+                                className="p-2 text-on-surface-variant hover:text-primary rounded-lg hover:bg-surface-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: emailingStudentId === student.user_id ? "'FILL' 0" : "'FILL' 1" }}>
+                                  {emailingStudentId === student.user_id ? 'sync' : 'mail'}
+                                </span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>{student.login_code ? 'Send login email' : 'No login code — re-import to generate'}</TooltipContent>
+                          </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
@@ -1193,20 +1267,54 @@ export const OrganizerStudentList = () => {
       </Dialog>
 
       {/* Register New Student dialog */}
-      <Dialog open={showRegisterDialog} onOpenChange={(open) => { if (!open) setShowRegisterDialog(false); }}>
+      <Dialog open={showRegisterDialog} onOpenChange={(open) => { if (!open) { setShowRegisterDialog(false); setLastRegisteredCredential(null); } }}>
         <DialogContent className="rounded-[2.5rem] border-none shadow-2xl overflow-hidden bg-surface-container-lowest max-w-lg">
           <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-primary to-primary-container rounded-t-[2.5rem]" />
           <DialogHeader className="pt-4">
             <DialogTitle className="text-2xl font-black tracking-tight text-on-surface flex items-center gap-3 font-headline">
               <div className="w-10 h-10 bg-primary-fixed/30 rounded-xl flex items-center justify-center">
-                <span className="material-symbols-outlined text-primary text-[22px]">person_add</span>
+                <span className="material-symbols-outlined text-primary text-[22px]">{lastRegisteredCredential ? 'key' : 'person_add'}</span>
               </div>
-              Register Delegate
+              {lastRegisteredCredential ? 'Delegate Registered!' : 'Register Delegate'}
             </DialogTitle>
             <DialogDescription className="text-[10px] font-black text-on-surface-variant uppercase tracking-widest font-body">
-              Serial will be assigned as #{nextSerial.toString().padStart(3, '0')}
+              {lastRegisteredCredential ? 'Share this login code with the delegate — they cannot self-retrieve it.' : `Serial will be assigned as #${nextSerial.toString().padStart(3, '0')}`}
             </DialogDescription>
           </DialogHeader>
+
+          {lastRegisteredCredential ? (
+            <div className="space-y-4 mt-2">
+              <div className="bg-primary/5 rounded-2xl p-5 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant font-body">Name</span>
+                  <span className="font-bold text-sm text-on-surface font-headline">{lastRegisteredCredential.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant font-body">Email</span>
+                  <span className="font-mono text-xs text-on-surface-variant">{lastRegisteredCredential.email}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant font-body">Login Code</span>
+                  <button
+                    type="button"
+                    onClick={() => { navigator.clipboard.writeText(lastRegisteredCredential.code); toast({ title: 'Copied', description: 'Login code copied to clipboard' }); }}
+                    className="font-mono text-2xl font-black tracking-[0.3em] text-primary bg-primary/10 px-4 py-2 rounded-xl hover:bg-primary/20 transition-colors cursor-copy"
+                  >
+                    {lastRegisteredCredential.code}
+                  </button>
+                </div>
+              </div>
+              <p className="text-xs text-on-surface-variant/60 font-body text-center">This code is the delegate's password. Click the code to copy it.</p>
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => { setLastRegisteredCredential(null); }} className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant font-body border border-outline-variant/20 rounded-2xl hover:bg-surface-container transition-colors">
+                  Add Another
+                </button>
+                <button type="button" onClick={() => { setShowRegisterDialog(false); setLastRegisteredCredential(null); }} className="flex-1 py-4 bg-primary text-white rounded-2xl font-black text-[10px] uppercase tracking-widest font-body">
+                  Done
+                </button>
+              </div>
+            </div>
+          ) : (
           <form onSubmit={handleRegisterStudent} className="space-y-4 mt-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1">
@@ -1219,23 +1327,27 @@ export const OrganizerStudentList = () => {
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Login ID *</label>
+                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Email *</label>
                 <Input
-                  value={registerForm.loginId}
-                  onChange={e => setRegisterForm(f => ({ ...f, loginId: e.target.value }))}
-                  placeholder="e.g. arjun.sharma"
+                  type="email"
+                  value={registerForm.email}
+                  onChange={e => setRegisterForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="e.g. arjun@school.edu"
                   className="h-12 bg-surface-container border-none rounded-2xl font-bold px-5 focus:ring-2 focus:ring-primary/20"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Password *</label>
+                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">School</label>
                 <Input
-                  type="password"
-                  value={registerForm.password}
-                  onChange={e => setRegisterForm(f => ({ ...f, password: e.target.value }))}
-                  placeholder="Min 6 characters"
+                  value={registerForm.school}
+                  onChange={e => setRegisterForm(f => ({ ...f, school: e.target.value }))}
+                  placeholder="e.g. DPS Bangalore"
                   className="h-12 bg-surface-container border-none rounded-2xl font-bold px-5 focus:ring-2 focus:ring-primary/20"
                 />
+              </div>
+              <div className="col-span-2 bg-surface-container/50 rounded-2xl px-4 py-2.5 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[16px] text-primary/60" style={{ fontVariationSettings: "'FILL' 1" }}>key</span>
+                <p className="text-[10px] text-on-surface-variant font-body">A 6-digit login code will be auto-generated and shown after registration.</p>
               </div>
               <div className="space-y-1">
                 <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Role</label>
@@ -1245,6 +1357,9 @@ export const OrganizerStudentList = () => {
                   className="w-full h-12 bg-surface-container border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
                 >
                   <option>Member of Parliament</option>
+                  <option>Prime Minister</option>
+                  <option>Leader of Opposition</option>
+                  <option>Party Leader</option>
                   <option>Minister</option>
                   <option>Speaker</option>
                   <option>Deputy Speaker</option>
@@ -1352,6 +1467,7 @@ export const OrganizerStudentList = () => {
               </button>
             </div>
           </form>
+          )}
         </DialogContent>
       </Dialog>
 

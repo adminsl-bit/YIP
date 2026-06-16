@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
     // Check if user is an organizer
     const { data: profile, error: profileError } = await supabaseClient
       .from('profiles')
-      .select('user_type')
+      .select('user_type, event_id')
       .eq('user_id', user.id)
       .single();
 
@@ -47,13 +47,19 @@ Deno.serve(async (req) => {
       throw new Error('Only organizers can delete students');
     }
 
-    console.log('Starting deletion of all students...');
+    console.log(`Starting deletion of all students for event ${profile.event_id ?? '(none)'}...`);
 
-    // Get all student profiles
-    const { data: students, error: studentsError } = await supabaseClient
+    // Get all student profiles for this organizer's event only
+    let studentsQuery = supabaseClient
       .from('profiles')
       .select('user_id, name, serial_number')
       .eq('user_type', 'student');
+
+    studentsQuery = profile.event_id
+      ? studentsQuery.eq('event_id', profile.event_id)
+      : studentsQuery.is('event_id', null);
+
+    const { data: students, error: studentsError } = await studentsQuery;
 
     if (studentsError) {
       console.error('Error fetching students:', studentsError);

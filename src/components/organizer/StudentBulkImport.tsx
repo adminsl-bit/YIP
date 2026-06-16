@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useSyncExternalStore } from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
+import { getBulkImportState, setBulkImportState, subscribeBulkImportState, type ImportCredential } from '@/lib/bulkImportStore';
 
 interface StudentData {
   // Full import
@@ -16,29 +18,17 @@ interface StudentData {
   preeventScores?: number;
 }
 
-interface ImportCredential {
-  serialNumber: number;
-  name: string;
-  school: string;
-  email: string;
-  phone?: string;
-  password: string;
-}
-
 export const StudentBulkImport = () => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [file, setFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [importMode, setImportMode] = useState<'full' | 'scores-only'>('full');
-  const [results, setResults] = useState<{
-    success: number;
-    failed: number;
-    errors: string[];
-    credentials?: ImportCredential[];
-  } | null>(null);
+  const [isEmailing, setIsEmailing] = useState(false);
+
+  // Import progress/results live in a module-level store so they survive
+  // switching tabs away from this component and back.
+  const { isUploading, progress, results, importMode, fileName } = useSyncExternalStore(subscribeBulkImportState, getBulkImportState);
+  const setImportMode = (mode: 'full' | 'scores-only') => setBulkImportState({ importMode: mode });
 
   const parseExcelFile = (file: File, mode: 'full' | 'scores-only' = 'full'): Promise<StudentData[]> => {
     return new Promise((resolve, reject) => {
@@ -49,52 +39,81 @@ export const StudentBulkImport = () => {
           const workbook = XLSX.read(data, { type: 'array' });
           const sheetName = workbook.SheetNames[0];
           const worksheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-          const students: StudentData[] = jsonData.map((row: any, index) => {
-            // Handle various column name formats
-            const getColumnValue = (possibleNames: string[]) => {
-              const keys = Object.keys(row);
-              const findKey = (target: string) => keys.find(k => k.toString().trim().toLowerCase() === target.trim().toLowerCase());
-              for (const name of possibleNames) {
-                const exact = findKey(name);
-                if (exact) return row[exact];
-              }
-              // Loose match: allow headers like "Email ID" or "Phone Number"
-              const targets = possibleNames.map(n => n.trim().toLowerCase());
-              const loose = keys.find(k => targets.some(t => k.toString().trim().toLowerCase().includes(t)));
-              if (loose) return row[loose];
-              return '';
-            };
+          // Read all rows as raw arrays so we can locate the header row ourselves,
+          // handling blank rows or title rows that appear above the actual headers.
+          // Column order in the sheet is irrelevant — we match by header name.
+          const rawRows = XLSX.utils.sheet_to_json<(string | number | null)[]>(
+            worksheet, { header: 1, defval: null }
+          );
 
-            if (mode === 'scores-only') {
-              const serialNumber = getColumnValue(['Serial no', 'serial_no', 'S.No', 'Serial No', 'SNo']);
-              const preeventScores = getColumnValue(['Preevent scores', 'preevent_scores', 'Pre-event scores']);
+          // Header row = first row with at least 2 non-empty cells.
+          const headerRowIdx = rawRows.findIndex(
+            row => row.filter(c => c !== null && c !== '').length >= 2
+          );
+          if (headerRowIdx === -1) throw new Error('Could not find a header row in the file.');
 
-              if (!serialNumber) {
-                throw new Error(`Row ${index + 2}: Missing required field (Serial no)`);
-              }
+          // Normalize: trim, lowercase, collapse whitespace / underscores / dashes.
+          const norm = (v: unknown) =>
+            (v ?? '').toString().trim().toLowerCase().replace(/[\s_\-]+/g, ' ');
+          const headers = rawRows[headerRowIdx].map(norm);
 
+          // Data rows: everything after the header minus completely blank rows.
+          const dataRows = rawRows
+            .slice(headerRowIdx + 1)
+            .filter(row => row.some(c => c !== null && c !== ''));
+
+          if (dataRows.length === 0) throw new Error('No data rows found after the header.');
+
+          // Fuzzy column finder: exact match → starts-with/prefix → substring (first win).
+          const findCol = (...aliases: string[]): number => {
+            const targets = aliases.map(norm);
+            for (const t of targets) { const i = headers.indexOf(t); if (i !== -1) return i; }
+            for (const t of targets) {
+              const i = headers.findIndex(h => h.startsWith(t) || t.startsWith(h));
+              if (i !== -1) return i;
+            }
+            for (const t of targets) {
+              const i = headers.findIndex(h => h.includes(t) || t.includes(h));
+              if (i !== -1) return i;
+            }
+            return -1;
+          };
+
+          const cell = (row: (string | number | null)[], col: number) =>
+            col === -1 ? '' : (row[col] ?? '').toString().trim();
+
+          if (mode === 'scores-only') {
+            const serialCol = findCol('serial no', 'serial number', 's no', 'sno', 'serial');
+            const scoreCol  = findCol('preevent scores', 'pre event scores', 'preevent score', 'score');
+            const students: StudentData[] = dataRows.map((row, i) => {
+              const serialVal = cell(row, serialCol);
+              if (!serialVal) throw new Error(`Row ${headerRowIdx + i + 2}: Missing Serial No`);
               return {
-                serialNumber: parseInt(serialNumber.toString()) || index + 1,
-                preeventScores: preeventScores ? parseFloat(preeventScores.toString()) : undefined,
+                serialNumber: parseInt(serialVal) || (i + 1),
+                preeventScores: scoreCol !== -1 ? parseFloat(cell(row, scoreCol)) || undefined : undefined,
               };
+            });
+            return resolve(students);
+          }
+
+          // Full import — Name and Email are required; School and Phone are optional.
+          const nameCol   = findCol('name', 'student name', 'full name', 'student');
+          const emailCol  = findCol('email', 'email address', 'email id', 'e mail', 'mail');
+          const schoolCol = findCol('school', 'school name', 'institution', 'college', 'organization');
+          const phoneCol  = findCol('phone', 'phone number', 'mobile', 'mobile number', 'contact', 'cell');
+
+          const students: StudentData[] = dataRows.map((row, i) => {
+            const name  = cell(row, nameCol);
+            const email = cell(row, emailCol);
+            if (!name || !email) {
+              throw new Error(`Row ${headerRowIdx + i + 2}: Missing required field (Name or Email)`);
             }
-
-            const name = getColumnValue(['Name', 'name', 'student_name', 'Student Name']);
-            const school = getColumnValue(['School', 'school', 'School Name', 'school name']);
-            const email = getColumnValue(['Email', 'email', 'Email ID', 'email id', 'Email Address']);
-            const phone = getColumnValue(['Phone', 'phone', 'Phone Number', 'phone number', 'Mobile', 'mobile number']);
-
-            if (!name || !school || !email) {
-              throw new Error(`Row ${index + 2}: Missing required field (Name, School, or Email)`);
-            }
-
             return {
-              name: name.toString().trim(),
-              school: school.toString().trim(),
-              email: email.toString().trim(),
-              phone: phone ? phone.toString().trim() : undefined,
+              name,
+              school: cell(row, schoolCol) || 'Independent',
+              email: email.toLowerCase(),
+              phone: cell(row, phoneCol) || undefined,
             };
           });
 
@@ -108,35 +127,71 @@ export const StudentBulkImport = () => {
     });
   };
 
+  // Imported in small batches so the UI can show real progress and each
+  // request stays well under the edge function's execution time limit.
+  const IMPORT_BATCH_SIZE = 20;
+
   const importStudents = async (students: StudentData[]) => {
-    const results = { success: 0, failed: 0, errors: [] as string[], credentials: [] as ImportCredential[] };
+    const aggregate = { success: 0, failed: 0, errors: [] as string[], credentials: [] as ImportCredential[] };
 
-    try {
-      // Get current session for authorization
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error('No active session');
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      aggregate.errors.push('Import failed: No active session');
+      aggregate.failed = students.length;
+      return aggregate;
+    }
 
-      // Use edge function for bulk import with admin privileges
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-import-students`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({ students, mode: importMode, event_id: profile?.event_id ?? null }),
-      });
+    const total = students.length;
+    setBulkImportState({ progress: total > 0 ? 1 : 100 });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+    for (let i = 0; i < total; i += IMPORT_BATCH_SIZE) {
+      const batch = students.slice(i, i + IMPORT_BATCH_SIZE);
+      // Guard against a hung edge function invocation freezing the UI
+      // indefinitely — give up on this batch after 60s and move on.
+      const timeoutController = new AbortController();
+      const timeoutId = setTimeout(() => timeoutController.abort(), 60_000);
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-import-students`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            students: batch,
+            mode: importMode,
+            event_id: profile?.event_id ?? null,
+            is_last_batch: i + batch.length >= total,
+          }),
+          signal: timeoutController.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const batchResult = await response.json();
+        aggregate.success += batchResult.success ?? 0;
+        aggregate.failed += batchResult.failed ?? 0;
+        aggregate.errors.push(...(batchResult.errors ?? []));
+        aggregate.credentials.push(...(batchResult.credentials ?? []));
+      } catch (error) {
+        const message = error instanceof Error && error.name === 'AbortError'
+          ? 'Request timed out after 60s'
+          : error instanceof Error ? error.message : 'Unknown error';
+        aggregate.errors.push(`Rows ${i + 1}-${i + batch.length}: ${message}`);
+        aggregate.failed += batch.length;
+      } finally {
+        clearTimeout(timeoutId);
       }
 
-      const importResults = await response.json();
-      return importResults;
-    } catch (error) {
-      results.errors.push(`Import failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      results.failed = students.length;
-      return results;
+      setBulkImportState({
+        progress: Math.round((Math.min(i + batch.length, total) / total) * 100),
+        results: { ...aggregate },
+      });
     }
+
+    return aggregate;
   };
 
   const handleFileUpload = async () => {
@@ -145,26 +200,38 @@ export const StudentBulkImport = () => {
       return;
     }
 
-    setIsUploading(true);
-    setProgress(0);
-    setResults(null);
+    setBulkImportState({ isUploading: true, progress: 0, results: null, fileName: file.name });
 
     try {
       const students = await parseExcelFile(file, importMode);
       const importResults = await importStudents(students);
-      setResults(importResults);
+      setBulkImportState({ results: importResults });
 
       if (importResults.success > 0) {
         toast.success(`Successfully imported ${importResults.success} students`);
       }
       if (importResults.failed > 0) {
-        toast.error(`Failed to import ${importResults.failed} students`);
+        toast.error(`Failed to import ${importResults.failed} students — see the error report below`);
+      }
+
+      // A full import means rosters are now managed by the organizer —
+      // close public self-registration so students can't create duplicate
+      // accounts alongside the imported ones.
+      if (importMode === 'full' && importResults.success > 0) {
+        // Upsert (not update) — the registration_enabled row may not exist
+        // yet, in which case a plain .update() silently matches zero rows.
+        const { error: settingError } = await supabase
+          .from('system_settings')
+          .upsert({ setting_key: 'registration_enabled', setting_value: false, updated_by: user?.id }, { onConflict: 'setting_key' });
+
+        if (!settingError) {
+          toast.info('Public registration has been turned off since students were bulk-imported.');
+        }
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to process file');
     } finally {
-      setIsUploading(false);
-      setProgress(0);
+      setBulkImportState({ isUploading: false, progress: 0 });
     }
   };
 
@@ -189,7 +256,7 @@ export const StudentBulkImport = () => {
 
       if (result.success) {
         toast.success(result.message);
-        setResults(null); // Clear any previous import results
+        setBulkImportState({ results: null, fileName: null }); // Clear any previous import results
       } else {
         toast.error(result.error || 'Failed to delete students');
       }
@@ -250,6 +317,49 @@ export const StudentBulkImport = () => {
     }
   };
 
+  const handleBulkEmail = async () => {
+    if (!results?.credentials || results.credentials.length === 0) return;
+
+    setIsEmailing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('No active session');
+        return;
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-login-emails`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          credentials: results.credentials.map(c => ({ name: c.name, email: c.email, password: c.password })),
+          site_url: window.location.origin,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        toast.error(result.error || 'Failed to send login emails');
+        return;
+      }
+
+      if (result.sent > 0) {
+        toast.success(`Sent login details to ${result.sent} student${result.sent === 1 ? '' : 's'}`);
+      }
+      if (result.failed > 0) {
+        toast.error(`Failed to email ${result.failed} student${result.failed === 1 ? '' : 's'}`);
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to send login emails');
+    } finally {
+      setIsEmailing(false);
+    }
+  };
+
   const downloadCredentials = () => {
     if (!results?.credentials || results.credentials.length === 0) return;
 
@@ -266,6 +376,17 @@ export const StudentBulkImport = () => {
     XLSX.utils.book_append_sheet(wb, ws, 'Credentials');
     XLSX.writeFile(wb, 'student_login_credentials.xlsx');
     toast.success(`Downloaded login credentials for ${rows.length} students`);
+  };
+
+  const downloadErrorReport = () => {
+    if (!results?.errors || results.errors.length === 0) return;
+
+    const rows = results.errors.map((err, i) => ({ '#': i + 1, 'Error': err }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Import Errors');
+    XLSX.writeFile(wb, 'student_import_errors.xlsx');
+    toast.success(`Downloaded ${rows.length} error${rows.length === 1 ? '' : 's'}`);
   };
 
   return (
@@ -362,7 +483,7 @@ export const StudentBulkImport = () => {
           <div className="flex-1">
             <input
               type="file"
-              accept=".xlsx,.xls"
+              accept=".xlsx,.xls,.csv"
               onChange={(e) => setFile(e.target.files?.[0] || null)}
               className="hidden"
               id="excel-upload"
@@ -379,7 +500,7 @@ export const StudentBulkImport = () => {
                 {file ? 'table_chart' : 'upload_file'}
               </span>
               <div>
-                <p className="font-bold text-sm">{file ? file.name : 'Select Excel file (.xlsx / .xls)'}</p>
+                <p className="font-bold text-sm">{file ? file.name : 'Select file (.xlsx, .xls or .csv)'}</p>
                 {!file && <p className="text-[11px] text-on-surface-variant/60 mt-0.5">Click to browse</p>}
               </div>
               {file && (
@@ -407,6 +528,16 @@ export const StudentBulkImport = () => {
             </span>
             {isUploading ? 'Importing…' : `Import ${importMode === 'scores-only' ? 'Pre-Event Scores' : 'Students'}`}
           </button>
+        )}
+
+        {/* Import progress */}
+        {isUploading && (
+          <div className="space-y-2">
+            <Progress value={progress} className="h-2 bg-surface-container" />
+            <p className="text-xs text-on-surface-variant font-body text-center">
+              {fileName ? `Importing ${fileName} — ` : ''}{progress}% complete
+            </p>
+          </div>
         )}
 
         {/* Results */}
@@ -441,34 +572,52 @@ export const StudentBulkImport = () => {
                     New Login Credentials
                   </p>
                   <p className="text-sm text-on-surface-variant font-body">
-                    {results.credentials.length} new student account{results.credentials.length === 1 ? '' : 's'} created. Download the sheet to share login emails and 6-digit passwords.
+                    {results.credentials.length} new student account{results.credentials.length === 1 ? '' : 's'} created. Download the sheet, or email each student their login and 6-digit code directly.
                   </p>
                 </div>
-                <button
-                  onClick={downloadCredentials}
-                  className="shrink-0 flex items-center gap-2 py-3 px-5 rounded-2xl bg-primary text-white font-bold text-sm transition-all hover:bg-primary/90 active:scale-95 font-body shadow-[0_4px_12px_rgba(19,41,143,0.25)]"
-                >
-                  <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>download</span>
-                  Download Credentials
-                </button>
+                <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                  <button
+                    onClick={downloadCredentials}
+                    className="flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-primary text-white font-bold text-sm transition-all hover:bg-primary/90 active:scale-95 font-body shadow-[0_4px_12px_rgba(19,41,143,0.25)]"
+                  >
+                    <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>download</span>
+                    Download Credentials
+                  </button>
+                  <button
+                    onClick={handleBulkEmail}
+                    disabled={isEmailing}
+                    className="flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-surface-container-lowest border border-primary/20 text-primary font-bold text-sm transition-all hover:bg-primary/5 active:scale-95 font-body disabled:opacity-60"
+                  >
+                    <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      {isEmailing ? 'sync' : 'mail'}
+                    </span>
+                    {isEmailing ? 'Sending…' : 'Bulk Email Credentials'}
+                  </button>
+                </div>
               </div>
             )}
 
             {results.errors.length > 0 && (
               <div className="bg-error/5 rounded-2xl p-5 space-y-2">
-                <p className="text-[10px] font-black uppercase tracking-widest text-error font-headline flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[14px]">warning</span>
-                  Import Errors
-                </p>
-                <ul className="space-y-1">
-                  {results.errors.slice(0, 5).map((err, i) => (
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-error font-headline flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[14px]">warning</span>
+                    Import Errors ({results.errors.length})
+                  </p>
+                  <button
+                    onClick={downloadErrorReport}
+                    className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-error/10 text-error font-bold text-[11px] transition-all hover:bg-error/20 active:scale-95 font-body shrink-0"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">download</span>
+                    Download Report
+                  </button>
+                </div>
+                <ul className="space-y-1 max-h-64 overflow-y-auto pr-1">
+                  {results.errors.map((err, i) => (
                     <li key={i} className="text-xs text-on-surface-variant font-body flex items-start gap-2">
                       <span className="text-error/60 shrink-0 mt-0.5">·</span>{err}
                     </li>
                   ))}
-                  {results.errors.length > 5 && (
-                    <li className="text-xs text-on-surface-variant/60 font-body">…and {results.errors.length - 5} more</li>
-                  )}
                 </ul>
               </div>
             )}

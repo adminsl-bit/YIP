@@ -153,30 +153,58 @@ const OrganizerDashboard = () => {
     }
   };
 
-  // Mobile nav: a few primary tabs in the bottom bar, everything else behind "More"
+  // Mobile nav: a few primary tabs in the bottom bar, everything else (grouped) behind "More"
   const primaryMobileNavItems: { value: string; icon: string; label: string }[] = [
     { value: 'controls', icon: 'dashboard_customize', label: 'Controls' },
     { value: 'timer',    icon: 'timer',               label: 'Timer' },
     { value: 'polls',    icon: 'how_to_vote',         label: 'Ballot' },
     { value: 'square',   icon: 'forum',               label: 'Civic Chat' },
   ];
-  const moreMobileNavItems: { value: string; icon: string; label: string }[] = [
-    { value: 'sessions',       icon: 'event_seat',         label: 'Sessions' },
-    { value: 'question-hour',  icon: 'forum',               label: 'Question Hour' },
-    { value: 'motions',        icon: 'gavel',               label: 'Motions' },
-    { value: 'students',       icon: 'group',               label: 'Students' },
-    { value: 'documents',      icon: 'description',         label: 'Documents' },
-    { value: 'bulk-import',     icon: 'upload_file',        label: 'Bulk Import' },
-    { value: 'role-creator',    icon: 'manage_accounts',    label: 'Role Creator' },
-    { value: 'security',        icon: 'security',           label: 'Security' },
-    { value: 'leaderboard',     icon: 'leaderboard',        label: 'Leaderboard' },
-    { value: 'awards',          icon: 'emoji_events',       label: 'Awards' },
-    { value: 'photos',          icon: 'photo_library',      label: 'Photos' },
-    { value: 'speeches',        icon: 'record_voice_over',  label: 'Speeches' },
-    { value: 'news',            icon: 'campaign',           label: 'Breaking News' },
-    { value: 'manual-scoring',  icon: 'edit_note',          label: 'Manual Scoring' },
+  const primaryMobileValues = new Set(primaryMobileNavItems.map(item => item.value));
+
+  // Everything except "Controls" (pinned separately as the dashboard home),
+  // grouped by workflow for the desktop sidebar and the mobile "More" drawer.
+  const navGroups: { label: string; items: { value: string; icon: string; label: string }[] }[] = [
+    {
+      label: 'Live Floor',
+      items: [
+        { value: 'timer',         icon: 'timer',       label: 'Timer' },
+        { value: 'sessions',      icon: 'event_seat',  label: 'Sessions' },
+        { value: 'polls',         icon: 'how_to_vote', label: 'Ballot' },
+        { value: 'question-hour', icon: 'forum',       label: 'Question Hour' },
+        { value: 'motions',       icon: 'gavel',       label: 'Motions' },
+      ],
+    },
+    {
+      label: 'Community',
+      items: [
+        { value: 'square',   icon: 'forum',             label: 'Civic Chat' },
+        { value: 'speeches', icon: 'record_voice_over', label: 'Speeches' },
+        { value: 'news',     icon: 'campaign',          label: 'Breaking News' },
+        { value: 'photos',   icon: 'photo_library',     label: 'Photos' },
+      ],
+    },
+    {
+      label: 'People & Access',
+      items: [
+        { value: 'students',     icon: 'group',           label: 'Students' },
+        { value: 'schools',      icon: 'school',          label: 'Schools' },
+        { value: 'documents',    icon: 'description',     label: 'Documents' },
+        { value: 'bulk-import',  icon: 'upload_file',     label: 'Bulk Import' },
+        { value: 'role-creator', icon: 'manage_accounts', label: 'Role Creator' },
+        { value: 'security',     icon: 'security',        label: 'Security' },
+      ],
+    },
+    {
+      label: 'Performance',
+      items: [
+        { value: 'manual-scoring', icon: 'edit_note',    label: 'Manual Scoring' },
+        { value: 'leaderboard',    icon: 'leaderboard',  label: 'Leaderboard' },
+        { value: 'awards',         icon: 'emoji_events', label: 'Awards' },
+      ],
+    },
   ];
-  const isMoreTabActive = moreMobileNavItems.some(item => item.value === activeTab);
+  const isMoreTabActive = navGroups.some(g => g.items.some(item => !primaryMobileValues.has(item.value) && item.value === activeTab));
 
   return (
     <div className="flex min-h-screen bg-[#F3F4F6] font-body text-on-surface antialiased">
@@ -192,26 +220,18 @@ const OrganizerDashboard = () => {
             <p className="font-body text-on-surface-variant text-xs font-medium">Organizer Hub</p>
           </div>
 
-          <TabsList className="flex-1 flex flex-col items-stretch bg-transparent h-auto px-4 space-y-1 mb-8">
-            <NavTrigger value="controls"       icon="dashboard_customize" label="Controls" />
-            <NavTrigger value="timer"          icon="timer"               label="Timer" />
-            <NavTrigger value="sessions"       icon="event_seat"          label="Sessions" />
-            <NavTrigger value="polls"          icon="how_to_vote"         label="Ballot" />
-            <NavTrigger value="question-hour"  icon="forum"               label="Question Hour" />
-            <NavTrigger value="motions"        icon="gavel"               label="Motions" />
-            <NavTrigger value="square"         icon="forum"               label="Civic Chat" />
-            <NavTrigger value="students"       icon="group"               label="Students" />
-            <NavTrigger value="schools"        icon="school"              label="Schools" />
-            <NavTrigger value="documents"      icon="description"         label="Documents" />
-            <NavTrigger value="bulk-import"    icon="upload_file"         label="Bulk Import" />
-            <NavTrigger value="role-creator"   icon="manage_accounts"     label="Role Creator" />
-            <NavTrigger value="security"       icon="security"            label="Security" />
-            <NavTrigger value="leaderboard"    icon="leaderboard"         label="Leaderboard" />
-            <NavTrigger value="awards"         icon="emoji_events"        label="Awards" />
-            <NavTrigger value="photos"         icon="photo_library"       label="Photos" />
-            <NavTrigger value="speeches"       icon="record_voice_over"   label="Speeches" />
-            <NavTrigger value="news"           icon="campaign"            label="Breaking News" />
-            <NavTrigger value="manual-scoring" icon="edit_note"           label="Manual Scoring" />
+          <TabsList className="flex-1 flex flex-col items-stretch bg-transparent h-auto px-4 mb-8">
+            <NavTrigger value="controls" icon="dashboard_customize" label="Controls" />
+            {navGroups.map(group => (
+              <div key={group.label} className="mt-4 space-y-1">
+                <p className="px-3 pb-1 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline">
+                  {group.label}
+                </p>
+                {group.items.map(item => (
+                  <NavTrigger key={item.value} value={item.value} icon={item.icon} label={item.label} />
+                ))}
+              </div>
+            ))}
           </TabsList>
 
           <div className="px-6 py-6 mt-auto">
@@ -515,29 +535,40 @@ const OrganizerDashboard = () => {
           <DrawerHeader>
             <DrawerTitle>More</DrawerTitle>
           </DrawerHeader>
-          <nav className="px-4 pb-8 space-y-1 max-h-[60vh] overflow-y-auto">
-            {moreMobileNavItems.map(item => (
-              <button
-                key={item.value}
-                onClick={() => { setActiveTab(item.value); setMoreOpen(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 text-left min-h-[44px] ${
-                  activeTab === item.value
-                    ? 'text-primary font-bold bg-primary/5'
-                    : 'text-on-surface-variant hover:bg-surface-container font-medium'
-                }`}
-              >
-                <span
-                  className="material-symbols-outlined text-[20px] shrink-0"
-                  style={activeTab === item.value ? { fontVariationSettings: "'FILL' 1" } : undefined}
-                >
-                  {item.icon}
-                </span>
-                <span className="font-body text-sm whitespace-nowrap">{item.label}</span>
-              </button>
-            ))}
+          <nav className="px-4 pb-8 max-h-[60vh] overflow-y-auto">
+            {navGroups.map(group => {
+              const items = group.items.filter(item => !primaryMobileValues.has(item.value));
+              if (items.length === 0) return null;
+              return (
+                <div key={group.label} className="mt-3 first:mt-0 space-y-1">
+                  <p className="px-3 pb-1 text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline">
+                    {group.label}
+                  </p>
+                  {items.map(item => (
+                    <button
+                      key={item.value}
+                      onClick={() => { setActiveTab(item.value); setMoreOpen(false); }}
+                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 text-left min-h-[44px] ${
+                        activeTab === item.value
+                          ? 'text-primary font-bold bg-primary/5'
+                          : 'text-on-surface-variant hover:bg-surface-container font-medium'
+                      }`}
+                    >
+                      <span
+                        className="material-symbols-outlined text-[20px] shrink-0"
+                        style={activeTab === item.value ? { fontVariationSettings: "'FILL' 1" } : undefined}
+                      >
+                        {item.icon}
+                      </span>
+                      <span className="font-body text-sm whitespace-nowrap">{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
             <button
               onClick={signOut}
-              className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left min-h-[44px] text-on-surface-variant hover:bg-error/5 hover:text-error font-medium transition-colors duration-200"
+              className="mt-3 w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left min-h-[44px] text-on-surface-variant hover:bg-error/5 hover:text-error font-medium transition-colors duration-200"
             >
               <LogOut className="w-5 h-5 shrink-0" />
               <span className="font-body text-sm whitespace-nowrap">Sign Out</span>

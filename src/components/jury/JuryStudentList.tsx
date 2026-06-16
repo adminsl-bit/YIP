@@ -270,6 +270,10 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     const pos = position?.toLowerCase() || '';
     if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
     if (pos.includes('speaker')) return 'speaker';
+    if (pos.includes('prime minister')) return 'prime_minister';
+    if (pos.includes('leader of opposition')) return 'leader_of_opposition';
+    if (pos.includes('party leader')) return 'party_leader';
+    if (pos.includes('minister')) return 'minister';
     return 'mp';
   };
 

@@ -8,11 +8,15 @@ import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
+  const [loginMode, setLoginMode] = useState<'password' | 'code'>('password');
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+  // Login-with-code state
+  const [loginCode, setLoginCode] = useState('');
 
   // Forgot password state
   const [showForgotPw, setShowForgotPw] = useState(false);
@@ -54,6 +58,56 @@ const Login = () => {
       toast({
         title: "Access Denied",
         description: "Your credentials could not be verified. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const handleCodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = loginCode.trim();
+    if (!/^\d{6}$/.test(code)) {
+      toast({
+        title: "Invalid Code",
+        description: "Enter the 6-digit code from your login sheet.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsAuthenticating(true);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/login-with-code`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.email) {
+        toast({
+          title: "Access Denied",
+          description: result.error || "That code wasn't recognised. Please check and try again.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { error } = await supabase.auth.signInWithPassword({ email: result.email, password: code });
+      if (error) {
+        toast({
+          title: "Access Denied",
+          description: "Your code could not be verified. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Code login error:', error);
+      toast({
+        title: "Access Denied",
+        description: "Something went wrong. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -228,6 +282,63 @@ const Login = () => {
                   <p className="text-xs text-on-surface-variant font-medium">Welcome back, Delegate. Access your chamber.</p>
                 </div>
 
+                <div className="flex gap-2 mb-6 p-1 bg-surface-container rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setLoginMode('password')}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${loginMode === 'password' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'}`}
+                  >
+                    Username
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLoginMode('code')}
+                    className={`flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${loginMode === 'code' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'}`}
+                  >
+                    Login Code
+                  </button>
+                </div>
+
+                {loginMode === 'code' ? (
+                  <form onSubmit={handleCodeSubmit} className="space-y-5">
+                    <div className="space-y-2">
+                      <label className="block text-xs font-black uppercase tracking-widest text-on-surface-variant ml-1">6-Digit Login Code</label>
+                      <div className="relative group">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                          <span className="material-symbols-outlined text-outline group-focus-within:text-primary transition-colors text-lg">password</span>
+                        </div>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          required
+                          value={loginCode}
+                          onChange={(e) => setLoginCode(e.target.value.replace(/\D/g, ''))}
+                          className="block w-full pl-11 pr-4 py-3.5 bg-surface-container border-none rounded-xl text-lg text-center tracking-[0.5em] text-on-surface focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all placeholder:text-outline/50 outline-none font-black"
+                          placeholder="000000"
+                        />
+                      </div>
+                      <p className="text-[11px] text-on-surface-variant/70 font-body leading-relaxed ml-1">
+                        Enter the code from your login sheet — no email needed.
+                      </p>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isAuthenticating}
+                      className="w-full flex justify-center items-center gap-2.5 py-3.5 px-6 bg-gradient-to-r from-primary to-primary-container text-white text-xs font-black uppercase tracking-[0.2em] rounded-xl shadow-lg shadow-primary/10 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-75"
+                    >
+                      {isAuthenticating ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <>
+                          <span>Sign In to Portal</span>
+                          <span className="material-symbols-outlined text-base">login</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+                ) : (
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
                     <label className="block text-xs font-black uppercase tracking-widest text-on-surface-variant ml-1">Username or Email</label>
@@ -308,6 +419,7 @@ const Login = () => {
                     )}
                   </button>
                 </form>
+                )}
 
                 <div className="mt-8 pt-6 border-t border-surface-variant/30 text-center">
                   <p className="text-xs text-on-surface-variant font-semibold mb-3">New to the Parliament?</p>

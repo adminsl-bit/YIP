@@ -3,7 +3,13 @@ project_id = "ybxktwmpxdnpkfeewrpe"
 [functions.seed-demo-users]
 verify_jwt = false
 
+[functions.login-with-code]
+verify_jwt = false
+
 [functions.bulk-import-students]
+verify_jwt = true
+
+[functions.send-login-emails]
 verify_jwt = true
 
 [functions.create-jury-users]

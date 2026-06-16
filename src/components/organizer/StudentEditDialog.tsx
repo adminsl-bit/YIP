@@ -245,6 +245,12 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = 
                   <SelectItem value="Deputy Speaker">Deputy Speaker <span className="text-on-surface-variant/40 text-[10px] ml-1">(max 2)</span></SelectItem>
                 </SelectGroup>
                 <SelectGroup>
+                  <SelectLabel className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/50 px-3 pt-2 pb-1">Party Leadership</SelectLabel>
+                  <SelectItem value="Prime Minister">Prime Minister</SelectItem>
+                  <SelectItem value="Leader of Opposition">Leader of Opposition</SelectItem>
+                  <SelectItem value="Party Leader">Party Leader</SelectItem>
+                </SelectGroup>
+                <SelectGroup>
                   <SelectLabel className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/50 px-3 pt-2 pb-1">Cabinet — Ruling Party</SelectLabel>
                   <SelectItem value="Minister of Road Transport & Highways">Minister of Road Transport & Highways</SelectItem>
                   <SelectItem value="Minister of Finance">Minister of Finance</SelectItem>

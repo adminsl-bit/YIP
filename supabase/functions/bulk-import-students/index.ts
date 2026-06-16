@@ -20,41 +20,116 @@ interface StudentData {
   preeventScores?: number;
 }
 
-// States that fall in the south_tn / south_other zones (see src/lib/regions.ts).
-// Students at an event in one of these states get a "northern" constituency,
-// and vice versa — purely flavour data for the simulation.
-const SOUTH_STATES = new Set([
-  'Tamil Nadu', 'Puducherry', 'Telangana', 'Karnataka', 'Kerala', 'Andhra Pradesh', 'Lakshadweep',
-]);
+// The app's 6 operational zones (see src/lib/regions.ts ZONES) and the
+// states that fall into each. Students at an event in one zone get
+// constituencies drawn from the OTHER 5 zones — purely flavour data for the
+// simulation, not a real electoral mapping.
+type ZoneId = 'north' | 'east' | 'west' | 'northeast' | 'south_tn' | 'south_other';
 
-const NORTHERN_CONSTITUENCIES = [
-  'New Delhi', 'Amritsar', 'Lucknow', 'Varanasi', 'Jaipur', 'Chandigarh',
-  'Patna Sahib', 'Kolkata Dakshin', 'Bhubaneswar', 'Ranchi', 'Indore',
-  'Bhopal', 'Mumbai North', 'Pune', 'Ahmedabad East', 'Panaji', 'Shimla',
-  'Dehradun', 'Guwahati', 'Shillong',
-];
+const ZONE_STATES: Record<ZoneId, string[]> = {
+  north: ['Delhi', 'Haryana', 'Punjab', 'Himachal Pradesh', 'Uttarakhand', 'Jammu and Kashmir', 'Ladakh', 'Uttar Pradesh', 'Rajasthan', 'Chandigarh'],
+  east: ['West Bengal', 'Odisha', 'Bihar', 'Jharkhand', 'Andaman and Nicobar Islands'],
+  west: ['Maharashtra', 'Gujarat', 'Goa', 'Madhya Pradesh', 'Chhattisgarh', 'Dadra and Nagar Haveli and Daman and Diu'],
+  northeast: ['Assam', 'Meghalaya', 'Manipur', 'Mizoram', 'Nagaland', 'Tripura', 'Arunachal Pradesh', 'Sikkim'],
+  south_tn: ['Tamil Nadu', 'Puducherry'],
+  south_other: ['Telangana', 'Karnataka', 'Kerala', 'Andhra Pradesh', 'Lakshadweep'],
+};
 
-const SOUTHERN_CONSTITUENCIES = [
-  'Chennai South', 'Madurai', 'Coimbatore', 'Puducherry', 'Bengaluru Central',
-  'Mysuru', 'Hyderabad', 'Warangal', 'Visakhapatnam', 'Vijayawada',
-  'Thiruvananthapuram', 'Ernakulam', 'Mangaluru', 'Tiruchirappalli',
-  'Kanyakumari', 'Hubli-Dharwad', 'Kurnool', 'Kozhikode', 'Salem', 'Madikeri',
-];
+const STATE_TO_ZONE: Record<string, ZoneId> = (() => {
+  const map: Record<string, ZoneId> = {};
+  (Object.keys(ZONE_STATES) as ZoneId[]).forEach(zone => ZONE_STATES[zone].forEach(state => { map[state] = zone; }));
+  return map;
+})();
 
-function getCrossZoneConstituency(state: string | null | undefined, index: number): string {
-  const pool = state && SOUTH_STATES.has(state) ? NORTHERN_CONSTITUENCIES : SOUTHERN_CONSTITUENCIES;
-  return pool[((index % pool.length) + pool.length) % pool.length];
+function getZoneId(state?: string | null): ZoneId | null {
+  return state ? STATE_TO_ZONE[state] ?? null : null;
+}
+
+// Cities used as constituency seeds, grouped by zone.
+const ZONE_CITIES: Record<ZoneId, string[]> = {
+  north: [
+    'Delhi', 'Lucknow', 'Kanpur', 'Varanasi', 'Allahabad', 'Agra', 'Meerut', 'Ghaziabad', 'Noida', 'Bareilly',
+    'Gorakhpur', 'Amritsar', 'Ludhiana', 'Jalandhar', 'Patiala', 'Chandigarh', 'Faridabad', 'Gurugram', 'Rohtak', 'Hisar',
+    'Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Bikaner', 'Ajmer', 'Dehradun', 'Shimla', 'Srinagar', 'Jammu',
+  ],
+  east: [
+    'Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Darbhanga', 'Kolkata', 'Howrah', 'Asansol', 'Siliguri',
+    'Bhubaneswar', 'Cuttack', 'Ranchi', 'Jamshedpur', 'Dhanbad', 'Port Blair',
+  ],
+  west: [
+    'Bhopal', 'Indore', 'Gwalior', 'Jabalpur', 'Raipur', 'Bilaspur', 'Nagpur', 'Pune', 'Mumbai', 'Nashik',
+    'Surat', 'Ahmedabad', 'Vadodara', 'Rajkot', 'Panaji',
+  ],
+  northeast: ['Guwahati', 'Shillong', 'Agartala', 'Imphal', 'Aizawl', 'Kohima', 'Itanagar', 'Gangtok', 'Dibrugarh', 'Silchar'],
+  south_tn: ['Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli', 'Erode', 'Vellore', 'Thanjavur', 'Dindigul', 'Puducherry'],
+  south_other: [
+    'Bengaluru', 'Mysuru', 'Mangaluru', 'Belagavi', 'Hubli-Dharwad', 'Davanagere', 'Shivamogga', 'Bellary', 'Tumkur', 'Kalaburagi',
+    'Hyderabad', 'Warangal', 'Karimnagar', 'Nizamabad', 'Khammam', 'Mahbubnagar', 'Visakhapatnam', 'Vijayawada', 'Guntur', 'Tirupati',
+    'Kakinada', 'Nellore', 'Kurnool', 'Rajahmundry', 'Anantapur', 'Thiruvananthapuram', 'Kochi', 'Kozhikode', 'Thrissur', 'Kollam',
+    'Kannur', 'Alappuzha', 'Palakkad', 'Kottayam', 'Malappuram',
+  ],
+};
+
+const ALL_ZONE_IDS: ZoneId[] = ['north', 'east', 'west', 'northeast', 'south_tn', 'south_other'];
+
+// Cities from every zone EXCEPT `eventZone` (or every zone, if the event's
+// zone couldn't be determined).
+function citiesFromOtherZones(eventZone: ZoneId | null): string[] {
+  const zones = eventZone ? ALL_ZONE_IDS.filter(z => z !== eventZone) : ALL_ZONE_IDS;
+  return zones.flatMap(z => ZONE_CITIES[z]);
+}
+
+// Each base city is combined with a directional suffix (the way real Lok
+// Sabha seats are named, e.g. "Mumbai North", "Chennai South") to build a
+// pool large enough that even large events don't run out of unique names.
+const CONSTITUENCY_SUFFIXES = ['', ' North', ' South', ' East', ' West', ' Central'];
+
+function buildConstituencyPool(cities: string[]): string[] {
+  const pool: string[] = [];
+  for (const suffix of CONSTITUENCY_SUFFIXES) {
+    for (const city of cities) pool.push(`${city}${suffix}`);
+  }
+  return pool;
+}
+
+// Returns a function that hands out the next unused constituency from the
+// pool on each call, guaranteeing no duplicates within the event. `used`
+// should be pre-seeded with constituencies already assigned in this event.
+function createConstituencyPicker(pool: string[], used: Set<string>) {
+  let idx = 0;
+  return function next(): string {
+    while (idx < pool.length && used.has(pool[idx])) idx++;
+    const cycle = Math.floor(idx / pool.length);
+    const constituency = cycle === 0 ? pool[idx] : `${pool[idx % pool.length]} (${cycle + 1})`;
+    used.add(constituency);
+    idx++;
+    return constituency;
+  };
 }
 
 // Easy-to-remember 6-digit numeric password — students keep this permanently.
-function generatePassword(): string {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+// It also doubles as their "login code" (profiles.login_code), so it must be
+// unique across every student. `used` should be pre-seeded with every
+// login_code already in the database.
+function generateLoginCode(used: Set<string>): string {
+  let code: string;
+  do {
+    code = Math.floor(100000 + Math.random() * 900000).toString();
+  } while (used.has(code));
+  used.add(code);
+  return code;
 }
 
 // Round-robin distributes committee + party (and ruling/opposition
 // alignment) across every student in the event, in serial-number order.
 // Mirrors public.reassign_event_committees_parties(), done here with the
 // service-role client so it doesn't require a super-admin JWT.
+//
+// Students are grouped by their target committee/party so each group is
+// written with a single `.update().in('user_id', [...])` call — O(committees
+// + parties) round trips instead of O(students). With hundreds of students
+// across many import batches, one-update-per-student was slow enough to
+// exceed the function's execution time limit and hang the client request.
 async function reassignCommitteesAndParties(supabaseAdmin: any, eventId: string) {
   const { data: committees } = await supabaseAdmin
     .from('event_committees').select('name, display_order').eq('event_id', eventId).order('display_order');
@@ -68,23 +143,31 @@ async function reassignCommitteesAndParties(supabaseAdmin: any, eventId: string)
   const eligible = (students ?? []).filter((s: any) => !['Admin Student', 'Journalist'].includes(s.position));
 
   if (committees && committees.length > 0) {
-    for (let i = 0; i < eligible.length; i++) {
+    const groups = new Map<string, string[]>();
+    eligible.forEach((s: any, i: number) => {
       const committee = committees[i % committees.length].name;
-      await supabaseAdmin.from('profiles').update({ committee }).eq('user_id', eligible[i].user_id);
+      (groups.get(committee) ?? groups.set(committee, []).get(committee)!).push(s.user_id);
+    });
+    for (const [committee, userIds] of groups) {
+      await supabaseAdmin.from('profiles').update({ committee }).in('user_id', userIds);
     }
   }
 
   if (parties && parties.length > 0) {
     const rulingThreshold = Math.floor(parties.length / 2) + 1;
-    for (let i = 0; i < eligible.length; i++) {
+    const groups = new Map<number, string[]>();
+    eligible.forEach((s: any, i: number) => {
       const idx = i % parties.length;
+      (groups.get(idx) ?? groups.set(idx, []).get(idx)!).push(s.user_id);
+    });
+    for (const [idx, userIds] of groups) {
       const partyNumber = idx + 1;
       const alignment = partyNumber <= rulingThreshold ? 'ruling_party' : 'opposition';
       await supabaseAdmin.from('profiles').update({
         party_name: parties[idx].name,
         party_number: partyNumber,
         party_alignment: alignment,
-      }).eq('user_id', eligible[i].user_id);
+      }).in('user_id', userIds);
     }
   }
 }
@@ -131,7 +214,7 @@ serve(async (req) => {
       }
     );
 
-    const { students, mode = 'full', event_id } = await req.json();
+    const { students, mode = 'full', event_id, is_last_batch = true } = await req.json();
     const results: {
       success: number;
       failed: number;
@@ -213,6 +296,26 @@ serve(async (req) => {
       .from('profiles').select('serial_number').order('serial_number', { ascending: false }).limit(1).maybeSingle();
     let nextSerial = (maxSerialRow?.serial_number ?? 0) + 1;
 
+    // Build a constituency picker scoped to this event: a pool drawn from
+    // every zone EXCEPT the event's own zone, pre-seeded with constituencies
+    // already in use so new students never get a duplicate within the event.
+    const eventZone = getZoneId(eventState);
+    const constituencyPool = buildConstituencyPool(citiesFromOtherZones(eventZone));
+    let usedConstituenciesQuery = supabaseAdmin
+      .from('profiles').select('constituency').eq('user_type', 'student').not('constituency', 'is', null);
+    usedConstituenciesQuery = event_id
+      ? usedConstituenciesQuery.eq('event_id', event_id)
+      : usedConstituenciesQuery.is('event_id', null);
+    const { data: existingConstituencyRows } = await usedConstituenciesQuery;
+    const usedConstituencies = new Set<string>((existingConstituencyRows ?? []).map((r: any) => r.constituency));
+    const nextConstituency = createConstituencyPicker(constituencyPool, usedConstituencies);
+
+    // login_code must be unique across ALL students (not just this event),
+    // since the "login with code" flow looks up an account by code alone.
+    const { data: existingCodeRows } = await supabaseAdmin
+      .from('profiles').select('login_code').not('login_code', 'is', null);
+    const usedLoginCodes = new Set<string>((existingCodeRows ?? []).map((r: any) => r.login_code));
+
     const newSchools = new Set<string>();
 
     for (const student of students as StudentData[]) {
@@ -254,7 +357,7 @@ serve(async (req) => {
 
           results.success++;
         } else {
-          const password = generatePassword();
+          const password = generateLoginCode(usedLoginCodes);
 
           const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
@@ -269,7 +372,7 @@ serve(async (req) => {
           }
 
           const serialNumber = nextSerial++;
-          const constituency = getCrossZoneConstituency(eventState, serialNumber);
+          const constituency = nextConstituency();
 
           const profileData: any = {
             user_id: authData.user.id,
@@ -282,6 +385,7 @@ serve(async (req) => {
             party_number: 0,
             party_alignment: 'non_aligned',
             constituency,
+            login_code: password,
             state: eventState,
             city: eventCity,
             user_type: 'student',
@@ -312,7 +416,11 @@ serve(async (req) => {
 
     if (event_id) {
       await autoAddSchools(supabaseAdmin, event_id, newSchools);
-      await reassignCommitteesAndParties(supabaseAdmin, event_id);
+      // Reassigning committees/parties re-processes the whole event roster,
+      // so only do it once after the final batch — not after every batch.
+      if (is_last_batch) {
+        await reassignCommitteesAndParties(supabaseAdmin, event_id);
+      }
     }
 
     return new Response(JSON.stringify(results), {

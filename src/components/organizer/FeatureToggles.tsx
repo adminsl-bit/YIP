@@ -60,13 +60,16 @@ export const FeatureToggles = () => {
 
   const updateSetting = async (key: string, value: boolean) => {
     try {
+      // Upsert (not update) — some settings rows (e.g. registration_enabled)
+      // were never seeded, so a plain .update() would silently match zero
+      // rows and report success without persisting anything.
       const { error } = await supabase
         .from('system_settings')
-        .update({
+        .upsert({
+          setting_key: key,
           setting_value: value,
           updated_by: user?.id
-        })
-        .eq('setting_key', key);
+        }, { onConflict: 'setting_key' });
 
       if (error) throw error;
 
