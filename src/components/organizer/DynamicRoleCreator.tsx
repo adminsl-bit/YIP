@@ -96,10 +96,11 @@ export const DynamicRoleCreator = () => {
   const fetchUsers = async () => {
     setIsLoading(true);
     try {
+      const eventId = profile?.event_id ?? '';
       const [{ data: juryData }, { data: rolesData }, { data: studentData }] = await Promise.all([
-        supabase.from('profiles').select('user_id, name, email, serial_number, user_type, position, created_at, is_active').eq('user_type', 'jury').order('serial_number'),
+        supabase.from('profiles').select('user_id, name, email, serial_number, user_type, position, created_at, is_active').eq('user_type', 'jury').eq('event_id', eventId).order('serial_number'),
         supabase.from('user_roles').select('user_id, role'),
-        supabase.from('profiles').select('user_id, name, email, serial_number, user_type, position, created_at, is_active').eq('user_type', 'student').order('serial_number'),
+        supabase.from('profiles').select('user_id, name, email, serial_number, user_type, position, created_at, is_active').eq('user_type', 'student').eq('event_id', eventId).order('serial_number'),
       ]);
 
       const flat: UserRow[] = [];
@@ -119,7 +120,7 @@ export const DynamicRoleCreator = () => {
     }
   };
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => { if (profile?.event_id) fetchUsers(); }, [profile?.event_id]);
 
   // ── Delete ───────────────────────────────────────────────────────────────
   const handleDelete = async (userId: string, userName: string) => {
