@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -22,6 +23,7 @@ interface ChartData {
 }
 
 export const OrganizerStats = () => {
+  const { profile } = useAuth();
   const [stats, setStats] = useState<OrganizerStats>({
     totalStudents: 0,
     totalJury: 0,
@@ -38,26 +40,28 @@ export const OrganizerStats = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchOrganizerData();
-  }, []);
+    if (profile?.event_id) fetchOrganizerData();
+  }, [profile?.event_id]);
 
   const fetchOrganizerData = async () => {
     try {
-      // Fetch all profiles
+      // Fetch all profiles scoped to this organizer's event
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('*');
+        .select('*')
+        .eq('event_id', profile?.event_id ?? '');
 
       if (profilesError) throw profilesError;
 
-      // Fetch all assessments
+      const eventId = profile?.event_id ?? '';
+
       const { data: assessments, error: assessmentsError } = await supabase
         .from('assessments')
-        .select('*');
+        .select('*')
+        .eq('event_id', eventId);
 
       if (assessmentsError) throw assessmentsError;
 
-      // Fetch duplicate logins
       const { data: duplicateLogins, error: duplicateError } = await supabase
         .from('login_audit')
         .select('*')
@@ -65,11 +69,11 @@ export const OrganizerStats = () => {
 
       if (duplicateError) throw duplicateError;
 
-      // Fetch active polls
       const { data: activePolls, error: pollsError } = await supabase
         .from('polls')
         .select('*')
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .eq('event_id', eventId);
 
       if (pollsError) throw pollsError;
 

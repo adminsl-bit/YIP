@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 
@@ -51,6 +52,7 @@ interface LoginAuditEntry {
 }
 
 export const SecurityLogsManager = () => {
+  const { profile } = useAuth();
   const [duplicateLogins, setDuplicateLogins] = useState<DuplicateLogin[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [activeUsers, setActiveUsers] = useState<ActiveUser[]>([]);
@@ -83,7 +85,8 @@ export const SecurityLogsManager = () => {
     try {
       const { data: activeSessionUsers, error: activeError } = await supabase
         .from('profiles').select('user_id, name, email, position, session_id, last_login_at')
-        .not('session_id', 'is', null).eq('is_active', true).neq('user_type', 'super_admin');
+        .not('session_id', 'is', null).eq('is_active', true).neq('user_type', 'super_admin')
+        .eq('event_id', profile?.event_id ?? '');
       if (activeError) throw activeError;
       if (!activeSessionUsers || activeSessionUsers.length === 0) { setDuplicateLogins([]); return; }
       const activeUserIds = activeSessionUsers.map(u => u.user_id);
@@ -135,7 +138,9 @@ export const SecurityLogsManager = () => {
     try {
       const { data: profileData, error } = await supabase
         .from('profiles').select('user_id, name, email, position, user_type, last_login_at, session_id, is_active')
-        .eq('is_active', true).not('last_login_at', 'is', null).neq('user_type', 'super_admin').order('last_login_at', { ascending: false });
+        .eq('is_active', true).not('last_login_at', 'is', null).neq('user_type', 'super_admin')
+        .eq('event_id', profile?.event_id ?? '')
+        .order('last_login_at', { ascending: false });
       if (error) throw error;
       const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000);
       setActiveUsers(profileData?.filter(u => new Date(u.last_login_at) > fourHoursAgo || u.session_id !== null) || []);

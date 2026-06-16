@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Lock, Eye, EyeOff, Loader2, KeyRound } from "lucide-react";
 
 interface Student {
@@ -17,6 +18,7 @@ interface Student {
 }
 
 export function StudentPasswordReset() {
+  const { profile } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedStudentId, setSelectedStudentId] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -38,6 +40,7 @@ export function StudentPasswordReset() {
         .from('profiles')
         .select('user_id, name, serial_number, position, party_number')
         .eq('user_type', 'student')
+        .eq('event_id', profile?.event_id ?? '')
         .order('serial_number');
 
       if (error) throw error;

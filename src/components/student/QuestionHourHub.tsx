@@ -138,6 +138,7 @@ export const QuestionHourHub = () => {
       const { data: qs, error } = await supabase
         .from('questions')
         .select(`*, profiles (*)`)
+        .eq('event_id', profile?.event_id ?? '')
         .order('created_at', { ascending: false });
       if (error) throw error;
 

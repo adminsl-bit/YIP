@@ -67,6 +67,7 @@ const JuryDashboard = () => {
     try {
       const [{ data: students }, { data: assessments }] = await Promise.all([
         supabase.from('profiles').select('id').eq('user_type', 'student')
+          .eq('event_id', profile?.event_id ?? '')
           .neq('position', 'Admin Student').neq('position', 'Journalist'),
         supabase.from('assessments').select('student_id, total_score')
           .eq('jury_id', user?.id).eq('status', 'submitted'),

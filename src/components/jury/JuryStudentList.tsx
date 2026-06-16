@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { AssessmentForm, ComponentScore } from "./AssessmentForm";
 import { toast } from "@/hooks/use-toast";
 import { executeOrQueue } from "@/lib/executeOrQueue";
@@ -73,6 +74,7 @@ interface JuryStudentListProps {
 }
 
 export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
+  const { profile } = useAuth();
   const [students, setStudents]                   = useState<Student[]>([]);
   const [sessions, setSessions]                   = useState<Session[]>([]);
   const [allAssessments, setAllAssessments]       = useState<Assessment[]>([]);
@@ -159,6 +161,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       const [{ data, error }, { data: specialIds }] = await Promise.all([
         supabase.from('profiles').select('*')
           .eq('user_type', 'student')
+          .eq('event_id', profile?.event_id ?? '')
           .order('party_number', { ascending: true })
           .order('serial_number', { ascending: true }),
         supabase.rpc('get_non_scoreable_student_ids'),

@@ -97,6 +97,7 @@ export const PollManagement = () => {
     // matching the delegate count shown in AnalyticsBento and the public display.
     const { count } = await supabase.from('profiles').select('user_id', { count: 'exact', head: true })
       .eq('user_type', 'student').eq('is_active', true)
+      .eq('event_id', profile?.event_id ?? '')
       .not('position', 'ilike', '%journalist%')
       .not('position', 'ilike', '%administrator%')
       .not('position', 'ilike', '%admin student%');

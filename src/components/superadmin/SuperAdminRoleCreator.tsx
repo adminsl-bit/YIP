@@ -156,7 +156,7 @@ export const SuperAdminRoleCreator = () => {
     setIsCreating(true);
     try {
       const { data, error } = await supabase.functions.invoke('create-role-users', {
-        body: { roleType: selectedRole, count, password: finalPwd },
+        body: { roleType: selectedRole, count, password: finalPwd, eventId: selectedEvent },
       });
       if (error) throw new Error(error.message || JSON.stringify(error));
       if (data?.error) throw new Error(data.error);

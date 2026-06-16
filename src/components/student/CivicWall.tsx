@@ -307,6 +307,7 @@ export const CivicWall = () => {
         civic_likes(user_id),
         civic_comments(id, user_id, content, created_at, profiles:user_id (name, photo_url, position))
       `)
+      .eq('event_id', profile?.event_id ?? '')
       .order('created_at', { ascending: false });
 
     if (!error) setPosts(data as any[] || []);

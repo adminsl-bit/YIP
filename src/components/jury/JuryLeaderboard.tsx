@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Trophy, Medal, Award, Star, Users, Vote, CheckCircle2, Filter, X, SortAsc, SortDesc } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface LeaderboardEntry {
   user_id: string;
@@ -46,6 +47,7 @@ interface JuryLeaderboardProps {
 }
 
 export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
+  const { profile } = useAuth();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [awards, setAwards] = useState<Award[]>([]);
   const [awardVotes, setAwardVotes] = useState<AwardVote[]>([]);
@@ -69,9 +71,12 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
   const fetchData = async () => {
     try {
       // Fetch leaderboard data
+      const eventId = profile?.event_id ?? '';
+
       const { data: leaderboardData, error: leaderboardError } = await supabase
         .from('jury_leaderboard')
-        .select('*');
+        .select('*')
+        .eq('event_id', eventId);
 
       if (leaderboardError) throw leaderboardError;
 
@@ -92,7 +97,8 @@ export const JuryLeaderboard = ({ juryId }: JuryLeaderboardProps) => {
           student_id,
           jury_id,
           awards (name)
-        `);
+        `)
+        .eq('event_id', eventId);
 
       if (votesError) throw votesError;
 

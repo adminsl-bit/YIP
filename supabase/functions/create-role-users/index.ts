@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
 
     const { roleType, count, password, eventId }: RoleUserConfig = await req.json();
 
-    console.log(`Creating ${count} ${roleType} users with password: ${password}`);
+    console.log(`Creating ${count} ${roleType} users for event ${eventId ?? 'unassigned'}`);
 
     if (!roleType || !roleDefinitions[roleType]) {
       throw new Error(`Invalid role type: ${roleType}`);
@@ -84,101 +84,47 @@ Deno.serve(async (req) => {
     }
 
     const roleDef = roleDefinitions[roleType];
-    const results = []
 
-    for (let i = 1; i <= count; i++) {
+    // Find the next available sequence number so new users never collide with
+    // existing ones created for other events.
+    const { data: existingEmails } = await supabaseAdmin
+      .from('profiles')
+      .select('email')
+      .ilike('email', `${roleType}%@yip.com`);
+
+    let startIdx = 1;
+    for (const u of (existingEmails || [])) {
+      const match = (u.email as string | null)?.match(
+        new RegExp(`^${roleType}(\\d+)@yip\\.com$`, 'i')
+      );
+      if (match) {
+        const n = parseInt(match[1], 10);
+        if (n >= startIdx) startIdx = n + 1;
+      }
+    }
+
+    console.log(`Starting sequence at index ${startIdx} for role ${roleType}`);
+
+    const results = [];
+
+    for (let i = startIdx; i < startIdx + count; i++) {
       const userEmail = `${roleType}${i}${roleDef.emailDomain}`;
-      const userName = `${roleDef.namePrefix} ${i}`;
+      const userName  = `${roleDef.namePrefix} ${i}`;
       const serialNumber = roleDef.serialStart + i - 1;
 
       try {
-        // Check if profile already exists
-        const { data: existingProfile } = await supabaseAdmin
-          .from('profiles')
-          .select('user_id')
-          .eq('email', userEmail)
-          .single();
-
-        if (existingProfile?.user_id) {
-          const userId = existingProfile.user_id as string;
-
-          // Update existing user
-          const { error: updateAuthError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-            password: password,
-            email: userEmail,
-            email_confirm: true,
-          });
-          if (updateAuthError) throw new Error(`Auth update failed: ${updateAuthError.message}`);
-
-          const { error: updateProfileError } = await supabaseAdmin
-            .from('profiles')
-            .update({
-              name: userName,
-              position: roleDef.position,
-              serial_number: serialNumber,
-              party_number: 0,
-              user_type: roleDef.userType,
-              email: userEmail,
-              ...(eventId ? { event_id: eventId } : {}),
-            })
-            .eq('user_id', userId);
-          if (updateProfileError) throw new Error(`Profile update failed: ${updateProfileError.message}`);
-
-          // Update role if needed
-          if (roleDef.appRole) {
-            const { data: existingRole } = await supabaseAdmin
-              .from('user_roles')
-              .select('id')
-              .eq('user_id', userId)
-              .eq('role', roleDef.appRole)
-              .single();
-
-            if (!existingRole) {
-              await supabaseAdmin
-                .from('user_roles')
-                .insert({
-                  user_id: userId,
-                  role: roleDef.appRole,
-                });
-            }
-          }
-
-          // Link to event so it shows up in the Super Admin roles menu
-          if (eventId) {
-            await supabaseAdmin
-              .from('event_participants')
-              .upsert({ event_id: eventId, user_id: userId, is_current: true }, { onConflict: 'event_id,user_id' });
-          }
-
-          console.log(`Updated ${userEmail}`);
-          results.push({ email: userEmail, success: true, action: 'updated' });
-          continue;
-        }
-
-        // Create new auth user
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
           email: userEmail,
           password: password,
           email_confirm: true,
         });
 
-        let userId = authData?.user?.id as string | undefined;
+        const userId = authData?.user?.id as string | undefined;
 
-        // If email already exists in auth but not in profiles, find the user
-        if (authError) {
-          const { data: usersList } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-          const existing = usersList?.users?.find((u: any) => u.email?.toLowerCase() === userEmail.toLowerCase());
-          if (!existing) {
-            throw new Error(`Failed to create or find user: ${authError.message}`);
-          }
-          userId = existing.id;
+        if (authError || !userId) {
+          throw new Error(`Auth creation failed: ${authError?.message ?? 'no user id returned'}`);
         }
 
-        if (!userId) {
-          throw new Error('No user ID available');
-        }
-
-        // Create profile
         const { error: profileError } = await supabaseAdmin
           .from('profiles')
           .insert({
@@ -196,35 +142,33 @@ Deno.serve(async (req) => {
           throw new Error(`Profile creation failed: ${profileError.message}`);
         }
 
-        // Assign app role if needed
         if (roleDef.appRole) {
           const { error: roleError } = await supabaseAdmin
             .from('user_roles')
-            .insert({
-              user_id: userId,
-              role: roleDef.appRole,
-            });
+            .insert({ user_id: userId, role: roleDef.appRole });
 
           if (roleError) {
             throw new Error(`Role assignment failed: ${roleError.message}`);
           }
         }
 
-        // Link to event so it shows up in the Super Admin roles menu
         if (eventId) {
           await supabaseAdmin
             .from('event_participants')
-            .upsert({ event_id: eventId, user_id: userId, is_current: true }, { onConflict: 'event_id,user_id' });
+            .upsert(
+              { event_id: eventId, user_id: userId, is_current: true },
+              { onConflict: 'event_id,user_id' }
+            );
         }
 
         console.log(`Created ${userEmail}`);
-        results.push({ email: userEmail, success: true, action: 'created' });
+        results.push({ email: userEmail, userId, success: true, action: 'created' });
       } catch (error) {
         console.error(`Error processing ${userEmail}:`, error);
-        results.push({ 
-          email: userEmail, 
-          success: false, 
-          error: error instanceof Error ? error.message : 'Unknown error' 
+        results.push({
+          email: userEmail,
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
@@ -232,12 +176,12 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ results }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
-    })
+    });
   } catch (error) {
-    console.error('Error in create-role-users function:', error)
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    })
+    console.error('Error in create-role-users function:', error);
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+    );
   }
 })

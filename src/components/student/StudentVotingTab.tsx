@@ -39,7 +39,7 @@ interface Poll {
 }
 
 export const StudentVotingTab = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [votingEnabled, setVotingEnabled] = useState<boolean>(false);
   const [polls, setPolls] = useState<Poll[]>([]);
   const [userVotes, setUserVotes] = useState<Record<string, string>>({});
@@ -62,6 +62,7 @@ export const StudentVotingTab = () => {
       const { data: pollData, error: pollError } = await supabase
         .from('polls')
         .select('*')
+        .eq('event_id', profile?.event_id ?? '')
         .order('created_at', { ascending: false });
 
       if (pollError) throw pollError;

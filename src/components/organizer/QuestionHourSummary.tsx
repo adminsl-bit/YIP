@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -47,6 +48,7 @@ const StatCard = ({ value, label, icon }: { value: number; label: string; icon: 
 );
 
 export const QuestionHourSummary = () => {
+  const { profile } = useAuth();
   const [questions, setQuestions] = useState<QuestionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState<'excel' | 'pdf' | null>(null);
@@ -56,6 +58,7 @@ export const QuestionHourSummary = () => {
       const { data, error } = await supabase
         .from('questions')
         .select('id, ministry, content, status, is_discussing, created_at, profiles (name)')
+        .eq('event_id', profile?.event_id ?? '')
         .order('created_at', { ascending: false });
       if (error) throw error;
       setQuestions((data || []).map(q => {

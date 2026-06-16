@@ -276,6 +276,7 @@ export const StudentBulkImport = () => {
           .from('profiles')
           .select('serial_number, name, position, party_number, party_name, constituency, state, city')
           .eq('user_type', 'student')
+          .eq('event_id', profile?.event_id ?? '')
           .order('serial_number');
         if (error) throw error;
         if (!data || data.length === 0) {

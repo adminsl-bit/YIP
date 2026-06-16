@@ -23,7 +23,7 @@ export const getKey = (opt: any): string => typeof opt === 'string' ? opt : (opt
 export const getText = (opt: any): string => typeof opt === 'string' ? opt : (opt?.text ?? String(opt));
 
 export const PollVoting = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { settings } = useSystemSettings();
   const [polls, setPolls] = useState<Poll[]>([]);
   const [lastPassed, setLastPassed] = useState<Poll | null>(null);
@@ -45,9 +45,10 @@ export const PollVoting = () => {
 
   const fetchData = async () => {
     try {
+      const eventId = profile?.event_id ?? '';
       const [{ data: activeData }, { data: inactiveData }] = await Promise.all([
-        supabase.from('polls').select('*').eq('is_active', true).order('created_at', { ascending: false }),
-        supabase.from('polls').select('id, title, description, created_at').eq('is_active', false).order('created_at', { ascending: false }).limit(4),
+        supabase.from('polls').select('*').eq('is_active', true).eq('event_id', eventId).order('created_at', { ascending: false }),
+        supabase.from('polls').select('id, title, description, created_at').eq('is_active', false).eq('event_id', eventId).order('created_at', { ascending: false }).limit(4),
       ]);
       const pollsData = (activeData || []) as Poll[];
       const closedData = (inactiveData || []) as Poll[];

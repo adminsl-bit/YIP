@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +33,7 @@ interface JuryDashboardStatsProps {
 }
 
 export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
+  const { profile } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
     assessedStudents: 0,
@@ -96,7 +98,8 @@ export const JuryDashboardStats = ({ juryId }: JuryDashboardStatsProps) => {
       const { data: students, error: studentsError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('user_type', 'student');
+        .eq('user_type', 'student')
+        .eq('event_id', profile?.event_id ?? '');
 
       if (studentsError) throw studentsError;
 

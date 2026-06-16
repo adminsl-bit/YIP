@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Award {
   id: string;
@@ -46,6 +47,7 @@ interface StudentAward {
 }
 
 export const AwardManagement = () => {
+  const { profile } = useAuth();
   const [awards, setAwards] = useState<Award[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [studentAwards, setStudentAwards] = useState<StudentAward[]>([]);
@@ -59,9 +61,11 @@ export const AwardManagement = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    fetchData();
-    setupRealtimeSubscriptions();
-  }, []);
+    if (profile?.event_id) {
+      fetchData();
+      setupRealtimeSubscriptions();
+    }
+  }, [profile?.event_id]);
 
   const fetchData = async () => {
     try {
@@ -75,6 +79,7 @@ export const AwardManagement = () => {
         .from('profiles')
         .select('user_id, name, position, party_number, constituency, photo_url')
         .eq('user_type', 'student')
+        .eq('event_id', profile?.event_id ?? '')
         .order('name');
       if (studentsError) throw studentsError;
 

@@ -82,9 +82,9 @@ const OrganizerDashboard = () => {
 
   const fetchStats = async () => {
     try {
-        const { data: profiles } = await supabase.from('profiles').select('user_type');
-        const { data: assessments } = await supabase.from('assessments').select('status');
-        
+        const { data: profiles } = await supabase.from('profiles').select('user_type').eq('event_id', profile?.event_id ?? '');
+        const { data: assessments } = await supabase.from('assessments').select('status').eq('event_id', profile?.event_id ?? '');
+
         if (profiles) {
           const students = profiles.filter(p => p.user_type === 'student').length;
           const jury = profiles.filter(p => p.user_type === 'jury').length;

@@ -163,6 +163,7 @@ export const OrganizerStudentList = () => {
   const [emailingStudentId, setEmailingStudentId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!profile?.event_id) return;
     fetchStudents();
     fetchJuryAssessments();
     fetchAssessments();
@@ -178,7 +179,7 @@ export const OrganizerStudentList = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [profile?.event_id]);
 
   useEffect(() => {
     applyFilters();
@@ -191,6 +192,7 @@ export const OrganizerStudentList = () => {
         .from('profiles')
         .select('*')
         .eq('user_type', 'student')
+        .eq('event_id', profile?.event_id ?? '')
         .order('serial_number');
 
       const { data: assessmentsData, error: assessmentsError } = await supabase

@@ -79,7 +79,7 @@ interface Stats {
 }
 
 export const SessionManagement = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { hasRole } = useUserRole(user?.id);
   const [sessionItems, setSessionItems] = useState<SessionItem[]>([]);
   const [availableTimers, setAvailableTimers] = useState<TimerSession[]>([]);
@@ -249,19 +249,18 @@ export const SessionManagement = () => {
 
   const fetchStats = async () => {
     try {
-      const { data: students } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'student');
-      const { data: jury } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'jury');
+      const { data: students } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'student').eq('event_id', profile?.event_id ?? '');
+      const { data: jury } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'jury').eq('event_id', profile?.event_id ?? '');
       const { data: assessments } = await supabase.from('assessments').select('id', { count: 'exact', head: true });
-      
+
       setStats({
-        student_count: students?.length || 0, // Fallback if count is not available directly
+        student_count: students?.length || 0,
         jury_count: jury?.length || 0,
         assessment_count: assessments?.length || 0,
       });
 
-      // Better way to get counts if the above doesn't work well
-      const { count: sCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'student');
-      const { count: jCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'jury');
+      const { count: sCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'student').eq('event_id', profile?.event_id ?? '');
+      const { count: jCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'jury').eq('event_id', profile?.event_id ?? '');
       const { count: aCount } = await supabase.from('assessments').select('*', { count: 'exact', head: true });
       
       setStats({

@@ -289,9 +289,12 @@ export const OrganizerLeaderboard = () => {
 
   const fetchData = async () => {
     try {
+      const eventId = profile?.event_id ?? '';
+
       const { data: leaderboardData, error: leaderboardError } = await supabase
         .from('organizer_leaderboard')
-        .select('*');
+        .select('*')
+        .eq('event_id', eventId);
       if (leaderboardError) throw leaderboardError;
 
       const { data: manualScoreData, error: manualScoreError } = await supabase
@@ -308,7 +311,8 @@ export const OrganizerLeaderboard = () => {
       const { data: juryData, error: juryError } = await supabase
         .from('profiles')
         .select('user_id, name')
-        .eq('user_type', 'jury');
+        .eq('user_type', 'jury')
+        .eq('event_id', eventId);
       if (juryError) throw juryError;
       setJuryMembers(juryData || []);
 
