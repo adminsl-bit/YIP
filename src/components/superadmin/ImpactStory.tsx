@@ -194,8 +194,21 @@ export const ImpactStory = () => {
       setTotalCommittees(committeeNames.size);
 
       const demographics = studentDemographics || [];
-      setStatesRepresented(new Set(demographics.map(d => d.state).filter(Boolean)).size);
-      setConstituenciesRepresented(new Set(demographics.map(d => d.constituency).filter(Boolean)).size);
+
+      // Normalize states: trim + case-insensitive dedup
+      setStatesRepresented(
+        new Set(demographics.map(d => (d.state || '').toString().trim().toLowerCase()).filter(Boolean)).size
+      );
+
+      // Normalize constituencies: trim + case dedup, then absorb shorter names that are
+      // a leading-word prefix of a longer name (e.g. "Delhi" subsumed by "Delhi North").
+      const normCons = [
+        ...new Set(demographics.map(d => (d.constituency || '').toString().trim().toLowerCase()).filter(Boolean)),
+      ].sort((a, b) => a.length - b.length);
+      const uniqueCons = normCons.filter(
+        (c, i) => !normCons.slice(i + 1).some(longer => longer.startsWith(c + ' '))
+      );
+      setConstituenciesRepresented(uniqueCons.length);
 
       setOrganizerCount(organizerCountRes || 0);
       setJuryCount(juryCountRes || 0);
