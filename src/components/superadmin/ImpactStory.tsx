@@ -200,15 +200,16 @@ export const ImpactStory = () => {
         new Set(demographics.map(d => (d.state || '').toString().trim().toLowerCase()).filter(Boolean)).size
       );
 
-      // Normalize constituencies: trim + case dedup, then absorb shorter names that are
-      // a leading-word prefix of a longer name (e.g. "Delhi" subsumed by "Delhi North").
-      const normCons = [
-        ...new Set(demographics.map(d => (d.constituency || '').toString().trim().toLowerCase()).filter(Boolean)),
-      ].sort((a, b) => a.length - b.length);
-      const uniqueCons = normCons.filter(
-        (c, i) => !normCons.slice(i + 1).some(longer => longer.startsWith(c + ' '))
+      // Normalize constituencies: strip trailing directional suffix (North/South/East/West etc.)
+      // so that "Delhi" and "Delhi North" both resolve to "delhi" → counted once.
+      const stripDir = (s: string) =>
+        s.replace(/\s+(north|south|east|west|north[\s-]?east|north[\s-]?west|south[\s-]?east|south[\s-]?west|central|upper|lower|inner|outer)\s*$/i, '').trim();
+      const uniqueCons = new Set(
+        demographics
+          .map(d => stripDir((d.constituency || '').toString().trim()).toLowerCase())
+          .filter(Boolean)
       );
-      setConstituenciesRepresented(uniqueCons.length);
+      setConstituenciesRepresented(uniqueCons.size);
 
       setOrganizerCount(organizerCountRes || 0);
       setJuryCount(juryCountRes || 0);
