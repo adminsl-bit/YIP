@@ -86,7 +86,7 @@ export const PollManagement = () => {
 
   const fetchPolls = async () => {
     try {
-      const { data, error } = await supabase.from('polls').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('polls').select('*').eq('event_id', profile?.event_id ?? '').order('created_at', { ascending: false });
       if (error) throw error;
       setPolls((data || []) as Poll[]);
     } catch (e) { console.error(e); } finally { setLoading(false); }

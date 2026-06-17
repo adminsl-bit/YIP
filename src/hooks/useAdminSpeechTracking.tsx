@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 
 export interface AdminStudentData {
@@ -29,6 +30,7 @@ interface Filters {
 }
 
 export const useAdminSpeechTracking = () => {
+  const { profile } = useAuth();
   const [students, setStudents] = useState<AdminStudentData[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<AdminStudentData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +51,7 @@ export const useAdminSpeechTracking = () => {
         supabase
           .from('admin_student_dashboard')
           .select('*')
+          .eq('event_id', profile?.event_id ?? '')
           .order('serial_number', { ascending: true }),
         supabase.rpc('get_non_scoreable_student_ids'),
       ]);

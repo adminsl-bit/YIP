@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Scores {
@@ -224,6 +225,7 @@ interface Props {
 }
 
 export const AwardSuggestions = ({ juryId }: Props) => {
+  const { profile } = useAuth();
   const [profiles, setProfiles]       = useState<StudentProfile[]>([]);
   const [assessments, setAssessments] = useState<{ student_id: string; scores: any; total_score: number; jury_id: string }[]>([]);
   const [awards, setAwards]           = useState<{ id: string; name: string }[]>([]);
@@ -233,12 +235,13 @@ export const AwardSuggestions = ({ juryId }: Props) => {
   const [juryCount, setJuryCount]     = useState(0);
 
   const fetchAll = async () => {
+    const eventId = profile?.event_id ?? '';
     const [profilesRes, assessRes, awardsRes, votesRes, juryRes] = await Promise.all([
-      supabase.from('profiles').select('user_id,name,position,party_alignment,party_number,party_name,photo_url,serial_number').eq('user_type', 'student').eq('is_active', true),
-      supabase.from('assessments').select('student_id,scores,total_score,jury_id').eq('status', 'submitted').is('session_id', null),
+      supabase.from('profiles').select('user_id,name,position,party_alignment,party_number,party_name,photo_url,serial_number').eq('user_type', 'student').eq('is_active', true).eq('event_id', eventId),
+      supabase.from('assessments').select('student_id,scores,total_score,jury_id').eq('status', 'submitted').is('session_id', null).eq('event_id', eventId),
       supabase.from('awards').select('id,name'),
-      supabase.from('award_votes').select('id,award_id,student_id,jury_id'),
-      supabase.from('profiles').select('user_id', { count: 'exact', head: true }).eq('user_type', 'jury'),
+      supabase.from('award_votes').select('id,award_id,student_id,jury_id').eq('event_id', eventId),
+      supabase.from('profiles').select('user_id', { count: 'exact', head: true }).eq('user_type', 'jury').eq('event_id', eventId),
     ]);
     if (profilesRes.data)   setProfiles(profilesRes.data as StudentProfile[]);
     if (assessRes.data)     setAssessments(assessRes.data);

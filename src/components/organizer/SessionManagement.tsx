@@ -201,6 +201,7 @@ export const SessionManagement = () => {
       const { data, error } = await supabase
         .from('session_items' as any)
         .select('*')
+        .eq('event_id', profile?.event_id ?? '')
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
@@ -238,6 +239,7 @@ export const SessionManagement = () => {
       const { data, error } = await supabase
         .from('polls')
         .select('id, title, is_active, show_results_publicly')
+        .eq('event_id', profile?.event_id ?? '')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -251,7 +253,7 @@ export const SessionManagement = () => {
     try {
       const { data: students } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'student').eq('event_id', profile?.event_id ?? '');
       const { data: jury } = await supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'jury').eq('event_id', profile?.event_id ?? '');
-      const { data: assessments } = await supabase.from('assessments').select('id', { count: 'exact', head: true });
+      const { data: assessments } = await supabase.from('assessments').select('id', { count: 'exact', head: true }).eq('event_id', profile?.event_id ?? '');
 
       setStats({
         student_count: students?.length || 0,
@@ -261,7 +263,7 @@ export const SessionManagement = () => {
 
       const { count: sCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'student').eq('event_id', profile?.event_id ?? '');
       const { count: jCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('user_type', 'jury').eq('event_id', profile?.event_id ?? '');
-      const { count: aCount } = await supabase.from('assessments').select('*', { count: 'exact', head: true });
+      const { count: aCount } = await supabase.from('assessments').select('*', { count: 'exact', head: true }).eq('event_id', profile?.event_id ?? '');
       
       setStats({
         student_count: sCount || 0,

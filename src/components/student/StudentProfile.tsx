@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { ProfilePhotoUploader } from '@/components/student/ProfilePhotoUploader';
 import { PartyLogoUploader } from '@/components/student/PartyLogoUploader';
+import { Eye, EyeOff, Copy, Check } from 'lucide-react';
 
 interface StudentProfileProps {
   profile?: any;
@@ -69,6 +70,9 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
       fetchManifesto();
     }
   }, [profile?.id, profile?.manifesto_about]);
+
+  const [codeVisible, setCodeVisible] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   // Editable bench alignment (ruling party / opposition)
   const [alignment, setAlignment] = useState<string>(profile?.party_alignment || 'non_aligned');
@@ -152,6 +156,8 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
       default: return 'bg-gray-500/10 text-gray-600 border-gray-200';
     }
   };
+
+  const loginCode = (profile?.login_code as string | null | undefined) ?? null;
 
   const photoSrc = photoUrl
     ? `${photoUrl}${photoUrl.includes('?') ? '&' : '?'}cb=${profile.updated_at ? new Date(profile.updated_at).getTime() : ''}`
@@ -417,6 +423,43 @@ export const StudentProfile: React.FC<StudentProfileProps> = ({
               </div>
             </div>
           </div>
+
+          {/* Login Code — only visible to the student on their own profile */}
+          {isOwnProfile && (
+            <div className="bg-surface-container-lowest p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Login Code</p>
+              <p className="text-xs text-on-surface-variant font-medium mb-4">Use this code, your email, or login ID to sign in from any device</p>
+              <div className="flex items-center justify-between bg-surface-container rounded-2xl px-4 py-3 gap-3">
+                <span className={`font-mono text-xl font-black tracking-[0.3em] text-on-surface transition-all duration-200 ${codeVisible ? '' : 'blur-sm select-none pointer-events-none'}`}>
+                  {loginCode || '······'}
+                </span>
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setCodeVisible(v => !v)}
+                    className="p-2 rounded-xl hover:bg-surface-container-high transition-colors text-on-surface-variant"
+                    title={codeVisible ? 'Hide code' : 'Show code'}
+                  >
+                    {codeVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (loginCode) {
+                        await navigator.clipboard.writeText(loginCode);
+                        setCodeCopied(true);
+                        setTimeout(() => setCodeCopied(false), 2000);
+                      }
+                    }}
+                    className="p-2 rounded-xl hover:bg-surface-container-high transition-colors text-on-surface-variant"
+                    title="Copy login code"
+                  >
+                    {codeCopied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Civic Agenda & Manifesto */}

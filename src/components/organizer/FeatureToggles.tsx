@@ -19,7 +19,7 @@ interface SystemSetting {
 }
 
 export const FeatureToggles = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [settings, setSettings] = useState<Record<string, boolean>>({
     voting_enabled: false,
     results_public: false,
@@ -141,6 +141,7 @@ export const FeatureToggles = () => {
         .from('profiles')
         .select('user_id, name, photo_url')
         .eq('user_type', 'jury')
+        .eq('event_id', profile?.event_id ?? '')
         .order('name');
       if (juryError) throw juryError;
 
@@ -148,7 +149,8 @@ export const FeatureToggles = () => {
       const { data: locksData, error: locksError } = await supabase
         .from('assessment_locks')
         .select('*')
-        .eq('is_global_lock', false);
+        .eq('is_global_lock', false)
+        .eq('event_id', profile?.event_id ?? '');
       if (locksError) throw locksError;
 
       setJuryMembers(juryData || []);
@@ -183,7 +185,8 @@ export const FeatureToggles = () => {
           jury_id: juryId,
           is_global_lock: false,
           locked_by: user?.id,
-          reason: `Lock enabled for ${juryName}`
+          reason: `Lock enabled for ${juryName}`,
+          event_id: profile?.event_id ?? null
         });
         if (error) throw error;
         toast({ title: 'Jury Locked', description: `${juryName}'s assessments are now locked` });

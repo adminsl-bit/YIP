@@ -86,6 +86,7 @@ export const AwardManagement = () => {
       const { data: studentAwardsData, error: studentAwardsError } = await supabase
         .from('student_awards')
         .select(`id, award_id, student_id, assigned_at, assigned_by_jury_consensus, assigned_by_organizer, awards (name)`)
+        .eq('event_id', profile?.event_id ?? '')
         .order('assigned_at', { ascending: false });
       if (studentAwardsError) throw studentAwardsError;
 

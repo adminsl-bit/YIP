@@ -27,22 +27,24 @@ export interface BulkImportState {
   results: ImportResults | null;
   fileName: string | null;
   importMode: 'full' | 'scores-only';
+  _eventId?: string | null;
 }
 
 const STORAGE_KEY = 'yip_bulk_import_last_result';
 
-const loadPersisted = (): Pick<BulkImportState, 'results' | 'fileName' | 'importMode'> => {
+const loadPersisted = (): Pick<BulkImportState, 'results' | 'fileName' | 'importMode' | '_eventId'> => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { results: null, fileName: null, importMode: 'full' };
+    if (!raw) return { results: null, fileName: null, importMode: 'full', _eventId: null };
     const parsed = JSON.parse(raw);
     return {
       results: parsed.results ?? null,
       fileName: parsed.fileName ?? null,
       importMode: parsed.importMode ?? 'full',
+      _eventId: parsed._eventId ?? null,
     };
   } catch {
-    return { results: null, fileName: null, importMode: 'full' };
+    return { results: null, fileName: null, importMode: 'full', _eventId: null };
   }
 };
 
@@ -60,16 +62,31 @@ export const setBulkImportState = (partial: Partial<BulkImportState>): void => {
   state = { ...state, ...partial };
   listeners.forEach(listener => listener());
 
-  if ('results' in partial || 'fileName' in partial || 'importMode' in partial) {
+  if ('results' in partial || 'fileName' in partial || 'importMode' in partial || '_eventId' in partial) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         results: state.results,
         fileName: state.fileName,
         importMode: state.importMode,
+        _eventId: state._eventId,
       }));
     } catch {
       // Storage unavailable — non-fatal, just skip persistence.
     }
+  }
+};
+
+// Called by the component on mount with the current organizer's event_id.
+// Clears persisted results if they belong to a different event.
+export const validateEventId = (currentEventId: string | null | undefined): void => {
+  if (!currentEventId) return;
+  if (state._eventId && state._eventId !== currentEventId) {
+    setBulkImportState({ results: null, fileName: null, _eventId: currentEventId });
+  } else if (!state._eventId && state.results) {
+    // Legacy persisted result has no event_id — clear it to be safe.
+    setBulkImportState({ results: null, fileName: null, _eventId: currentEventId });
+  } else if (!state._eventId) {
+    setBulkImportState({ _eventId: currentEventId });
   }
 };
 

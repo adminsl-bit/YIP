@@ -33,7 +33,7 @@ interface AuditLog {
 }
 
 export const TimerManagement = () => {
-    const { user } = useAuth();
+    const { user, profile } = useAuth();
     const [timerSessions, setTimerSessions] = useState<TimerSession[]>([]);
     const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(false);
@@ -89,6 +89,7 @@ export const TimerManagement = () => {
         const { data, error } = await supabase
             .from('timer_sessions')
             .select('*')
+            .eq('event_id', profile?.event_id ?? '')
             .order('sort_order', { ascending: true });
         if (!error) setTimerSessions(data as any as TimerSession[]);
     };
@@ -113,7 +114,8 @@ export const TimerManagement = () => {
             status: 'stopped',
             is_active: false,
             created_by: user.id,
-            sort_order: timerSessions.length
+            sort_order: timerSessions.length,
+            event_id: profile?.event_id ?? null
         } as any);
         setLoading(false);
         if (!error) {

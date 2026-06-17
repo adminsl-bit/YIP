@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import heic2any from 'heic2any';
 
 interface Student {
@@ -17,6 +18,7 @@ const PhotoUploadManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { profile } = useAuth();
 
   React.useEffect(() => {
     if (!searchTerm.trim()) {
@@ -37,6 +39,7 @@ const PhotoUploadManager = () => {
         .from('profiles')
         .select('id, serial_number, name, photo_url, updated_at')
         .eq('user_type', 'student')
+        .eq('event_id', profile?.event_id ?? '')
         .order('serial_number');
       if (error) throw error;
       setStudents(data || []);

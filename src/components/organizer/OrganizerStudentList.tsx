@@ -41,6 +41,8 @@ interface Student {
   created_at?: string;
   login_code?: string | null;
   email?: string | null;
+  is_current?: boolean;
+  promoted_at?: string | null;
 }
 
 interface Assessment {
@@ -188,29 +190,55 @@ export const OrganizerStudentList = () => {
 
   const fetchStudents = async () => {
     try {
+      const eventId = profile?.event_id ?? '';
+
+      // Current students for this event
       const { data: studentsData, error: studentsError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_type', 'student')
-        .eq('event_id', profile?.event_id ?? '')
+        .eq('event_id', eventId)
         .order('serial_number');
+      if (studentsError) throw studentsError;
 
+      // Promoted-out students: they still belong to this event historically
+      const { data: epData, error: epError } = await supabase
+        .from('event_participants')
+        .select('user_id, promoted_at')
+        .eq('event_id', eventId)
+        .eq('is_current', false)
+        .not('promoted_at', 'is', null);
+      if (epError) throw epError;
+
+      let promotedRows: Student[] = [];
+      if (epData && epData.length > 0) {
+        const promotedIds = epData.map((ep: any) => ep.user_id as string);
+        const { data: promotedData, error: ppError } = await supabase
+          .from('profiles')
+          .select('*')
+          .in('user_id', promotedIds)
+          .eq('user_type', 'student')
+          .order('serial_number');
+        if (ppError) throw ppError;
+        const promotedAtMap = new Map(epData.map((ep: any) => [ep.user_id as string, ep.promoted_at as string | null]));
+        promotedRows = (promotedData || []).map((s: any) => ({
+          ...s,
+          is_current: false,
+          promoted_at: promotedAtMap.get(s.user_id) ?? null,
+        }));
+      }
+
+      const currentRows = (studentsData || []).map((s: any) => ({ ...s, is_current: true, promoted_at: null }));
+
+      // Assessments scoped to this event so promoted-student scores reflect their performance here
       const { data: assessmentsData, error: assessmentsError } = await supabase
         .from('assessments')
-        .select(`
-          id, 
-          student_id, 
-          jury_id,
-          total_score, 
-          status, 
-          updated_at
-        `);
-
-      if (studentsError) throw studentsError;
+        .select('id, student_id, jury_id, total_score, status, updated_at')
+        .eq('event_id', eventId);
       if (assessmentsError) throw assessmentsError;
 
-      setStudents(studentsData || []);
-      setAssessments((assessmentsData || []).map(a => ({
+      setStudents([...currentRows, ...promotedRows]);
+      setAssessments((assessmentsData || []).map((a: any) => ({
         ...a,
         status: a.status as 'draft' | 'submitted' | 'locked'
       })));
@@ -294,7 +322,8 @@ export const OrganizerStudentList = () => {
     try {
       const { data, error } = await supabase
         .from('assessments')
-        .select('*');
+        .select('*')
+        .eq('event_id', profile?.event_id ?? '');
 
       if (error) throw error;
       setAssessments((data || []) as Assessment[]);
@@ -884,7 +913,12 @@ export const OrganizerStudentList = () => {
                         <div className={`absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-surface-container-lowest ${student.session_id ? 'bg-on-tertiary-container' : 'bg-outline'}`} />
                       </div>
                       <div>
-                        <p className="font-bold text-on-surface text-sm font-headline leading-tight">{student.name}</p>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="font-bold text-on-surface text-sm font-headline leading-tight">{student.name}</p>
+                          {student.is_current === false && (
+                            <span className="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide rounded font-headline bg-[#2bb87c]/15 text-[#2bb87c]">Promoted ↑</span>
+                          )}
+                        </div>
                         <span className={`text-[10px] font-bold rounded-full px-2 py-0.5 mt-1 inline-block font-body ${
                           roleKey === 'prime_minister' ? 'bg-amber-500/15 text-amber-700' :
                           roleKey === 'leader_of_opposition' ? 'bg-orange-500/15 text-orange-700' :
@@ -896,6 +930,7 @@ export const OrganizerStudentList = () => {
                         }`}>{student.position || 'Delegate'}</span>
                       </div>
                     </div>
+                    {student.is_current !== false && (
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => setEditingStudent(student)} className="p-1.5 hover:bg-surface-container rounded-xl text-on-surface-variant hover:text-primary transition-all">
                         <span className="material-symbols-outlined text-[18px]">edit</span>
@@ -904,6 +939,7 @@ export const OrganizerStudentList = () => {
                         <span className="material-symbols-outlined text-[18px]">lock_reset</span>
                       </button>
                     </div>
+                    )}
                   </div>
                   <div className="grid grid-cols-2 gap-2 mb-5">
                     <div className="bg-surface-container p-3 rounded-2xl">
@@ -966,7 +1002,7 @@ export const OrganizerStudentList = () => {
                   const roleKey = getSeatRole(student.position);
 
                   return (
-                    <tr key={student.id} className="group hover:bg-primary-fixed/5 transition-colors">
+                    <tr key={student.id} className={`group hover:bg-primary-fixed/5 transition-colors ${student.is_current === false ? 'bg-surface-container/30' : ''}`}>
                       <td className="px-8 py-4">
                         <div className="flex items-center gap-3">
                           <div className="relative shrink-0">
@@ -977,7 +1013,12 @@ export const OrganizerStudentList = () => {
                             <div className={`absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-surface-container-lowest ${student.session_id ? 'bg-on-tertiary-container' : 'bg-outline'}`} />
                           </div>
                           <div>
-                            <p className="font-bold text-on-surface text-sm font-headline">{student.name}</p>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <p className="font-bold text-on-surface text-sm font-headline">{student.name}</p>
+                              {student.is_current === false && (
+                                <span className="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide rounded font-headline bg-[#2bb87c]/15 text-[#2bb87c]">Promoted ↑</span>
+                              )}
+                            </div>
                             <p className="text-xs text-on-surface-variant font-body">{student.user_id.substring(0, 6)}…@yip.parliament</p>
                           </div>
                         </div>
@@ -1000,7 +1041,7 @@ export const OrganizerStudentList = () => {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-tight font-body ${
+                        <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold tracking-tight font-body whitespace-nowrap ${
                           roleKey === 'prime_minister' ? 'bg-amber-500/15 text-amber-700' :
                           roleKey === 'leader_of_opposition' ? 'bg-orange-500/15 text-orange-700' :
                           roleKey === 'party_leader' ? 'bg-violet-500/15 text-violet-700' :
@@ -1059,7 +1100,7 @@ export const OrganizerStudentList = () => {
                             <TooltipTrigger asChild>
                               <button
                                 onClick={() => handleSendStudentEmail(student)}
-                                disabled={!student.login_code || !student.email || emailingStudentId === student.user_id}
+                                disabled={student.is_current === false || !student.login_code || !student.email || emailingStudentId === student.user_id}
                                 className="p-2 text-on-surface-variant hover:text-primary rounded-lg hover:bg-surface-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                               >
                                 <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: emailingStudentId === student.user_id ? "'FILL' 0" : "'FILL' 1" }}>
@@ -1067,40 +1108,43 @@ export const OrganizerStudentList = () => {
                                 </span>
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent>{student.login_code ? 'Send login email' : 'No login code — re-import to generate'}</TooltipContent>
+                            <TooltipContent>{student.is_current === false ? 'Student promoted — manage at their current event' : student.login_code ? 'Send login email' : 'No login code — re-import to generate'}</TooltipContent>
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={() => setEditingStudent(student)}
-                                className="p-2 text-on-surface-variant hover:text-primary rounded-lg hover:bg-surface-container transition-colors"
+                                onClick={() => student.is_current !== false && setEditingStudent(student)}
+                                disabled={student.is_current === false}
+                                className="p-2 text-on-surface-variant hover:text-primary rounded-lg hover:bg-surface-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                               >
                                 <span className="material-symbols-outlined text-[20px]">edit</span>
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent>Edit student details</TooltipContent>
+                            <TooltipContent>{student.is_current === false ? 'Read-only — student promoted' : 'Edit student details'}</TooltipContent>
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={() => setPasswordResetStudent(student)}
-                                className="p-2 text-on-surface-variant hover:text-error rounded-lg hover:bg-surface-container transition-colors"
+                                onClick={() => student.is_current !== false && setPasswordResetStudent(student)}
+                                disabled={student.is_current === false}
+                                className="p-2 text-on-surface-variant hover:text-error rounded-lg hover:bg-surface-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                               >
                                 <span className="material-symbols-outlined text-[20px]">lock_reset</span>
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent>Reset password</TooltipContent>
+                            <TooltipContent>{student.is_current === false ? 'Read-only — student promoted' : 'Reset password'}</TooltipContent>
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <button
-                                onClick={() => toggleStudentStatus(student.user_id, student.is_active || false)}
-                                className={`p-2 rounded-lg hover:bg-surface-container transition-colors ${student.is_active ? 'text-on-surface-variant hover:text-error' : 'text-on-tertiary-container'}`}
+                                onClick={() => student.is_current !== false && toggleStudentStatus(student.user_id, student.is_active || false)}
+                                disabled={student.is_current === false}
+                                className={`p-2 rounded-lg hover:bg-surface-container transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${student.is_active ? 'text-on-surface-variant hover:text-error' : 'text-on-tertiary-container'}`}
                               >
                                 <span className="material-symbols-outlined text-[20px]">{student.is_active ? 'block' : 'check_circle'}</span>
                               </button>
                             </TooltipTrigger>
-                            <TooltipContent>{student.is_active ? 'Deactivate account' : 'Activate account'}</TooltipContent>
+                            <TooltipContent>{student.is_current === false ? 'Read-only — student promoted' : student.is_active ? 'Deactivate account' : 'Activate account'}</TooltipContent>
                           </Tooltip>
                           <Tooltip>
                             <TooltipTrigger asChild>

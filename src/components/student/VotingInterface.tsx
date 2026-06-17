@@ -29,7 +29,7 @@ interface UserVote {
 }
 
 export const VotingInterface = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [votingSessions, setVotingSessions] = useState<VotingSession[]>([]);
   const [userVotes, setUserVotes] = useState<UserVote[]>([]);
   const [selectedVotes, setSelectedVotes] = useState<Record<string, string>>({});
@@ -48,6 +48,7 @@ export const VotingInterface = () => {
       const { data, error } = await supabase
         .from('voting_sessions')
         .select('*')
+        .eq('event_id', profile?.event_id ?? '')
         .order('created_at', { ascending: false });
 
       if (error) throw error;

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from "@/components/ui/use-toast";
-import { Loader2, ArrowRight, ArrowLeft, User, MapPin, Landmark, Sparkles, CheckCircle2, GraduationCap } from "lucide-react";
+import { Loader2, ArrowRight, ArrowLeft, User, MapPin, Landmark, Sparkles, CheckCircle2, GraduationCap, Eye, EyeOff, Copy, Check } from "lucide-react";
 
 const OTHER_SCHOOL = '__other__';
 
@@ -62,7 +62,11 @@ const Onboarding = () => {
     partyName: string;
     committee: string;
     constituency: string;
+    loginCode?: string;
   } | null>(null);
+
+  const [codeVisible, setCodeVisible] = useState(false);
+  const [codeCopied, setCodeCopied] = useState(false);
 
   // Fetch only cities that have an active city-level event
   useEffect(() => {
@@ -265,11 +269,22 @@ const Onboarding = () => {
 
       if (insertError) throw insertError;
 
-      setAssignedDetails({ 
-        serial: nextSerial, 
+      // Ensure a login_code is assigned (idempotent — returns existing if already set,
+      // e.g. for students who registered via direct enrollment)
+      let assignedLoginCode: string | undefined;
+      try {
+        const { data: codeRes } = await (supabase.rpc as any)('ensure_login_code', { p_user_id: user.id });
+        if (codeRes) assignedLoginCode = codeRes as string;
+      } catch (_) {
+        // Non-fatal — student can still get their code from the profile later
+      }
+
+      setAssignedDetails({
+        serial: nextSerial,
         partyName: partyName || 'N/A',
         committee: committee || 'N/A',
-        constituency: constituency
+        constituency: constituency,
+        loginCode: assignedLoginCode,
       });
       
       await refreshProfile();
@@ -603,6 +618,47 @@ const Onboarding = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Login Code — shown below the assignment grid */}
+                {assignedDetails?.loginCode && (
+                  <div className="px-10 pb-8 relative z-10">
+                    <div className="bg-slate-50 rounded-2xl p-5 border border-slate-100">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Your Login Code</p>
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <span className={`font-mono text-2xl font-black text-slate-900 tracking-[0.3em] transition-all duration-200 ${codeVisible ? '' : 'blur-sm select-none'}`}>
+                            {assignedDetails.loginCode}
+                          </span>
+                          <p className="text-[10px] font-medium text-slate-400 mt-1">Use this code, your email, or your login ID to sign in</p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setCodeVisible(v => !v)}
+                            className="p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-700"
+                            title={codeVisible ? 'Hide code' : 'Show code'}
+                          >
+                            {codeVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (assignedDetails.loginCode) {
+                                await navigator.clipboard.writeText(assignedDetails.loginCode);
+                                setCodeCopied(true);
+                                setTimeout(() => setCodeCopied(false), 2000);
+                              }
+                            }}
+                            className="p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-700"
+                            title="Copy login code"
+                          >
+                            {codeCopied ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Secure Footer */}
                 <div className="bg-slate-50/80 px-10 py-4 flex justify-between items-center border-t border-slate-100">

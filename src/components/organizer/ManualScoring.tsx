@@ -26,7 +26,7 @@ const ITEMS_PER_PAGE = 20;
 
 export const ManualScoring = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const queryClient = useQueryClient();
   const { settings: systemSettings, refetch: refetchSettings } = useSystemSettings();
   const [preeventScores, setPreeventScores] = useState<Record<string, string>>({});
@@ -44,15 +44,17 @@ export const ManualScoring = () => {
   }, [searchTerm]);
 
   const { data: students, isLoading } = useQuery({
-    queryKey: ['manual-scoring-students'],
+    queryKey: ['manual-scoring-students', profile?.event_id],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('organizer_manual_scoring')
         .select('*')
+        .eq('event_id', profile?.event_id ?? '')
         .order('serial_number', { ascending: true });
       if (error) throw error;
       return (data || []) as unknown as ManualScoringStudent[];
     },
+    enabled: !!profile?.event_id,
   });
 
   const filteredStudents = useMemo(() => {

@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, Users, TrendingUp } from "lucide-react";
+import { motion } from "framer-motion";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 
 interface Poll {
@@ -22,6 +24,7 @@ interface PollResult {
 }
 
 export const PollResults = () => {
+  const { profile } = useAuth();
   const { settings } = useSystemSettings();
   const [polls, setPolls] = useState<Poll[]>([]);
   const [results, setResults] = useState<Record<string, PollResult[]>>({});
@@ -69,6 +72,7 @@ export const PollResults = () => {
         .from('polls')
         .select('*')
         .eq('show_results_publicly', true)
+        .eq('event_id', profile?.event_id ?? '')
         .order('created_at', { ascending: false });
 
       if (pollsError) throw pollsError;

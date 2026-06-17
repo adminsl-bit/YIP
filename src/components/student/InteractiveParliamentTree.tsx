@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -35,6 +36,7 @@ interface LeaderboardData {
 }
 
 const InteractiveParliamentTree = () => {
+  const { profile } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -105,6 +107,7 @@ const InteractiveParliamentTree = () => {
         .from('profiles')
         .select('id, user_id, name, position, party_number, party_name, serial_number, constituency, state, photo_url, email, user_type, party_alignment')
         .eq('user_type', 'student')
+        .eq('event_id', profile?.event_id ?? '')
         .order('party_number')
         .order('serial_number');
 
@@ -127,6 +130,7 @@ const InteractiveParliamentTree = () => {
       const { data, error } = await supabase
         .from('organizer_leaderboard')
         .select('user_id, final_total_score')
+        .eq('event_id', profile?.event_id ?? '')
         .gt('final_total_score', 0);
 
       if (error) throw error;

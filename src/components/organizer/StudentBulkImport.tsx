@@ -1,11 +1,11 @@
-import React, { useState, useSyncExternalStore } from 'react';
+import React, { useState, useSyncExternalStore, useEffect } from 'react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import * as XLSX from 'xlsx';
-import { getBulkImportState, setBulkImportState, subscribeBulkImportState, type ImportCredential } from '@/lib/bulkImportStore';
+import { getBulkImportState, setBulkImportState, subscribeBulkImportState, validateEventId, type ImportCredential } from '@/lib/bulkImportStore';
 
 interface StudentData {
   // Full import
@@ -28,6 +28,11 @@ export const StudentBulkImport = () => {
   // Import progress/results live in a module-level store so they survive
   // switching tabs away from this component and back.
   const { isUploading, progress, results, importMode, fileName } = useSyncExternalStore(subscribeBulkImportState, getBulkImportState);
+
+  // Clear stale results from a different event on mount / event change.
+  useEffect(() => {
+    if (profile?.event_id) validateEventId(profile.event_id);
+  }, [profile?.event_id]);
   const setImportMode = (mode: 'full' | 'scores-only') => setBulkImportState({ importMode: mode });
 
   const parseExcelFile = (file: File, mode: 'full' | 'scores-only' = 'full'): Promise<StudentData[]> => {
@@ -97,22 +102,22 @@ export const StudentBulkImport = () => {
             return resolve(students);
           }
 
-          // Full import — Name and Email are required; School and Phone are optional.
+          // Full import — only Name is required. School, Email, Phone are optional.
           const nameCol   = findCol('name', 'student name', 'full name', 'student');
           const emailCol  = findCol('email', 'email address', 'email id', 'e mail', 'mail');
           const schoolCol = findCol('school', 'school name', 'institution', 'college', 'organization');
           const phoneCol  = findCol('phone', 'phone number', 'mobile', 'mobile number', 'contact', 'cell');
 
           const students: StudentData[] = dataRows.map((row, i) => {
-            const name  = cell(row, nameCol);
-            const email = cell(row, emailCol);
-            if (!name || !email) {
-              throw new Error(`Row ${headerRowIdx + i + 2}: Missing required field (Name or Email)`);
+            const name = cell(row, nameCol);
+            if (!name) {
+              throw new Error(`Row ${headerRowIdx + i + 2}: Missing required field (Name)`);
             }
+            const email = cell(row, emailCol).toLowerCase();
             return {
               name,
-              school: cell(row, schoolCol) || 'Independent',
-              email: email.toLowerCase(),
+              school: cell(row, schoolCol) || undefined,
+              email: email || undefined,
               phone: cell(row, phoneCol) || undefined,
             };
           });
@@ -205,7 +210,7 @@ export const StudentBulkImport = () => {
     try {
       const students = await parseExcelFile(file, importMode);
       const importResults = await importStudents(students);
-      setBulkImportState({ results: importResults });
+      setBulkImportState({ results: importResults, _eventId: profile?.event_id ?? null });
 
       if (importResults.success > 0) {
         toast.success(`Successfully imported ${importResults.success} students`);
@@ -321,6 +326,13 @@ export const StudentBulkImport = () => {
   const handleBulkEmail = async () => {
     if (!results?.credentials || results.credentials.length === 0) return;
 
+    // Only email students who have a real email address
+    const emailable = results.credentials.filter(c => !!c.email);
+    if (emailable.length === 0) {
+      toast.error('No students have email addresses — download the credentials sheet to share login codes manually.');
+      return;
+    }
+
     setIsEmailing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -336,7 +348,7 @@ export const StudentBulkImport = () => {
           'Authorization': `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          credentials: results.credentials.map(c => ({ name: c.name, email: c.email, password: c.password })),
+          credentials: emailable.map(c => ({ name: c.name, email: c.email, password: c.password })),
           site_url: window.location.origin,
         }),
       });
@@ -368,8 +380,8 @@ export const StudentBulkImport = () => {
       'Serial No': c.serialNumber,
       'Name': c.name,
       'School': c.school,
-      'Email (Login)': c.email,
-      'Password': c.password,
+      'Email (Login)': c.email || '—',
+      'Login Code': c.password,
       'Phone': c.phone || '',
     }));
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -429,7 +441,7 @@ export const StudentBulkImport = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm font-body">
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-error mb-2 font-headline">Required</p>
-                {['Name', 'School', 'Email'].map(col => (
+                {['Name'].map(col => (
                   <div key={col} className="flex items-center gap-2 py-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-error shrink-0" />
                     <span className="font-mono text-xs text-on-surface">{col}</span>
@@ -438,7 +450,7 @@ export const StudentBulkImport = () => {
               </div>
               <div>
                 <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/60 mb-2 font-headline">Optional</p>
-                {['Phone'].map(col => (
+                {['School', 'Email', 'Phone'].map(col => (
                   <div key={col} className="flex items-center gap-2 py-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-outline shrink-0" />
                     <span className="font-mono text-xs text-on-surface-variant">{col}</span>
@@ -446,10 +458,11 @@ export const StudentBulkImport = () => {
                 ))}
               </div>
               <div className="md:col-span-2 mt-1 pt-3 border-t border-outline-variant/10 space-y-1 text-xs text-on-surface-variant font-body">
-                <p><span className="font-bold text-on-surface">Auto-generated by the app:</span> Login (student's email), a permanent 6-digit password, position (Member of Parliament), party, committee and constituency.</p>
-                <p><span className="font-bold text-on-surface">School:</span> New school names are automatically added to the event's school directory.</p>
-                <p><span className="font-bold text-on-surface">Re-upload safe:</span> Existing students are matched by email and updated, not duplicated.</p>
-                <p><span className="font-bold text-on-surface">After import:</span> download the credentials sheet to share each student's login email and password.</p>
+                <p><span className="font-bold text-on-surface">Auto-generated by the app:</span> A unique 6-digit login code (also the password), position (Member of Parliament), party, committee and constituency.</p>
+                <p><span className="font-bold text-on-surface">School:</span> Defaults to "Independent" if blank. New names are added to the event's school directory automatically.</p>
+                <p><span className="font-bold text-on-surface">Email:</span> Optional — students without email still get a 6-digit login code and can sign in with it. Only students with email can receive bulk emails.</p>
+                <p><span className="font-bold text-on-surface">Re-upload safe:</span> Matched by email (if provided) or by name within the event — existing students are updated, not duplicated.</p>
+                <p><span className="font-bold text-on-surface">After import:</span> download the credentials sheet to share each student's login code.</p>
               </div>
             </div>
           ) : (
@@ -565,38 +578,48 @@ export const StudentBulkImport = () => {
               </div>
             </div>
 
-            {results.credentials && results.credentials.length > 0 && (
-              <div className="bg-primary/5 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-primary font-headline flex items-center gap-1.5 mb-1">
-                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>key</span>
-                    New Login Credentials
-                  </p>
-                  <p className="text-sm text-on-surface-variant font-body">
-                    {results.credentials.length} new student account{results.credentials.length === 1 ? '' : 's'} created. Download the sheet, or email each student their login and 6-digit code directly.
-                  </p>
+            {results.credentials && results.credentials.length > 0 && (() => {
+              const emailableCount = results.credentials.filter(c => !!c.email).length;
+              const total = results.credentials.length;
+              return (
+                <div className="bg-primary/5 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary font-headline flex items-center gap-1.5 mb-1">
+                      <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>key</span>
+                      New Login Credentials
+                    </p>
+                    <p className="text-sm text-on-surface-variant font-body">
+                      {total} new account{total === 1 ? '' : 's'} created.
+                      {emailableCount < total && (
+                        <span> {emailableCount} have email — {total - emailableCount} will need the downloaded sheet.</span>
+                      )}
+                      {emailableCount === total && ' Download the sheet or email each student their 6-digit login code.'}
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                    <button
+                      onClick={downloadCredentials}
+                      className="flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-primary text-white font-bold text-sm transition-all hover:bg-primary/90 active:scale-95 font-body shadow-[0_4px_12px_rgba(19,41,143,0.25)]"
+                    >
+                      <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>download</span>
+                      Download All ({total})
+                    </button>
+                    {emailableCount > 0 && (
+                      <button
+                        onClick={handleBulkEmail}
+                        disabled={isEmailing}
+                        className="flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-surface-container-lowest border border-primary/20 text-primary font-bold text-sm transition-all hover:bg-primary/5 active:scale-95 font-body disabled:opacity-60"
+                      >
+                        <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                          {isEmailing ? 'sync' : 'mail'}
+                        </span>
+                        {isEmailing ? 'Sending…' : `Email ${emailableCount} Student${emailableCount === 1 ? '' : 's'}`}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 shrink-0">
-                  <button
-                    onClick={downloadCredentials}
-                    className="flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-primary text-white font-bold text-sm transition-all hover:bg-primary/90 active:scale-95 font-body shadow-[0_4px_12px_rgba(19,41,143,0.25)]"
-                  >
-                    <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>download</span>
-                    Download Credentials
-                  </button>
-                  <button
-                    onClick={handleBulkEmail}
-                    disabled={isEmailing}
-                    className="flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-surface-container-lowest border border-primary/20 text-primary font-bold text-sm transition-all hover:bg-primary/5 active:scale-95 font-body disabled:opacity-60"
-                  >
-                    <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                      {isEmailing ? 'sync' : 'mail'}
-                    </span>
-                    {isEmailing ? 'Sending…' : 'Bulk Email Credentials'}
-                  </button>
-                </div>
-              </div>
-            )}
+              );
+            })()}
 
             {results.errors.length > 0 && (
               <div className="bg-error/5 rounded-2xl p-5 space-y-2">

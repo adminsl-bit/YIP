@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, ListChecks } from 'lucide-react';
 
@@ -51,6 +52,7 @@ interface AgendaViewProps {
 }
 
 export const AgendaView = ({ embedded = false }: AgendaViewProps) => {
+  const { profile } = useAuth();
   const [items, setItems] = useState<SessionItem[]>([]);
   const [subItemsByParent, setSubItemsByParent] = useState<Record<string, SessionSubItem[]>>({});
   const [loading, setLoading] = useState(true);
@@ -60,6 +62,7 @@ export const AgendaView = ({ embedded = false }: AgendaViewProps) => {
       const { data: itemsData, error: itemsError } = await supabase
         .from('session_items' as any)
         .select('id, title, bill_type, description, sort_order, status, is_active, session_date')
+        .eq('event_id', profile?.event_id ?? '')
         .order('sort_order', { ascending: true });
       if (itemsError) throw itemsError;
       setItems((itemsData as any) || []);

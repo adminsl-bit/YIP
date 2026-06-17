@@ -24,7 +24,7 @@ interface AssessmentLock {
 }
 
 export const AssessmentLockControls = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
   const [juryMembers, setJuryMembers] = useState<JuryMember[]>([]);
   const [locks, setLocks] = useState<AssessmentLock[]>([]);
@@ -37,6 +37,7 @@ export const AssessmentLockControls = () => {
         .from('profiles')
         .select('user_id, name, photo_url')
         .eq('user_type', 'jury')
+        .eq('event_id', profile?.event_id ?? '')
         .order('name');
 
       if (juryError) throw juryError;
@@ -44,7 +45,8 @@ export const AssessmentLockControls = () => {
       // Fetch all assessment locks
       const { data: locksData, error: locksError } = await supabase
         .from('assessment_locks')
-        .select('*');
+        .select('*')
+        .eq('event_id', profile?.event_id ?? '');
 
       if (locksError) throw locksError;
 
@@ -102,7 +104,8 @@ export const AssessmentLockControls = () => {
           .insert({
             is_global_lock: true,
             locked_by: user?.id,
-            reason: 'Global lock enabled by organizer'
+            reason: 'Global lock enabled by organizer',
+            event_id: profile?.event_id ?? null
           });
 
         if (error) throw error;
@@ -161,7 +164,8 @@ export const AssessmentLockControls = () => {
             jury_id: juryId,
             is_global_lock: false,
             locked_by: user?.id,
-            reason: `Lock enabled for ${juryName}`
+            reason: `Lock enabled for ${juryName}`,
+            event_id: profile?.event_id ?? null
           });
 
         if (error) throw error;

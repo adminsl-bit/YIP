@@ -260,18 +260,19 @@ export const BreakingNewsPublisher = () => {
   const isOrganizer = profile?.user_type === 'organizer';
 
   const { data: myHeadlines } = useQuery({
-    queryKey: ['journalist-headlines', user?.id, isOrganizer],
+    queryKey: ['journalist-headlines', user?.id, isOrganizer, profile?.event_id],
     queryFn: async () => {
       const query = supabase
         .from('breaking_news')
         .select('*')
+        .eq('event_id', profile?.event_id ?? '')
         .order('created_at', { ascending: false });
       if (!isOrganizer) query.eq('journalist_id', user?.id);
       const { data, error } = await query;
       if (error) throw error;
       return data;
     },
-    enabled: !!user?.id,
+    enabled: !!user?.id && !!profile?.event_id,
   });
 
   const publishMutation = useMutation({
@@ -288,6 +289,7 @@ export const BreakingNewsPublisher = () => {
           journalist_name: isOrganizer ? 'Organizer' : (profile?.name || 'Anonymous'),
           headline: text,
           is_active: true,
+          event_id: profile?.event_id ?? null,
         });
         if (error) throw error;
       }

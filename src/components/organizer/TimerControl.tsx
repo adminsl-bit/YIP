@@ -32,7 +32,7 @@ interface TimerSession {
 }
 
 export const TimerControl = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [currentTimer, setCurrentTimer] = useState<TimerSession | null>(null);
   const [title, setTitle] = useState("Parliament Session");
   const [hours, setHours] = useState(0);
@@ -83,6 +83,7 @@ export const TimerControl = () => {
         .from('timer_sessions')
         .select('*')
         .eq('is_active', true)
+        .eq('event_id', profile?.event_id ?? '')
         .single();
 
       if (error) {

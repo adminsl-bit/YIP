@@ -1,7 +1,9 @@
+
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface Scores {
@@ -70,27 +72,29 @@ interface AwardIntelligenceDashboardProps {
 
 // ── Component ──────────────────────────────────────────────────────────────────
 export const AwardIntelligenceDashboard = ({ juryId, isOrganizer }: AwardIntelligenceDashboardProps) => {
-  const [profiles, setProfiles]       = useState<StudentProfile[]>([]);
+  const { profile } = useAuth();
+  const [profiles, setProfiles] = useState<StudentProfile[]>([]);
   const [assessments, setAssessments] = useState<{ student_id: string; scores: Record<string, number>; total_score: number; jury_id: string }[]>([]);
-  const [awards, setAwards]           = useState<{ id: string; name: string }[]>([]);
-  const [awardVotes, setAwardVotes]   = useState<{ id: string; award_id: string; student_id: string; jury_id: string }[]>([]);
+  const [awards, setAwards] = useState<{ id: string; name: string }[]>([]);
+  const [awardVotes, setAwardVotes] = useState<{ id: string; award_id: string; student_id: string; jury_id: string }[]>([]);
   const [studentAwards, setStudentAwards] = useState<{ id: string; award_id: string; student_id: string }[]>([]);
-  const [nominating, setNominating]   = useState<string | null>(null);
-  const [finalizing, setFinalizing]   = useState(false);
-  const [loading, setLoading]         = useState(true);
-  const [juryCount, setJuryCount]     = useState(0);
+  const [nominating, setNominating] = useState<string | null>(null);
+  const [finalizing, setFinalizing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [juryCount, setJuryCount] = useState(0);
   const [activeAwardIdx, setActiveAwardIdx] = useState(0);
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
 
   // ── Data Fetching ──
   const fetchAll = async () => {
+    const eventId = profile?.event_id ?? '';
     const [profilesRes, assessRes, awardsRes, votesRes, juryRes, studentAwardsRes] = await Promise.all([
-      supabase.from('profiles').select('user_id,name,position,party_alignment,party_number,party_name,photo_url,serial_number').eq('user_type', 'student').eq('is_active', true),
-      supabase.from('assessments').select('student_id,scores,total_score,jury_id').eq('status', 'submitted').is('session_id', null),
+      supabase.from('profiles').select('user_id,name,position,party_alignment,party_number,party_name,photo_url,serial_number').eq('user_type', 'student').eq('is_active', true).eq('event_id', eventId),
+      supabase.from('assessments').select('student_id,scores,total_score,jury_id').eq('status', 'submitted').is('session_id', null).eq('event_id', eventId),
       supabase.from('awards').select('id,name'),
-      supabase.from('award_votes').select('id,award_id,student_id,jury_id'),
-      supabase.from('profiles').select('user_id', { count: 'exact', head: true }).eq('user_type', 'jury'),
-      supabase.from('student_awards').select('id,award_id,student_id'),
+      supabase.from('award_votes').select('id,award_id,student_id,jury_id').eq('event_id', eventId),
+      supabase.from('profiles').select('user_id', { count: 'exact', head: true }).eq('user_type', 'jury').eq('event_id', eventId),
+      supabase.from('student_awards').select('id,award_id,student_id').eq('event_id', eventId),
     ]);
     if (profilesRes.data) setProfiles(profilesRes.data as StudentProfile[]);
     if (assessRes.data) setAssessments(assessRes.data as typeof assessments);
@@ -338,11 +342,10 @@ export const AwardIntelligenceDashboard = ({ juryId, isOrganizer }: AwardIntelli
               <button
                 key={award.key}
                 onClick={() => setActiveAwardIdx(idx)}
-                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full font-headline font-bold text-xs transition-all duration-300 flex items-center gap-1.5 ${
-                  isActive
+                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full font-headline font-bold text-xs transition-all duration-300 flex items-center gap-1.5 ${isActive
                     ? 'bg-gradient-to-r from-primary to-primary-container text-on-primary shadow-[0_4px_16px_rgba(19,41,143,0.25)]'
                     : 'bg-surface-container-lowest border border-outline-variant/10 text-on-surface hover:border-primary/30 hover:bg-primary/5'
-                }`}
+                  }`}
               >
                 {award.name.replace(' Award', '')}
                 {isActive && (
@@ -460,19 +463,17 @@ export const AwardIntelligenceDashboard = ({ juryId, isOrganizer }: AwardIntelli
                         className="relative group cursor-pointer"
                         onClick={() => handleSelectCandidate(activeAward.key, c.profile.user_id)}
                       >
-                        <div className={`p-3 flex flex-col items-center text-center relative z-10 bg-surface-container-lowest rounded-[1.5rem] transition-all duration-300 h-full ${
-                          isSelected || isMyPick
+                        <div className={`p-3 flex flex-col items-center text-center relative z-10 bg-surface-container-lowest rounded-[1.5rem] transition-all duration-300 h-full ${isSelected || isMyPick
                             ? 'border-2 border-primary bg-primary/[0.03] ring-4 ring-primary/10 shadow-[0_32px_64px_-16px_rgba(19,41,143,0.15)]'
                             : 'border border-outline-variant/10 shadow-[0_4px_32px_0_rgba(19,41,143,0.04)] group-hover:shadow-[0_32px_64px_-16px_rgba(19,41,143,0.1)] group-hover:-translate-y-1 group-hover:border-primary/20'
-                        }`}>
+                          }`}>
 
                           {/* Rank badge (top-left) */}
                           <div className="absolute top-2.5 left-2.5">
-                            <span className={`text-[9px] font-black font-headline px-2 py-0.5 rounded-lg ${
-                              i === 0 ? 'bg-secondary/10 text-secondary' :
-                              i === 1 ? 'bg-surface-container-high text-on-surface-variant' :
-                              'bg-surface-container text-on-surface-variant/60'
-                            }`}>
+                            <span className={`text-[9px] font-black font-headline px-2 py-0.5 rounded-lg ${i === 0 ? 'bg-secondary/10 text-secondary' :
+                                i === 1 ? 'bg-surface-container-high text-on-surface-variant' :
+                                  'bg-surface-container text-on-surface-variant/60'
+                              }`}>
                               {rankLabels[i]}
                             </span>
                           </div>
@@ -520,11 +521,10 @@ export const AwardIntelligenceDashboard = ({ juryId, isOrganizer }: AwardIntelli
 
                           {/* Select / Nominate Button */}
                           <div className="mt-auto pt-3 w-full">
-                            <div className={`py-2 rounded-xl font-bold text-xs font-body flex items-center justify-center gap-1.5 transition-all duration-300 ${
-                              isSelected || isMyPick
+                            <div className={`py-2 rounded-xl font-bold text-xs font-body flex items-center justify-center gap-1.5 transition-all duration-300 ${isSelected || isMyPick
                                 ? 'bg-gradient-to-r from-primary to-primary-container text-on-primary shadow-[0_4px_16px_rgba(19,41,143,0.25)]'
                                 : 'border-2 border-primary text-primary hover:bg-primary hover:text-on-primary'
-                            }`}>
+                              }`}>
                               {isBusy ? (
                                 <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                               ) : isSelected || isMyPick ? (
@@ -665,11 +665,10 @@ const StatTile = ({ label, value, footnote, accent }: { label: string; value: st
   <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/10 shadow-sm">
     <span className="block text-[9px] font-black text-on-surface-variant/50 uppercase tracking-widest mb-1 font-headline">{label}</span>
     <span className="text-lg font-black text-on-surface font-headline">{value}</span>
-    <span className={`block text-[9px] font-bold mt-0.5 font-body ${
-      accent === 'tertiary' ? 'text-on-tertiary-container' :
-      accent === 'secondary' ? 'text-secondary' :
-      'text-on-surface-variant/60'
-    }`}>
+    <span className={`block text-[9px] font-bold mt-0.5 font-body ${accent === 'tertiary' ? 'text-on-tertiary-container' :
+        accent === 'secondary' ? 'text-secondary' :
+          'text-on-surface-variant/60'
+      }`}>
       {footnote}
     </span>
   </div>

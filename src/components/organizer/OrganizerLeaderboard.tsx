@@ -32,6 +32,8 @@ interface LeaderboardEntry {
   organizer_manual_score?: number;
   session_names?: string[];
   _inlinePromoted?: boolean;
+  is_current?: boolean;
+  promoted_at?: string | null;
 }
 
 interface JuryMember {
@@ -1096,6 +1098,9 @@ export const OrganizerLeaderboard = () => {
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-headline font-bold text-sm text-on-surface">{entry.name}</span>
+                              {(entry.is_current === false || entry._inlinePromoted) && (
+                                <span className="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide rounded font-headline bg-[#2bb87c]/15 text-[#2bb87c]">Promoted ↑</span>
+                              )}
                               <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md font-headline ${partyColor(entry.party_number)}`}>
                                 Party {partyLabel(entry.party_number)}
                               </span>
