@@ -295,6 +295,17 @@ serve(async (req) => {
     }
 
     // ── Full import mode ──────────────────────────────────────────
+    // Reject immediately if no event_id — students would be created without
+    // an event assignment and never appear in any organizer's student list.
+    if (mode === 'full' && !event_id) {
+      return new Response(JSON.stringify({
+        success: 0,
+        failed: (students as StudentData[]).length,
+        errors: ['Import rejected: your account is not assigned to an event. Contact your administrator.'],
+        credentials: [],
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // Look up the event's state/city so new students inherit them, and so
     // constituencies can be allocated from the opposite zone.
     let eventState: string | null = null;
@@ -362,11 +373,20 @@ serve(async (req) => {
           existingProfile = inEvent;
 
           if (!existingProfile) {
-            // Claim an orphan student (imported without event_id)
-            const { data: orphan } = await supabaseAdmin
+            // Claim orphan students (null event_id) — created by past failed imports.
+            // There may be MULTIPLE duplicates (one per failed import run), so we
+            // fetch all of them, claim the first, and delete the rest to avoid
+            // accumulating ghost accounts on every reimport.
+            const { data: orphans } = await supabaseAdmin
               .from('profiles').select('user_id')
-              .ilike('name', name).is('event_id', null).eq('user_type', 'student').maybeSingle();
-            existingProfile = orphan;
+              .ilike('name', name).is('event_id', null).eq('user_type', 'student');
+            if (orphans && orphans.length > 0) {
+              existingProfile = orphans[0];
+              // Delete duplicate ghost accounts
+              for (const dup of orphans.slice(1)) {
+                await supabaseAdmin.auth.admin.deleteUser(dup.user_id);
+              }
+            }
           }
         }
 
