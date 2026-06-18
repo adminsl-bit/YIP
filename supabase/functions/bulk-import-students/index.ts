@@ -346,17 +346,28 @@ serve(async (req) => {
           continue;
         }
 
-        // Re-upload safe: match by real email if provided, else by name within event
+        // Re-upload safe: match by real email if provided, else by name within event.
+        // Fallback: if no match in-event, check for an unclaimed student (null event_id)
+        // with the same name — this reclaims accounts created during a failed first import
+        // that ran without a valid event_id, avoiding duplicate auth users.
         let existingProfile: { user_id: string } | null = null;
         if (email) {
           const { data } = await supabaseAdmin
             .from('profiles').select('user_id').ilike('email', email).maybeSingle();
           existingProfile = data;
         } else if (event_id) {
-          const { data } = await supabaseAdmin
+          const { data: inEvent } = await supabaseAdmin
             .from('profiles').select('user_id')
             .ilike('name', name).eq('event_id', event_id).eq('user_type', 'student').maybeSingle();
-          existingProfile = data;
+          existingProfile = inEvent;
+
+          if (!existingProfile) {
+            // Claim an orphan student (imported without event_id)
+            const { data: orphan } = await supabaseAdmin
+              .from('profiles').select('user_id')
+              .ilike('name', name).is('event_id', null).eq('user_type', 'student').maybeSingle();
+            existingProfile = orphan;
+          }
         }
 
         if (existingProfile) {
