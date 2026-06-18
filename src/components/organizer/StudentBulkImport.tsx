@@ -35,7 +35,15 @@ export const StudentBulkImport = () => {
   }, [profile?.event_id]);
   const setImportMode = (mode: 'full' | 'scores-only') => setBulkImportState({ importMode: mode });
 
-  const parseExcelFile = (file: File, mode: 'full' | 'scores-only' = 'full'): Promise<StudentData[]> => {
+  // Known column keywords — at least one must appear in the header row so we
+  // don't mistake a two-column title row (e.g. "Event Name | City") for headers.
+  const HEADER_KEYWORDS = ['name', 'student', 'email', 'school', 'phone', 'mobile',
+    'contact', 'serial', 'sno', 's no', 'participant', 'delegate', 'sl'];
+
+  const parseExcelFile = (
+    file: File,
+    mode: 'full' | 'scores-only' = 'full',
+  ): Promise<{ students: StudentData[]; parseErrors: string[] }> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -52,15 +60,24 @@ export const StudentBulkImport = () => {
             worksheet, { header: 1, defval: null }
           );
 
-          // Header row = first row with at least 2 non-empty cells.
-          const headerRowIdx = rawRows.findIndex(
-            row => row.filter(c => c !== null && c !== '').length >= 2
-          );
-          if (headerRowIdx === -1) throw new Error('Could not find a header row in the file.');
-
           // Normalize: trim, lowercase, collapse whitespace / underscores / dashes.
           const norm = (v: unknown) =>
-            (v ?? '').toString().trim().toLowerCase().replace(/[\s_\-]+/g, ' ');
+            (v ?? '').toString().trim().toLowerCase().replace(/[\s_\-./]+/g, ' ');
+
+          // Header row = first row that has ≥2 non-empty cells AND at least one cell
+          // matching a known column keyword. This prevents event-title rows like
+          // "YIP Mizoram 2024 | Registration Sheet" from being picked as the header.
+          const headerRowIdx = rawRows.findIndex(row => {
+            const nonEmpty = row.filter(c => c !== null && c !== '');
+            if (nonEmpty.length < 2) return false;
+            return nonEmpty.some(c =>
+              HEADER_KEYWORDS.some(kw => norm(c).includes(kw))
+            );
+          });
+          if (headerRowIdx === -1) throw new Error(
+            'Could not find a header row. Make sure the sheet has column headers like "Name", "School", "Email", "Phone".'
+          );
+
           const headers = rawRows[headerRowIdx].map(norm);
 
           // Data rows: everything after the header minus completely blank rows.
@@ -89,40 +106,74 @@ export const StudentBulkImport = () => {
             col === -1 ? '' : (row[col] ?? '').toString().trim();
 
           if (mode === 'scores-only') {
-            const serialCol = findCol('serial no', 'serial number', 's no', 'sno', 'serial');
+            const serialCol = findCol('serial no', 'serial number', 's no', 'sno', 'serial', 'sl no', 'sl');
             const scoreCol  = findCol('preevent scores', 'pre event scores', 'preevent score', 'score');
-            const students: StudentData[] = dataRows.map((row, i) => {
+            const students: StudentData[] = [];
+            const parseErrors: string[] = [];
+            dataRows.forEach((row, i) => {
               const serialVal = cell(row, serialCol);
-              if (!serialVal) throw new Error(`Row ${headerRowIdx + i + 2}: Missing Serial No`);
-              return {
+              if (!serialVal || isNaN(Number(serialVal))) {
+                parseErrors.push(`Row ${headerRowIdx + i + 2}: skipped — no valid Serial No`);
+                return;
+              }
+              students.push({
                 serialNumber: parseInt(serialVal) || (i + 1),
                 preeventScores: scoreCol !== -1 ? parseFloat(cell(row, scoreCol)) || undefined : undefined,
-              };
+              });
             });
-            return resolve(students);
+            return resolve({ students, parseErrors });
           }
 
           // Full import — only Name is required. School, Email, Phone are optional.
-          const nameCol   = findCol('name', 'student name', 'full name', 'student');
-          const emailCol  = findCol('email', 'email address', 'email id', 'e mail', 'mail');
-          const schoolCol = findCol('school', 'school name', 'institution', 'college', 'organization');
-          const phoneCol  = findCol('phone', 'phone number', 'mobile', 'mobile number', 'contact', 'cell');
+          // Broad alias list covers common regional sheet formats.
+          const nameCol   = findCol(
+            'name', 'student name', 'full name', 'name of student',
+            'participant name', 'name of participant', 'delegate name',
+            'students name', 'delegate', 'participant',
+          );
+          const emailCol  = findCol('email', 'email address', 'email id', 'e mail', 'mail', 'email id');
+          const schoolCol = findCol(
+            'school', 'school name', 'institution', 'college',
+            'organization', 'institution name', 'college name', 'school institution',
+          );
+          const phoneCol  = findCol(
+            'phone', 'phone number', 'mobile', 'mobile number',
+            'contact', 'contact number', 'cell', 'phone no', 'mob no',
+          );
 
-          const students: StudentData[] = dataRows.map((row, i) => {
+          if (nameCol === -1) throw new Error(
+            `Could not find a "Name" column. Headers found: ${headers.filter(Boolean).join(', ')}. ` +
+            'Rename the name column to "Name" or "Student Name" and try again.'
+          );
+
+          // Skip rows with a blank name — don't throw. This allows rows like
+          // sub-totals, section headers, or trailing blank rows to be ignored
+          // gracefully rather than aborting the entire import.
+          const students: StudentData[] = [];
+          const parseErrors: string[] = [];
+
+          dataRows.forEach((row, i) => {
             const name = cell(row, nameCol);
             if (!name) {
-              throw new Error(`Row ${headerRowIdx + i + 2}: Missing required field (Name)`);
+              parseErrors.push(`Row ${headerRowIdx + i + 2}: skipped — Name is blank`);
+              return;
             }
             const email = cell(row, emailCol).toLowerCase();
-            return {
+            students.push({
               name,
               school: cell(row, schoolCol) || undefined,
               email: email || undefined,
               phone: cell(row, phoneCol) || undefined,
-            };
+            });
           });
 
-          resolve(students);
+          if (students.length === 0) throw new Error(
+            parseErrors.length > 0
+              ? `No valid student rows found. First issue: ${parseErrors[0]}`
+              : 'No student data found in the file.'
+          );
+
+          resolve({ students, parseErrors });
         } catch (error) {
           reject(error);
         }
@@ -208,8 +259,14 @@ export const StudentBulkImport = () => {
     setBulkImportState({ isUploading: true, progress: 0, results: null, fileName: file.name });
 
     try {
-      const students = await parseExcelFile(file, importMode);
+      const { students, parseErrors } = await parseExcelFile(file, importMode);
       const importResults = await importStudents(students);
+      // Rows skipped during parsing (blank name, bad serial) count as failures
+      // so the organizer can see the full picture in the error report.
+      if (parseErrors.length > 0) {
+        importResults.failed += parseErrors.length;
+        importResults.errors.push(...parseErrors);
+      }
       setBulkImportState({ results: importResults, _eventId: profile?.event_id ?? null });
 
       if (importResults.success > 0) {
