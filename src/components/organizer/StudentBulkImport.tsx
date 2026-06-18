@@ -50,130 +50,113 @@ export const StudentBulkImport = () => {
         try {
           const data = new Uint8Array(e.target?.result as ArrayBuffer);
           const workbook = XLSX.read(data, { type: 'array' });
-          const sheetName = workbook.SheetNames[0];
-          const worksheet = workbook.Sheets[sheetName];
 
-          // Read all rows as raw arrays so we can locate the header row ourselves,
-          // handling blank rows or title rows that appear above the actual headers.
-          // Column order in the sheet is irrelevant — we match by header name.
-          const rawRows = XLSX.utils.sheet_to_json<(string | number | null)[]>(
-            worksheet, { header: 1, defval: null }
-          );
-
-          // Normalize: trim, lowercase, collapse whitespace / underscores / dashes.
+          // Combine rows from every sheet so multi-sheet workbooks (e.g. one tab
+          // per school) are fully imported without the organizer having to merge them.
+          // Each sheet is processed independently to handle per-sheet headers.
           const norm = (v: unknown) =>
             (v ?? '').toString().trim().toLowerCase().replace(/[\s_\-./]+/g, ' ');
 
-          // Header row = first row that has ≥2 non-empty cells AND at least one cell
-          // matching a known column keyword. This prevents event-title rows like
-          // "YIP Mizoram 2024 | Registration Sheet" from being picked as the header.
-          const headerRowIdx = rawRows.findIndex(row => {
+          const allStudents: StudentData[] = [];
+          const allParseErrors: string[] = [];
+
+          for (const sheetName of workbook.SheetNames) {
+            const worksheet = workbook.Sheets[sheetName];
+            const rawRows = XLSX.utils.sheet_to_json<(string | number | null)[]>(
+              worksheet, { header: 1, defval: null }
+            );
+
+            // Header row = first row that has ≥2 non-empty cells AND at least one cell
+            // matching a known column keyword. Skips title rows and empty sheets.
+            const headerRowIdx = rawRows.findIndex(row => {
             const nonEmpty = row.filter(c => c !== null && c !== '');
             if (nonEmpty.length < 2) return false;
             return nonEmpty.some(c =>
               HEADER_KEYWORDS.some(kw => norm(c).includes(kw))
             );
           });
-          if (headerRowIdx === -1) throw new Error(
-            'Could not find a header row. Make sure the sheet has column headers like "Name", "School", "Email", "Phone".'
-          );
+            if (headerRowIdx === -1) continue; // sheet has no recognisable header — skip it
 
-          const headers = rawRows[headerRowIdx].map(norm);
+            const headers = rawRows[headerRowIdx].map(norm);
 
-          // Data rows: everything after the header minus completely blank rows.
-          const dataRows = rawRows
-            .slice(headerRowIdx + 1)
-            .filter(row => row.some(c => c !== null && c !== ''));
+            const dataRows = rawRows
+              .slice(headerRowIdx + 1)
+              .filter(row => row.some(c => c !== null && c !== ''));
 
-          if (dataRows.length === 0) throw new Error('No data rows found after the header.');
+            if (dataRows.length === 0) continue;
 
-          // Fuzzy column finder: exact match → starts-with/prefix → substring (first win).
-          const findCol = (...aliases: string[]): number => {
-            const targets = aliases.map(norm);
-            for (const t of targets) { const i = headers.indexOf(t); if (i !== -1) return i; }
-            for (const t of targets) {
-              const i = headers.findIndex(h => h.startsWith(t) || t.startsWith(h));
-              if (i !== -1) return i;
+            const findCol = (...aliases: string[]): number => {
+              const targets = aliases.map(norm);
+              for (const t of targets) { const i = headers.indexOf(t); if (i !== -1) return i; }
+              for (const t of targets) {
+                const i = headers.findIndex(h => h.startsWith(t) || t.startsWith(h));
+                if (i !== -1) return i;
+              }
+              for (const t of targets) {
+                const i = headers.findIndex(h => h.includes(t) || t.includes(h));
+                if (i !== -1) return i;
+              }
+              return -1;
+            };
+
+            const cell = (row: (string | number | null)[], col: number) =>
+              col === -1 ? '' : (row[col] ?? '').toString().trim();
+
+            if (mode === 'scores-only') {
+              const serialCol = findCol('serial no', 'serial number', 's no', 'sno', 'serial', 'sl no', 'sl');
+              const scoreCol  = findCol('preevent scores', 'pre event scores', 'preevent score', 'score');
+              dataRows.forEach((row, i) => {
+                const serialVal = cell(row, serialCol);
+                if (!serialVal || isNaN(Number(serialVal))) {
+                  allParseErrors.push(`${sheetName} row ${headerRowIdx + i + 2}: skipped — no valid Serial No`);
+                  return;
+                }
+                allStudents.push({
+                  serialNumber: parseInt(serialVal) || (i + 1),
+                  preeventScores: scoreCol !== -1 ? parseFloat(cell(row, scoreCol)) || undefined : undefined,
+                });
+              });
+              continue;
             }
-            for (const t of targets) {
-              const i = headers.findIndex(h => h.includes(t) || t.includes(h));
-              if (i !== -1) return i;
+
+            // Full import — Name required, everything else optional.
+            const nameCol  = findCol('name', 'student name', 'full name', 'name of student',
+              'participant name', 'name of participant', 'delegate name', 'students name',
+              'delegate', 'participant');
+            const emailCol = findCol('email', 'email address', 'email id', 'e mail', 'mail');
+            const schoolCol = findCol('school', 'school name', 'institution', 'college',
+              'organization', 'institution name', 'college name');
+            const phoneCol = findCol('phone', 'phone number', 'mobile', 'mobile number',
+              'contact', 'contact number', 'cell', 'phone no', 'mob no');
+
+            if (nameCol === -1) {
+              allParseErrors.push(`Sheet "${sheetName}": no Name column found (headers: ${headers.filter(Boolean).join(', ')})`);
+              continue;
             }
-            return -1;
-          };
 
-          const cell = (row: (string | number | null)[], col: number) =>
-            col === -1 ? '' : (row[col] ?? '').toString().trim();
-
-          if (mode === 'scores-only') {
-            const serialCol = findCol('serial no', 'serial number', 's no', 'sno', 'serial', 'sl no', 'sl');
-            const scoreCol  = findCol('preevent scores', 'pre event scores', 'preevent score', 'score');
-            const students: StudentData[] = [];
-            const parseErrors: string[] = [];
             dataRows.forEach((row, i) => {
-              const serialVal = cell(row, serialCol);
-              if (!serialVal || isNaN(Number(serialVal))) {
-                parseErrors.push(`Row ${headerRowIdx + i + 2}: skipped — no valid Serial No`);
+              const name = cell(row, nameCol);
+              if (!name) {
+                allParseErrors.push(`${sheetName} row ${headerRowIdx + i + 2}: skipped — Name is blank`);
                 return;
               }
-              students.push({
-                serialNumber: parseInt(serialVal) || (i + 1),
-                preeventScores: scoreCol !== -1 ? parseFloat(cell(row, scoreCol)) || undefined : undefined,
+              const email = cell(row, emailCol).toLowerCase();
+              allStudents.push({
+                name,
+                school: cell(row, schoolCol) || undefined,
+                email: email || undefined,
+                phone: cell(row, phoneCol) || undefined,
               });
             });
-            return resolve({ students, parseErrors });
-          }
+          } // end sheet loop
 
-          // Full import — only Name is required. School, Email, Phone are optional.
-          // Broad alias list covers common regional sheet formats.
-          const nameCol   = findCol(
-            'name', 'student name', 'full name', 'name of student',
-            'participant name', 'name of participant', 'delegate name',
-            'students name', 'delegate', 'participant',
-          );
-          const emailCol  = findCol('email', 'email address', 'email id', 'e mail', 'mail', 'email id');
-          const schoolCol = findCol(
-            'school', 'school name', 'institution', 'college',
-            'organization', 'institution name', 'college name', 'school institution',
-          );
-          const phoneCol  = findCol(
-            'phone', 'phone number', 'mobile', 'mobile number',
-            'contact', 'contact number', 'cell', 'phone no', 'mob no',
-          );
-
-          if (nameCol === -1) throw new Error(
-            `Could not find a "Name" column. Headers found: ${headers.filter(Boolean).join(', ')}. ` +
-            'Rename the name column to "Name" or "Student Name" and try again.'
-          );
-
-          // Skip rows with a blank name — don't throw. This allows rows like
-          // sub-totals, section headers, or trailing blank rows to be ignored
-          // gracefully rather than aborting the entire import.
-          const students: StudentData[] = [];
-          const parseErrors: string[] = [];
-
-          dataRows.forEach((row, i) => {
-            const name = cell(row, nameCol);
-            if (!name) {
-              parseErrors.push(`Row ${headerRowIdx + i + 2}: skipped — Name is blank`);
-              return;
-            }
-            const email = cell(row, emailCol).toLowerCase();
-            students.push({
-              name,
-              school: cell(row, schoolCol) || undefined,
-              email: email || undefined,
-              phone: cell(row, phoneCol) || undefined,
-            });
-          });
-
-          if (students.length === 0) throw new Error(
-            parseErrors.length > 0
-              ? `No valid student rows found. First issue: ${parseErrors[0]}`
+          if (allStudents.length === 0) throw new Error(
+            allParseErrors.length > 0
+              ? `No valid student rows found. First issue: ${allParseErrors[0]}`
               : 'No student data found in the file.'
           );
 
-          resolve({ students, parseErrors });
+          resolve({ students: allStudents, parseErrors: allParseErrors });
         } catch (error) {
           reject(error);
         }
@@ -367,16 +350,21 @@ export const StudentBulkImport = () => {
         XLSX.writeFile(wb, 'preevent_scores_template.xlsx');
         toast.success(`Downloaded ${rows.length} students — fill in "Preevent scores" and re-upload`);
       } else {
-        const template = [
-          { 'Name': 'John Doe', 'School': 'Delhi Public School', 'Email': 'john.doe@example.com', 'Phone': '9876543210' },
-          { 'Name': 'Jane Smith', 'School': "St. Xavier's School", 'Email': 'jane.smith@example.com', 'Phone': '9876543211' },
-          { 'Name': 'Asha Rao', 'School': 'Bishop Cotton School', 'Email': 'asha.rao@example.com', 'Phone': '9876543212' },
+        // Four fixed columns. Email and Phone are optional — leave blank if unavailable.
+        // The app auto-generates the login code, party, committee and constituency.
+        const headers = [['Name *', 'School', 'Email', 'Phone']];
+        const samples = [
+          ['Arun Kumar', 'Delhi Public School', 'arun.kumar@example.com', '9876543210'],
+          ['Priya Singh', "St. Xavier's School", '', '9876543211'],
+          ['Lalhmingmawii', 'Govt. Higher Secondary School', '', ''],
         ];
-        const ws = XLSX.utils.json_to_sheet(template);
+        const ws = XLSX.utils.aoa_to_sheet([...headers, ...samples]);
+        // Column widths
+        ws['!cols'] = [{ wch: 30 }, { wch: 35 }, { wch: 32 }, { wch: 14 }];
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Students');
-        XLSX.writeFile(wb, 'student_import_template.xlsx');
-        toast.success('Template downloaded — replace sample rows with your delegate data');
+        XLSX.writeFile(wb, 'YIP_student_import_template.xlsx');
+        toast.success('Template downloaded — fill in student names, delete sample rows, then upload');
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to download template');
