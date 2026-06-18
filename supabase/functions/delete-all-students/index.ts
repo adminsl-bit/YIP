@@ -49,27 +49,43 @@ Deno.serve(async (req) => {
 
     console.log(`Starting deletion of all students for event ${profile.event_id ?? '(none)'}...`);
 
-    // Get all student profiles for this organizer's event only
-    let studentsQuery = supabaseClient
-      .from('profiles')
-      .select('user_id, name, serial_number')
-      .eq('user_type', 'student');
+    // Collect students to delete:
+    // 1. Students belonging to this organizer's event
+    // 2. Students with no event assigned (orphans from failed bulk imports),
+    //    created within the last 7 days — prevents accumulation of ghost accounts
+    const toDeleteIds = new Set<string>();
 
-    studentsQuery = profile.event_id
-      ? studentsQuery.eq('event_id', profile.event_id)
-      : studentsQuery.is('event_id', null);
+    if (profile.event_id) {
+      const { data: eventStudents } = await supabaseClient
+        .from('profiles')
+        .select('user_id')
+        .eq('user_type', 'student')
+        .eq('event_id', profile.event_id);
+      (eventStudents ?? []).forEach((s: any) => toDeleteIds.add(s.user_id));
 
-    const { data: students, error: studentsError } = await studentsQuery;
-
-    if (studentsError) {
-      console.error('Error fetching students:', studentsError);
-      throw studentsError;
+      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: orphans } = await supabaseClient
+        .from('profiles')
+        .select('user_id')
+        .eq('user_type', 'student')
+        .is('event_id', null)
+        .gte('created_at', since);
+      (orphans ?? []).forEach((s: any) => toDeleteIds.add(s.user_id));
+    } else {
+      const { data: nullEventStudents } = await supabaseClient
+        .from('profiles')
+        .select('user_id')
+        .eq('user_type', 'student')
+        .is('event_id', null);
+      (nullEventStudents ?? []).forEach((s: any) => toDeleteIds.add(s.user_id));
     }
 
-    if (!students || students.length === 0) {
+    const students = [...toDeleteIds].map(user_id => ({ user_id }));
+
+    if (students.length === 0) {
       return new Response(
-        JSON.stringify({ 
-          success: true, 
+        JSON.stringify({
+          success: true,
           message: 'No students found to delete',
           deleted_count: 0
         }),
@@ -82,33 +98,17 @@ Deno.serve(async (req) => {
     let deletedCount = 0;
     const errors = [];
 
-    // Delete each student's auth account (this will cascade to profiles and related data)
+    // Delete each student's auth account (cascades to profiles and related data)
     for (const student of students) {
       try {
-        console.log(`Deleting student: ${student.name} (${student.serial_number})`);
-        
-        const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(
-          student.user_id
-        );
-
+        const { error: deleteError } = await supabaseClient.auth.admin.deleteUser(student.user_id);
         if (deleteError) {
-          console.error(`Error deleting student ${student.serial_number}:`, deleteError);
-          errors.push({
-            student: student.name,
-            serial_number: student.serial_number,
-            error: deleteError.message
-          });
+          errors.push({ user_id: student.user_id, error: deleteError.message });
         } else {
           deletedCount++;
-          console.log(`Successfully deleted student ${student.serial_number}`);
         }
       } catch (error) {
-        console.error(`Exception deleting student ${student.serial_number}:`, error);
-        errors.push({
-          student: student.name,
-          serial_number: student.serial_number,
-          error: error.message
-        });
+        errors.push({ user_id: student.user_id, error: error.message });
       }
     }
 

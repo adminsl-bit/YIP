@@ -372,22 +372,8 @@ serve(async (req) => {
             .ilike('name', name).eq('event_id', event_id).eq('user_type', 'student').maybeSingle();
           existingProfile = inEvent;
 
-          if (!existingProfile) {
-            // Claim orphan students (null event_id) — created by past failed imports.
-            // There may be MULTIPLE duplicates (one per failed import run), so we
-            // fetch all of them, claim the first, and delete the rest to avoid
-            // accumulating ghost accounts on every reimport.
-            const { data: orphans } = await supabaseAdmin
-              .from('profiles').select('user_id')
-              .ilike('name', name).is('event_id', null).eq('user_type', 'student');
-            if (orphans && orphans.length > 0) {
-              existingProfile = orphans[0];
-              // Delete duplicate ghost accounts
-              for (const dup of orphans.slice(1)) {
-                await supabaseAdmin.auth.admin.deleteUser(dup.user_id);
-              }
-            }
-          }
+          // No orphan claim — too risky to match by name alone across all events.
+          // Orphan cleanup is handled by the Delete All function before reimport.
         }
 
         if (existingProfile) {
