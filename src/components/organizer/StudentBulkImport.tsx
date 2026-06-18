@@ -256,6 +256,11 @@ export const StudentBulkImport = () => {
       return;
     }
 
+    if (!profile?.event_id) {
+      toast.error('Your account is not assigned to an event. Contact your administrator before importing.');
+      return;
+    }
+
     setBulkImportState({ isUploading: true, progress: 0, results: null, fileName: file.name });
 
     try {
@@ -537,6 +542,21 @@ export const StudentBulkImport = () => {
               </div>
               <p className="text-xs text-on-surface-variant pt-1 border-t border-outline-variant/10">Updates pre-event scores only. All other student data remains unchanged. Students must already exist (run Full Import first).</p>
             </div>
+          )}
+        </div>
+
+        {/* Event context — always visible so the organizer knows which event they're importing into */}
+        <div className={`flex items-center gap-3 px-5 py-3 rounded-2xl text-sm font-body ${profile?.event_id ? 'bg-primary/5 border border-primary/15' : 'bg-error/8 border border-error/20'}`}>
+          <span className={`material-symbols-outlined text-[20px] shrink-0 ${profile?.event_id ? 'text-primary' : 'text-error'}`} style={{ fontVariationSettings: "'FILL' 1" }}>
+            {profile?.event_id ? 'event_available' : 'event_busy'}
+          </span>
+          {profile?.event_id ? (
+            <p className="text-on-surface-variant font-medium">
+              Importing into event <span className="font-black text-primary font-mono text-xs">{profile.event_id.slice(0, 8)}…</span>
+              {profile.city ? <span> · <span className="font-bold text-on-surface">{profile.city}</span></span> : null}
+            </p>
+          ) : (
+            <p className="text-error font-bold">No event assigned to your account — import is blocked. Contact your administrator.</p>
           )}
         </div>
 

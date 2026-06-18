@@ -94,6 +94,8 @@ export const OrganizerStudentList = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const [isSyncingEvent, setIsSyncingEvent] = useState(false);
+  const [orphanCount, setOrphanCount] = useState(0);
+  const [isRecovering, setIsRecovering] = useState(false);
 
   // Event-scoped committee list, configured by the SuperAdmin per event
   const [eventCommittees, setEventCommittees] = useState<string[]>([]);
@@ -129,26 +131,72 @@ export const OrganizerStudentList = () => {
   const locationColumns = useMemo(() => getLocationColumns(eventInfo?.level), [eventInfo?.level]);
   const eventZoneLabel = eventInfo?.state ? getZoneId(eventInfo.state) ? getZoneConfig(getZoneId(eventInfo.state)!).name : '—' : '—';
 
+  // Count students created in the last 72 h with no event assigned —
+  // these are typically from a bulk import that ran without a valid event_id.
+  const fetchOrphanCount = async () => {
+    if (!profile?.event_id) return;
+    const since = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+    const { count } = await supabase
+      .from('profiles')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('user_type', 'student')
+      .is('event_id', null)
+      .gte('created_at', since);
+    setOrphanCount(count ?? 0);
+  };
+
   const handleSyncEventId = async () => {
     if (!profile?.event_id) {
       toast({ title: 'No event assigned to your account', variant: 'destructive' });
       return;
     }
-    const nullEventStudents = students.filter((s: any) => !s.event_id);
-    if (nullEventStudents.length === 0) {
-      toast({ title: 'All students already have an event assigned' });
+    // Students in the loaded list missing event_id (edge case)
+    const listNulls = students.filter((s: any) => !s.event_id).map((s: any) => s.user_id);
+    if (listNulls.length === 0) {
+      toast({ title: 'All students in the list already have an event assigned' });
       return;
     }
     setIsSyncingEvent(true);
     const { error } = await supabase
       .from('profiles')
       .update({ event_id: profile.event_id })
-      .in('user_id', nullEventStudents.map((s: any) => s.user_id));
+      .in('user_id', listNulls);
     setIsSyncingEvent(false);
     if (error) {
       toast({ title: 'Sync failed', description: error.message, variant: 'destructive' });
     } else {
-      toast({ title: `${nullEventStudents.length} student${nullEventStudents.length !== 1 ? 's' : ''} assigned to this event` });
+      toast({ title: `${listNulls.length} student${listNulls.length !== 1 ? 's' : ''} assigned to this event` });
+      fetchStudents();
+    }
+  };
+
+  // Claim students created without event_id in the last 72 h and assign them here.
+  // Safe window: 72 h covers a fresh bulk import while avoiding cross-event contamination.
+  const handleRecoverOrphans = async () => {
+    if (!profile?.event_id) return;
+    setIsRecovering(true);
+    const since = new Date(Date.now() - 72 * 60 * 60 * 1000).toISOString();
+    const { data: orphans, error: fetchErr } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('user_type', 'student')
+      .is('event_id', null)
+      .gte('created_at', since);
+    if (fetchErr || !orphans?.length) {
+      toast({ title: orphans?.length === 0 ? 'No unassigned students found' : 'Fetch failed', variant: orphans?.length === 0 ? 'default' : 'destructive' });
+      setIsRecovering(false);
+      return;
+    }
+    const { error: updateErr } = await supabase
+      .from('profiles')
+      .update({ event_id: profile.event_id })
+      .in('user_id', orphans.map((s: any) => s.user_id));
+    setIsRecovering(false);
+    if (updateErr) {
+      toast({ title: 'Recovery failed', description: updateErr.message, variant: 'destructive' });
+    } else {
+      toast({ title: `${orphans.length} student${orphans.length !== 1 ? 's' : ''} recovered and assigned to this event` });
+      setOrphanCount(0);
       fetchStudents();
     }
   };
@@ -169,12 +217,14 @@ export const OrganizerStudentList = () => {
     fetchStudents();
     fetchJuryAssessments();
     fetchAssessments();
+    fetchOrphanCount();
 
     // Realtime: refresh when profiles change (e.g., after import)
     const channel = supabase
       .channel('realtime-profiles-organizer')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
         fetchStudents();
+        fetchOrphanCount();
       })
       .subscribe();
 
@@ -705,17 +755,19 @@ export const OrganizerStudentList = () => {
             Cards
           </button>
         </div>
-        {profile?.event_id && students.some((s: any) => !s.event_id) && (
+        {/* Recover students imported without event_id (common after a bulk import
+            where the organizer's profile.event_id wasn't resolved yet) */}
+        {orphanCount > 0 && (
           <button
-            onClick={handleSyncEventId}
-            disabled={isSyncingEvent}
-            title="Assign this event to all students who are missing an event assignment"
-            className="flex items-center gap-2 py-3 px-5 rounded-full border border-primary/30 text-primary font-bold font-body text-sm hover:bg-primary/5 transition-all disabled:opacity-50"
+            onClick={handleRecoverOrphans}
+            disabled={isRecovering}
+            title={`${orphanCount} student${orphanCount !== 1 ? 's' : ''} were created in the last 72 h without an event assignment — click to assign them to this event`}
+            className="flex items-center gap-2 py-3 px-5 rounded-full border border-amber-400/60 text-amber-700 bg-amber-50 font-bold font-body text-sm hover:bg-amber-100 transition-all disabled:opacity-50"
           >
-            {isSyncingEvent
+            {isRecovering
               ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-              : <span className="material-symbols-outlined text-[18px]">sync</span>}
-            Sync Event ({students.filter((s: any) => !s.event_id).length})
+              : <span className="material-symbols-outlined text-[18px]">person_search</span>}
+            Recover {orphanCount} Student{orphanCount !== 1 ? 's' : ''}
           </button>
         )}
         <button
