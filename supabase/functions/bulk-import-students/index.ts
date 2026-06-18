@@ -374,6 +374,27 @@ serve(async (req) => {
             continue;
           }
 
+          // Return existing credentials so the organizer's download sheet covers
+          // ALL students, not just newly created ones (handles re-import case).
+          const { data: existingData } = await supabaseAdmin
+            .from('profiles')
+            .select('serial_number, login_code, email')
+            .eq('user_id', existingProfile.user_id)
+            .maybeSingle();
+
+          if (existingData?.login_code) {
+            const displayEmail = email
+              || (existingData.email && !existingData.email.endsWith('@noemail.yip.internal')
+                  ? existingData.email : '');
+            results.credentials.push({
+              serialNumber: existingData.serial_number ?? 0,
+              name,
+              school,
+              email: displayEmail,
+              password: existingData.login_code,
+            });
+          }
+
           results.success++;
         } else {
           const password = generateLoginCode(usedLoginCodes);
