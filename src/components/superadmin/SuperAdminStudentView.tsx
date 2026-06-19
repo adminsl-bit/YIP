@@ -65,6 +65,8 @@ interface Student {
   last_login_at?: string;
   session_id?: string;
   created_at?: string;
+  login_code?: string | null;
+  email?: string | null;
 }
 
 const partyLabel = (n: number, name?: string | null) => {
@@ -148,6 +150,30 @@ export const SuperAdminStudentView = () => {
   const totalCities    = cityGroups.filter(([c]) => c !== 'Unassigned').length;
   const activeSessions = students.filter(s => s.session_id).length;
   const activeAccounts = students.filter(s => s.is_active).length;
+
+  // ── CSV export ────────────────────────────────────────────────────────────────
+  const downloadCSV = (rows: typeof students, filename: string) => {
+    const headers = ['Serial No', 'Name', 'Position', 'Party', 'Party Name', 'Committee',
+      'Constituency', 'School', 'City', 'State', 'Region', 'Zone', 'Login Code', 'Email'];
+    const escape = (v: unknown) => {
+      const s = (v ?? '').toString().replace(/"/g, '""');
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+    };
+    const lines = [
+      headers.join(','),
+      ...rows.map(s => [
+        s.serial_number, s.name, s.position, s.party_number || '', s.party_name || '',
+        s.committee || '', s.constituency || '', s.school || '',
+        s.city || '', s.state || '', getRegion(s.state), zoneLabel(s.state),
+        s.login_code || '', s.email || '',
+      ].map(escape).join(',')),
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   // ── Filtered table ────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
@@ -370,6 +396,15 @@ export const SuperAdminStudentView = () => {
                 <span className="material-symbols-outlined text-[14px]">close</span>Clear
               </button>
             )}
+            <button
+              onClick={() => downloadCSV(filtered, `yip_students_${Date.now()}.csv`)}
+              disabled={filtered.length === 0}
+              className="flex items-center gap-1.5 py-2 px-4 rounded-xl bg-surface-container text-on-surface-variant hover:bg-surface-container-high text-xs font-bold font-body transition-all disabled:opacity-40 shrink-0"
+              title="Download visible rows as CSV"
+            >
+              <span className="material-symbols-outlined text-[16px]">download</span>
+              CSV ({filtered.length})
+            </button>
           </div>
 
           {/* Region chips */}

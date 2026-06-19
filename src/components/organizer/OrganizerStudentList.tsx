@@ -642,6 +642,30 @@ export const OrganizerStudentList = () => {
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / ITEMS_PER_PAGE));
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
+  const downloadCSV = () => {
+    const headers = ['Serial No', 'Name', 'Login Code', 'Position', 'Party No', 'Party Name',
+      'Committee', 'Constituency', 'School', 'City', 'State', 'Email', 'Status'];
+    const escape = (v: unknown) => {
+      const s = (v ?? '').toString().replace(/"/g, '""');
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+    };
+    const lines = [
+      headers.join(','),
+      ...filteredStudents.map(s => [
+        s.serial_number, s.name, s.login_code || '', s.position,
+        s.party_number || '', s.party_name || '', s.committee || '',
+        s.constituency || '', s.school || '', s.city || '', s.state || '',
+        s.email && !s.email.endsWith('@noemail.yip.internal') ? s.email : '',
+        s.is_active ? 'Active' : 'Inactive',
+      ].map(escape).join(',')),
+    ];
+    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `yip_students_${profile?.city || 'event'}_${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleRegisterStudent = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!registerForm.name || !registerForm.email) {
@@ -778,6 +802,15 @@ export const OrganizerStudentList = () => {
             Recover {orphanCount} Student{orphanCount !== 1 ? 's' : ''}
           </button>
         )}
+        <button
+          onClick={downloadCSV}
+          disabled={filteredStudents.length === 0}
+          title="Download visible students as CSV"
+          className="flex items-center gap-2 py-3 px-5 rounded-full border border-outline-variant/40 text-on-surface-variant font-bold font-body text-sm hover:bg-surface-container transition-all disabled:opacity-40"
+        >
+          <span className="material-symbols-outlined text-[18px]">download</span>
+          CSV ({filteredStudents.length})
+        </button>
         <button
           onClick={() => { setRegisterForm(f => ({ ...f, committee: autoCommittee })); setShowRegisterDialog(true); }}
           className="bg-gradient-to-r from-primary to-primary-container text-white font-bold py-3 px-7 rounded-full flex items-center gap-2 shadow-[0_8px_24px_rgba(19,41,143,0.25)] hover:scale-[1.02] transition-all active:scale-95 font-body text-sm"
