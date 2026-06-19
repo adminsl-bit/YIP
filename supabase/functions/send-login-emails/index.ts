@@ -12,18 +12,18 @@ interface Credential {
 }
 
 // Sends each newly-imported student their login email + 6-digit pass
-// code via Resend. Requires the RESEND_API_KEY secret to be set
-// (npx supabase secrets set RESEND_API_KEY=...); RESEND_FROM_EMAIL can
-// optionally override the default sender.
+// code via Brevo transactional API. Requires the BREVO_API_KEY secret:
+//   npx supabase secrets set BREVO_API_KEY=xkeysib-...
+// BREVO_FROM_EMAIL / BREVO_FROM_NAME can override the default sender.
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    if (!resendApiKey) {
-      return new Response(JSON.stringify({ error: 'Email sending is not configured yet (missing RESEND_API_KEY).' }), {
+    const brevoApiKey = Deno.env.get('BREVO_API_KEY');
+    if (!brevoApiKey) {
+      return new Response(JSON.stringify({ error: 'Email sending is not configured (missing BREVO_API_KEY).' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -59,8 +59,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const loginUrl = site_url ? `${site_url.replace(/\/$/, '')}/login` : 'the Parliament login page';
-    const fromEmail = Deno.env.get('RESEND_FROM_EMAIL') ?? 'Young Indians Parliament <onboarding@resend.dev>';
+    const loginUrl = site_url ? `${site_url.replace(/\/$/, '')}/login` : 'https://yip-mu.vercel.app/login';
+    const fromEmail = Deno.env.get('BREVO_FROM_EMAIL') ?? 'noreply@yi.org.in';
+    const fromName  = Deno.env.get('BREVO_FROM_NAME')  ?? 'Young Indians Parliament';
 
     let sent = 0;
     let failed = 0;
@@ -257,17 +258,18 @@ Deno.serve(async (req) => {
 </body>
 </html>`;
 
-        const response = await fetch('https://api.resend.com/emails', {
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
+            'api-key': brevoApiKey,
             'Content-Type': 'application/json',
+            'accept': 'application/json',
           },
           body: JSON.stringify({
-            from: fromEmail,
-            to: cred.email,
+            sender: { name: fromName, email: fromEmail },
+            to: [{ email: cred.email, name: cred.name }],
             subject: `YIP 2026 — Your delegate login code: ${cred.password}`,
-            html,
+            htmlContent: html,
           }),
         });
 
@@ -282,8 +284,8 @@ Deno.serve(async (req) => {
         errors.push(`${cred.name} (${cred.email}): ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
 
-      // Stay comfortably under Resend's default rate limit (2 req/sec).
-      await new Promise(resolve => setTimeout(resolve, 550));
+      // Brevo free tier allows ~10 emails/sec; 200 ms gap keeps us safe.
+      await new Promise(resolve => setTimeout(resolve, 200));
     }
 
     return new Response(JSON.stringify({ sent, failed, errors }), {

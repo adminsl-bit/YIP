@@ -30,8 +30,8 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-    if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY not configured");
+    const BREVO_API_KEY = Deno.env.get("BREVO_API_KEY");
+    if (!BREVO_API_KEY) throw new Error("BREVO_API_KEY not configured");
 
     const { parents, site_url } = await req.json() as {
       parents: { parentEmail: string; studentName: string }[];
@@ -122,17 +122,18 @@ serve(async (req) => {
         </div>
       `;
 
-      const res = await fetch("https://api.resend.com/emails", {
+      const res = await fetch("https://api.brevo.com/v3/smtp/email", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${RESEND_API_KEY}`,
+          "api-key": BREVO_API_KEY,
           "Content-Type": "application/json",
+          "accept": "application/json",
         },
         body: JSON.stringify({
-          from: "YIP <noreply@yi.org.in>",
-          to: parentEmail,
+          sender: { name: "Young Indians Parliament", email: "noreply@yi.org.in" },
+          to: [{ email: parentEmail }],
           subject: `YIP Participation Notice — ${studentName}`,
-          html,
+          htmlContent: html,
         }),
       });
 
