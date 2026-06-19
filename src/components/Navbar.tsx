@@ -33,8 +33,9 @@ const Navbar = () => {
   return (
     <>
       <nav className="fixed top-4 left-1/2 -translate-x-1/2 rounded-full w-[92%] max-w-4xl z-50 glass-nav shadow-[0_24px_48px_-15px_rgba(46,65,172,0.12)] flex justify-between items-center px-5 py-1.5 border border-white/20 pointer-events-auto">
-        <Link to="/" onClick={closeMobile} className="text-sm md:text-lg font-black text-primary dark:text-white tracking-tighter font-headline shrink-0">
-          Young Indians Parliament
+        <Link to="/" onClick={closeMobile} className="font-black text-primary dark:text-white tracking-tighter font-headline shrink-0 whitespace-nowrap text-sm md:text-lg">
+          <span className="sm:hidden">YI Parliament</span>
+          <span className="hidden sm:inline">Young Indians Parliament</span>
         </Link>
 
         {/* Desktop nav links */}
@@ -97,7 +98,7 @@ const Navbar = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18 }}
-            className="fixed top-[4.5rem] left-1/2 -translate-x-1/2 w-[92%] max-w-sm z-40 bg-white/95 backdrop-blur-xl rounded-[1.5rem] shadow-2xl shadow-primary/10 border border-white/30 p-5 flex flex-col gap-1"
+            className="fixed top-[4.5rem] left-1/2 -translate-x-1/2 w-[92%] max-w-sm z-[51] bg-white/95 backdrop-blur-xl rounded-[1.5rem] shadow-2xl shadow-primary/10 border border-white/30 p-5 flex flex-col gap-1 overflow-y-auto max-h-[calc(100vh-5rem)]"
           >
             {navLinks.map((link) => (
               <Link
@@ -140,7 +141,7 @@ const Navbar = () => {
       {/* Overlay to close mobile menu */}
       {mobileOpen && (
         <div
-          className="fixed inset-0 z-30 md:hidden"
+          className="fixed inset-0 z-[49] md:hidden"
           onClick={closeMobile}
           aria-hidden="true"
         />
