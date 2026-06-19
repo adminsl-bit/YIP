@@ -49,6 +49,10 @@ export const PartyLogoUploader: React.FC<PartyLogoUploaderProps> = ({
       toast({ title: "Invalid file", description: "Please upload an image file.", variant: "destructive" });
       return;
     }
+    if (file.size > 1 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Party logo must be under 1 MB.", variant: "destructive" });
+      return;
+    }
 
     setFileName(file.name);
     setFileType(file.type);

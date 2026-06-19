@@ -49,6 +49,10 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({
       toast({ title: "Invalid file", description: "Please upload an image file.", variant: "destructive" });
       return;
     }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Profile photo must be under 2 MB.", variant: "destructive" });
+      return;
+    }
 
     setFileName(file.name);
     setFileType(file.type);

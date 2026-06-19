@@ -832,10 +832,7 @@ const StudentDashboard = () => {
 
       {/* ── Main Content ── */}
       <main className="flex-1 md:ml-64 p-4 sm:p-6 md:p-8 pb-24 md:pb-8">
-        <div className={activeTab === 'messages' ? '' : 'hidden'}>
-          <GlobalSquare />
-        </div>
-        {activeTab !== 'messages' && renderTabContent()}
+        {activeTab === 'messages' ? <GlobalSquare /> : renderTabContent()}
       </main>
 
       <BreakingNewsTicker />

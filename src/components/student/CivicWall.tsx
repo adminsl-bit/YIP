@@ -263,8 +263,9 @@ export const CivicWall = () => {
       return;
     }
 
-    if (file.size > 50 * 1024 * 1024) {
-      toast({ title: "File Too Large", description: "Maximum file size is 50MB.", variant: "destructive" });
+    const limitMB = type === 'video' ? 10 : 5;
+    if (file.size > limitMB * 1024 * 1024) {
+      toast({ title: "File Too Large", description: `Maximum size is ${limitMB} MB for ${type}s.`, variant: "destructive" });
       return;
     }
 

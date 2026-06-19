@@ -26,6 +26,10 @@ export const ProfilePhotoUploader: React.FC<ProfilePhotoUploaderProps> = ({ clas
       toast({ title: "Not signed in", description: "Please sign in to upload a photo.", variant: "destructive" });
       return;
     }
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Profile photo must be under 2 MB.", variant: "destructive" });
+      return;
+    }
 
     try {
       setUploading(true);

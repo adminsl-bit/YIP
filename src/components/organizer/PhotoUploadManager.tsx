@@ -51,6 +51,10 @@ const PhotoUploadManager = () => {
   };
 
   const handleFileUpload = async (file: File, studentId: string, serialNumber: number) => {
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Student photo must be under 5 MB.", variant: "destructive" });
+      return;
+    }
     try {
       let processedFile = file;
       let fileName = `${serialNumber}.jpg`;
