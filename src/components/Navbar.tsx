@@ -89,16 +89,18 @@ const Navbar = () => {
         </button>
       </nav>
 
-      {/* Mobile menu dropdown */}
+      {/* Mobile menu dropdown — centering is on the static wrapper so Framer
+          Motion's y-transform doesn't conflict with -translate-x-1/2 */}
       <AnimatePresence>
         {mobileOpen && (
+          <div className="fixed top-[4.5rem] inset-x-0 flex justify-center z-[51] px-[4%]">
           <motion.div
             key="mobile-menu"
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18 }}
-            className="fixed top-[4.5rem] left-1/2 -translate-x-1/2 w-[92%] max-w-sm z-[51] bg-white/95 backdrop-blur-xl rounded-[1.5rem] shadow-2xl shadow-primary/10 border border-white/30 p-5 flex flex-col gap-1 overflow-y-auto max-h-[calc(100vh-5rem)]"
+            className="w-full max-w-sm bg-white/95 backdrop-blur-xl rounded-[1.5rem] shadow-2xl shadow-primary/10 border border-white/30 p-5 flex flex-col gap-1 overflow-y-auto max-h-[calc(100vh-5rem)]"
           >
             {navLinks.map((link) => (
               <Link
@@ -135,6 +137,7 @@ const Navbar = () => {
               )}
             </div>
           </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
