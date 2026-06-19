@@ -78,6 +78,7 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   const [messages, setMessages] = useState<Message[]>([]);
   const [profilesMap, setProfilesMap] = useState<Record<string, ProfileLite>>({});
   const [activeProfiles, setActiveProfiles] = useState<Participant[]>([]);
+  const [eventStudentCount, setEventStudentCount] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(false);
@@ -183,67 +184,19 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   useEffect(() => { profileRef.current = profile; }, [profile]);
   useEffect(() => { showReportedRef.current = showReported; }, [showReported]);
 
-  // Presence channel — tracks who is currently online in real-time (scoped per event)
+  // Lightweight event roster count — replaces the expensive presence channel.
+  // Presence with 181 users caused ~1.7 GB of WebSocket traffic on join and
+  // froze every student's browser. A simple count query is accurate enough.
   useEffect(() => {
-    if (!user || !eventId) return;
-
-    const ch = supabase.channel(`yip:presence:${eventId}`);
-
-    const syncPresence = () => {
-      const state = ch.presenceState<{
-        id: string; name: string; photo_url: string | null;
-        user_type: string; city: string; party_name?: string; position?: string;
-      }>();
-      const seen = new Set<string>();
-      const users: Participant[] = [];
-      for (const presences of Object.values(state)) {
-        for (const p of presences as any[]) {
-          if (!seen.has(p.id)) {
-            seen.add(p.id);
-            users.push({ id: p.id, name: p.name, photo_url: p.photo_url, user_type: p.user_type, city: p.city, party_name: p.party_name, position: p.position });
-          }
-        }
-      }
-      setActiveProfiles(users);
-    };
-
-    ch.on('presence', { event: 'sync' }, syncPresence);
-
-    ch.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        const p = profileRef.current;
-        if (p) {
-          await ch.track({
-            id: user.id,
-            name: (p as any).name || 'Delegate',
-            photo_url: (p as any).photo_url || null,
-            user_type: (p as any).user_type || 'student',
-            city: (p as any).city || '',
-            party_name: (p as any).party_name,
-            position: (p as any).position,
-          });
-        }
-      }
-    });
-
-    presenceChRef.current = ch;
-    return () => { supabase.removeChannel(ch); presenceChRef.current = null; };
-  }, [user, eventId]);
-
-  // Re-track when profile data arrives after the channel already subscribed
-  useEffect(() => {
-    const ch = presenceChRef.current;
-    if (!ch || !user || !profile) return;
-    ch.track({
-      id: user.id,
-      name: (profile as any).name || 'Delegate',
-      photo_url: (profile as any).photo_url || null,
-      user_type: (profile as any).user_type || 'student',
-      city: (profile as any).city || '',
-      party_name: (profile as any).party_name,
-      position: (profile as any).position,
-    });
-  }, [profile, user]);
+    if (!eventId) return;
+    supabase
+      .from('profiles')
+      .select('user_id', { count: 'exact', head: true })
+      .eq('event_id', eventId)
+      .eq('user_type', 'student')
+      .eq('is_active', true)
+      .then(({ count }) => setEventStudentCount(count ?? 0));
+  }, [eventId]);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -619,7 +572,7 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
           )}
           <p className="text-xs text-slate-400 font-medium bg-slate-50 px-3 py-1 rounded-full flex items-center gap-2">
             <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-            {activeProfiles.length} Active
+            {eventStudentCount ?? '—'} Delegates
           </p>
         </div>
       </div>
@@ -862,62 +815,36 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
           <div ref={bottomRef} />
         </div>
 
-        {/* ── Right sidebar: Active Now ── */}
+        {/* ── Right sidebar: Event Roster ── */}
         <aside className="hidden xl:flex flex-col w-72 bg-white border-l border-slate-100 p-6 overflow-y-auto shrink-0" style={{ scrollbarWidth: 'none' }}>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="font-headline font-extrabold text-slate-800">Active Now</h2>
-            <span className="bg-blue-50 text-primary text-[10px] px-2 py-1 rounded-full font-bold">{activeProfiles.length} Total</span>
+            <h2 className="font-headline font-extrabold text-slate-800">This Event</h2>
+            <span className="bg-blue-50 text-primary text-[10px] px-2 py-1 rounded-full font-bold">{eventStudentCount ?? '—'} Delegates</span>
           </div>
 
-          <div className="space-y-6">
-            {leadership.length > 0 && (
-              <div>
-                <h3 className="text-[10px] uppercase tracking-[0.15em] font-bold text-slate-400 mb-4">Leadership</h3>
-                <div className="space-y-4">
-                  {leadership.slice(0, 5).map(p => (
-                    <div key={p.id} className="flex items-center gap-3">
-                      <div className="relative shrink-0">
-                        <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center">
-                          {p.photo_url
-                            ? <img src={p.photo_url} alt={p.name} className="w-full h-full object-cover" />
-                            : <span className="material-symbols-outlined text-[20px] text-on-surface-variant/40">person</span>}
-                        </div>
-                        <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-800 font-headline leading-none">{p.name}</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">
-                          {[p.position || p.user_type || 'Organizer', p.party_name].filter(Boolean).join(' · ')}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+          <div className="space-y-4">
+            {/* Static roster count — replaces live presence list which caused
+                ~1.7 GB of WebSocket traffic when all 181 delegates joined */}
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 text-center">
+              <p className="text-4xl font-black text-primary font-headline">
+                {eventStudentCount ?? '—'}
+              </p>
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mt-1">Delegates registered</p>
+            </div>
+            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Your Profile</p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl overflow-hidden bg-primary/10 flex items-center justify-center shrink-0">
+                  {(profile as any)?.photo_url
+                    ? <img src={(profile as any).photo_url} alt={(profile as any).name} className="w-full h-full object-cover" />
+                    : <span className="material-symbols-outlined text-[20px] text-primary/40">person</span>}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-slate-800 font-headline leading-none truncate">{(profile as any)?.name || 'Delegate'}</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5 truncate">{(profile as any)?.party_name || (profile as any)?.position || 'Member'}</p>
                 </div>
               </div>
-            )}
-
-            {candidates.length > 0 && (
-              <div>
-                <h3 className="text-[10px] uppercase tracking-[0.15em] font-bold text-slate-400 mb-4">Delegates</h3>
-                <div className="space-y-4">
-                  {candidates.slice(0, 8).map(p => (
-                    <div key={p.id} className="flex items-center gap-3 opacity-80">
-                      <div className="w-10 h-10 rounded-xl overflow-hidden bg-slate-100 flex items-center justify-center shrink-0">
-                        {p.photo_url
-                          ? <img src={p.photo_url} alt={p.name} className="w-full h-full object-cover" />
-                          : <span className="material-symbols-outlined text-[20px] text-on-surface-variant/40">person</span>}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-800 font-headline leading-none">{p.name}</p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">
-                          {[p.party_name, p.city].filter(Boolean).join(' · ') || 'Delegate'}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            </div>
           </div>
 
           <div className="mt-auto pt-6">
