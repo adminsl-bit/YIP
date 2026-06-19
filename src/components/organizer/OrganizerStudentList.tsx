@@ -1110,6 +1110,7 @@ export const OrganizerStudentList = () => {
                   <th className="px-6 py-5">ID</th>
                   <th className="px-6 py-5">Login Code</th>
                   <th className="px-6 py-5">Role</th>
+                  <th className="px-6 py-5">Party</th>
                   <th className="px-6 py-5">School</th>
                   {locationColumns.includes('city') && <th className="px-6 py-5">City</th>}
                   {locationColumns.includes('state') && <th className="px-6 py-5">State</th>}
@@ -1177,6 +1178,18 @@ export const OrganizerStudentList = () => {
                         }`}>
                           {student.position || 'Delegate'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {student.party_name ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[10px] font-black flex items-center justify-center shrink-0">
+                              {partyLetter(student.party_number)}
+                            </span>
+                            <span className="text-sm font-semibold text-on-surface font-body truncate max-w-[120px]">{student.party_name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-on-surface-variant/30 italic text-xs font-body">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm font-semibold text-on-surface font-body truncate max-w-[160px] block">{student.school || <span className="text-on-surface-variant/40 italic text-xs">—</span>}</span>
