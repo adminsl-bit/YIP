@@ -24,6 +24,8 @@ export const StudentBulkImport = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
   const [isEmailing, setIsEmailing] = useState(false);
+  // DPDP Act 2023 — organiser must confirm parental consent before import
+  const [dpdpAcknowledged, setDpdpAcknowledged] = useState(false);
 
   // Import progress/results live in a module-level store so they survive
   // switching tabs away from this component and back.
@@ -595,11 +597,28 @@ export const StudentBulkImport = () => {
           </div>
         </div>
 
+        {/* DPDP Act 2023 — parental consent acknowledgment (required before import) */}
+        {file && importMode === 'full' && (
+          <label className="flex items-start gap-3 cursor-pointer bg-amber-50 border border-amber-200 rounded-2xl p-4">
+            <input
+              type="checkbox"
+              checked={dpdpAcknowledged}
+              onChange={e => setDpdpAcknowledged(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded accent-primary shrink-0"
+            />
+            <span className="text-[11px] text-amber-800 leading-relaxed font-semibold">
+              I confirm that verifiable parental/guardian consent has been obtained from the parents or guardians
+              of all minor participants (under 18) in this file, as required under Section 9 of the Digital
+              Personal Data Protection Act, 2023. These consent records are held by the organising institution.
+            </span>
+          </label>
+        )}
+
         {/* Import CTA */}
         {file && (
           <button
             onClick={handleFileUpload}
-            disabled={isUploading}
+            disabled={isUploading || (importMode === 'full' && !dpdpAcknowledged)}
             className="w-full py-4 bg-gradient-to-r from-primary to-primary-container text-white rounded-2xl font-black text-sm uppercase tracking-widest shadow-[0_8px_24px_rgba(19,41,143,0.25)] hover:scale-[1.01] active:scale-98 transition-all font-body disabled:opacity-60 flex items-center justify-center gap-2"
           >
             <span className="material-symbols-outlined text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>

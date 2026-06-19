@@ -18,6 +18,9 @@ const Register = () => {
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+
+  // DPDP Act 2023 — consent declaration required before any registration
+  const [consentGiven, setConsentGiven] = useState(false);
   
   const { user, profile, signInWithOtp, verifyOtp, getSystemSetting, signUp, signIn } = useAuth();
   const { toast } = useToast();
@@ -318,9 +321,24 @@ const Register = () => {
                         </div>
                       </div>
 
-                      <button 
+                      {/* DPDP Act 2023 consent declaration */}
+                      <label className="flex items-start gap-3 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={consentGiven}
+                          onChange={e => setConsentGiven(e.target.checked)}
+                          className="mt-0.5 w-4 h-4 rounded accent-[#13298f] shrink-0"
+                        />
+                        <span className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                          I am 18 or above, <em>or</em> my parent/guardian has consented to my participation and the
+                          processing of my personal data as described in the{' '}
+                          <Link to="/privacy" className="text-[#13298f] underline underline-offset-2" target="_blank">Privacy Policy</Link>.
+                        </span>
+                      </label>
+
+                      <button
                         type="submit"
-                        disabled={isLoading}
+                        disabled={isLoading || !consentGiven}
                         className="w-full py-4 bg-[#13298f] text-white rounded-full font-black uppercase tracking-[0.2em] text-xs shadow-xl shadow-[#13298f]/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-70"
                       >
                         {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Request Secure Code <ArrowRight className="w-4 h-4" /></>}
@@ -449,9 +467,24 @@ const Register = () => {
                       </div>
                     </div>
 
-                    <button 
+                    {/* DPDP Act 2023 consent declaration */}
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={consentGiven}
+                        onChange={e => setConsentGiven(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 rounded accent-[#13298f] shrink-0"
+                      />
+                      <span className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                        I am 18 or above, <em>or</em> my parent/guardian has consented to my participation and the
+                        processing of my personal data as described in the{' '}
+                        <Link to="/privacy" className="text-[#13298f] underline underline-offset-2" target="_blank">Privacy Policy</Link>.
+                      </span>
+                    </label>
+
+                    <button
                       type="submit"
-                      disabled={isLoading}
+                      disabled={isLoading || !consentGiven}
                       className="w-full py-4 bg-[#13298f] text-white rounded-full font-black uppercase tracking-[0.2em] text-xs shadow-xl shadow-[#13298f]/20 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-70"
                     >
                       {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <>Complete Enrollment <ArrowRight className="w-4 h-4" /></>}

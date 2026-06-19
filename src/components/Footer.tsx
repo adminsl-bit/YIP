@@ -14,6 +14,7 @@ const Footer = () => {
           <Link to="/faq" className="text-on-surface-variant dark:text-slate-400 font-bold text-xs hover:text-primary transition-colors uppercase tracking-widest">FAQ</Link>
           <Link to="/privacy" className="text-on-surface-variant dark:text-slate-400 font-bold text-xs hover:text-primary transition-colors uppercase tracking-widest">Privacy Policy</Link>
           <Link to="/terms" className="text-on-surface-variant dark:text-slate-400 font-bold text-xs hover:text-primary transition-colors uppercase tracking-widest">Terms of Service</Link>
+          <a href="mailto:privacy@yi.org.in?subject=DPDP%20Data%20Request" className="text-on-surface-variant dark:text-slate-400 font-bold text-xs hover:text-primary transition-colors uppercase tracking-widest">Request Data Deletion</a>
         </div>
         <div className="text-on-surface-variant dark:text-slate-400 font-medium text-xs">
           © 2026 Young Indians Parliament.
