@@ -70,14 +70,12 @@ export const CivicWall = () => {
 
   // Media Attachment States & Refs
   const imageInputRef = useRef<HTMLInputElement | null>(null);
-  const videoInputRef = useRef<HTMLInputElement | null>(null);
   const [attachedFile, setAttachedFile] = useState<File | null>(null);
   const [attachedType, setAttachedType] = useState<'image' | 'video' | null>(null);
   const [attachedUrl, setAttachedUrl] = useState<string | null>(null);
 
-  // Video embed states
+  // Video embed states (URL-only — no local video upload)
   const [showVideoDialog, setShowVideoDialog] = useState(false);
-  const [videoSource, setVideoSource] = useState<'upload' | 'embed'>('upload');
   const [videoUrlInput, setVideoUrlInput] = useState('');
 
   // Image Cropping States & Refs
@@ -250,42 +248,30 @@ export const CivicWall = () => {
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'video') => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (type === 'image' && !file.type.startsWith('image/')) {
+    if (!file.type.startsWith('image/')) {
       toast({ title: "Invalid File", description: "Please select an image file.", variant: "destructive" });
       return;
     }
-    if (type === 'video' && !file.type.startsWith('video/')) {
-      toast({ title: "Invalid File", description: "Please select a video file.", variant: "destructive" });
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File Too Large", description: "Maximum image size is 5 MB.", variant: "destructive" });
       return;
     }
 
-    const limitMB = type === 'video' ? 10 : 5;
-    if (file.size > limitMB * 1024 * 1024) {
-      toast({ title: "File Too Large", description: `Maximum size is ${limitMB} MB for ${type}s.`, variant: "destructive" });
-      return;
-    }
-
-    if (type === 'image') {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setCropFileName(file.name);
-        setImageToCrop(reader.result as string);
-        setCropZoom(1);
-        setCropPosition({ x: 0, y: 0 });
-        setImgNaturalSize({ width: 0, height: 0 });
-        setShowCropper(true);
-      };
-      reader.readAsDataURL(file);
-      if (imageInputRef.current) imageInputRef.current.value = '';
-    } else {
-      setAttachedFile(file);
-      setAttachedType(type);
-      setAttachedUrl(null);
-    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setCropFileName(file.name);
+      setImageToCrop(reader.result as string);
+      setCropZoom(1);
+      setCropPosition({ x: 0, y: 0 });
+      setImgNaturalSize({ width: 0, height: 0 });
+      setShowCropper(true);
+    };
+    reader.readAsDataURL(file);
+    if (imageInputRef.current) imageInputRef.current.value = '';
   };
 
   useEffect(() => {
@@ -365,7 +351,6 @@ export const CivicWall = () => {
       setAttachedType(null);
       setAttachedUrl(null);
       if (imageInputRef.current) imageInputRef.current.value = '';
-      if (videoInputRef.current) videoInputRef.current.value = '';
       if (queued) {
         setPosts(prev => [{
           id,
@@ -508,19 +493,12 @@ export const CivicWall = () => {
                   animate={{ opacity: 1, y: 0 }}
                   className="bg-surface-container-lowest rounded-3xl p-6 shadow-[0_32px_64px_-12px_rgba(19,41,143,0.06)] border-none"
                 >
-                  <input 
-                    type="file" 
-                    ref={imageInputRef} 
-                    accept="image/*" 
-                    className="hidden" 
-                    onChange={(e) => handleFileChange(e, 'image')} 
-                  />
-                  <input 
-                    type="file" 
-                    ref={videoInputRef} 
-                    accept="video/*" 
-                    className="hidden" 
-                    onChange={(e) => handleFileChange(e, 'video')} 
+                  <input
+                    type="file"
+                    ref={imageInputRef}
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileChange}
                   />
 
                   <div className="flex gap-4 mb-4">
@@ -544,19 +522,11 @@ export const CivicWall = () => {
 
                   {attachedFile && (
                     <div className="relative mb-4 rounded-2xl overflow-hidden border border-outline-variant/15 bg-surface-container-low flex items-center justify-center group/preview aspect-video">
-                      {attachedType === 'image' ? (
-                        <img
-                          src={URL.createObjectURL(attachedFile)}
-                          alt="Attachment preview"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <video 
-                          src={URL.createObjectURL(attachedFile)} 
-                          className="max-h-60 w-full object-contain" 
-                          controls 
-                        />
-                      )}
+                      <img
+                        src={URL.createObjectURL(attachedFile)}
+                        alt="Attachment preview"
+                        className="w-full h-full object-cover"
+                      />
                       <button 
                         onClick={() => {
                           setAttachedFile(null);
@@ -621,7 +591,7 @@ export const CivicWall = () => {
                         <span>Image</span>
                       </button>
                       <button
-                        onClick={() => { setVideoSource('upload'); setShowVideoDialog(true); }}
+                        onClick={() => setShowVideoDialog(true)}
                         className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full hover:bg-surface-container-high/50 text-on-surface-variant text-sm font-semibold transition-all"
                       >
                         <span className="material-symbols-outlined text-secondary text-xl">videocam</span>
@@ -1071,70 +1041,38 @@ export const CivicWall = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Video Dialog */}
-      <Dialog open={showVideoDialog} onOpenChange={setShowVideoDialog}>
+      {/* Video Dialog — embed only (YouTube / Instagram URL) */}
+      <Dialog open={showVideoDialog} onOpenChange={(open) => { setShowVideoDialog(open); if (!open) setVideoUrlInput(''); }}>
         <DialogContent className="max-w-md bg-white p-0 overflow-hidden rounded-[2.5rem] border-none shadow-2xl">
           <DialogHeader className="p-8 pb-0">
-            <DialogTitle className="text-xl font-bold text-gray-900 font-headline tracking-tight">Add Video to Post</DialogTitle>
+            <DialogTitle className="text-xl font-bold text-gray-900 font-headline tracking-tight">Embed Video</DialogTitle>
           </DialogHeader>
-
-          <div className="p-8 space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-              <button 
+          <div className="p-8 space-y-4">
+            <p className="text-sm text-on-surface-variant font-medium">Paste a YouTube or Instagram link to embed it in your post.</p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="https://youtube.com/watch?v=..."
+                value={videoUrlInput}
+                onChange={(e) => setVideoUrlInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.nextElementSibling?.dispatchEvent(new MouseEvent('click')); }}
+                className="flex-1 bg-surface-container-high rounded-xl px-4 py-2.5 text-sm font-medium focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 outline-none border border-transparent focus:border-primary/10 transition-all"
+                autoFocus
+              />
+              <button
                 onClick={() => {
+                  if (!videoUrlInput.trim()) return;
+                  setAttachedFile(null);
+                  setAttachedType('video');
+                  setAttachedUrl(videoUrlInput.trim());
+                  setVideoUrlInput('');
                   setShowVideoDialog(false);
-                  videoInputRef.current?.click();
                 }}
-                className="flex flex-col items-center justify-center p-6 bg-surface-container-low hover:bg-surface-container-high rounded-2xl border border-outline-variant/15 transition-all text-center group"
+                className="bg-primary text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-primary-container transition-all active:scale-95"
               >
-                <span className="material-symbols-outlined text-secondary text-3xl mb-2 group-hover:scale-110 transition-transform">upload</span>
-                <span className="text-sm font-bold text-gray-800">Upload File</span>
-                <span className="text-[10px] text-gray-400 mt-1 font-medium">MP4, WebM (Max 50MB)</span>
-              </button>
-              
-              <button 
-                onClick={() => {
-                  setVideoSource('embed');
-                }}
-                className={`flex flex-col items-center justify-center p-6 rounded-2xl border transition-all text-center group ${
-                  videoSource === 'embed' 
-                    ? 'bg-primary/5 border-primary text-primary' 
-                    : 'bg-surface-container-low hover:bg-surface-container-high border-outline-variant/15 text-gray-800'
-                }`}
-              >
-                <span className="material-symbols-outlined text-primary text-3xl mb-2 group-hover:scale-110 transition-transform">link</span>
-                <span className="text-sm font-bold">Embed Link</span>
-                <span className="text-[10px] text-gray-400 mt-1 font-medium">YouTube, Instagram</span>
+                Add
               </button>
             </div>
-
-            {videoSource === 'embed' && (
-              <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Video URL</label>
-                <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    placeholder="Paste YouTube or Instagram link..."
-                    value={videoUrlInput}
-                    onChange={(e) => setVideoUrlInput(e.target.value)}
-                    className="flex-1 bg-surface-container-high rounded-xl px-4 py-2.5 text-sm font-medium focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 outline-none border border-transparent focus:border-primary/10 transition-all"
-                  />
-                  <button 
-                    onClick={() => {
-                      if (!videoUrlInput.trim()) return;
-                      setAttachedFile(null); // Clear uploaded file
-                      setAttachedType('video');
-                      setAttachedUrl(videoUrlInput.trim());
-                      setVideoUrlInput('');
-                      setShowVideoDialog(false);
-                    }}
-                    className="bg-primary text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-primary-container transition-all active:scale-95"
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
         </DialogContent>
       </Dialog>
