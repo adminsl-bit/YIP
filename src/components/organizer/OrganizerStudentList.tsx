@@ -85,6 +85,7 @@ export const OrganizerStudentList = () => {
   const [filters, setFilters] = useState({
     seatRole: "all",
     partyNumber: "all",
+    committee: "all",
     constituency: "",
     state: "",
     status: "all"
@@ -406,8 +407,15 @@ export const OrganizerStudentList = () => {
 
     // Apply party filter
     if (filters.partyNumber && filters.partyNumber !== "all") {
-      filtered = filtered.filter(student => 
+      filtered = filtered.filter(student =>
         student.party_number.toString() === filters.partyNumber
+      );
+    }
+
+    // Apply committee filter
+    if (filters.committee && filters.committee !== "all") {
+      filtered = filtered.filter(student =>
+        student.committee === filters.committee
       );
     }
 
@@ -848,7 +856,7 @@ export const OrganizerStudentList = () => {
             </p>
             {(searchTerm || filters.seatRole !== 'all' || filters.status !== 'all') && (
               <button
-                onClick={() => { setSearchTerm(""); setFilters({ seatRole: "all", partyNumber: "all", constituency: "", state: "", status: "all" }); }}
+                onClick={() => { setSearchTerm(""); setFilters({ seatRole: "all", partyNumber: "all", committee: "all", constituency: "", state: "", status: "all" }); }}
                 className="flex items-center gap-1.5 text-[11px] font-bold text-primary hover:text-primary/70 transition-colors font-body shrink-0"
               >
                 <span className="material-symbols-outlined text-[14px]">close</span>
@@ -936,6 +944,37 @@ export const OrganizerStudentList = () => {
                     }`}
                   >
                     {partyLabel(num, name)}
+                  </button>
+                ))}
+              </>
+            )}
+
+            {/* Committee chips */}
+            {eventCommittees.length > 0 && (
+              <>
+                <span className="w-1 h-1 rounded-full bg-outline-variant/40 mx-1" />
+                <span className="text-[9px] font-black uppercase tracking-[0.2em] text-on-surface-variant/50 font-headline pr-1">Committee</span>
+                <button
+                  onClick={() => setFilters(f => ({ ...f, committee: 'all' }))}
+                  className={`py-2 px-3.5 rounded-full text-[11px] font-bold transition-all active:scale-95 font-body ${
+                    filters.committee === 'all'
+                      ? 'bg-primary text-white shadow-[0_4px_12px_rgba(19,41,143,0.22)]'
+                      : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+                  }`}
+                >
+                  All
+                </button>
+                {eventCommittees.map(c => (
+                  <button
+                    key={c}
+                    onClick={() => setFilters(f => ({ ...f, committee: c }))}
+                    className={`py-2 px-3.5 rounded-full text-[11px] font-bold transition-all active:scale-95 font-body ${
+                      filters.committee === c
+                        ? 'bg-primary text-white shadow-[0_4px_12px_rgba(19,41,143,0.22)]'
+                        : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'
+                    }`}
+                  >
+                    {c}
                   </button>
                 ))}
               </>
@@ -1042,7 +1081,8 @@ export const OrganizerStudentList = () => {
                   {locationColumns.includes('city') && <th className="px-6 py-5">City</th>}
                   {locationColumns.includes('state') && <th className="px-6 py-5">State</th>}
                   {locationColumns.includes('zone') && <th className="px-6 py-5">Zone</th>}
-                  <th className="px-6 py-5">Constituency & Committee</th>
+                  <th className="px-6 py-5">Constituency</th>
+                  <th className="px-6 py-5">Committee</th>
                   <th className="px-6 py-5">Performance</th>
                   <th className="px-6 py-5 text-right">Actions</th>
                 </tr>
@@ -1124,16 +1164,19 @@ export const OrganizerStudentList = () => {
                         </td>
                       )}
                       <td className="px-6 py-4">
-                        <div className="flex flex-col gap-1 min-w-[140px]">
-                          <div className="flex items-center gap-1.5">
-                            <span className="material-symbols-outlined text-[12px] text-on-surface-variant/50" style={{ fontVariationSettings: "'FILL' 1" }}>location_on</span>
-                            <span className="text-sm font-semibold text-on-surface font-body truncate max-w-[160px]">{student.constituency || <span className="text-on-surface-variant/40 italic text-xs">No constituency</span>}</span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="material-symbols-outlined text-[12px] text-on-surface-variant/50" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
-                            <span className="text-xs font-medium text-on-surface-variant font-body truncate max-w-[160px]">{student.committee || <span className="text-on-surface-variant/30 italic">No committee</span>}</span>
-                          </div>
-                        </div>
+                        <span className="text-sm font-semibold text-on-surface font-body truncate max-w-[160px] block">
+                          {student.constituency || <span className="text-on-surface-variant/30 italic text-xs">—</span>}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {student.committee ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-700 whitespace-nowrap">
+                            <span className="material-symbols-outlined text-[11px]" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
+                            {student.committee}
+                          </span>
+                        ) : (
+                          <span className="text-on-surface-variant/30 italic text-xs">—</span>
+                        )}
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex flex-col gap-1 w-24">

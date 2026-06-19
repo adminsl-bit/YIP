@@ -140,11 +140,11 @@ const Login = () => {
     <div className="bg-surface font-body text-on-surface antialiased min-h-screen flex flex-col">
       <Navbar />
 
-      <main className="flex-grow flex items-center justify-center pt-24 pb-16 px-4 md:px-6 relative">
+      <main className="flex-grow flex items-center justify-center pt-20 pb-8 px-4 md:px-6 md:pt-24 md:pb-16 relative">
         {/* Decorative ambient glow */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="w-full max-w-5xl grid md:grid-cols-2 bg-surface-container-lowest rounded-[2rem] overflow-hidden shadow-2xl shadow-primary/5 min-h-[650px] relative z-10">
+        <div className="w-full max-w-5xl grid md:grid-cols-2 bg-surface-container-lowest rounded-2xl md:rounded-[2rem] overflow-hidden shadow-2xl shadow-primary/5 md:min-h-[650px] relative z-10">
 
           {/* Left Side: Visual/Context */}
           <div className="hidden md:flex flex-col justify-between p-12 bg-primary relative overflow-hidden">
@@ -192,7 +192,7 @@ const Login = () => {
           </div>
 
           {/* Right Side: Login Form / Forgot Password */}
-          <div className="flex flex-col justify-center p-8 md:p-12 lg:p-16 relative">
+          <div className="flex flex-col justify-center p-6 sm:p-8 md:p-12 lg:p-16 relative">
 
             {/* ── Forgot Password Panel ── */}
             {showForgotPw ? (
