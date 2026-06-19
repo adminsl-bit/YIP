@@ -171,15 +171,33 @@ const PrivacyPolicy = () => {
               </div>
             </section>
 
-            {/* Third parties */}
+            {/* Third parties + data location */}
             <section className="space-y-3">
-              <h2 className="text-base font-black text-on-surface">9. Third-Party Processors</h2>
-              <p>
-                We use Supabase (a cloud database and authentication service) to store and process your data.
-                Supabase is our data processor and operates under a Data Processing Agreement. Your data is
-                stored in servers located in the Asia-Pacific region. We do not share your data with any other
-                third party without your explicit consent.
-              </p>
+              <h2 className="text-base font-black text-on-surface">9. Data Storage Location &amp; Cross-Border Transfer</h2>
+              <div className="bg-surface-container-lowest rounded-xl p-4 text-xs space-y-2">
+                <p>
+                  <strong>Where your data is stored:</strong> YIP uses Supabase as its database and authentication
+                  provider. Your personal data is stored on servers located in <strong>South Korea
+                  (ap-northeast-2)</strong>.
+                </p>
+                <p>
+                  <strong>Is South Korea safe for my data?</strong> Yes. South Korea has enacted the{' '}
+                  <strong>Personal Information Protection Act (PIPA)</strong>, one of Asia's most comprehensive
+                  data protection laws. PIPA applies strict obligations on data controllers and processors
+                  including purpose limitation, data minimisation, security standards, breach notification,
+                  and individual rights comparable to those under the DPDP Act 2023.
+                </p>
+                <p>
+                  <strong>Our processor agreement:</strong> Supabase operates under a Data Processing Agreement
+                  and holds ISO 27001 certification. We do not share your data with any other third party
+                  without your explicit consent.
+                </p>
+                <p className="text-on-surface-variant/60 italic">
+                  Note: The Government of India has not yet published the official list of approved countries
+                  for cross-border data transfer under the DPDP Act rules. Once notified, we will review our
+                  data location and update this policy accordingly.
+                </p>
+              </div>
             </section>
 
             {/* Changes */}

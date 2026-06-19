@@ -13,6 +13,7 @@ interface StudentData {
   school?: string;
   email?: string;
   phone?: string;
+  parentEmail?: string;
   // Scores-only import
   serialNumber?: number;
   preeventScores?: number;
@@ -125,11 +126,14 @@ export const StudentBulkImport = () => {
             const nameCol  = findCol('name', 'student name', 'full name', 'name of student',
               'participant name', 'name of participant', 'delegate name', 'students name',
               'delegate', 'participant');
-            const emailCol = findCol('email', 'email address', 'email id', 'e mail', 'mail');
+            const emailCol = findCol('email', 'email address', 'email id', 'e mail', 'mail',
+              'student email');
             const schoolCol = findCol('school', 'school name', 'institution', 'college',
               'organization', 'institution name', 'college name');
             const phoneCol = findCol('phone', 'phone number', 'mobile', 'mobile number',
               'contact', 'contact number', 'cell', 'phone no', 'mob no');
+            const parentEmailCol = findCol('parent email', 'guardian email', 'parent guardian email',
+              'parent / guardian email', 'parent or guardian email');
 
             if (nameCol === -1) {
               allParseErrors.push(`Sheet "${sheetName}": no Name column found (headers: ${headers.filter(Boolean).join(', ')})`);
@@ -143,11 +147,13 @@ export const StudentBulkImport = () => {
                 return;
               }
               const email = cell(row, emailCol).toLowerCase();
+              const parentEmail = cell(row, parentEmailCol).toLowerCase();
               allStudents.push({
                 name,
                 school: cell(row, schoolCol) || undefined,
                 email: email || undefined,
                 phone: cell(row, phoneCol) || undefined,
+                parentEmail: parentEmail || undefined,
               });
             });
           } // end sheet loop
@@ -266,6 +272,28 @@ export const StudentBulkImport = () => {
         toast.error(`Failed to import ${importResults.failed} students — see the error report below`);
       }
 
+      // DPDP Act 2023 — notify parents/guardians whose email was provided.
+      // Sends a notification explaining the data collected and how to opt out.
+      if (importMode === 'full' && importResults.success > 0) {
+        const parentEmails = students
+          .filter((s): s is StudentData & { parentEmail: string; name: string } =>
+            !!s.parentEmail && !!s.name)
+          .map(s => ({ parentEmail: s.parentEmail, studentName: s.name }));
+
+        if (parentEmails.length > 0) {
+          try {
+            const { data: { session: sess } } = await supabase.auth.getSession();
+            if (sess) {
+              await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notify-parents`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sess.access_token}` },
+                body: JSON.stringify({ parents: parentEmails, site_url: window.location.origin }),
+              });
+            }
+          } catch (_) { /* Non-fatal — consent notification failure doesn't block the import */ }
+        }
+      }
+
       // A full import means rosters are now managed by the organizer —
       // close public self-registration so students can't create duplicate
       // accounts alongside the imported ones.
@@ -352,21 +380,20 @@ export const StudentBulkImport = () => {
         XLSX.writeFile(wb, 'preevent_scores_template.xlsx');
         toast.success(`Downloaded ${rows.length} students — fill in "Preevent scores" and re-upload`);
       } else {
-        // Four fixed columns. Email and Phone are optional — leave blank if unavailable.
-        // The app auto-generates the login code, party, committee and constituency.
-        const headers = [['Name *', 'School', 'Email', 'Phone']];
+        // Five columns. Email, Phone, Parent Email are optional.
+        // Parent Email is used to send a DPDP consent notification to the guardian.
+        const headers = [['Name *', 'School', 'Email (Student)', 'Phone', 'Parent / Guardian Email']];
         const samples = [
-          ['Arun Kumar', 'Delhi Public School', 'arun.kumar@example.com', '9876543210'],
-          ['Priya Singh', "St. Xavier's School", '', '9876543211'],
-          ['Lalhmingmawii', 'Govt. Higher Secondary School', '', ''],
+          ['Arun Kumar',      'Delhi Public School',           'arun.kumar@example.com',  '9876543210', 'parent.kumar@example.com'],
+          ['Priya Singh',     "St. Xavier's School",           '',                        '9876543211', 'parent.singh@example.com'],
+          ['Lalhmingmawii',   'Govt. Higher Secondary School', '',                        '',           ''],
         ];
         const ws = XLSX.utils.aoa_to_sheet([...headers, ...samples]);
-        // Column widths
-        ws['!cols'] = [{ wch: 30 }, { wch: 35 }, { wch: 32 }, { wch: 14 }];
+        ws['!cols'] = [{ wch: 30 }, { wch: 35 }, { wch: 30 }, { wch: 14 }, { wch: 30 }];
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Students');
         XLSX.writeFile(wb, 'YIP_student_import_template.xlsx');
-        toast.success('Template downloaded — fill in student names, delete sample rows, then upload');
+        toast.success('Template downloaded — fill in details, delete sample rows, then upload');
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to download template');

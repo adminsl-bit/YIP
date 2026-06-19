@@ -135,6 +135,10 @@ export const EventsManager = () => {
   const [deleteTarget, setDeleteTarget] = useState<EventRow | null>(null);
   const [deleting, setDeleting]         = useState(false);
 
+  // DPDP data purge
+  const [purgeTarget, setPurgeTarget]   = useState<EventRow | null>(null);
+  const [purging, setPurging]           = useState(false);
+
   // Staff assignment
   const [staffUsers, setStaffUsers]       = useState<{ user_id: string; name: string; email: string; user_type: string; event_id: string | null }[]>([]);
   const [assignOrganizer, setAssignOrganizer] = useState('');
@@ -311,6 +315,33 @@ export const EventsManager = () => {
     setDeleting(false);
     if (error) { toast({ title: 'Error', description: error.message, variant: 'destructive' }); }
     else { toast({ title: 'Event deleted', description: `"${deleteTarget.name}" has been removed.` }); setDeleteTarget(null); fetchEvents(); }
+  };
+
+  // ── DPDP Data Purge (Section 12 — erasure) ───────────────────────────────
+  const handlePurge = async () => {
+    if (!purgeTarget) return;
+    setPurging(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No active session');
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/purge-event-data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ event_id: purgeTarget.id, confirm: true }),
+      });
+      const result = await res.json();
+      if (!result.success) throw new Error(result.error || 'Purge failed');
+      toast({
+        title: 'PII purged',
+        description: `Personal data for "${purgeTarget.name}" has been anonymised. Scores and aggregate data retained.`,
+      });
+      setPurgeTarget(null);
+      fetchEvents();
+    } catch (err: any) {
+      toast({ title: 'Purge failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setPurging(false);
+    }
   };
 
   const parentOptions = (level: string, excludeId?: string) =>
@@ -536,6 +567,15 @@ export const EventsManager = () => {
                         <button onClick={() => openEdit(ev)} title="Edit" className="p-2 hover:bg-surface-container-high rounded-lg text-outline hover:text-primary transition-colors">
                           <span className="material-symbols-outlined text-[20px]">edit</span>
                         </button>
+                        {ev.status === 'completed' && (
+                          <button
+                            onClick={() => setPurgeTarget(ev)}
+                            title="Purge PII (DPDP compliance)"
+                            className="p-2 hover:bg-amber-50 rounded-lg text-outline hover:text-amber-600 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[20px]">policy</span>
+                          </button>
+                        )}
                         <button onClick={() => setDeleteTarget(ev)} title="Delete" className="p-2 hover:bg-surface-container-high rounded-lg text-outline hover:text-error transition-colors">
                           <span className="material-symbols-outlined text-[20px]">delete</span>
                         </button>
@@ -867,6 +907,35 @@ export const EventsManager = () => {
               </AlertDialogCancel>
               <AlertDialogAction onClick={handleDelete} disabled={deleting} className="flex-1 h-11 bg-error text-white border-none rounded-2xl font-bold text-sm font-body disabled:opacity-50 transition-all">
                 {deleting ? 'Deleting…' : 'Delete Event'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* DPDP Purge Confirmation */}
+      <AlertDialog open={!!purgeTarget} onOpenChange={open => !open && setPurgeTarget(null)}>
+        <AlertDialogContent className="rounded-[2rem] border-none bg-surface-container-lowest shadow-2xl overflow-hidden p-0 max-w-sm">
+          <div className="h-1.5 bg-amber-500 rounded-t-[2rem]" />
+          <div className="p-8">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-xl font-extrabold font-headline text-amber-700 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[22px]">policy</span>
+                Purge Personal Data?
+              </AlertDialogTitle>
+              <AlertDialogDescription className="text-sm text-on-surface-variant font-body space-y-2 pt-1">
+                <p>This will anonymise all student PII for <span className="font-bold text-on-surface">"{purgeTarget?.name}"</span> under DPDP Act 2023 §12 (Erasure).</p>
+                <p className="font-semibold text-on-surface">What gets removed: names, emails, phones, photos, login codes, civic wall posts, chat messages.</p>
+                <p className="font-semibold text-on-surface">What is kept: assessment scores, poll results, leaderboard positions (no names attached).</p>
+                <p className="text-amber-700 font-bold">This cannot be undone.</p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex gap-3 pt-4">
+              <AlertDialogCancel onClick={() => setPurgeTarget(null)} className="flex-1 h-11 bg-surface-container border-none rounded-2xl font-bold text-sm text-on-surface-variant font-body">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction onClick={handlePurge} disabled={purging} className="flex-1 h-11 bg-amber-600 text-white border-none rounded-2xl font-bold text-sm font-body disabled:opacity-50 transition-all">
+                {purging ? 'Purging…' : 'Purge PII'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </div>
