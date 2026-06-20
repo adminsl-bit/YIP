@@ -102,8 +102,11 @@ export const OrganizerStudentList = () => {
   // Event-scoped committee list, configured by the SuperAdmin per event
   const [eventCommittees, setEventCommittees] = useState<string[]>([]);
 
+  // Event-scoped school list for the register dialog dropdown
+  const [eventSchools, setEventSchools] = useState<{ id: string; name: string }[]>([]);
+
   useEffect(() => {
-    if (!profile?.event_id) { setEventCommittees([]); return; }
+    if (!profile?.event_id) { setEventCommittees([]); setEventSchools([]); return; }
     supabase
       .from('event_committees')
       .select('name')
@@ -111,6 +114,14 @@ export const OrganizerStudentList = () => {
       .order('display_order')
       .then(({ data }) => {
         setEventCommittees((data ?? []).map((r: { name: string }) => r.name));
+      });
+    supabase
+      .from('event_schools' as any)
+      .select('id, name')
+      .eq('event_id', profile.event_id)
+      .order('display_order')
+      .then(({ data }) => {
+        setEventSchools((data as any) ?? []);
       });
   }, [profile?.event_id]);
 
@@ -620,6 +631,7 @@ export const OrganizerStudentList = () => {
 
   // Auto-selected committee for next registration (round-robin)
   const autoCommittee = eventCommittees.length > 0 ? eventCommittees[assignableMpCount % eventCommittees.length] : '';
+  const autoState = eventInfo?.state ?? '';
 
   // Derive unique parties dynamically from loaded students (same pattern as InteractiveParliamentTree)
   const uniqueParties = useMemo(() => {
@@ -639,6 +651,12 @@ export const OrganizerStudentList = () => {
   const uniquePartyNames = useMemo(() =>
     [...new Set(students.map(s => s.party_name).filter((v): v is string => !!v))].sort()
   , [students]);
+
+  // Auto-selected party for the next registration (round-robin, declared after uniqueParties)
+  const autoPartyEntry = uniqueParties.length > 0 ? uniqueParties[assignableMpCount % uniqueParties.length] : null;
+  const autoPartyLabel = autoPartyEntry
+    ? (autoPartyEntry[1] ? `${autoPartyEntry[1]} (${PARTY_LETTERS[autoPartyEntry[0] - 1] ?? autoPartyEntry[0]})` : `Party ${PARTY_LETTERS[autoPartyEntry[0] - 1] ?? autoPartyEntry[0]}`)
+    : '—';
 
   const totalPages = Math.max(1, Math.ceil(filteredStudents.length / ITEMS_PER_PAGE));
   const paginatedStudents = filteredStudents.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
@@ -1518,145 +1536,77 @@ export const OrganizerStudentList = () => {
             </div>
           ) : (
           <form onSubmit={handleRegisterStudent} className="space-y-4 mt-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 space-y-1">
+            {/* Required fields */}
+            <div className="space-y-3">
+              <div className="space-y-1">
                 <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Full Name *</label>
                 <Input
                   value={registerForm.name}
                   onChange={e => setRegisterForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="e.g. Arjun Sharma"
                   className="h-12 bg-surface-container border-none rounded-2xl font-bold px-5 focus:ring-2 focus:ring-primary/20"
+                  autoFocus
                 />
               </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Email *</label>
-                <Input
-                  type="email"
-                  value={registerForm.email}
-                  onChange={e => setRegisterForm(f => ({ ...f, email: e.target.value }))}
-                  placeholder="e.g. arjun@school.edu"
-                  className="h-12 bg-surface-container border-none rounded-2xl font-bold px-5 focus:ring-2 focus:ring-primary/20"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Email (optional)</label>
+                  <Input
+                    type="email"
+                    value={registerForm.email}
+                    onChange={e => setRegisterForm(f => ({ ...f, email: e.target.value }))}
+                    placeholder="student@school.edu"
+                    className="h-12 bg-surface-container border-none rounded-2xl font-bold px-5 focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">School</label>
+                  {eventSchools.length > 0 ? (
+                    <select
+                      value={registerForm.school}
+                      onChange={e => setRegisterForm(f => ({ ...f, school: e.target.value }))}
+                      className="w-full h-12 bg-surface-container border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
+                    >
+                      <option value="">Select school</option>
+                      {eventSchools.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                      <option value="Independent">Independent</option>
+                    </select>
+                  ) : (
+                    <Input
+                      value={registerForm.school}
+                      onChange={e => setRegisterForm(f => ({ ...f, school: e.target.value }))}
+                      placeholder="School name"
+                      className="h-12 bg-surface-container border-none rounded-2xl font-bold px-5 focus:ring-2 focus:ring-primary/20"
+                    />
+                  )}
+                </div>
               </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">School</label>
-                <Input
-                  value={registerForm.school}
-                  onChange={e => setRegisterForm(f => ({ ...f, school: e.target.value }))}
-                  placeholder="e.g. DPS Bangalore"
-                  className="h-12 bg-surface-container border-none rounded-2xl font-bold px-5 focus:ring-2 focus:ring-primary/20"
-                />
+            </div>
+
+            {/* Auto-assigned preview */}
+            <div className="bg-primary/4 border border-primary/10 rounded-2xl p-4 space-y-2">
+              <p className="text-[9px] font-black text-primary/60 uppercase tracking-widest">Auto-assigned on registration</p>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: 'Committee', value: autoCommittee || '—', icon: 'account_balance' },
+                  { label: 'Party',     value: autoPartyLabel,        icon: 'groups' },
+                  { label: 'State',     value: autoState || '—',      icon: 'map' },
+                  { label: 'Constituency', value: 'Next available',   icon: 'location_on' },
+                ].map(({ label, value, icon }) => (
+                  <div key={label} className="bg-white/60 rounded-xl px-3 py-2">
+                    <p className="text-[8px] font-black uppercase tracking-widest text-on-surface-variant/50 flex items-center gap-1 mb-0.5">
+                      <span className="material-symbols-outlined text-[10px]">{icon}</span>
+                      {label}
+                    </p>
+                    <p className="text-xs font-bold text-on-surface truncate">{value}</p>
+                  </div>
+                ))}
               </div>
-              <div className="col-span-2 bg-surface-container/50 rounded-2xl px-4 py-2.5 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[16px] text-primary/60" style={{ fontVariationSettings: "'FILL' 1" }}>key</span>
-                <p className="text-[10px] text-on-surface-variant font-body">A 6-digit login code will be auto-generated and shown after registration.</p>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Role</label>
-                <select
-                  value={registerForm.seatRole}
-                  onChange={e => setRegisterForm(f => ({ ...f, seatRole: e.target.value }))}
-                  className="w-full h-12 bg-surface-container border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
-                >
-                  <option>Member of Parliament</option>
-                  <option>Prime Minister</option>
-                  <option>Leader of Opposition</option>
-                  <option>Party Leader</option>
-                  <option>Minister</option>
-                  <option>Speaker</option>
-                  <option>Deputy Speaker</option>
-                  <option>Journalist</option>
-                  <option>Administrator</option>
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Party</label>
-                <select
-                  value={registerForm.party}
-                  onChange={e => setRegisterForm(f => ({ ...f, party: e.target.value }))}
-                  className="w-full h-12 bg-surface-container border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
-                >
-                  <option value="No Party">No Party</option>
-                  {uniqueParties.length > 0
-                    ? uniqueParties.map(([num, name]) => {
-                        const letter = PARTY_LETTERS[num - 1] ?? num.toString();
-                        return (
-                          <option key={letter} value={letter}>
-                            {name ? `${name} (${letter})` : `Party ${letter}`}
-                          </option>
-                        );
-                      })
-                    : ['A','B','C','D','E'].map(l => (
-                        <option key={l} value={l}>Party {l}</option>
-                      ))
-                  }
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Alliance</label>
-                <select
-                  value={registerForm.alliance}
-                  onChange={e => setRegisterForm(f => ({ ...f, alliance: e.target.value }))}
-                  className="w-full h-12 bg-surface-container border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
-                >
-                  <option value="Neutral">Neutral</option>
-                  <option value="Ruling">Ruling</option>
-                  <option value="Opposition">Opposition</option>
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Party Name</label>
-                <input
-                  list="reg-party-names"
-                  value={registerForm.partyName}
-                  onChange={e => setRegisterForm(f => ({ ...f, partyName: e.target.value }))}
-                  placeholder="Type or select party name"
-                  className="w-full h-12 bg-surface-container border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
-                />
-                <datalist id="reg-party-names">
-                  {uniquePartyNames.map(n => <option key={n} value={n} />)}
-                </datalist>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body flex items-center gap-1.5">
-                  Committee
-                  <span className="text-primary/60 normal-case tracking-normal font-medium text-[9px]">(auto-assigned)</span>
-                </label>
-                <select
-                  value={registerForm.committee}
-                  onChange={e => setRegisterForm(f => ({ ...f, committee: e.target.value }))}
-                  className="w-full h-12 bg-surface-container border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
-                >
-                  <option value="">Select committee</option>
-                  {eventCommittees.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Constituency</label>
-                <input
-                  list="reg-constituencies"
-                  value={registerForm.constituency}
-                  onChange={e => setRegisterForm(f => ({ ...f, constituency: e.target.value }))}
-                  placeholder="Type or select constituency"
-                  className="w-full h-12 bg-surface-container border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
-                />
-                <datalist id="reg-constituencies">
-                  {uniqueConstituencies.map(c => <option key={c} value={c} />)}
-                </datalist>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">State</label>
-                <input
-                  list="reg-states"
-                  value={registerForm.state}
-                  onChange={e => setRegisterForm(f => ({ ...f, state: e.target.value }))}
-                  placeholder="Type or select state"
-                  className="w-full h-12 bg-surface-container border-none rounded-2xl font-bold px-5 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
-                />
-                <datalist id="reg-states">
-                  {["Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Delhi","Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala","Ladakh","Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland","Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Jammu and Kashmir","Puducherry","Chandigarh"].map(s => <option key={s} value={s} />)}
-                </datalist>
-              </div>
+            </div>
+
+            <div className="bg-surface-container/50 rounded-2xl px-4 py-2.5 flex items-center gap-2">
+              <span className="material-symbols-outlined text-[16px] text-primary/60" style={{ fontVariationSettings: "'FILL' 1" }}>key</span>
+              <p className="text-[10px] text-on-surface-variant font-body">A 6-digit login code is auto-generated and shown after registration.</p>
             </div>
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={() => setShowRegisterDialog(false)} className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-on-surface-variant font-body">Cancel</button>
