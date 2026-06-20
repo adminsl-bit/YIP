@@ -146,7 +146,7 @@ async function reassignCommitteesAndParties(supabaseAdmin: any, eventId: string)
   const { data: committees } = await supabaseAdmin
     .from('event_committees').select('name, display_order').eq('event_id', eventId).order('display_order');
   const { data: parties } = await supabaseAdmin
-    .from('event_parties').select('name, display_order').eq('event_id', eventId).order('display_order');
+    .from('event_parties').select('name, display_order, alignment').eq('event_id', eventId).order('display_order');
   const { data: students } = await supabaseAdmin
     .from('profiles').select('user_id, position')
     .eq('event_id', eventId).eq('user_type', 'student')
@@ -166,6 +166,8 @@ async function reassignCommitteesAndParties(supabaseAdmin: any, eventId: string)
   }
 
   if (parties && parties.length > 0) {
+    // Use the alignment set by the SuperAdmin on each party in event_parties.
+    // Falls back to the old threshold calculation if alignment column doesn't exist yet.
     const rulingThreshold = Math.floor(parties.length / 2) + 1;
     const groups = new Map<number, string[]>();
     eligible.forEach((s: any, i: number) => {
@@ -174,9 +176,12 @@ async function reassignCommitteesAndParties(supabaseAdmin: any, eventId: string)
     });
     for (const [idx, userIds] of groups) {
       const partyNumber = idx + 1;
-      const alignment = partyNumber <= rulingThreshold ? 'ruling_party' : 'opposition';
+      const party = parties[idx];
+      // Prefer explicit alignment from event_parties; fall back to threshold
+      const alignment: string = party.alignment ??
+        (partyNumber <= rulingThreshold ? 'ruling_party' : 'opposition');
       await supabaseAdmin.from('profiles').update({
-        party_name: parties[idx].name,
+        party_name: party.name,
         party_number: partyNumber,
         party_alignment: alignment,
       }).in('user_id', userIds);
