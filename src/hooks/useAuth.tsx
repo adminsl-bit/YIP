@@ -158,6 +158,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setTimeout(() => {
             fetchProfile(session.user!.id);
           }, 0);
+          // Log the login + update last_login_at for ALL sign-in paths
+          // (code login, email OTP, direct enrollment) — not just signIn().
+          if (event === 'SIGNED_IN') {
+            setTimeout(() => {
+              logUserLogin(session.user!.id);
+            }, 500); // small delay so profile is available for role check
+          }
         } else {
           setProfile(null);
           // Clear session ID from localStorage on logout
@@ -289,7 +296,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         toast.success('Welcome to Young Indians Parliament!');
 
         if (data.user) {
-          await logUserLogin(data.user.id);
+          // logUserLogin is now called via onAuthStateChange(SIGNED_IN)
+          // to cover all login paths uniformly — no need to call it here.
 
           const { data: profileData } = await supabase
             .from('profiles')
