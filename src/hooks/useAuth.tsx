@@ -88,6 +88,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('user_id', userId)
         .single();
 
+      // Always stamp last_login_at directly — the RPCs may not do this
+      // reliably, and the Attendance view depends on this field being accurate.
+      await supabase
+        .from('profiles')
+        .update({ last_login_at: new Date().toISOString() })
+        .eq('user_id', userId);
+
       const multiDeviceRoles = ['organizer', 'super_admin'];
       if (roleRow && multiDeviceRoles.includes(roleRow.user_type)) {
         // Just log the login without enforcing single-session
