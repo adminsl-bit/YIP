@@ -212,15 +212,30 @@ export const LandingHero = () => {
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-center max-w-5xl mx-auto">
             {[
-              { src: "/partners/cii-logo.png",          alt: "Confederation of Indian Industry", bg: "bg-white" },
-              { src: "/partners/yi-logo.png",            alt: "Young Indians",                    bg: "bg-black" },
-              { src: "/partners/thangamayil-logo.png",   alt: "Thangamayil Jewellery",            bg: "bg-white" },
-              { src: "/partners/solamalai-logo.png",     alt: "Solamalai College of Engineering", bg: "bg-white" },
-              { src: "/partners/thalir-logo.png",        alt: "Thalir",                           bg: "bg-white" },
-              { src: "/partners/strawlabs-logo.png",     alt: "Strawlabs",                        bg: "bg-white" },
+              { src: "/partners/cii-logo.png",          alt: "Confederation of Indian Industry", bg: "bg-[#3d2e80]" },
+              { src: "/partners/yi-logo.png",            alt: "Young Indians",                    bg: "bg-black"     },
+              { src: "/partners/thangamayil-logo.png",   alt: "Thangamayil Jewellery",            bg: "bg-white"     },
+              { src: "/partners/solamalai-logo.png",     alt: "Solamalai College of Engineering", bg: "bg-white"     },
+              { src: "/partners/thalir-logo.png",        alt: "Thalir",                           bg: "bg-white"     },
+              { src: "/partners/strawlabs-logo.png",     alt: "Strawlabs",                        bg: "bg-white"     },
             ].map((partner, i) => (
-              <div key={i} className={`flex justify-center items-center p-4 ${partner.bg} border border-outline-variant/10 rounded-xl h-20`}>
-                <img src={partner.src} alt={partner.alt} className="max-w-full max-h-full object-contain" />
+              <div key={i} className={`flex justify-center items-center p-3 ${partner.bg} border border-outline-variant/10 rounded-xl h-20 overflow-hidden`}>
+                <img
+                  src={partner.src}
+                  alt={partner.alt}
+                  className="max-w-full max-h-full object-contain"
+                  onError={(e) => {
+                    const el = e.currentTarget as HTMLImageElement;
+                    el.style.display = 'none';
+                    const parent = el.parentElement;
+                    if (parent && !parent.querySelector('span')) {
+                      const span = document.createElement('span');
+                      span.textContent = partner.alt;
+                      span.style.cssText = 'font-size:10px;font-weight:700;text-align:center;color:#888;padding:4px;';
+                      parent.appendChild(span);
+                    }
+                  }}
+                />
               </div>
             ))}
           </div>
