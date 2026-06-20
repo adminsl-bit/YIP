@@ -60,7 +60,9 @@ export const SecurityLogsManager = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'audit' | 'access'>("audit");
+  const [activeTab, setActiveTab] = useState<'audit' | 'access' | 'attendance'>("audit");
+  const [attendanceLoggedIn,  setAttendanceLoggedIn]  = useState<{user_id:string;name:string;serial_number:number;school:string|null;last_login_at:string}[]>([]);
+  const [attendanceAbsent,    setAttendanceAbsent]    = useState<{user_id:string;name:string;serial_number:number;school:string|null}[]>([]);
 
   useEffect(() => {
     fetchAllData();
@@ -75,9 +77,23 @@ export const SecurityLogsManager = () => {
     return () => { loginSubscription.unsubscribe(); auditSubscription.unsubscribe(); };
   }, []);
 
+  const fetchAttendance = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('user_id, name, serial_number, school, last_login_at')
+      .eq('user_type', 'student')
+      .eq('is_active', true)
+      .eq('event_id', profile?.event_id ?? '')
+      .order('serial_number');
+    if (!data) return;
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    setAttendanceLoggedIn((data as any[]).filter(s => s.last_login_at && new Date(s.last_login_at) >= todayStart));
+    setAttendanceAbsent((data as any[]).filter(s => !s.last_login_at || new Date(s.last_login_at) < todayStart));
+  };
+
   const fetchAllData = async () => {
     setLoading(true);
-    await Promise.all([fetchDuplicateLogins(), fetchAuditLogs(), fetchActiveUsers(), fetchLoginAuditEntries()]);
+    await Promise.all([fetchDuplicateLogins(), fetchAuditLogs(), fetchActiveUsers(), fetchLoginAuditEntries(), fetchAttendance()]);
     setLoading(false);
   };
 
@@ -262,12 +278,21 @@ export const SecurityLogsManager = () => {
 
       {/* Tab switcher */}
       <div className="flex gap-2">
-        {(['audit', 'access'] as const).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm font-body transition-all ${activeTab === tab ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-[0_4px_12px_rgba(19,41,143,0.25)]' : 'bg-surface-container-lowest border border-outline-variant/20 text-on-surface-variant hover:bg-surface-container-high'}`}
+        {([
+          { id: 'audit',      label: 'Audit Logs',   icon: 'inventory' },
+          { id: 'access',     label: 'Access Logs',  icon: 'manage_accounts' },
+          { id: 'attendance', label: 'Attendance',   icon: 'fact_check' },
+        ] as const).map(tab => (
+          <button key={tab.id} onClick={() => { setActiveTab(tab.id); if (tab.id === 'attendance') fetchAttendance(); }}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm font-body transition-all ${activeTab === tab.id ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-[0_4px_12px_rgba(19,41,143,0.25)]' : 'bg-surface-container-lowest border border-outline-variant/20 text-on-surface-variant hover:bg-surface-container-high'}`}
           >
-            <span className="material-symbols-outlined text-[18px]">{tab === 'audit' ? 'inventory' : 'manage_accounts'}</span>
-            {tab === 'audit' ? 'Audit Logs' : 'Access Logs'}
+            <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
+            {tab.label}
+            {tab.id === 'attendance' && attendanceLoggedIn.length + attendanceAbsent.length > 0 && (
+              <span className="ml-1 text-[10px] font-black opacity-70">
+                {attendanceLoggedIn.length}/{attendanceLoggedIn.length + attendanceAbsent.length}
+              </span>
+            )}
           </button>
         ))}
         <div className="ml-auto">
@@ -466,6 +491,76 @@ export const SecurityLogsManager = () => {
                     <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full font-body shrink-0 mt-1 ${entry.is_duplicate_session ? 'bg-error/10 text-error' : 'bg-tertiary/10 text-tertiary-fixed-dim'}`}>
                       {entry.is_duplicate_session ? 'Security Alert' : 'Normal Login'}
                     </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* Attendance tab */}
+      {activeTab === 'attendance' && (
+        <div className="space-y-4">
+          {/* Summary row */}
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: 'Logged In Today', value: attendanceLoggedIn.length, color: 'text-emerald-600', bg: 'bg-emerald-50', icon: 'how_to_reg' },
+              { label: 'Not Yet Logged In', value: attendanceAbsent.length,  color: 'text-amber-600',  bg: 'bg-amber-50',   icon: 'person_off' },
+              { label: 'Total Students',   value: attendanceLoggedIn.length + attendanceAbsent.length, color: 'text-primary', bg: 'bg-primary/5', icon: 'groups' },
+            ].map(s => (
+              <div key={s.label} className={`${s.bg} rounded-2xl p-5 flex items-center gap-4`}>
+                <div className="w-10 h-10 bg-white/60 rounded-xl flex items-center justify-center shrink-0">
+                  <span className={`material-symbols-outlined text-[22px] ${s.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{s.icon}</span>
+                </div>
+                <div>
+                  <p className={`text-2xl font-black font-headline ${s.color}`}>{s.value}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">{s.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Logged in list */}
+          <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden shadow-[0_4px_24px_rgba(19,41,143,0.06)]">
+            <div className="px-6 py-4 border-b border-outline-variant/10 flex items-center gap-2">
+              <span className="material-symbols-outlined text-emerald-500 text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_reg</span>
+              <p className="font-black text-sm text-on-surface">Logged in today ({attendanceLoggedIn.length})</p>
+            </div>
+            {attendanceLoggedIn.length === 0 ? (
+              <p className="px-6 py-8 text-sm text-on-surface-variant/50 text-center font-medium">No students have logged in today yet.</p>
+            ) : (
+              <div className="divide-y divide-outline-variant/8 max-h-72 overflow-y-auto">
+                {attendanceLoggedIn.map(s => (
+                  <div key={s.user_id} className="px-6 py-3 flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span className="text-[10px] font-mono font-black text-on-surface-variant/40 shrink-0">#{s.serial_number}</span>
+                      <p className="font-bold text-sm text-on-surface truncate">{s.name}</p>
+                      {s.school && <p className="text-xs text-on-surface-variant truncate hidden sm:block">{s.school}</p>}
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-600 whitespace-nowrap shrink-0">
+                      {new Date(s.last_login_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Absent list */}
+          <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden shadow-[0_4px_24px_rgba(19,41,143,0.06)]">
+            <div className="px-6 py-4 border-b border-outline-variant/10 flex items-center gap-2">
+              <span className="material-symbols-outlined text-amber-500 text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>person_off</span>
+              <p className="font-black text-sm text-on-surface">Not yet logged in ({attendanceAbsent.length})</p>
+            </div>
+            {attendanceAbsent.length === 0 ? (
+              <p className="px-6 py-8 text-sm text-emerald-600 text-center font-bold">All students have logged in today!</p>
+            ) : (
+              <div className="divide-y divide-outline-variant/8 max-h-72 overflow-y-auto">
+                {attendanceAbsent.map(s => (
+                  <div key={s.user_id} className="px-6 py-3 flex items-center gap-3">
+                    <span className="text-[10px] font-mono font-black text-on-surface-variant/40 shrink-0">#{s.serial_number}</span>
+                    <p className="font-bold text-sm text-on-surface truncate">{s.name}</p>
+                    {s.school && <p className="text-xs text-on-surface-variant truncate hidden sm:block">{s.school}</p>}
                   </div>
                 ))}
               </div>
