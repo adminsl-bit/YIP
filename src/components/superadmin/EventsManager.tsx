@@ -307,18 +307,22 @@ export const EventsManager = () => {
         if (reassignError) {
           toast({ title: 'Reassignment failed', description: reassignError.message, variant: 'destructive' });
         }
+      }
 
-        // Immediately apply party alignment to all students in this event.
-        // For each party (by party_number = display_order + 1), update every
-        // student assigned to that party to match the chosen alignment.
+      // Always apply the SuperAdmin's chosen alignment to student profiles,
+      // even if party names didn't change. The RPC above uses old threshold
+      // logic that can overwrite alignment — this loop runs after and corrects it.
+      // Uses 'as any' to bypass Supabase generated type limitations.
+      if (editParties.length > 0) {
         for (let i = 0; i < editParties.length; i++) {
-          await supabase
+          await (supabase as any)
             .from('profiles')
             .update({ party_alignment: editParties[i].alignment })
             .eq('event_id', editEvent.id)
             .eq('user_type', 'student')
             .eq('party_number', i + 1);
         }
+        toast({ title: 'Party alignment applied', description: `Updated ruling/opposition for ${editParties.length} parties across all students.` });
       }
     }
 
