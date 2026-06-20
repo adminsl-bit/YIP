@@ -25,7 +25,7 @@ serve(async (req) => {
 
     const input = text.replace(/\s+/g, ' ').trim().slice(0, MAX_INPUT_CHARS);
 
-    const response = await fetch(`https://api-inference.huggingface.co/models/${HF_MODEL}`, {
+    const response = await fetch(`https://router.huggingface.co/hf-inference/models/${HF_MODEL}`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${hfToken}`,
