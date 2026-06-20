@@ -96,6 +96,8 @@ export const OrganizerStudentList = () => {
   const [currentPage, setCurrentPage] = useState(1);
 
   const [isSyncingEvent, setIsSyncingEvent] = useState(false);
+  const [deleteStudentTarget, setDeleteStudentTarget] = useState<Student | null>(null);
+  const [isDeletingStudent, setIsDeletingStudent] = useState(false);
   const [orphanCount, setOrphanCount] = useState(0);
   const [isRecovering, setIsRecovering] = useState(false);
 
@@ -733,6 +735,32 @@ export const OrganizerStudentList = () => {
     }
   };
 
+  const handleDeleteStudent = async () => {
+    if (!deleteStudentTarget) return;
+    setIsDeletingStudent(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast({ title: 'No active session', variant: 'destructive' }); return; }
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ userId: deleteStudentTarget.user_id }),
+      });
+      const result = await res.json();
+      if (!result.success) throw new Error(result.error || 'Deletion failed');
+      toast({
+        title: 'Student deleted',
+        description: `${deleteStudentTarget.name}'s account has been permanently removed. Their constituency is now available for new registrations.`,
+      });
+      setDeleteStudentTarget(null);
+      fetchStudents();
+    } catch (err: any) {
+      toast({ title: 'Delete failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsDeletingStudent(false);
+    }
+  };
+
   const handleSendStudentEmail = async (student: Student) => {
     if (!student.login_code || !student.email) {
       toast({ title: "Cannot send email", description: "Student has no login code or email on record.", variant: "destructive" });
@@ -1082,6 +1110,9 @@ export const OrganizerStudentList = () => {
                       <button onClick={() => setPasswordResetStudent(student)} className="p-1.5 hover:bg-surface-container rounded-xl text-on-surface-variant hover:text-error transition-all">
                         <span className="material-symbols-outlined text-[18px]">lock_reset</span>
                       </button>
+                      <button onClick={() => setDeleteStudentTarget(student)} className="p-1.5 hover:bg-error/10 rounded-xl text-on-surface-variant hover:text-error transition-all" title="Delete student">
+                        <span className="material-symbols-outlined text-[18px]">delete</span>
+                      </button>
                     </div>
                     )}
                   </div>
@@ -1330,6 +1361,17 @@ export const OrganizerStudentList = () => {
                               </button>
                             </TooltipTrigger>
                             <TooltipContent>View full profile</TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                onClick={() => setDeleteStudentTarget(student)}
+                                className="p-2 text-on-surface-variant hover:text-error rounded-lg hover:bg-error/8 transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[20px]">delete</span>
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete student permanently</TooltipContent>
                           </Tooltip>
                         </div>
                       </td>
@@ -1697,6 +1739,52 @@ export const OrganizerStudentList = () => {
         </DialogContent>
       </Dialog>
     </div>
+
+      {/* Delete student confirmation */}
+      {deleteStudentTarget && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" onClick={() => !isDeletingStudent && setDeleteStudentTarget(null)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative bg-surface-container-lowest rounded-[2rem] shadow-2xl max-w-sm w-full p-8 space-y-5" onClick={e => e.stopPropagation()}>
+            <div className="absolute top-0 inset-x-0 h-1.5 bg-error rounded-t-[2rem]" />
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-error/10 rounded-2xl flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-error text-[24px]" style={{ fontVariationSettings: "'FILL' 1" }}>delete_forever</span>
+              </div>
+              <div>
+                <p className="font-headline font-black text-lg text-on-surface">Delete Student?</p>
+                <p className="text-sm text-on-surface-variant mt-1 leading-relaxed">
+                  <span className="font-bold text-on-surface">{deleteStudentTarget.name}</span>'s account, profile, votes and assessments will be permanently removed.
+                </p>
+                <p className="text-xs text-emerald-700 font-bold mt-2 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>recycling</span>
+                  Their constituency ({deleteStudentTarget.constituency || 'unassigned'}) will be freed up for the next registration.
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteStudentTarget(null)}
+                disabled={isDeletingStudent}
+                className="flex-1 py-3 rounded-2xl bg-surface-container font-bold text-sm text-on-surface-variant hover:bg-surface-container-high transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteStudent}
+                disabled={isDeletingStudent}
+                className="flex-1 py-3 rounded-2xl bg-error text-white font-bold text-sm hover:bg-error/90 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isDeletingStudent ? (
+                  <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                ) : (
+                  <span className="material-symbols-outlined text-[18px]">delete</span>
+                )}
+                {isDeletingStudent ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </TooltipProvider>
   );
 };
