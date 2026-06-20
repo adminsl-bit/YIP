@@ -61,8 +61,9 @@ export const SecurityLogsManager = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'audit' | 'access' | 'attendance'>("audit");
-  const [attendanceLoggedIn,  setAttendanceLoggedIn]  = useState<{user_id:string;name:string;serial_number:number;school:string|null;last_login_at:string}[]>([]);
-  const [attendanceAbsent,    setAttendanceAbsent]    = useState<{user_id:string;name:string;serial_number:number;school:string|null}[]>([]);
+  const [attendanceActive,    setAttendanceActive]    = useState<{user_id:string;name:string;serial_number:number;school:string|null;last_login_at:string|null;session_id:string|null}[]>([]);
+  const [attendanceEverLogin, setAttendanceEverLogin] = useState<{user_id:string;name:string;serial_number:number;school:string|null;last_login_at:string|null}[]>([]);
+  const [attendanceNever,     setAttendanceNever]     = useState<{user_id:string;name:string;serial_number:number;school:string|null}[]>([]);
 
   useEffect(() => {
     fetchAllData();
@@ -78,29 +79,46 @@ export const SecurityLogsManager = () => {
   }, []);
 
   const fetchAttendance = async () => {
-    const { data } = await supabase
+    // 1. Get all students for this event
+    const { data: students } = await supabase
       .from('profiles')
       .select('user_id, name, serial_number, school, last_login_at, session_id')
       .eq('user_type', 'student')
       .eq('is_active', true)
       .eq('event_id', profile?.event_id ?? '')
       .order('serial_number');
-    if (!data) return;
-    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-    // A student counts as "logged in today" if:
-    //   (a) last_login_at was set today (accurate after the fix), OR
-    //   (b) session_id is set (they have an active session right now —
-    //       covers students who logged in before the last_login_at fix)
-    const loggedIn = (data as any[]).filter(s =>
-      (s.last_login_at && new Date(s.last_login_at) >= todayStart) ||
-      !!s.session_id
-    );
-    const absent = (data as any[]).filter(s =>
-      (!s.last_login_at || new Date(s.last_login_at) < todayStart) &&
-      !s.session_id
-    );
-    setAttendanceLoggedIn(loggedIn);
-    setAttendanceAbsent(absent);
+    if (!students) return;
+
+    // 2. Find every student who has ANY login_audit record — ground truth
+    //    for "has ever accessed the app", independent of our last_login_at bug
+    const allIds = (students as any[]).map((s: any) => s.user_id);
+    const { data: auditRows } = await supabase
+      .from('login_audit')
+      .select('user_id')
+      .in('user_id', allIds);
+    const everLoggedInSet = new Set((auditRows ?? []).map((r: any) => r.user_id));
+
+    // 3. Classify each student:
+    //    ACTIVE  — session_id set right now (they're in the app)
+    //    EVER    — no active session but have a login_audit record or last_login_at set
+    //    NEVER   — no session, no login_audit entry, no last_login_at → never accessed
+    const active: typeof students = [];
+    const everLogin: typeof students = [];
+    const never: typeof students = [];
+
+    for (const s of students as any[]) {
+      if (s.session_id) {
+        active.push(s);
+      } else if (everLoggedInSet.has(s.user_id) || s.last_login_at) {
+        everLogin.push(s);
+      } else {
+        never.push(s);
+      }
+    }
+
+    setAttendanceActive(active as any);
+    setAttendanceEverLogin(everLogin as any);
+    setAttendanceNever(never as any);
   };
 
   const fetchAllData = async () => {
@@ -300,9 +318,9 @@ export const SecurityLogsManager = () => {
           >
             <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
             {tab.label}
-            {tab.id === 'attendance' && attendanceLoggedIn.length + attendanceAbsent.length > 0 && (
-              <span className="ml-1 text-[10px] font-black opacity-70">
-                {attendanceLoggedIn.length}/{attendanceLoggedIn.length + attendanceAbsent.length}
+            {tab.id === 'attendance' && attendanceNever.length > 0 && (
+              <span className="ml-1 text-[10px] font-black bg-red-400/20 text-red-300 px-1.5 py-0.5 rounded-full">
+                {attendanceNever.length} never
               </span>
             )}
           </button>
@@ -511,14 +529,16 @@ export const SecurityLogsManager = () => {
         </div>
       )}
       {/* Attendance tab */}
-      {activeTab === 'attendance' && (
+      {activeTab === 'attendance' && (() => {
+        const total = attendanceActive.length + attendanceEverLogin.length + attendanceNever.length;
+        return (
         <div className="space-y-4">
-          {/* Summary row */}
+          {/* Summary */}
           <div className="grid grid-cols-3 gap-4">
             {[
-              { label: 'Logged In Today', value: attendanceLoggedIn.length, color: 'text-emerald-600', bg: 'bg-emerald-50', icon: 'how_to_reg' },
-              { label: 'Not Yet Logged In', value: attendanceAbsent.length,  color: 'text-amber-600',  bg: 'bg-amber-50',   icon: 'person_off' },
-              { label: 'Total Students',   value: attendanceLoggedIn.length + attendanceAbsent.length, color: 'text-primary', bg: 'bg-primary/5', icon: 'groups' },
+              { label: 'Active Right Now',  value: attendanceActive.length,    color: 'text-emerald-600', bg: 'bg-emerald-50', icon: 'wifi' },
+              { label: 'Have Logged In',    value: attendanceEverLogin.length,  color: 'text-blue-600',   bg: 'bg-blue-50',   icon: 'how_to_reg' },
+              { label: 'Never Logged In',   value: attendanceNever.length,      color: 'text-red-500',    bg: 'bg-red-50',    icon: 'person_off' },
             ].map(s => (
               <div key={s.label} className={`${s.bg} rounded-2xl p-5 flex items-center gap-4`}>
                 <div className="w-10 h-10 bg-white/60 rounded-xl flex items-center justify-center shrink-0">
@@ -527,73 +547,76 @@ export const SecurityLogsManager = () => {
                 <div>
                   <p className={`text-2xl font-black font-headline ${s.color}`}>{s.value}</p>
                   <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant">{s.label}</p>
+                  <p className="text-[9px] text-on-surface-variant/50">{total > 0 ? Math.round(s.value / total * 100) : 0}% of {total}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Logged in list */}
+          {/* Active now */}
           <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden shadow-[0_4px_24px_rgba(19,41,143,0.06)]">
             <div className="px-6 py-4 border-b border-outline-variant/10 flex items-center gap-2">
-              <span className="material-symbols-outlined text-emerald-500 text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_reg</span>
-              <p className="font-black text-sm text-on-surface">Logged in today ({attendanceLoggedIn.length})</p>
+              <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+              <p className="font-black text-sm text-on-surface">Active right now — in the app ({attendanceActive.length})</p>
             </div>
-            {attendanceLoggedIn.length === 0 ? (
-              <p className="px-6 py-8 text-sm text-on-surface-variant/50 text-center font-medium">No students have logged in today yet.</p>
-            ) : (
-              <div className="divide-y divide-outline-variant/8 max-h-72 overflow-y-auto">
-                {attendanceLoggedIn.map(s => {
-                  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-                  const loginedToday = s.last_login_at && new Date(s.last_login_at) >= todayStart;
-                  return (
-                  <div key={s.user_id} className="px-6 py-3 flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-3 min-w-0">
+            {attendanceActive.length === 0
+              ? <p className="px-6 py-6 text-sm text-on-surface-variant/50 text-center">No students are currently active.</p>
+              : <div className="divide-y divide-outline-variant/8 max-h-60 overflow-y-auto">
+                  {attendanceActive.map((s: any) => (
+                    <div key={s.user_id} className="px-6 py-3 flex items-center gap-3">
                       <span className="text-[10px] font-mono font-black text-on-surface-variant/40 shrink-0">#{s.serial_number}</span>
-                      <p className="font-bold text-sm text-on-surface truncate">{s.name}</p>
+                      <p className="font-bold text-sm text-on-surface truncate flex-1">{s.name}</p>
                       {s.school && <p className="text-xs text-on-surface-variant truncate hidden sm:block">{s.school}</p>}
+                      {s.last_login_at && <span className="text-[10px] font-bold text-on-surface-variant/60 shrink-0">{new Date(s.last_login_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>}
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      {s.session_id && (
-                        <span className="flex items-center gap-1 text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
-                          Active
-                        </span>
-                      )}
-                      <span className="text-[10px] font-bold text-on-surface-variant">
-                        {loginedToday
-                          ? new Date(s.last_login_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
-                          : 'Earlier session'}
-                      </span>
-                    </div>
-                  </div>
-                  );
-                })}
-              </div>
-            )}
+                  ))}
+                </div>
+            }
           </div>
 
-          {/* Absent list */}
+          {/* Have logged in (not currently active) */}
           <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden shadow-[0_4px_24px_rgba(19,41,143,0.06)]">
             <div className="px-6 py-4 border-b border-outline-variant/10 flex items-center gap-2">
-              <span className="material-symbols-outlined text-amber-500 text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>person_off</span>
-              <p className="font-black text-sm text-on-surface">Not yet logged in ({attendanceAbsent.length})</p>
+              <span className="material-symbols-outlined text-blue-500 text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>how_to_reg</span>
+              <p className="font-black text-sm text-on-surface">Have accessed the app — not currently active ({attendanceEverLogin.length})</p>
             </div>
-            {attendanceAbsent.length === 0 ? (
-              <p className="px-6 py-8 text-sm text-emerald-600 text-center font-bold">All students have logged in today!</p>
-            ) : (
-              <div className="divide-y divide-outline-variant/8 max-h-72 overflow-y-auto">
-                {attendanceAbsent.map(s => (
-                  <div key={s.user_id} className="px-6 py-3 flex items-center gap-3">
-                    <span className="text-[10px] font-mono font-black text-on-surface-variant/40 shrink-0">#{s.serial_number}</span>
-                    <p className="font-bold text-sm text-on-surface truncate">{s.name}</p>
-                    {s.school && <p className="text-xs text-on-surface-variant truncate hidden sm:block">{s.school}</p>}
-                  </div>
-                ))}
-              </div>
-            )}
+            {attendanceEverLogin.length === 0
+              ? <p className="px-6 py-6 text-sm text-on-surface-variant/50 text-center">None yet.</p>
+              : <div className="divide-y divide-outline-variant/8 max-h-60 overflow-y-auto">
+                  {attendanceEverLogin.map((s: any) => (
+                    <div key={s.user_id} className="px-6 py-3 flex items-center gap-3">
+                      <span className="text-[10px] font-mono font-black text-on-surface-variant/40 shrink-0">#{s.serial_number}</span>
+                      <p className="font-bold text-sm text-on-surface truncate flex-1">{s.name}</p>
+                      {s.school && <p className="text-xs text-on-surface-variant truncate hidden sm:block">{s.school}</p>}
+                      {s.last_login_at && <span className="text-[10px] font-bold text-on-surface-variant/60 shrink-0">{new Date(s.last_login_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} {new Date(s.last_login_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</span>}
+                    </div>
+                  ))}
+                </div>
+            }
+          </div>
+
+          {/* Never logged in */}
+          <div className="bg-surface-container-lowest rounded-[2rem] overflow-hidden shadow-[0_4px_24px_rgba(19,41,143,0.06)]">
+            <div className="px-6 py-4 border-b border-outline-variant/10 flex items-center gap-2">
+              <span className="material-symbols-outlined text-red-400 text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>person_off</span>
+              <p className="font-black text-sm text-on-surface">Never logged in — share code with these students ({attendanceNever.length})</p>
+            </div>
+            {attendanceNever.length === 0
+              ? <p className="px-6 py-6 text-sm text-emerald-600 text-center font-bold">All students have accessed the app!</p>
+              : <div className="divide-y divide-outline-variant/8 max-h-60 overflow-y-auto">
+                  {attendanceNever.map((s: any) => (
+                    <div key={s.user_id} className="px-6 py-3 flex items-center gap-3">
+                      <span className="text-[10px] font-mono font-black text-on-surface-variant/40 shrink-0">#{s.serial_number}</span>
+                      <p className="font-bold text-sm text-on-surface truncate flex-1">{s.name}</p>
+                      {s.school && <p className="text-xs text-on-surface-variant truncate hidden sm:block">{s.school}</p>}
+                    </div>
+                  ))}
+                </div>
+            }
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
