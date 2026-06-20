@@ -79,11 +79,31 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logUserLogin = async (userId: string) => {
     try {
+      // Fetch the user's role first so we can skip single-session enforcement
+      // for roles that legitimately use multiple devices simultaneously
+      // (organizer monitors event from laptop + phone; super_admin oversees all events).
+      const { data: roleRow } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('user_id', userId)
+        .single();
+
+      const multiDeviceRoles = ['organizer', 'super_admin'];
+      if (roleRow && multiDeviceRoles.includes(roleRow.user_type)) {
+        // Just log the login without enforcing single-session
+        await supabase.rpc('log_user_login', {
+          p_user_id: userId,
+          p_ip_address: null,
+          p_user_agent: navigator.userAgent
+        });
+        return;
+      }
+
       const sessionId = crypto.randomUUID();
       const { data, error } = await supabase.rpc('enforce_single_session_login', {
         p_user_id: userId,
         p_new_session_id: sessionId,
-        p_ip_address: null, // Could be enhanced to get real IP
+        p_ip_address: null,
         p_user_agent: navigator.userAgent
       });
 
@@ -97,8 +117,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (sessionData.previous_session_terminated) {
           toast.warning('Your previous session has been terminated. You can only be logged in from one device at a time.');
         }
-        
-        // Store the current session ID in localStorage for validation
         localStorage.setItem('current_session_id', sessionId);
       }
     } catch (error) {
@@ -175,9 +193,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // Real-time session validation - detect when session is terminated from another device
+  // Real-time session validation — only for roles that enforce single-session.
+  // Organizers and super admins are excluded (multi-device is intentional for them).
   useEffect(() => {
     if (!user) return;
+    if (profile && ['organizer', 'super_admin'].includes(profile.user_type ?? '')) return;
 
     const currentSessionId = localStorage.getItem('current_session_id');
     if (!currentSessionId) return;
