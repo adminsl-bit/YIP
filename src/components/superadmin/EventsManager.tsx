@@ -309,21 +309,8 @@ export const EventsManager = () => {
         }
       }
 
-      // Always apply the SuperAdmin's chosen alignment to student profiles,
-      // even if party names didn't change. The RPC above uses old threshold
-      // logic that can overwrite alignment — this loop runs after and corrects it.
-      // Uses 'as any' to bypass Supabase generated type limitations.
-      if (editParties.length > 0) {
-        for (let i = 0; i < editParties.length; i++) {
-          await (supabase as any)
-            .from('profiles')
-            .update({ party_alignment: editParties[i].alignment })
-            .eq('event_id', editEvent.id)
-            .eq('user_type', 'student')
-            .eq('party_number', i + 1);
-        }
-        toast({ title: 'Party alignment applied', description: `Updated ruling/opposition for ${editParties.length} parties across all students.` });
-      }
+      // reassign_event_committees_parties now reads alignment from event_parties
+      // directly, so no separate loop needed here.
     }
 
     setEditSaving(false);
