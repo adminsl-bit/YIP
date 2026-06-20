@@ -8,7 +8,7 @@ import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
 
 const Login = () => {
-  const [loginMode, setLoginMode] = useState<'password' | 'code'>('password');
+  const [loginMode, setLoginMode] = useState<'password' | 'code'>('code');
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -279,28 +279,11 @@ const Login = () => {
               <>
                 <div className="mb-8">
                   <h1 className="text-2xl font-black font-headline text-on-surface mb-1.5 tracking-tight">Parliament Login</h1>
-                  <p className="text-xs text-on-surface-variant font-medium">Welcome back, Delegate. Access your chamber.</p>
-                </div>
-
-                <div className="flex gap-2 mb-6 p-1 bg-surface-container rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => setLoginMode('password')}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${loginMode === 'password' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'}`}
-                  >
-                    Username
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setLoginMode('code')}
-                    className={`flex-1 py-2.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${loginMode === 'code' ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'}`}
-                  >
-                    Login Code
-                  </button>
+                  <p className="text-xs text-on-surface-variant font-medium">Enter your 6-digit login code to access your chamber.</p>
                 </div>
 
                 {loginMode === 'code' ? (
-                  <form onSubmit={handleCodeSubmit} className="space-y-5">
+                  <><form onSubmit={handleCodeSubmit} className="space-y-5">
                     <div className="space-y-2">
                       <label className="block text-xs font-black uppercase tracking-widest text-on-surface-variant ml-1">6-Digit Login Code</label>
                       <div className="relative group">
@@ -338,7 +321,17 @@ const Login = () => {
                       )}
                     </button>
                   </form>
-                ) : (
+
+                  {/* Staff login — hidden by default so students aren't confused */}
+                  <div className="mt-4 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setLoginMode(loginMode === 'code' ? 'password' : 'code')}
+                      className="text-[11px] font-bold text-on-surface-variant/40 hover:text-on-surface-variant transition-colors"
+                    >
+                      {loginMode === 'code' ? 'Staff / Organizer login →' : '← Back to code login'}
+                    </button>
+                  </div></>) : (
                 <form onSubmit={handleSubmit} className="space-y-5">
                   <div className="space-y-2">
                     <label className="block text-xs font-black uppercase tracking-widest text-on-surface-variant ml-1">Username or Email</label>

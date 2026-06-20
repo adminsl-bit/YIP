@@ -41,6 +41,7 @@ const StudentDashboard = () => {
 
   const [activeTab, setActiveTab] = useState<TabId>('profile');
   const [moreOpen, setMoreOpen] = useState(false);
+  const [unreadChat, setUnreadChat] = useState(0);
 
   // Manifesto state
   const [isEditingManifesto, setIsEditingManifesto] = useState(false);
@@ -91,6 +92,45 @@ const StudentDashboard = () => {
   // Speaker & Deputy Speaker get a read-only view of the speech tracker
   const isSpeaker = /speaker/i.test(position);
   const navItems = isSpeaker ? baseNavItems : baseNavItems.filter(item => item.id !== 'speeches');
+  // ── Civic Chat unread badge ──────────────────────────────────────────────
+  // Stores the timestamp of the last time the user viewed Civic Chat so we
+  // can count newer messages and show a WhatsApp-style unread badge.
+  useEffect(() => {
+    if (!profile?.event_id) return;
+    const STORAGE_KEY = `yip_chat_last_seen_${profile.event_id}`;
+
+    const countUnread = async () => {
+      const lastSeen = localStorage.getItem(STORAGE_KEY) ?? new Date(0).toISOString();
+      const { count } = await supabase
+        .from('civic_chat_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('event_id', profile.event_id)
+        .gt('created_at', lastSeen)
+        .neq('user_id', user?.id ?? ''); // don't count own messages
+      setUnreadChat(count ?? 0);
+    };
+
+    // Count on mount and when user switches away from chat tab
+    if (activeTab !== 'messages') {
+      countUnread();
+    } else {
+      // User is viewing chat — mark as seen now
+      localStorage.setItem(STORAGE_KEY, new Date().toISOString());
+      setUnreadChat(0);
+    }
+
+    // Live updates: re-count when new messages arrive
+    const channel = supabase
+      .channel('chat-unread-badge')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'civic_chat_messages',
+          filter: `event_id=eq.${profile.event_id}` }, () => {
+        if (activeTab !== 'messages') countUnread();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [activeTab, profile?.event_id, user?.id]);
+
   // Mobile bottom nav: keep the live-session essentials in the bar, tuck the rest behind "More"
   const primaryTabIds: TabId[] = ['agenda', 'civic-wall', 'ballot', 'question-hour'];
   const primaryNavItems = navItems.filter(item => primaryTabIds.includes(item.id));
@@ -748,7 +788,12 @@ const StudentDashboard = () => {
               >
                 {item.icon}
               </span>
-              <span className="font-body text-sm whitespace-nowrap">{item.label}</span>
+              <span className="font-body text-sm whitespace-nowrap flex-1">{item.label}</span>
+              {item.id === 'messages' && unreadChat > 0 && (
+                <span className="ml-auto min-w-[20px] h-5 px-1.5 bg-primary text-white text-[10px] font-black rounded-full flex items-center justify-center">
+                  {unreadChat > 99 ? '99+' : unreadChat}
+                </span>
+              )}
             </button>
           ))}
         </nav>
@@ -816,7 +861,12 @@ const StudentDashboard = () => {
                 >
                   {item.icon}
                 </span>
-                <span className="font-body text-sm whitespace-nowrap">{item.label}</span>
+                <span className="font-body text-sm whitespace-nowrap flex-1">{item.label}</span>
+                {item.id === 'messages' && unreadChat > 0 && (
+                  <span className="ml-auto min-w-[20px] h-5 px-1.5 bg-primary text-white text-[10px] font-black rounded-full flex items-center justify-center">
+                    {unreadChat > 99 ? '99+' : unreadChat}
+                  </span>
+                )}
               </button>
             ))}
             <button
