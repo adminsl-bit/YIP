@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { StudentProfile } from './StudentProfile';
 
@@ -31,13 +32,17 @@ interface Profile {
 }
 
 export const ParliamentTree = () => {
+  const { profile: authProfile } = useAuth();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
-    fetchProfiles();
+    if (authProfile?.event_id) fetchProfiles();
+  }, [authProfile?.event_id]);
+
+  useEffect(() => {
     const channel = supabase
       .channel('public:profiles-tree')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => {
@@ -57,7 +62,8 @@ export const ParliamentTree = () => {
           updated_at, party_alignment, ministry, party_logo_url, is_active
         `)
         .eq('user_type', 'student')
-        .order('name');
+        .eq('event_id', authProfile?.event_id ?? '')
+        .order('serial_number');
       if (error) throw error;
       setProfiles(data || []);
     } catch (err) {
@@ -75,23 +81,38 @@ export const ParliamentTree = () => {
     p.committee?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const source = searchTerm ? filteredProfiles : profiles;
+  // ── Role classification ──────────────────────────────────────────────────
+  const p = (s: Profile) => (s.position ?? '').toLowerCase();
 
-  const speaker = profiles.find(p => p.position?.toLowerCase().includes('speaker') && !p.position?.toLowerCase().includes('deputy'));
-  const rulingMembers   = profiles.filter(p => p.party_alignment === 'ruling_party');
-  const oppositionMembers = profiles.filter(p => p.party_alignment === 'opposition');
-  const independentMembers = profiles.filter(p => !p.party_alignment || p.party_alignment === 'non_aligned');
+  const speaker       = profiles.find(s => p(s).includes('speaker') && !p(s).includes('deputy'));
+  const deputySpeakers = profiles.filter(s => p(s).includes('deputy speaker'));
 
-  const leaderOfHouse = rulingMembers.find(p => p.position?.toLowerCase().includes('leader of the house'));
-  const ministers = rulingMembers.filter(p =>
-    (p.ministry && p.ministry.length > 0) || p.position?.toLowerCase().includes('minister')
+  const primeMinister       = profiles.find(s => p(s).includes('prime minister'));
+  const leaderOfOpposition  = profiles.find(s => p(s).includes('leader of opposition'));
+  const rulingPartyLeaders  = profiles.filter(s => p(s).includes('party leader') && s.party_alignment === 'ruling_party' && s !== primeMinister);
+  const oppPartyLeaders     = profiles.filter(s => p(s).includes('party leader') && s.party_alignment === 'opposition' && s !== leaderOfOpposition);
+  const ministers           = profiles.filter(s =>
+    (p(s).includes('minister') && !p(s).includes('prime') && !p(s).includes('shadow')) &&
+    s.party_alignment === 'ruling_party'
   );
+  const shadowMinisters     = profiles.filter(s => p(s).includes('shadow minister') && s.party_alignment === 'opposition');
 
-  // Deduplicated front bench (leader + ministers)
-  const frontBenchMap = new Map<string, Profile>();
-  if (leaderOfHouse) frontBenchMap.set(leaderOfHouse.id, leaderOfHouse);
-  ministers.forEach(m => frontBenchMap.set(m.id, m));
-  const frontBench = Array.from(frontBenchMap.values());
+  const specialIds = new Set([
+    speaker?.id, ...deputySpeakers.map(s => s.id),
+    primeMinister?.id, leaderOfOpposition?.id,
+    ...rulingPartyLeaders.map(s => s.id), ...oppPartyLeaders.map(s => s.id),
+    ...ministers.map(s => s.id), ...shadowMinisters.map(s => s.id),
+  ].filter(Boolean) as string[]);
+
+  const rulingMPs      = profiles.filter(s => s.party_alignment === 'ruling_party'  && !specialIds.has(s.id));
+  const oppositionMPs  = profiles.filter(s => s.party_alignment === 'opposition'     && !specialIds.has(s.id));
+  const independentMembers = profiles.filter(s => (!s.party_alignment || s.party_alignment === 'non_aligned') && !specialIds.has(s.id));
+
+  // Filtered source for search
+  const source = searchTerm ? filteredProfiles : profiles;
+  const govSource  = source.filter(s => s.party_alignment === 'ruling_party'  && !specialIds.has(s.id));
+  const oppSource  = source.filter(s => s.party_alignment === 'opposition'     && !specialIds.has(s.id));
+  const indSource  = source.filter(s => (!s.party_alignment || s.party_alignment === 'non_aligned') && !specialIds.has(s.id));
 
   const handleMemberClick = async (profileId: string) => {
     try {
@@ -116,11 +137,6 @@ export const ParliamentTree = () => {
       </div>
     );
   }
-
-  const govSource  = source.filter(p => p.party_alignment === 'ruling_party' && p.id !== speaker?.id);
-  const oppSource  = source.filter(p => p.party_alignment === 'opposition');
-  const indSource  = source.filter(p => !p.party_alignment || p.party_alignment === 'non_aligned');
-  const fbSource   = searchTerm ? frontBench.filter(p => source.some(s => s.id === p.id)) : frontBench;
 
   return (
     <>
@@ -180,91 +196,134 @@ export const ParliamentTree = () => {
           )}
         </section>
 
-        {/* Tier 2: Executive Front Bench */}
-        {fbSource.length > 0 && (
-          <section className="w-full">
-            <div className="flex flex-col items-center mb-4">
-              <div className="px-3 py-1 bg-surface-container-high rounded-full">
-                <span className="text-[9px] font-bold text-primary tracking-widest uppercase">Executive Front Bench</span>
+        {/* Deputy Speakers */}
+        {deputySpeakers.length > 0 && (
+          <section className="flex flex-wrap justify-center gap-3">
+            {deputySpeakers.map(ds => (
+              <div key={ds.id} onClick={() => handleMemberClick(ds.id)}
+                className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/10 flex items-center gap-3 cursor-pointer hover:shadow-md transition-all w-56">
+                <div className="w-9 h-9 rounded-lg overflow-hidden bg-surface-container flex-shrink-0 flex items-center justify-center text-xs font-bold text-primary">
+                  {ds.photo_url ? <img src={ds.photo_url} className="w-full h-full object-cover" alt={ds.name} /> : ds.name?.charAt(0)}
+                </div>
+                <div>
+                  <h4 className="font-bold text-xs truncate">{ds.name}</h4>
+                  <p className="text-[9px] text-primary font-bold uppercase tracking-wider">Deputy Speaker</p>
+                </div>
               </div>
-            </div>
-            <div className="flex flex-wrap justify-center gap-4 max-w-5xl mx-auto px-4 pb-2">
-              {fbSource.map(person => (
-                <ExecutiveCard key={person.id} person={person} onClick={handleMemberClick} />
-              ))}
-            </div>
+            ))}
           </section>
         )}
 
-        {/* Tier 3: Assembly Floor Grid */}
+        {/* Tier 2 & 3: Ruling vs Opposition — side by side */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full">
 
-          {/* Government Alliance */}
+          {/* ── RULING COALITION ── */}
           <div className="space-y-4">
-            <div className="flex justify-between items-center border-b-2 border-primary/10 pb-2">
-              <div className="flex items-baseline gap-2">
-                <h3 className="font-headline font-extrabold text-primary text-sm uppercase tracking-wider">Government Alliance</h3>
-                <span className="text-[9px] text-on-surface-variant font-bold tracking-widest uppercase">Treasury Benches</span>
-              </div>
-              <span className="text-[10px] font-bold bg-primary text-white px-2 py-0.5 rounded-full shadow-sm">
-                {rulingMembers.filter(p => p.id !== speaker?.id).length} Members
+            <div className="flex items-center gap-2 pb-2 border-b-2 border-emerald-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <h3 className="font-headline font-extrabold text-emerald-700 text-sm uppercase tracking-wider">Ruling Coalition</h3>
+              <span className="ml-auto text-[10px] font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full">
+                {profiles.filter(s => s.party_alignment === 'ruling_party').length}
               </span>
             </div>
-            <div
-              className="overflow-y-auto max-h-[400px] pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-outline-variant [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
-              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}
-            >
-              {govSource.map(p => (
-                <AssemblyCard key={p.id} person={p} side="ruling" onClick={handleMemberClick} />
-              ))}
-              {govSource.length === 0 && (
-                <p className="text-xs text-on-surface-variant/50 italic col-span-full text-center py-4">No members found</p>
-              )}
-            </div>
+
+            {/* Prime Minister */}
+            {primeMinister && (
+              <SpecialRoleCard person={primeMinister} role="Prime Minister" accent="emerald" badge="crown" onClick={handleMemberClick} />
+            )}
+
+            {/* Ruling Party Leaders */}
+            {rulingPartyLeaders.length > 0 && (
+              <div>
+                <p className="text-[8px] font-black text-on-surface-variant/40 uppercase tracking-widest mb-1.5">Party Leaders</p>
+                <div className="space-y-1.5">
+                  {rulingPartyLeaders.map(s => <FrontBenchCard key={s.id} person={s} accent="emerald" onClick={handleMemberClick} />)}
+                </div>
+              </div>
+            )}
+
+            {/* Cabinet Ministers */}
+            {ministers.length > 0 && (
+              <div>
+                <p className="text-[8px] font-black text-on-surface-variant/40 uppercase tracking-widest mb-1.5">Cabinet Ministers</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {ministers.map(s => <FrontBenchCard key={s.id} person={s} accent="emerald" compact onClick={handleMemberClick} />)}
+                </div>
+              </div>
+            )}
+
+            {/* Regular Ruling MPs */}
+            {govSource.length > 0 && (
+              <div>
+                <p className="text-[8px] font-black text-on-surface-variant/40 uppercase tracking-widest mb-1.5">Members of Parliament</p>
+                <div className="overflow-y-auto max-h-[320px] pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-outline-variant [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '0.5rem' }}>
+                  {govSource.map(s => <AssemblyCard key={s.id} person={s} side="ruling" onClick={handleMemberClick} />)}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Opposition Union */}
+          {/* ── OPPOSITION ── */}
           <div className="space-y-4">
-            <div className="flex justify-between items-center border-b-2 border-secondary/10 pb-2">
-              <div className="flex items-baseline gap-2">
-                <h3 className="font-headline font-extrabold text-secondary text-sm uppercase tracking-wider">Opposition Union</h3>
-                <span className="text-[9px] text-on-surface-variant font-bold tracking-widest uppercase">Loyal Opposition</span>
-              </div>
-              <span className="text-[10px] font-bold bg-secondary text-white px-2 py-0.5 rounded-full shadow-sm">
-                {oppositionMembers.length} Members
+            <div className="flex items-center gap-2 pb-2 border-b-2 border-red-200">
+              <span className="w-2 h-2 rounded-full bg-red-400" />
+              <h3 className="font-headline font-extrabold text-red-600 text-sm uppercase tracking-wider">Opposition</h3>
+              <span className="ml-auto text-[10px] font-bold bg-red-500 text-white px-2 py-0.5 rounded-full">
+                {profiles.filter(s => s.party_alignment === 'opposition').length}
               </span>
             </div>
-            <div
-              className="overflow-y-auto max-h-[400px] pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-outline-variant [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
-              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '0.75rem' }}
-            >
-              {oppSource.map(p => (
-                <AssemblyCard key={p.id} person={p} side="opposition" onClick={handleMemberClick} />
-              ))}
-              {oppSource.length === 0 && (
-                <p className="text-xs text-on-surface-variant/50 italic col-span-full text-center py-4">No members found</p>
-              )}
-            </div>
+
+            {/* Leader of Opposition */}
+            {leaderOfOpposition && (
+              <SpecialRoleCard person={leaderOfOpposition} role="Leader of Opposition" accent="red" badge="campaign" onClick={handleMemberClick} />
+            )}
+
+            {/* Opposition Party Leaders */}
+            {oppPartyLeaders.length > 0 && (
+              <div>
+                <p className="text-[8px] font-black text-on-surface-variant/40 uppercase tracking-widest mb-1.5">Party Leaders</p>
+                <div className="space-y-1.5">
+                  {oppPartyLeaders.map(s => <FrontBenchCard key={s.id} person={s} accent="red" onClick={handleMemberClick} />)}
+                </div>
+              </div>
+            )}
+
+            {/* Shadow Cabinet */}
+            {shadowMinisters.length > 0 && (
+              <div>
+                <p className="text-[8px] font-black text-on-surface-variant/40 uppercase tracking-widest mb-1.5">Shadow Cabinet</p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {shadowMinisters.map(s => <FrontBenchCard key={s.id} person={s} accent="red" compact onClick={handleMemberClick} />)}
+                </div>
+              </div>
+            )}
+
+            {/* Regular Opposition MPs */}
+            {oppSource.length > 0 && (
+              <div>
+                <p className="text-[8px] font-black text-on-surface-variant/40 uppercase tracking-widest mb-1.5">Members of Parliament</p>
+                <div className="overflow-y-auto max-h-[320px] pr-1 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-outline-variant [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent"
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '0.5rem' }}>
+                  {oppSource.map(s => <AssemblyCard key={s.id} person={s} side="opposition" onClick={handleMemberClick} />)}
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
-        {/* Tier 4: Non-Aligned & Independent */}
-        {(indSource.length > 0 || (!searchTerm && independentMembers.length > 0)) && (
-          <section className="w-full mt-4">
-            <div className="w-full flex items-center gap-4 mb-4">
-              <div className="h-px flex-1 bg-outline-variant/20"></div>
+        {/* Non-Aligned */}
+        {indSource.length > 0 && (
+          <section className="w-full mt-2">
+            <div className="w-full flex items-center gap-4 mb-3">
+              <div className="h-px flex-1 bg-outline-variant/20" />
               <span className="text-[9px] font-bold text-outline uppercase tracking-widest whitespace-nowrap">
-                Non-Aligned &amp; Independent ({independentMembers.length})
+                Non-Aligned &amp; Independent ({indSource.length})
               </span>
-              <div className="h-px flex-1 bg-outline-variant/20"></div>
+              <div className="h-px flex-1 bg-outline-variant/20" />
             </div>
-            <div className="flex flex-wrap justify-center gap-3">
-              {indSource.map(person => (
-                <PillCard key={person.id} person={person} onClick={handleMemberClick} />
-              ))}
-              {indSource.length === 0 && searchTerm && (
-                <p className="text-xs text-on-surface-variant/50 italic">No independent delegates match your search</p>
-              )}
+            <div className="flex flex-wrap justify-center gap-2">
+              {indSource.map(s => <PillCard key={s.id} person={s} onClick={handleMemberClick} />)}
             </div>
           </section>
         )}
@@ -300,25 +359,57 @@ export const ParliamentTree = () => {
 
 /* ── Card sub-components ── */
 
-const ExecutiveCard = ({ person, onClick }: { person: Profile; onClick: (id: string) => void }) => {
-  const initials = person.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || '?';
+// Large highlighted card for PM and LOP
+const SpecialRoleCard = ({ person, role, accent, badge, onClick }: {
+  person: Profile; role: string; accent: 'emerald' | 'red';
+  badge: string; onClick: (id: string) => void;
+}) => {
+  const bg   = accent === 'emerald' ? 'bg-emerald-50 border-emerald-300/60' : 'bg-red-50 border-red-300/60';
+  const text = accent === 'emerald' ? 'text-emerald-700' : 'text-red-600';
+  const av   = accent === 'emerald' ? 'bg-emerald-500' : 'bg-red-500';
+  const badge_bg = accent === 'emerald' ? 'bg-amber-400' : 'bg-red-500';
   return (
-    <div
-      onClick={() => onClick(person.id)}
-      className="bg-surface-container-lowest p-3 rounded-xl shadow-sm border border-outline-variant/10 w-56 flex-shrink-0 cursor-pointer hover:scale-[1.02] transition-transform"
-    >
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg overflow-hidden bg-surface-container flex-shrink-0 flex items-center justify-center text-xs font-bold text-primary">
+    <div onClick={() => onClick(person.id)}
+      className={`${bg} border-2 rounded-2xl p-4 cursor-pointer flex items-center gap-4 hover:shadow-md transition-all`}>
+      <div className="relative shrink-0">
+        <div className="w-14 h-14 rounded-xl overflow-hidden bg-surface-container">
           {person.photo_url
             ? <img src={person.photo_url} className="w-full h-full object-cover" alt={person.name} />
-            : initials
+            : <div className={`w-full h-full ${av} flex items-center justify-center text-white font-black text-xl`}>{person.name?.charAt(0)}</div>
           }
         </div>
-        <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-xs truncate">{person.name}</h4>
-          <p className="text-primary text-[9px] font-bold truncate">{person.position}</p>
-          <span className="px-1.5 py-0.5 bg-secondary-fixed text-on-secondary-fixed text-[7px] rounded uppercase font-bold mt-0.5 inline-block">Govt</span>
+        <div className={`absolute -top-1.5 -right-1.5 ${badge_bg} rounded-lg p-1 shadow`}>
+          <span className="material-symbols-outlined text-white text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>{badge}</span>
         </div>
+      </div>
+      <div>
+        <p className={`text-[8px] font-black tracking-widest ${text} uppercase mb-0.5`}>{role}</p>
+        <h3 className="font-headline font-extrabold text-on-surface text-base leading-tight">{person.name}</h3>
+        <p className="text-[10px] text-on-surface-variant/60">{person.party_name}{person.constituency ? ` · ${person.constituency}` : ''}</p>
+      </div>
+    </div>
+  );
+};
+
+// Compact card for Party Leaders, Ministers, Shadow Ministers
+const FrontBenchCard = ({ person, accent, compact, onClick }: {
+  person: Profile; accent: 'emerald' | 'red'; compact?: boolean; onClick: (id: string) => void;
+}) => {
+  const border = accent === 'emerald' ? 'border-emerald-100 hover:border-emerald-300/50' : 'border-red-100 hover:border-red-300/50';
+  const text   = accent === 'emerald' ? 'text-emerald-700' : 'text-red-600';
+  const av     = accent === 'emerald' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600';
+  return (
+    <div onClick={() => onClick(person.id)}
+      className={`border ${border} rounded-xl p-2.5 cursor-pointer flex items-center gap-2.5 hover:shadow-sm transition-all bg-white/60`}>
+      <div className={`${compact ? 'w-8 h-8' : 'w-9 h-9'} rounded-lg overflow-hidden ${av} flex-shrink-0 flex items-center justify-center text-xs font-bold`}>
+        {person.photo_url
+          ? <img src={person.photo_url} className="w-full h-full object-cover" alt={person.name} />
+          : person.name?.charAt(0)
+        }
+      </div>
+      <div className="min-w-0 flex-1">
+        <h5 className="font-bold text-xs leading-tight truncate">{person.name}</h5>
+        <p className={`text-[8px] font-bold ${text} truncate uppercase tracking-wider`}>{person.position}</p>
       </div>
     </div>
   );
