@@ -285,14 +285,42 @@ const InteractiveParliamentTree = () => {
     );
   }
 
-  const groupedStudents = groupByParty(filteredStudents);
+  // ── Role classification ──────────────────────────────────────────────────
+  const pos = (s: Student) => (s.position ?? '').toLowerCase();
 
-  const speaker = filteredStudents.find(p => p.position?.toLowerCase().includes('speaker') && !p.position?.toLowerCase().includes('deputy'));
-  const deputySpeakers = filteredStudents.filter(p => p.position?.toLowerCase().includes('deputy speaker'));
-  
-  const rulingMembers = filteredStudents.filter(p => p.party_alignment === 'ruling_party');
-  const oppositionMembers = filteredStudents.filter(p => p.party_alignment === 'opposition');
-  const independentMembers = filteredStudents.filter(p => !p.party_alignment || p.party_alignment === 'non_aligned');
+  const speaker       = filteredStudents.find(s => pos(s).includes('speaker') && !pos(s).includes('deputy'));
+  const deputySpeakers = filteredStudents.filter(s => pos(s).includes('deputy speaker'));
+
+  // Special roles — extracted before the regular grid
+  const primeMinister      = filteredStudents.find(s => pos(s).includes('prime minister'));
+  const leaderOpposition   = filteredStudents.find(s => pos(s).includes('leader of opposition'));
+  const rulingPartyLeaders = filteredStudents.filter(s =>
+    pos(s).includes('party leader') && s.party_alignment === 'ruling_party' && s !== primeMinister
+  );
+  const oppositionPartyLeaders = filteredStudents.filter(s =>
+    pos(s).includes('party leader') && s.party_alignment === 'opposition' && s !== leaderOpposition
+  );
+  const ministers      = filteredStudents.filter(s =>
+    pos(s).includes('minister') && !pos(s).includes('prime minister') &&
+    !pos(s).includes('shadow') && s.party_alignment === 'ruling_party'
+  );
+  const shadowMinisters = filteredStudents.filter(s =>
+    pos(s).includes('shadow minister') && s.party_alignment === 'opposition'
+  );
+
+  // Regular MPs after special roles are removed
+  const specialIds = new Set([
+    speaker?.id, ...deputySpeakers.map(s => s.id),
+    primeMinister?.id, leaderOpposition?.id,
+    ...rulingPartyLeaders.map(s => s.id), ...oppositionPartyLeaders.map(s => s.id),
+    ...ministers.map(s => s.id), ...shadowMinisters.map(s => s.id),
+  ].filter(Boolean));
+
+  const rulingMPs      = filteredStudents.filter(s => s.party_alignment === 'ruling_party'  && !specialIds.has(s.id));
+  const oppositionMPs  = filteredStudents.filter(s => s.party_alignment === 'opposition'     && !specialIds.has(s.id));
+  const independentMembers = filteredStudents.filter(s =>
+    (!s.party_alignment || s.party_alignment === 'non_aligned') && !specialIds.has(s.id)
+  );
 
   return (
     <div className="space-y-16 pb-20">
@@ -470,72 +498,156 @@ const InteractiveParliamentTree = () => {
 
         {/* The Chamber Benches */}
         <section className="w-full">
-           <div className="grid grid-cols-1 xl:grid-cols-2 gap-12 xl:gap-20 items-start">
-              {/* Government Side */}
-              <div className="space-y-8">
-                <div className="flex flex-col items-center gap-4 mb-8">
-                  <div className="w-16 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-                  <span className="text-label-xs text-primary tracking-[0.4em] opacity-40">Section Alpha</span>
-                </div>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  <AnimatePresence mode="popLayout">
-                    {rulingMembers.map((student, idx) => (
-                      <MemberSmallCard 
-                        key={student.id} 
-                        student={student} 
-                        onClick={() => setSelectedStudent(student)} 
-                        delay={idx}
-                        accentColor="bg-primary"
-                      />
-                    ))}
-                  </AnimatePresence>
-                </div>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 xl:gap-16 items-start">
+
+            {/* ── RULING COALITION ── */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex-1 h-px bg-gradient-to-r from-emerald-400/40 to-transparent" />
+                <span className="text-[10px] font-black tracking-[0.3em] text-emerald-600 uppercase">Ruling Coalition</span>
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
               </div>
 
-              {/* Opposition Side */}
-              <div className="space-y-8">
-                <div className="flex flex-col items-center gap-4 mb-8">
-                  <div className="w-16 h-px bg-gradient-to-r from-transparent via-secondary/30 to-transparent" />
-                  <span className="text-label-xs text-secondary tracking-[0.4em] opacity-40">Section Beta</span>
-                </div>
-                
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  <AnimatePresence mode="popLayout">
-                    {oppositionMembers.map((student, idx) => (
-                      <MemberSmallCard 
-                        key={student.id} 
-                        student={student} 
-                        onClick={() => setSelectedStudent(student)} 
-                        delay={idx}
-                        accentColor="bg-secondary"
-                      />
-                    ))}
-                  </AnimatePresence>
-                </div>
-              </div>
-           </div>
+              {/* Prime Minister */}
+              {primeMinister && (
+                <motion.div whileHover={{ y: -4 }} onClick={() => setSelectedStudent(primeMinister)}
+                  className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 border-2 border-emerald-300/60 rounded-[2rem] p-5 cursor-pointer flex items-center gap-5 hover:shadow-lg transition-all">
+                  <div className="relative shrink-0">
+                    <Avatar className="w-16 h-16 rounded-2xl">
+                      <AvatarImage src={primeMinister.photo_url} className="object-cover" />
+                      <AvatarFallback className="bg-emerald-500 text-white font-black text-xl">{primeMinister.name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -top-2 -right-2 bg-amber-400 rounded-lg p-1 shadow">
+                      <Crown className="w-3.5 h-3.5 text-white fill-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black tracking-[0.2em] text-emerald-600 uppercase mb-0.5">Prime Minister</p>
+                    <h3 className="font-headline font-black text-on-surface text-lg leading-tight uppercase italic">{primeMinister.name}</h3>
+                    <p className="text-xs text-on-surface-variant/60">{primeMinister.party_name} · {primeMinister.constituency}</p>
+                  </div>
+                </motion.div>
+              )}
 
-           {/* Independent/Others */}
-           {independentMembers.length > 0 && (
-             <div className="mt-24 pt-24 border-t border-outline-variant/10">
-                <div className="flex flex-col items-center gap-6 mb-12">
-                   <h2 className="text-xl font-headline font-black text-on-surface-variant/40 tracking-[0.3em] uppercase">Non-Aligned Members</h2>
-                   <div className="w-24 h-1 bg-outline-variant/10 rounded-full" />
+              {/* Ruling Party Leaders */}
+              {rulingPartyLeaders.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black tracking-[0.2em] text-on-surface-variant/40 uppercase ml-1">Party Leaders</p>
+                  {rulingPartyLeaders.map(s => (
+                    <RoleCard key={s.id} student={s} onClick={() => setSelectedStudent(s)} accent="emerald" />
+                  ))}
                 </div>
-                <div className="flex flex-wrap justify-center gap-6 max-w-6xl mx-auto">
-                   {independentMembers.map((student, idx) => (
-                      <MemberSmallCard 
-                        key={student.id} 
-                        student={student} 
-                        onClick={() => setSelectedStudent(student)} 
-                        delay={idx}
-                        accentColor="bg-on-surface-variant/20"
-                      />
-                   ))}
+              )}
+
+              {/* Ministers */}
+              {ministers.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black tracking-[0.2em] text-on-surface-variant/40 uppercase ml-1">Cabinet Ministers</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ministers.map(s => (
+                      <RoleCard key={s.id} student={s} onClick={() => setSelectedStudent(s)} accent="emerald" compact />
+                    ))}
+                  </div>
                 </div>
-             </div>
-           )}
+              )}
+
+              {/* Ruling MPs */}
+              {rulingMPs.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black tracking-[0.2em] text-on-surface-variant/40 uppercase ml-1">Members of Parliament</p>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    <AnimatePresence mode="popLayout">
+                      {rulingMPs.map((s, i) => (
+                        <MemberSmallCard key={s.id} student={s} onClick={() => setSelectedStudent(s)} delay={i} accentColor="bg-emerald-500" />
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── OPPOSITION COALITION ── */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-2 h-2 rounded-full bg-red-400" />
+                <span className="text-[10px] font-black tracking-[0.3em] text-red-500 uppercase">Opposition</span>
+                <div className="flex-1 h-px bg-gradient-to-l from-red-400/40 to-transparent" />
+              </div>
+
+              {/* Leader of Opposition */}
+              {leaderOpposition && (
+                <motion.div whileHover={{ y: -4 }} onClick={() => setSelectedStudent(leaderOpposition)}
+                  className="bg-gradient-to-br from-red-50 to-red-100/50 border-2 border-red-300/60 rounded-[2rem] p-5 cursor-pointer flex items-center gap-5 hover:shadow-lg transition-all">
+                  <div className="relative shrink-0">
+                    <Avatar className="w-16 h-16 rounded-2xl">
+                      <AvatarImage src={leaderOpposition.photo_url} className="object-cover" />
+                      <AvatarFallback className="bg-red-500 text-white font-black text-xl">{leaderOpposition.name?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -top-2 -right-2 bg-red-500 rounded-lg p-1 shadow">
+                      <Gavel className="w-3.5 h-3.5 text-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-black tracking-[0.2em] text-red-500 uppercase mb-0.5">Leader of Opposition</p>
+                    <h3 className="font-headline font-black text-on-surface text-lg leading-tight uppercase italic">{leaderOpposition.name}</h3>
+                    <p className="text-xs text-on-surface-variant/60">{leaderOpposition.party_name} · {leaderOpposition.constituency}</p>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Opposition Party Leaders */}
+              {oppositionPartyLeaders.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black tracking-[0.2em] text-on-surface-variant/40 uppercase ml-1">Party Leaders</p>
+                  {oppositionPartyLeaders.map(s => (
+                    <RoleCard key={s.id} student={s} onClick={() => setSelectedStudent(s)} accent="red" />
+                  ))}
+                </div>
+              )}
+
+              {/* Shadow Ministers */}
+              {shadowMinisters.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black tracking-[0.2em] text-on-surface-variant/40 uppercase ml-1">Shadow Cabinet</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {shadowMinisters.map(s => (
+                      <RoleCard key={s.id} student={s} onClick={() => setSelectedStudent(s)} accent="red" compact />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Opposition MPs */}
+              {oppositionMPs.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black tracking-[0.2em] text-on-surface-variant/40 uppercase ml-1">Members of Parliament</p>
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+                    <AnimatePresence mode="popLayout">
+                      {oppositionMPs.map((s, i) => (
+                        <MemberSmallCard key={s.id} student={s} onClick={() => setSelectedStudent(s)} delay={i} accentColor="bg-red-500" />
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Non-Aligned */}
+          {independentMembers.length > 0 && (
+            <div className="mt-16 pt-16 border-t border-outline-variant/10">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex-1 h-px bg-outline-variant/20" />
+                <span className="text-[10px] font-black tracking-[0.3em] text-on-surface-variant/40 uppercase">Non-Aligned Members</span>
+                <div className="flex-1 h-px bg-outline-variant/20" />
+              </div>
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 max-w-5xl mx-auto">
+                {independentMembers.map((s, i) => (
+                  <MemberSmallCard key={s.id} student={s} onClick={() => setSelectedStudent(s)} delay={i} accentColor="bg-on-surface-variant/40" />
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       </div>
 
@@ -572,6 +684,29 @@ const InteractiveParliamentTree = () => {
         </DialogContent>
       </Dialog>
     </div>
+  );
+};
+
+// Compact role card for Ministers, Shadow Ministers, Party Leaders
+const RoleCard = ({ student, onClick, accent, compact }: {
+  student: Student; onClick: () => void;
+  accent: 'emerald' | 'red'; compact?: boolean;
+}) => {
+  const borderCls = accent === 'emerald' ? 'border-emerald-200/60 bg-emerald-50/50' : 'border-red-200/60 bg-red-50/50';
+  const textCls   = accent === 'emerald' ? 'text-emerald-700' : 'text-red-600';
+  const avatarCls = accent === 'emerald' ? 'bg-emerald-500' : 'bg-red-500';
+  return (
+    <motion.div whileHover={{ y: -2 }} onClick={onClick}
+      className={`border ${borderCls} rounded-2xl p-3 cursor-pointer flex items-center gap-3 hover:shadow-md transition-all`}>
+      <Avatar className={`${compact ? 'w-9 h-9' : 'w-11 h-11'} rounded-xl shrink-0`}>
+        <AvatarImage src={student.photo_url} className="object-cover" />
+        <AvatarFallback className={`${avatarCls} text-white font-black text-sm`}>{student.name?.charAt(0)}</AvatarFallback>
+      </Avatar>
+      <div className="min-w-0">
+        <p className="font-headline font-black text-on-surface text-sm leading-tight truncate uppercase italic">{student.name}</p>
+        <p className={`text-[9px] font-black tracking-wider ${textCls} truncate uppercase`}>{student.position}</p>
+      </div>
+    </motion.div>
   );
 };
 
