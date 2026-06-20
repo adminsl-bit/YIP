@@ -41,6 +41,7 @@ interface Student {
   created_at?: string;
   login_code?: string | null;
   email?: string | null;
+  email_sent_at?: string | null;
   is_current?: boolean;
   promoted_at?: string | null;
 }
@@ -644,7 +645,7 @@ export const OrganizerStudentList = () => {
 
   const downloadCSV = () => {
     const headers = ['Serial No', 'Name', 'Login Code', 'Position', 'Party No', 'Party Name',
-      'Committee', 'Constituency', 'School', 'City', 'State', 'Email', 'Status'];
+      'Committee', 'Constituency', 'School', 'City', 'State', 'Email', 'Email Sent', 'Status'];
     const escape = (v: unknown) => {
       const s = (v ?? '').toString().replace(/"/g, '""');
       return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
@@ -656,6 +657,7 @@ export const OrganizerStudentList = () => {
         s.party_number || '', s.party_name || '', s.committee || '',
         s.constituency || '', s.school || '', s.city || '', s.state || '',
         s.email && !s.email.endsWith('@noemail.yip.internal') ? s.email : '',
+        s.email_sent_at ? new Date(s.email_sent_at).toLocaleString() : 'Not sent',
         s.is_active ? 'Active' : 'Inactive',
       ].map(escape).join(',')),
     ];
@@ -1145,7 +1147,20 @@ export const OrganizerStudentList = () => {
                                 <span className="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide rounded font-headline bg-[#2bb87c]/15 text-[#2bb87c]">Promoted ↑</span>
                               )}
                             </div>
-                            <p className="text-xs text-on-surface-variant font-body">{student.user_id.substring(0, 6)}…@yip.parliament</p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <p className="text-xs text-on-surface-variant font-body">{student.user_id.substring(0, 6)}…@yip.parliament</p>
+                              {student.email_sent_at ? (
+                                <span title={`Email sent ${new Date(student.email_sent_at).toLocaleString()}`}
+                                  className="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide rounded font-body bg-emerald-500/10 text-emerald-600 flex items-center gap-0.5">
+                                  <span className="material-symbols-outlined text-[10px]" style={{ fontVariationSettings: "'FILL' 1" }}>mark_email_read</span>
+                                  Emailed
+                                </span>
+                              ) : student.email && !student.email.endsWith('@noemail.yip.internal') ? (
+                                <span className="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wide rounded font-body bg-amber-500/10 text-amber-600">
+                                  Not Emailed
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       </td>

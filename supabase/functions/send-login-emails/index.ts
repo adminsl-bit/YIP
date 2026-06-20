@@ -278,6 +278,12 @@ Deno.serve(async (req) => {
           throw new Error(body);
         }
 
+        // Stamp email_sent_at on the profile so organisers can see who was emailed
+        await supabaseClient
+          .from('profiles')
+          .update({ email_sent_at: new Date().toISOString() } as any)
+          .eq('email', cred.email);
+
         sent++;
       } catch (error) {
         failed++;
