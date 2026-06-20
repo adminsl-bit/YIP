@@ -402,12 +402,12 @@ export const StudentBulkImport = () => {
     }
   };
 
-  const handleBulkEmail = async () => {
+  const handleBulkEmail = async (forceResend = false) => {
     if (!results?.credentials || results.credentials.length === 0) return;
 
-    // Only email students who have a real email address
-    const emailable = results.credentials.filter(c => !!c.email);
-    if (emailable.length === 0) {
+    // Only students with a real email address can be emailed
+    const withEmail = results.credentials.filter(c => !!c.email);
+    if (withEmail.length === 0) {
       toast.error('No students have email addresses — download the credentials sheet to share login codes manually.');
       return;
     }
@@ -415,36 +415,46 @@ export const StudentBulkImport = () => {
     setIsEmailing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        toast.error('No active session');
-        return;
+      if (!session) { toast.error('No active session'); return; }
+
+      // Check which students have already been emailed (email_sent_at is set)
+      // so we don't resend duplicates unless the organiser explicitly forces it.
+      let toSend = withEmail;
+      if (!forceResend) {
+        const emails = withEmail.map(c => c.email);
+        const { data: alreadySent } = await supabase
+          .from('profiles')
+          .select('email')
+          .in('email', emails)
+          .not('email_sent_at', 'is', null);
+
+        const sentSet = new Set((alreadySent ?? []).map((r: any) => r.email));
+        toSend = withEmail.filter(c => !sentSet.has(c.email));
+
+        if (toSend.length === 0) {
+          toast.info(`All ${withEmail.length} students have already been emailed. Use "Resend All" to send again.`);
+          setIsEmailing(false);
+          return;
+        }
+
+        if (sentSet.size > 0) {
+          toast.info(`Skipping ${sentSet.size} already emailed — sending to ${toSend.length} new students.`);
+        }
       }
 
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-login-emails`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
         body: JSON.stringify({
-          credentials: emailable.map(c => ({ name: c.name, email: c.email, password: c.password })),
+          credentials: toSend.map(c => ({ name: c.name, email: c.email, password: c.password })),
           site_url: window.location.origin,
         }),
       });
 
       const result = await response.json();
-
-      if (!response.ok) {
-        toast.error(result.error || 'Failed to send login emails');
-        return;
-      }
-
-      if (result.sent > 0) {
-        toast.success(`Sent login details to ${result.sent} student${result.sent === 1 ? '' : 's'}`);
-      }
-      if (result.failed > 0) {
-        toast.error(`Failed to email ${result.failed} student${result.failed === 1 ? '' : 's'}`);
-      }
+      if (!response.ok) { toast.error(result.error || 'Failed to send login emails'); return; }
+      if (result.sent > 0) toast.success(`Sent login details to ${result.sent} student${result.sent === 1 ? '' : 's'}`);
+      if (result.failed > 0) toast.error(`Failed to email ${result.failed} student${result.failed === 1 ? '' : 's'}`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to send login emails');
     } finally {
@@ -716,16 +726,28 @@ export const StudentBulkImport = () => {
                       Download All ({total})
                     </button>
                     {emailableCount > 0 && (
-                      <button
-                        onClick={handleBulkEmail}
-                        disabled={isEmailing}
-                        className="flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-surface-container-lowest border border-primary/20 text-primary font-bold text-sm transition-all hover:bg-primary/5 active:scale-95 font-body disabled:opacity-60"
-                      >
-                        <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                          {isEmailing ? 'sync' : 'mail'}
-                        </span>
-                        {isEmailing ? 'Sending…' : `Email ${emailableCount} Student${emailableCount === 1 ? '' : 's'}`}
-                      </button>
+                      <>
+                        <button
+                          onClick={() => handleBulkEmail(false)}
+                          disabled={isEmailing}
+                          className="flex items-center justify-center gap-2 py-3 px-5 rounded-2xl bg-surface-container-lowest border border-primary/20 text-primary font-bold text-sm transition-all hover:bg-primary/5 active:scale-95 font-body disabled:opacity-60"
+                          title="Only sends to students who haven't been emailed yet"
+                        >
+                          <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                            {isEmailing ? 'sync' : 'mail'}
+                          </span>
+                          {isEmailing ? 'Sending…' : `Email New (${emailableCount})`}
+                        </button>
+                        <button
+                          onClick={() => handleBulkEmail(true)}
+                          disabled={isEmailing}
+                          className="flex items-center justify-center gap-2 py-3 px-4 rounded-2xl bg-surface-container border border-outline-variant/20 text-on-surface-variant font-bold text-sm transition-all hover:bg-surface-container-high active:scale-95 font-body disabled:opacity-60"
+                          title="Resends to all students with email, including those already emailed"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">refresh</span>
+                          Resend All
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
