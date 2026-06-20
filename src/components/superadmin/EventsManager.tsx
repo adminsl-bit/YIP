@@ -6,7 +6,7 @@ import {
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { CommitteePartyEditor, defaultCommittees, defaultParties } from './CommitteePartyEditor';
+import { CommitteePartyEditor, defaultCommittees, defaultPartyItems, type PartyItem } from './CommitteePartyEditor';
 import { ZONES, getZoneId, getStateForCity } from '@/lib/regions';
 
 interface EventRow {
@@ -110,7 +110,7 @@ export const EventsManager = () => {
   const [saving, setSaving]         = useState(false);
   const [createStep, setCreateStep] = useState<1 | 2>(1);
   const [createCommittees, setCreateCommittees] = useState<string[]>(() => defaultCommittees(5));
-  const [createParties, setCreateParties]       = useState<string[]>(() => defaultParties(5));
+  const [createParties, setCreateParties]       = useState<PartyItem[]>(() => defaultPartyItems(5));
 
   // Filters
   const [levelFilter, setLevelFilter]   = useState<LevelFilter>('all');
@@ -127,9 +127,9 @@ export const EventsManager = () => {
   const [editSaving, setEditSaving]   = useState(false);
   const [editStep, setEditStep]       = useState<1 | 2>(1);
   const [editCommittees, setEditCommittees] = useState<string[]>([]);
-  const [editParties, setEditParties]       = useState<string[]>([]);
+  const [editParties, setEditParties]       = useState<PartyItem[]>([]);
   const [originalCommittees, setOriginalCommittees] = useState<string[]>([]);
-  const [originalParties, setOriginalParties]       = useState<string[]>([]);
+  const [originalParties, setOriginalParties]       = useState<PartyItem[]>([]);
 
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<EventRow | null>(null);
@@ -193,7 +193,7 @@ export const EventsManager = () => {
     setForm(blankForm);
     setCreateStep(1);
     setCreateCommittees(defaultCommittees(5));
-    setCreateParties(defaultParties(5));
+    setCreateParties(defaultPartyItems(5));
   };
 
   const handleCreate = async () => {
@@ -210,7 +210,7 @@ export const EventsManager = () => {
         createCommittees.map((name, i) => ({ event_id: newEvent.id, name, display_order: i }))
       );
       await supabase.from('event_parties').insert(
-        createParties.map((name, i) => ({ event_id: newEvent.id, name, display_order: i }))
+        createParties.map((p, i) => ({ event_id: newEvent.id, name: p.name, alignment: p.alignment, display_order: i }))
       );
     }
     setSaving(false);
@@ -237,9 +237,12 @@ export const EventsManager = () => {
     setLoadingStaff(false);
 
     const { data: committeeRows } = await supabase.from('event_committees').select('name').eq('event_id', ev.id).order('display_order');
-    const { data: partyRows }     = await supabase.from('event_parties').select('name').eq('event_id', ev.id).order('display_order');
-    const committees = (committeeRows ?? []).map((r: { name: string }) => r.name);
-    const parties    = (partyRows ?? []).map((r: { name: string }) => r.name);
+    const { data: partyRows }     = await supabase.from('event_parties').select('name, alignment').eq('event_id', ev.id).order('display_order');
+    const committees = (committeeRows ?? []).map((r: any) => r.name as string);
+    const parties: PartyItem[] = (partyRows ?? []).map((r: any) => ({
+      name: r.name as string,
+      alignment: (r.alignment ?? 'opposition') as 'ruling_party' | 'opposition',
+    }));
     setEditCommittees(committees);
     setEditParties(parties);
     setOriginalCommittees(committees);
@@ -292,12 +295,29 @@ export const EventsManager = () => {
         if (partiesChanged) {
           await supabase.from('event_parties').delete().eq('event_id', editEvent.id);
           await supabase.from('event_parties').insert(
-            editParties.map((name, i) => ({ event_id: editEvent.id, name, display_order: i }))
+            editParties.map((p, i) => ({
+              event_id: editEvent.id,
+              name: p.name,
+              alignment: p.alignment,
+              display_order: i,
+            }))
           );
         }
         const { error: reassignError } = await supabase.rpc('reassign_event_committees_parties', { p_event_id: editEvent.id });
         if (reassignError) {
           toast({ title: 'Reassignment failed', description: reassignError.message, variant: 'destructive' });
+        }
+
+        // Immediately apply party alignment to all students in this event.
+        // For each party (by party_number = display_order + 1), update every
+        // student assigned to that party to match the chosen alignment.
+        for (let i = 0; i < editParties.length; i++) {
+          await supabase
+            .from('profiles')
+            .update({ party_alignment: editParties[i].alignment })
+            .eq('event_id', editEvent.id)
+            .eq('user_type', 'student')
+            .eq('party_number', i + 1);
         }
       }
     }
