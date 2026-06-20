@@ -80,15 +80,27 @@ export const SecurityLogsManager = () => {
   const fetchAttendance = async () => {
     const { data } = await supabase
       .from('profiles')
-      .select('user_id, name, serial_number, school, last_login_at')
+      .select('user_id, name, serial_number, school, last_login_at, session_id')
       .eq('user_type', 'student')
       .eq('is_active', true)
       .eq('event_id', profile?.event_id ?? '')
       .order('serial_number');
     if (!data) return;
     const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
-    setAttendanceLoggedIn((data as any[]).filter(s => s.last_login_at && new Date(s.last_login_at) >= todayStart));
-    setAttendanceAbsent((data as any[]).filter(s => !s.last_login_at || new Date(s.last_login_at) < todayStart));
+    // A student counts as "logged in today" if:
+    //   (a) last_login_at was set today (accurate after the fix), OR
+    //   (b) session_id is set (they have an active session right now —
+    //       covers students who logged in before the last_login_at fix)
+    const loggedIn = (data as any[]).filter(s =>
+      (s.last_login_at && new Date(s.last_login_at) >= todayStart) ||
+      !!s.session_id
+    );
+    const absent = (data as any[]).filter(s =>
+      (!s.last_login_at || new Date(s.last_login_at) < todayStart) &&
+      !s.session_id
+    );
+    setAttendanceLoggedIn(loggedIn);
+    setAttendanceAbsent(absent);
   };
 
   const fetchAllData = async () => {
@@ -530,18 +542,32 @@ export const SecurityLogsManager = () => {
               <p className="px-6 py-8 text-sm text-on-surface-variant/50 text-center font-medium">No students have logged in today yet.</p>
             ) : (
               <div className="divide-y divide-outline-variant/8 max-h-72 overflow-y-auto">
-                {attendanceLoggedIn.map(s => (
+                {attendanceLoggedIn.map(s => {
+                  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+                  const loginedToday = s.last_login_at && new Date(s.last_login_at) >= todayStart;
+                  return (
                   <div key={s.user_id} className="px-6 py-3 flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 min-w-0">
                       <span className="text-[10px] font-mono font-black text-on-surface-variant/40 shrink-0">#{s.serial_number}</span>
                       <p className="font-bold text-sm text-on-surface truncate">{s.name}</p>
                       {s.school && <p className="text-xs text-on-surface-variant truncate hidden sm:block">{s.school}</p>}
                     </div>
-                    <span className="text-[10px] font-bold text-emerald-600 whitespace-nowrap shrink-0">
-                      {new Date(s.last_login_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {s.session_id && (
+                        <span className="flex items-center gap-1 text-[9px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                          <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                          Active
+                        </span>
+                      )}
+                      <span className="text-[10px] font-bold text-on-surface-variant">
+                        {loginedToday
+                          ? new Date(s.last_login_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+                          : 'Earlier session'}
+                      </span>
+                    </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
