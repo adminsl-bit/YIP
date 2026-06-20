@@ -203,21 +203,23 @@ export const LandingHero = () => {
         </div>
       </section>
 
-      {/* Partners Section */}
+      {/* Partners & Sponsors Section */}
       <section className="py-10 bg-surface" id="partners">
-        <div className="container mx-auto px-6 text-center mb-6">
-          <h2 className="text-2xl md:text-3xl font-black font-headline text-primary mb-2 tracking-tighter">Our Partners & Sponsors</h2>
+        <div className="container mx-auto px-6 text-center mb-8">
+          <h2 className="text-2xl md:text-3xl font-black font-headline text-primary mb-2 tracking-tighter">Our Partners &amp; Sponsors</h2>
           <p className="text-on-surface-variant text-sm max-w-2xl mx-auto">Collaborating with leading institutions to build the leaders of tomorrow.</p>
         </div>
         <div className="container mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-center opacity-60 grayscale hover:grayscale-0 transition-all duration-700 max-w-5xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-center max-w-5xl mx-auto">
             {[
-              { src: "/partners/yi-logo.png", alt: "Young Indians" },
-              { src: "/partners/cii-logo.png", alt: "CII" },
-              { src: "/partners/thalir-logo.png", alt: "Thalir" },
-              { src: "/partners/strawlabs-logo.png", alt: "Strawlabs" }
+              { src: "/partners/cii-logo.png",          alt: "Confederation of Indian Industry", bg: "bg-white" },
+              { src: "/partners/yi-logo.png",            alt: "Young Indians",                    bg: "bg-black" },
+              { src: "/partners/thangamayil-logo.png",   alt: "Thangamayil Jewellery",            bg: "bg-white" },
+              { src: "/partners/solamalai-logo.png",     alt: "Solamalai College of Engineering", bg: "bg-white" },
+              { src: "/partners/thalir-logo.png",        alt: "Thalir",                           bg: "bg-white" },
+              { src: "/partners/strawlabs-logo.png",     alt: "Strawlabs",                        bg: "bg-white" },
             ].map((partner, i) => (
-              <div key={i} className="flex justify-center items-center p-4 bg-white/5 border border-outline-variant/10 rounded-xl h-20 hover:bg-white/10 transition-colors">
+              <div key={i} className={`flex justify-center items-center p-4 ${partner.bg} border border-outline-variant/10 rounded-xl h-20`}>
                 <img src={partner.src} alt={partner.alt} className="max-w-full max-h-full object-contain" />
               </div>
             ))}
