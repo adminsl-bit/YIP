@@ -235,7 +235,7 @@ export const QuestionHourHub = () => {
         const res = await executeOrQueue({
           table: 'questions',
           type: 'insert',
-          payload: { id, user_id: user.id, ministry, content: questionContent, status: 'pending' },
+          payload: { id, user_id: user.id, ministry, content: questionContent, status: 'pending', event_id: profile?.event_id ?? null },
           description: 'Question submission',
         });
         if (res.error) throw res.error;
@@ -289,7 +289,7 @@ export const QuestionHourHub = () => {
       const { queued } = await executeOrQueue(
         hasVoted
           ? { table: 'question_votes', type: 'delete', payload: {}, match: { question_id: questionId, user_id: user.id }, description: 'Remove question support' }
-          : { table: 'question_votes', type: 'insert', payload: { question_id: questionId, user_id: user.id }, description: 'Support question' }
+          : { table: 'question_votes', type: 'insert', payload: { question_id: questionId, user_id: user.id, event_id: profile?.event_id ?? null }, description: 'Support question' }
       );
       if (queued) {
         setQuestions(prev => prev.map(q => q.id === questionId
