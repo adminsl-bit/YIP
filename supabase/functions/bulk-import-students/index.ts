@@ -142,49 +142,52 @@ function generateLoginCode(used: Set<string>): string {
 // + parties) round trips instead of O(students). With hundreds of students
 // across many import batches, one-update-per-student was slow enough to
 // exceed the function's execution time limit and hang the client request.
+// Only assigns party/committee to students who don't have one yet (party_number = 0).
+// Never reshuffles existing students — that caused chaos when reimporting.
 async function reassignCommitteesAndParties(supabaseAdmin: any, eventId: string) {
   const { data: committees } = await supabaseAdmin
     .from('event_committees').select('name, display_order').eq('event_id', eventId).order('display_order');
   const { data: parties } = await supabaseAdmin
     .from('event_parties').select('name, display_order, alignment').eq('event_id', eventId).order('display_order');
+
+  // Only process students who haven't been assigned a party yet
   const { data: students } = await supabaseAdmin
-    .from('profiles').select('user_id, position')
+    .from('profiles').select('user_id, position, party_number, committee')
     .eq('event_id', eventId).eq('user_type', 'student')
     .order('serial_number');
 
-  const eligible = (students ?? []).filter((s: any) => !['Admin Student', 'Journalist'].includes(s.position));
+  const unassigned = (students ?? []).filter((s: any) =>
+    !['Admin Student', 'Journalist'].includes(s.position) &&
+    (!s.party_number || s.party_number === 0)
+  );
 
-  if (committees && committees.length > 0) {
-    const groups = new Map<string, string[]>();
-    eligible.forEach((s: any, i: number) => {
-      const committee = committees[i % committees.length].name;
-      (groups.get(committee) ?? groups.set(committee, []).get(committee)!).push(s.user_id);
-    });
-    for (const [committee, userIds] of groups) {
-      await supabaseAdmin.from('profiles').update({ committee }).in('user_id', userIds);
+  if (unassigned.length === 0) return; // all students already have assignments — nothing to do
+
+  // Determine the next party/committee slot by counting already-assigned students
+  const alreadyAssigned = (students ?? []).filter((s: any) =>
+    !['Admin Student', 'Journalist'].includes(s.position) &&
+    s.party_number && s.party_number > 0
+  ).length;
+
+  if (parties && parties.length > 0) {
+    for (let i = 0; i < unassigned.length; i++) {
+      const slot = (alreadyAssigned + i) % parties.length;
+      const party = parties[slot];
+      const alignment: string = party.alignment ?? 'opposition';
+      await supabaseAdmin.from('profiles').update({
+        party_name: party.name,
+        party_number: slot + 1,
+        party_alignment: alignment,
+      }).eq('user_id', unassigned[i].user_id);
     }
   }
 
-  if (parties && parties.length > 0) {
-    // Use the alignment set by the SuperAdmin on each party in event_parties.
-    // Falls back to the old threshold calculation if alignment column doesn't exist yet.
-    const rulingThreshold = Math.floor(parties.length / 2) + 1;
-    const groups = new Map<number, string[]>();
-    eligible.forEach((s: any, i: number) => {
-      const idx = i % parties.length;
-      (groups.get(idx) ?? groups.set(idx, []).get(idx)!).push(s.user_id);
-    });
-    for (const [idx, userIds] of groups) {
-      const partyNumber = idx + 1;
-      const party = parties[idx];
-      // Prefer explicit alignment from event_parties; fall back to threshold
-      const alignment: string = party.alignment ??
-        (partyNumber <= rulingThreshold ? 'ruling_party' : 'opposition');
+  if (committees && committees.length > 0) {
+    for (let i = 0; i < unassigned.length; i++) {
+      const slot = (alreadyAssigned + i) % committees.length;
       await supabaseAdmin.from('profiles').update({
-        party_name: party.name,
-        party_number: partyNumber,
-        party_alignment: alignment,
-      }).in('user_id', userIds);
+        committee: committees[slot].name,
+      }).eq('user_id', unassigned[i].user_id);
     }
   }
 }
