@@ -111,6 +111,12 @@ export const QuestionHourHub = () => {
   const myMinistry = getMinistryFromPosition(profile?.position);
   const isMinister = !!myMinistry;
   const isModerator = profile?.user_type === 'organizer' || profile?.user_type === 'super_admin' || hasRole('admin_student');
+
+  // Question submission is restricted to opposition members only.
+  // Ruling party members can view all questions and post answers, but not submit new questions.
+  const isRulingParty  = (profile as any)?.party_alignment === 'ruling_party';
+  const isOpposition   = (profile as any)?.party_alignment === 'opposition' || (profile as any)?.party_alignment === 'non_aligned';
+  const canSubmitQuestion = !isRulingParty || isModerator;
   const { settings: systemSettings, loading: settingsLoading, refetch: refetchSettings } = useSystemSettings();
   const [togglingVisibility, setTogglingVisibility] = useState(false);
 
@@ -439,10 +445,12 @@ export const QuestionHourHub = () => {
 
         <div>
           <h2 className="text-[13px] font-black uppercase italic tracking-tight text-primary mb-2 font-headline leading-tight">
-            Formal Question Submission
+            {canSubmitQuestion ? 'Formal Question Submission' : 'Government Bench'}
           </h2>
           <p className="text-[12px] text-on-surface-variant/60 leading-relaxed font-medium font-body">
-            Submit a precise legislative query to the executive ministries for floor deliberation.
+            {canSubmitQuestion
+              ? 'Submit a precise legislative query to the executive ministries for floor deliberation.'
+              : 'As a ruling party member, you respond to questions raised by the opposition. Monitor and answer questions directed at your portfolio below.'}
           </p>
         </div>
 
@@ -462,7 +470,24 @@ export const QuestionHourHub = () => {
           </div>
         ) : null}
 
-        <form onSubmit={handleSubmit} className={`space-y-5 ${myActiveQuestion && !editingId ? 'opacity-40 pointer-events-none select-none' : ''}`}>
+        {!canSubmitQuestion ? (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-emerald-600 text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>shield</span>
+              <p className="text-[11px] font-black text-emerald-800 uppercase tracking-wider">Ruling Party</p>
+            </div>
+            <p className="text-[11px] text-emerald-700 leading-relaxed font-body">
+              You are on the government bench. The opposition raises questions — your role is to <strong>answer and defend</strong> your ministry's policies on the floor.
+            </p>
+            {myMinistry && (
+              <p className="text-[10px] font-bold text-emerald-600 mt-1">
+                Your portfolio: {myMinistry}
+              </p>
+            )}
+          </div>
+        ) : null}
+
+        {canSubmitQuestion && <form onSubmit={handleSubmit} className={`space-y-5 ${myActiveQuestion && !editingId ? 'opacity-40 pointer-events-none select-none' : ''}`}>
           <div>
             <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-widest block mb-2 font-headline">
               Target Portfolio
@@ -512,7 +537,7 @@ export const QuestionHourHub = () => {
               Discard Changes
             </button>
           )}
-        </form>
+        </form>}
 
         <div className="flex gap-3 p-5 bg-surface-container rounded-2xl">
           <span className="material-symbols-outlined text-[16px] text-primary shrink-0 mt-0.5">gavel</span>
