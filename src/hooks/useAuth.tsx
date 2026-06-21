@@ -165,12 +165,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           setTimeout(() => {
             fetchProfile(session.user!.id);
           }, 0);
-          // Log the login + update last_login_at for ALL sign-in paths
-          // (code login, email OTP, direct enrollment) — not just signIn().
+          // Log the login only on a GENUINE fresh sign-in.
+          // Supabase also fires SIGNED_IN on page load when restoring a session
+          // from localStorage — calling logUserLogin there would generate a new
+          // session_id every page load, causing all other open tabs to be kicked.
+          // Guard: only call if there is no existing session_id in localStorage
+          // (meaning this really is a new login, not a session restore).
           if (event === 'SIGNED_IN') {
-            setTimeout(() => {
-              logUserLogin(session.user!.id);
-            }, 500); // small delay so profile is available for role check
+            const existingSessionId = localStorage.getItem('current_session_id');
+            if (!existingSessionId) {
+              setTimeout(() => {
+                logUserLogin(session.user!.id);
+              }, 500);
+            } else {
+              // Session restore — just stamp last_login_at without generating a new session_id
+              supabase
+                .from('profiles')
+                .update({ last_login_at: new Date().toISOString() })
+                .eq('user_id', session.user!.id)
+                .then(() => {});
+            }
           }
         } else {
           setProfile(null);
