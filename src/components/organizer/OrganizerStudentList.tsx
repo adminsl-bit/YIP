@@ -107,8 +107,11 @@ export const OrganizerStudentList = () => {
   // Event-scoped school list for the register dialog dropdown
   const [eventSchools, setEventSchools] = useState<{ id: string; name: string }[]>([]);
 
+  // Event-scoped party list — authoritative names from event_parties, not derived from student profiles
+  const [eventPartyList, setEventPartyList] = useState<[number, string][]>([]);
+
   useEffect(() => {
-    if (!profile?.event_id) { setEventCommittees([]); setEventSchools([]); return; }
+    if (!profile?.event_id) { setEventCommittees([]); setEventSchools([]); setEventPartyList([]); return; }
     supabase
       .from('event_committees')
       .select('name')
@@ -116,6 +119,14 @@ export const OrganizerStudentList = () => {
       .order('display_order')
       .then(({ data }) => {
         setEventCommittees((data ?? []).map((r: { name: string }) => r.name));
+      });
+    supabase
+      .from('event_parties' as any)
+      .select('name, display_order')
+      .eq('event_id', profile.event_id)
+      .order('display_order')
+      .then(({ data }) => {
+        setEventPartyList(((data as any) ?? []).map((r: any, i: number) => [i + 1, r.name] as [number, string]));
       });
     supabase
       .from('event_schools' as any)
@@ -1671,7 +1682,7 @@ export const OrganizerStudentList = () => {
         isOpen={!!editingStudent}
         onClose={() => setEditingStudent(null)}
         onSave={() => { fetchStudents(); fetchJuryAssessments(); }}
-        parties={uniqueParties}
+        parties={eventPartyList.length > 0 ? eventPartyList : uniqueParties}
         constituencies={uniqueConstituencies}
         committees={eventCommittees}
         partyNames={uniquePartyNames}

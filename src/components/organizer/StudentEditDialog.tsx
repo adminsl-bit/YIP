@@ -43,8 +43,26 @@ interface StudentEditDialogProps {
 export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = [], constituencies = [], committees = [], partyNames = [] }: StudentEditDialogProps) => {
   const [formData, setFormData] = useState<Partial<Student>>({});
   const [loading, setLoading] = useState(false);
+  const [partyAlignmentMap, setPartyAlignmentMap] = useState<Record<number, string>>({});
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, profile: authProfile } = useAuth();
+
+  // Load event_parties alignment map so selecting a party also sets alignment correctly
+  useEffect(() => {
+    if (!authProfile?.event_id) return;
+    supabase
+      .from('event_parties' as any)
+      .select('display_order, alignment')
+      .eq('event_id', authProfile.event_id)
+      .order('display_order')
+      .then(({ data }) => {
+        const map: Record<number, string> = {};
+        ((data as any) ?? []).forEach((r: any, i: number) => {
+          map[i + 1] = r.alignment ?? 'opposition';
+        });
+        setPartyAlignmentMap(map);
+      });
+  }, [authProfile?.event_id]);
 
   const handleOpen = (open: boolean) => {
     if (open && student) {
@@ -81,6 +99,7 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = 
           position: formData.position,
           party_number: formData.party_number,
           party_name: formData.party_name?.trim() || null,
+          party_alignment: (formData as any).party_alignment || null,
           committee: formData.committee?.trim() || null,
           serial_number: formData.serial_number,
           constituency: formData.constituency?.trim() || null,
@@ -305,10 +324,12 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = 
               onValueChange={(v) => {
                 const num = parseInt(v);
                 const entry = parties.find(([n]) => n === num);
+                const alignment = partyAlignmentMap[num] ?? null;
                 setFormData(prev => ({
                   ...prev,
                   party_number: num,
                   party_name: entry?.[1] ?? (num > 0 ? `Party ${PARTY_LETTERS[num - 1] ?? num}` : null),
+                  ...(alignment ? { party_alignment: alignment } : {}),
                 }));
               }}
             >
