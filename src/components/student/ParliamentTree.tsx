@@ -92,10 +92,10 @@ export const ParliamentTree = () => {
   const rulingPartyLeaders  = profiles.filter(s => p(s).includes('party leader') && s.party_alignment === 'ruling_party' && s !== primeMinister);
   const oppPartyLeaders     = profiles.filter(s => p(s).includes('party leader') && s.party_alignment === 'opposition' && s !== leaderOfOpposition);
   const ministers           = profiles.filter(s =>
-    (p(s).includes('minister') && !p(s).includes('prime') && !p(s).includes('shadow')) &&
-    s.party_alignment === 'ruling_party'
+    p(s).includes('minister') && !p(s).includes('prime') && !p(s).includes('shadow')
   );
-  const shadowMinisters     = profiles.filter(s => p(s).includes('shadow minister') && s.party_alignment === 'opposition');
+  // Match by position text alone — don't require party_alignment since it may not be set
+  const shadowMinisters     = profiles.filter(s => p(s).includes('shadow minister'));
 
   const specialIds = new Set([
     speaker?.id, ...deputySpeakers.map(s => s.id),
@@ -247,7 +247,7 @@ export const ParliamentTree = () => {
               <div>
                 <p className="text-[8px] font-black text-on-surface-variant/40 uppercase tracking-widest mb-1.5">Cabinet Ministers</p>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {ministers.map(s => <FrontBenchCard key={s.id} person={s} accent="emerald" compact onClick={handleMemberClick} />)}
+                  {ministers.map(s => <FrontBenchCard key={s.id} person={s} accent="emerald" onClick={handleMemberClick} />)}
                 </div>
               </div>
             )}
@@ -289,12 +289,12 @@ export const ParliamentTree = () => {
               </div>
             )}
 
-            {/* Shadow Cabinet */}
+            {/* Shadow Cabinet — same display style as Cabinet Ministers */}
             {shadowMinisters.length > 0 && (
               <div>
                 <p className="text-[8px] font-black text-on-surface-variant/40 uppercase tracking-widest mb-1.5">Shadow Cabinet</p>
                 <div className="grid grid-cols-2 gap-1.5">
-                  {shadowMinisters.map(s => <FrontBenchCard key={s.id} person={s} accent="red" compact onClick={handleMemberClick} />)}
+                  {shadowMinisters.map(s => <FrontBenchCard key={s.id} person={s} accent="red" onClick={handleMemberClick} />)}
                 </div>
               </div>
             )}
