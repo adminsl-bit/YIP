@@ -88,21 +88,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         .eq('user_id', userId)
         .single();
 
-      // Always stamp last_login_at directly — the RPCs may not do this
-      // reliably, and the Attendance view depends on this field being accurate.
-      await supabase
-        .from('profiles')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('user_id', userId);
-
       const multiDeviceRoles = ['organizer', 'super_admin'];
       if (roleRow && multiDeviceRoles.includes(roleRow.user_type)) {
-        // Just log the login without enforcing single-session
-        await supabase.rpc('log_user_login', {
-          p_user_id: userId,
-          p_ip_address: null,
-          p_user_agent: navigator.userAgent
-        });
+        // Multi-device roles: log audit + stamp last_login_at.
+        // No session_id update — no session-validation subscription for these roles.
+        await Promise.all([
+          supabase.rpc('log_user_login', { p_user_id: userId, p_ip_address: null, p_user_agent: navigator.userAgent }),
+          supabase.from('profiles').update({ last_login_at: new Date().toISOString() }).eq('user_id', userId),
+        ]);
         return;
       }
 
