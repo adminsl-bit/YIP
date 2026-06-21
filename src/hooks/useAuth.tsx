@@ -174,17 +174,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           if (event === 'SIGNED_IN') {
             const existingSessionId = localStorage.getItem('current_session_id');
             if (!existingSessionId) {
+              // Genuine fresh login — create session tracking and stamp last_login_at
               setTimeout(() => {
                 logUserLogin(session.user!.id);
               }, 500);
-            } else {
-              // Session restore — just stamp last_login_at without generating a new session_id
-              supabase
-                .from('profiles')
-                .update({ last_login_at: new Date().toISOString() })
-                .eq('user_id', session.user!.id)
-                .then(() => {});
             }
+            // Session restore (page reload / new tab): do nothing here.
+            // last_login_at was stamped on the original login.
+            // Updating the profile here would trigger the realtime session-validation
+            // subscription and risk a false-positive kick (race between the DB write
+            // completing and localStorage being read by the callback).
           }
         } else {
           setProfile(null);
@@ -227,8 +226,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (!user) return;
     if (profile && ['organizer', 'super_admin'].includes(profile.user_type ?? '')) return;
 
-    const currentSessionId = localStorage.getItem('current_session_id');
-    if (!currentSessionId) return;
+    // Don't subscribe if there's no local session to validate against
+    if (!localStorage.getItem('current_session_id')) return;
 
     // Subscribe to profile changes to detect session termination
     const channel = supabase
@@ -243,9 +242,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         },
         (payload) => {
           const newSessionId = payload.new.session_id;
-          
-          // If session ID changed and doesn't match current session, we've been logged out
-          if (newSessionId && newSessionId !== currentSessionId) {
+          // Read localStorage live — never use a stale closure value.
+          // The closure would capture an empty string if the subscription was
+          // set up before logUserLogin finished writing the session ID.
+          const liveSessionId = localStorage.getItem('current_session_id');
+
+          // Only kick if there is a known session, the DB disagrees, and the
+          // new value isn't null (null = someone cleared it, not a device switch)
+          if (newSessionId && liveSessionId && newSessionId !== liveSessionId) {
             toast.error('You have been logged out because you logged in from another device.');
             setTimeout(() => {
               signOut();
