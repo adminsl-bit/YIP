@@ -47,15 +47,33 @@ function getZoneId(state?: string | null): ZoneId | null {
 }
 
 // Cities used as constituency seeds, grouped by zone.
-// Sized so ALL zones combined (~215 cities) comfortably exceeds the largest
-// expected event without needing directional suffixes.
+// Actual Lok Sabha constituency names grouped by zone (~430 total).
+// Sized so all zones combined far exceed the largest expected event.
 const ZONE_CITIES: Record<ZoneId, string[]> = {
   north: [
-    'Delhi', 'Lucknow', 'Kanpur', 'Varanasi', 'Allahabad', 'Agra', 'Meerut', 'Ghaziabad', 'Noida', 'Bareilly',
-    'Gorakhpur', 'Amritsar', 'Ludhiana', 'Jalandhar', 'Patiala', 'Chandigarh', 'Faridabad', 'Gurugram', 'Rohtak', 'Hisar',
-    'Jaipur', 'Jodhpur', 'Udaipur', 'Kota', 'Bikaner', 'Ajmer', 'Dehradun', 'Shimla', 'Srinagar', 'Jammu',
-    'Mathura', 'Aligarh', 'Moradabad', 'Saharanpur', 'Haridwar', 'Karnal', 'Panipat', 'Ambala', 'Bathinda', 'Jhansi',
-    'Rae Bareli', 'Muzaffarnagar', 'Firozabad', 'Leh', 'Haldwani', 'Firozpur', 'Yamunanagar', 'Sonipat', 'Rampur', 'Gurdaspur',
+    // Delhi (7)
+    'Chandni Chowk', 'North East Delhi', 'East Delhi', 'New Delhi', 'North West Delhi', 'West Delhi', 'South Delhi',
+    // UP (80)
+    'Varanasi', 'Lucknow', 'Kanpur', 'Allahabad', 'Agra', 'Mathura', 'Meerut', 'Ghaziabad', 'Noida', 'Bareilly',
+    'Gorakhpur', 'Moradabad', 'Saharanpur', 'Muzaffarnagar', 'Rampur', 'Aligarh', 'Hathras', 'Firozabad',
+    'Mainpuri', 'Etah', 'Badaun', 'Aonla', 'Pilibhit', 'Shahjahanpur', 'Kheri', 'Dhaurahra', 'Sitapur',
+    'Hardoi', 'Unnao', 'Mohanlalganj', 'Rae Bareli', 'Amethi', 'Sultanpur', 'Pratapgarh', 'Farrukhabad',
+    'Etawah', 'Kannauj', 'Kanpur Dehat', 'Jhansi', 'Jalaun', 'Hamirpur', 'Banda', 'Fatehpur', 'Kaushambi',
+    'Phulpur', 'Deoria', 'Bansgaon', 'Lalganj', 'Azamgarh', 'Ghosi', 'Salempur', 'Ballia', 'Ghazipur',
+    'Chandauli', 'Mirzapur', 'Sant Kabir Nagar', 'Kushinagar', 'Maharajganj', 'Ambedkar Nagar',
+    'Bahraich', 'Shrawasti', 'Gonda', 'Domariyaganj', 'Basti', 'Jaunpur', 'Machhlishahr',
+    // Rajasthan (25)
+    'Jaipur', 'Jaipur Rural', 'Jodhpur', 'Udaipur', 'Kota', 'Bikaner', 'Ajmer', 'Alwar', 'Bharatpur',
+    'Karauli-Dholpur', 'Dausa', 'Sikar', 'Jhunjhunu', 'Churu', 'Sriganganagar', 'Bikaner', 'Nagaur',
+    'Tonk-Sawai Madhopur', 'Bhilwara', 'Rajsamand', 'Banswara', 'Chittorgarh', 'Pali', 'Barmer', 'Jalor',
+    // Haryana (10)
+    'Ambala', 'Kurukshetra', 'Sirsa', 'Hisar', 'Karnal', 'Sonipat', 'Rohtak', 'Bhiwani-Mahendragarh', 'Faridabad', 'Gurugram',
+    // Punjab (13)
+    'Amritsar', 'Ludhiana', 'Jalandhar', 'Patiala', 'Chandigarh', 'Bathinda', 'Firozpur', 'Gurdaspur',
+    'Hoshiarpur', 'Anandpur Sahib', 'Fatehgarh Sahib', 'Faridkot', 'Sangrur',
+    // HP, UK, J&K
+    'Shimla', 'Mandi', 'Hamirpur', 'Kangra', 'Dehradun', 'Haridwar', 'Tehri Garhwal', 'Almora', 'Nainital', 'Haldwani',
+    'Srinagar', 'Jammu', 'Udhampur', 'Anantnag-Rajouri', 'Baramulla', 'Ladakh', 'Leh', 'Yamunanagar',
   ],
   east: [
     'Patna', 'Gaya', 'Bhagalpur', 'Muzaffarpur', 'Darbhanga', 'Kolkata', 'Howrah', 'Asansol', 'Siliguri',
@@ -64,26 +82,86 @@ const ZONE_CITIES: Record<ZoneId, string[]> = {
     'Bokaro', 'Hazaribagh', 'Berhampur', 'Sambalpur', 'Rourkela', 'Balasore',
   ],
   west: [
-    'Bhopal', 'Indore', 'Gwalior', 'Jabalpur', 'Raipur', 'Bilaspur', 'Nagpur', 'Pune', 'Mumbai', 'Nashik',
-    'Surat', 'Ahmedabad', 'Vadodara', 'Rajkot', 'Panaji',
-    'Amravati', 'Aurangabad', 'Kolhapur', 'Nanded', 'Latur', 'Akola', 'Jalgaon', 'Solapur',
-    'Bhavnagar', 'Jamnagar', 'Bhuj', 'Anand', 'Morbi', 'Rewa', 'Satna',
+    // West — Maharashtra (48), Gujarat (26), MP (29), CG (11), Goa (2)
+    'Bhopal', 'Indore', 'Gwalior', 'Jabalpur', 'Ujjain', 'Sagar', 'Vidisha', 'Rajgarh', 'Dewas', 'Mandsour',
+    'Ratlam', 'Dhar', 'Khargone', 'Betul', 'Hoshangabad', 'Damoh', 'Tikamgarh', 'Khajuraho', 'Satna', 'Rewa',
+    'Sidhi', 'Shahdol', 'Balaghat', 'Chhindwara', 'Mandla', 'Raipur', 'Durg', 'Bilaspur', 'Korba', 'Rajnandgaon',
+    'Bastar', 'Kanker', 'Janjgir-Champa', 'Mahasamund', 'Surguja',
+    'Mumbai North', 'Mumbai South', 'Mumbai North West', 'Mumbai North East', 'Mumbai North Central', 'Mumbai South Central',
+    'Nagpur', 'Pune', 'Nashik', 'Aurangabad', 'Kolhapur', 'Solapur', 'Akola', 'Amravati',
+    'Nanded', 'Latur', 'Osmanabad', 'Buldhana', 'Yavatmal-Washim', 'Wardha', 'Raigad', 'Maval', 'Baramati',
+    'Ahmadnagar', 'Shirdi', 'Nandurbar', 'Dhule', 'Jalgaon', 'Raver', 'Satara', 'Sangli', 'Hatkanangle',
+    'Ahmedabad East', 'Ahmedabad West', 'Gandhinagar', 'Surat', 'Vadodara', 'Rajkot', 'Bhavnagar', 'Jamnagar',
+    'Junagadh', 'Amreli', 'Anand', 'Kheda', 'Patan', 'Mehsana', 'Sabarkantha', 'Banaskantha', 'Navsari', 'Valsad',
+    'Panaji', 'North Goa',
+  ],
+  east: [
+    // West Bengal (42)
+    'Kolkata North', 'Kolkata South', 'Howrah', 'Hooghly', 'Serampore', 'Asansol', 'Bolpur', 'Burdwan-Durgapur',
+    'Krishnanagar', 'Ranaghat', 'Dum Dum', 'Barasat', 'Basirhat', 'Jadavpur', 'Diamond Harbour', 'Jaynagar',
+    'Mathurapur', 'Joynagar', 'Uluberia', 'Midnapore', 'Jhargram', 'Ghatal', 'Haldia', 'Kanthi', 'Cooch Behar',
+    'Alipurduars', 'Jalpaiguri', 'Darjeeling', 'Siliguri', 'Balurghat', 'Malda North', 'Malda South',
+    'Jangipur', 'Murshidabad', 'Berhampore', 'Birbhum', 'Raiganj', 'Islampur', 'Bardhaman-Purba', 'Bongaon',
+    'Barrackpore', 'Arambag',
+    // Bihar (40)
+    'Patna Sahib', 'Pataliputra', 'Ara', 'Buxar', 'Sasaram', 'Karakat', 'Jahanabad', 'Aurangabad',
+    'Gaya', 'Nawada', 'Nalanda', 'Barh', 'Munger', 'Jamui', 'Banka', 'Bhagalpur', 'Kishanganj',
+    'Katihar', 'Purnia', 'Madhepura', 'Supaul', 'Saharsa', 'Madhubani', 'Jhanjharpur', 'Darbhanga',
+    'Muzaffarpur', 'Sitamarhi', 'Sheohar', 'Vaishali', 'Hajipur', 'Ujiarpur', 'Samastipur', 'Begusarai',
+    'Khagaria', 'Gopalganj', 'Siwan', 'Maharajganj', 'Saran', 'Chapra', 'East Champaran',
+    // Odisha (21)
+    'Cuttack', 'Bhubaneswar', 'Puri', 'Berhampur', 'Sambalpur', 'Rourkela', 'Balasore', 'Bhadrak',
+    'Kendrapara', 'Jagatsinghpur', 'Jajpur', 'Dhenkanal', 'Bolangir', 'Kalahandi', 'Nabarangpur',
+    'Koraput', 'Mayurbhanj', 'Sundargarh', 'Keonjhar', 'Aska', 'Kandhamal',
+    // Jharkhand (14)
+    'Ranchi', 'Jamshedpur', 'Dhanbad', 'Bokaro', 'Hazaribagh', 'Giridih', 'Dumka', 'Rajmahal',
+    'Godda', 'Chatra', 'Koderma', 'Palamau', 'Lohardaga', 'Khunti',
+    // A&N
+    'Andaman & Nicobar Islands',
   ],
   northeast: [
-    'Guwahati', 'Shillong', 'Agartala', 'Imphal', 'Aizawl', 'Kohima', 'Itanagar', 'Gangtok', 'Dibrugarh', 'Silchar',
-    'Tezpur', 'Jorhat', 'Nagaon', 'Dimapur', 'Tura', 'Mokokchung', 'Pasighat', 'North Lakhimpur', 'Bongaigaon', 'Dhubri',
+    // All 25 NE Lok Sabha seats
+    'Guwahati', 'Dibrugarh', 'Jorhat', 'Tezpur', 'Nowgong', 'Silchar', 'Lakhimpur', 'Autonomous District',
+    'Karimganj', 'Barpeta', 'Kokrajhar', 'Dhubri', 'Mangaldoi', 'Nagaon',
+    'Shillong', 'Tura',
+    'Agartala', 'Tripura East',
+    'Inner Manipur', 'Outer Manipur',
+    'Aizawl',
+    'Kohima', 'Nagaland',
+    'Itanagar', 'Arunachal West', 'Arunachal East',
+    'Gangtok', 'Sikkim',
+    // Additional towns for volume
+    'Dimapur', 'Imphal', 'North Lakhimpur', 'Bongaigaon', 'Mokokchung', 'Pasighat',
   ],
   south_tn: [
-    'Chennai', 'Coimbatore', 'Madurai', 'Tiruchirappalli', 'Salem', 'Tirunelveli', 'Erode', 'Vellore', 'Thanjavur', 'Dindigul', 'Puducherry',
-    'Tirupur', 'Nagercoil', 'Kumbakonam', 'Karur', 'Thoothukudi', 'Villupuram', 'Cuddalore', 'Dharmapuri', 'Namakkal', 'Sivakasi',
+    // All 39 TN Lok Sabha constituencies + Puducherry
+    'Tiruvallur', 'Chennai North', 'Chennai South', 'Chennai Central', 'Sriperumbudur', 'Kancheepuram',
+    'Arakkonam', 'Vellore', 'Krishnagiri', 'Dharmapuri', 'Tiruvannamalai', 'Arani',
+    'Viluppuram', 'Kallakurichi', 'Salem', 'Namakkal', 'Erode', 'Tiruppur',
+    'Nilgiris', 'Coimbatore', 'Pollachi', 'Dindigul', 'Karur', 'Tiruchirappalli',
+    'Perambalur', 'Cuddalore', 'Chidambaram', 'Mayiladuthurai', 'Nagapattinam',
+    'Thanjavur', 'Sivaganga', 'Madurai', 'Virudhunagar', 'Ramanathapuram',
+    'Theni', 'Tenkasi', 'Tirunelveli', 'Kanniyakumari', 'Puducherry',
   ],
   south_other: [
-    'Bengaluru', 'Mysuru', 'Mangaluru', 'Belagavi', 'Hubli-Dharwad', 'Davanagere', 'Shivamogga', 'Bellary', 'Tumkur', 'Kalaburagi',
-    'Hyderabad', 'Warangal', 'Karimnagar', 'Nizamabad', 'Khammam', 'Mahbubnagar', 'Visakhapatnam', 'Vijayawada', 'Guntur', 'Tirupati',
-    'Kakinada', 'Nellore', 'Kurnool', 'Rajahmundry', 'Anantapur', 'Thiruvananthapuram', 'Kochi', 'Kozhikode', 'Thrissur', 'Kollam',
-    'Kannur', 'Alappuzha', 'Palakkad', 'Kottayam', 'Malappuram',
-    'Vizianagaram', 'Ongole', 'Machilipatnam', 'Eluru', 'Kadapa', 'Adilabad', 'Sangareddy', 'Bidar',
-    'Vijayapura', 'Udupi', 'Hassan', 'Mandya', 'Chitradurga', 'Raichur', 'Idukki',
+    // Karnataka (28)
+    'Bangalore North', 'Bangalore Central', 'Bangalore South', 'Bangalore Rural', 'Chikkaballapur', 'Kolar',
+    'Tumkur', 'Mandya', 'Mysore', 'Chamarajanagar', 'Dakshina Kannada', 'Udupi-Chikmagalur',
+    'Hassan', 'Chikkodi', 'Belagavi', 'Bagalkot', 'Dharwad', 'Uttara Kannada', 'Haveri',
+    'Davanagere', 'Shimoga', 'Bellary', 'Bijapur', 'Gulbarga', 'Raichur', 'Koppal', 'Bidar', 'Chitradurga',
+    // Kerala (20)
+    'Kasaragod', 'Kannur', 'Vadakara', 'Wayanad', 'Kozhikode', 'Malappuram', 'Ponnani', 'Palakkad',
+    'Alathur', 'Thrissur', 'Chalakudy', 'Ernakulam', 'Idukki', 'Kottayam', 'Alappuzha',
+    'Mavelikkara', 'Pathanamthitta', 'Kollam', 'Attingal', 'Thiruvananthapuram',
+    // Andhra Pradesh (25)
+    'Araku', 'Srikakulam', 'Vizianagaram', 'Visakhapatnam', 'Anakapalli', 'Kakinada', 'Amalapuram',
+    'Rajahmundry', 'Narsapuram', 'Eluru', 'Machilipatnam', 'Vijayawada', 'Guntur', 'Narasaraopet',
+    'Bapatla', 'Ongole', 'Nandyal', 'Kurnool', 'Kadapa', 'Nellore', 'Tirupati', 'Rajampet',
+    'Chittoor', 'Hindupur', 'Anantapur',
+    // Telangana (17)
+    'Adilabad', 'Peddapalle', 'Karimnagar', 'Nizamabad', 'Zahirabad', 'Medak', 'Malkajgiri',
+    'Secunderabad', 'Hyderabad', 'Chevella', 'Mahbubnagar', 'Nagarkurnool', 'Nalgonda',
+    'Bhongir', 'Warangal', 'Mahabubabad', 'Khammam',
   ],
 };
 
@@ -99,7 +177,7 @@ function citiesFromOtherZones(eventZone: ZoneId | null): string[] {
 }
 
 // No directional suffixes — each city name is used as-is.
-// If the pool is exhausted (events > ~215 students) the picker appends "(2)", "(3)" etc.
+// If the pool is exhausted (events > ~430 students) the picker appends "(2)", "(3)" etc.
 function buildConstituencyPool(cities: string[]): string[] {
   return [...cities];
 }
