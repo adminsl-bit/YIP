@@ -297,10 +297,21 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = 
             />
           </div>
 
-          {/* Row 3: Party + Party Name */}
+          {/* Row 3: Party (auto-fills party_name) + Committee */}
           <div className="space-y-1">
             <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Party</label>
-            <Select value={formData.party_number?.toString() || '0'} onValueChange={(v) => setFormData(prev => ({ ...prev, party_number: parseInt(v) }))}>
+            <Select
+              value={formData.party_number?.toString() || '0'}
+              onValueChange={(v) => {
+                const num = parseInt(v);
+                const entry = parties.find(([n]) => n === num);
+                setFormData(prev => ({
+                  ...prev,
+                  party_number: num,
+                  party_name: entry?.[1] ?? (num > 0 ? `Party ${PARTY_LETTERS[num - 1] ?? num}` : null),
+                }));
+              }}
+            >
               <SelectTrigger className="h-11 bg-surface-container border-none rounded-2xl font-bold px-4 focus:ring-2 focus:ring-primary/20 text-sm">
                 <SelectValue placeholder="Select party" />
               </SelectTrigger>
@@ -317,17 +328,9 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = 
                 }
               </SelectContent>
             </Select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-[9px] font-black text-on-surface-variant uppercase tracking-widest ml-1 font-body">Party Name</label>
-            <input
-              list="edit-party-names"
-              value={formData.party_name || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, party_name: e.target.value }))}
-              placeholder="Type or select"
-              className="w-full h-11 bg-surface-container border-none rounded-2xl font-bold px-4 text-sm text-on-surface focus:ring-2 focus:ring-primary/20 font-body"
-            />
-            <datalist id="edit-party-names">{partyNames.map(n => <option key={n} value={n} />)}</datalist>
+            {formData.party_name && (
+              <p className="text-[10px] text-on-surface-variant ml-1 font-medium">{formData.party_name}</p>
+            )}
           </div>
 
           {/* Row 4: Committee + Constituency */}
