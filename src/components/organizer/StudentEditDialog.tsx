@@ -43,42 +43,53 @@ interface StudentEditDialogProps {
 export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = [], constituencies = [], committees = [], partyNames = [] }: StudentEditDialogProps) => {
   const [formData, setFormData] = useState<Partial<Student>>({});
   const [loading, setLoading] = useState(false);
-  const [partyAlignmentMap, setPartyAlignmentMap] = useState<Record<number, string>>({});
+  // Maps party_number → { name, alignment } from event_parties (authoritative)
+  const [partyMeta, setPartyMeta] = useState<Record<number, { name: string; alignment: string }>>({});
   const { toast } = useToast();
   const { user, profile: authProfile } = useAuth();
 
-  // Load event_parties alignment map so selecting a party also sets alignment correctly
   useEffect(() => {
     if (!authProfile?.event_id) return;
     supabase
       .from('event_parties' as any)
-      .select('display_order, alignment')
+      .select('display_order, name, alignment')
       .eq('event_id', authProfile.event_id)
       .order('display_order')
       .then(({ data }) => {
-        const map: Record<number, string> = {};
+        const meta: Record<number, { name: string; alignment: string }> = {};
         ((data as any) ?? []).forEach((r: any, i: number) => {
-          map[i + 1] = r.alignment ?? 'opposition';
+          meta[i + 1] = { name: r.name, alignment: r.alignment ?? 'opposition' };
         });
-        setPartyAlignmentMap(map);
+        setPartyMeta(meta);
       });
   }, [authProfile?.event_id]);
 
   const handleOpen = (open: boolean) => {
     if (open && student) {
-      setFormData({ ...student });
+      // Reconcile party_name with event_parties on open so stale DB values are corrected
+      const correct = partyMeta[student.party_number ?? 0];
+      setFormData({
+        ...student,
+        party_name:      correct?.name      ?? student.party_name,
+        party_alignment: correct?.alignment ?? (student as any).party_alignment,
+      } as any);
     } else {
       setFormData({});
       onClose();
     }
   };
 
-  // Pre-populate form data when student changes
+  // Pre-populate form data when student changes, reconciling party_name with event_parties
   useEffect(() => {
     if (student && isOpen) {
-      setFormData({ ...student });
+      const correct = partyMeta[student.party_number ?? 0];
+      setFormData({
+        ...student,
+        party_name:      correct?.name      ?? student.party_name,
+        party_alignment: correct?.alignment ?? (student as any).party_alignment,
+      } as any);
     }
-  }, [student, isOpen]);
+  }, [student, isOpen, partyMeta]);
 
   const handleSave = async () => {
     if (!student || !formData.name?.trim()) {
@@ -323,14 +334,14 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = 
               value={formData.party_number?.toString() || '0'}
               onValueChange={(v) => {
                 const num = parseInt(v);
+                const meta = partyMeta[num];
                 const entry = parties.find(([n]) => n === num);
-                const alignment = partyAlignmentMap[num] ?? null;
                 setFormData(prev => ({
                   ...prev,
-                  party_number: num,
-                  party_name: entry?.[1] ?? (num > 0 ? `Party ${PARTY_LETTERS[num - 1] ?? num}` : null),
-                  ...(alignment ? { party_alignment: alignment } : {}),
-                }));
+                  party_number:    num,
+                  party_name:      meta?.name ?? entry?.[1] ?? (num > 0 ? `Party ${PARTY_LETTERS[num - 1] ?? num}` : null),
+                  party_alignment: meta?.alignment ?? null,
+                } as any));
               }}
             >
               <SelectTrigger className="h-11 bg-surface-container border-none rounded-2xl font-bold px-4 focus:ring-2 focus:ring-primary/20 text-sm">
@@ -338,19 +349,28 @@ export const StudentEditDialog = ({ student, isOpen, onClose, onSave, parties = 
               </SelectTrigger>
               <SelectContent className="bg-surface-container-lowest border-none rounded-2xl shadow-elevated z-50">
                 <SelectItem value="0">No Party</SelectItem>
-                {parties.length > 0
-                  ? parties.map(([num, name]) => {
-                      const letter = PARTY_LETTERS[num - 1] ?? num.toString();
-                      return <SelectItem key={num} value={num.toString()}>{name ? `${name} (${letter})` : `Party ${letter}`}</SelectItem>;
-                    })
-                  : PARTY_LETTERS.map((letter, idx) => (
-                      <SelectItem key={letter} value={(idx + 1).toString()}>Party {letter}</SelectItem>
+                {/* Prefer partyMeta (from event_parties) for accurate names */}
+                {Object.keys(partyMeta).length > 0
+                  ? Object.entries(partyMeta).map(([num, m]) => (
+                      <SelectItem key={num} value={num}>{m.name}</SelectItem>
                     ))
+                  : parties.length > 0
+                    ? parties.map(([num, name]) => (
+                        <SelectItem key={num} value={num.toString()}>{name ?? `Party ${PARTY_LETTERS[num - 1] ?? num}`}</SelectItem>
+                      ))
+                    : PARTY_LETTERS.map((letter, idx) => (
+                        <SelectItem key={letter} value={(idx + 1).toString()}>Party {letter}</SelectItem>
+                      ))
                 }
               </SelectContent>
             </Select>
-            {formData.party_name && (
-              <p className="text-[10px] text-on-surface-variant ml-1 font-medium">{formData.party_name}</p>
+            {/* Show the correct party name that will be saved */}
+            {formData.party_number && formData.party_number > 0 && (
+              <p className="text-[10px] ml-1 font-bold" style={{ color: (formData as any).party_alignment === 'ruling_party' ? '#16a34a' : '#dc2626' }}>
+                {partyMeta[formData.party_number]?.name ?? (formData.party_name || '')}
+                {' · '}
+                {(formData as any).party_alignment === 'ruling_party' ? 'Ruling Party' : 'Opposition'}
+              </p>
             )}
           </div>
 
