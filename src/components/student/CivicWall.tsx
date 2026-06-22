@@ -340,7 +340,7 @@ export const CivicWall = () => {
     const { error, queued } = await executeOrQueue({
       table: 'civic_posts',
       type: 'insert',
-      payload: { id, user_id: user.id, content: newPost, media_url: mediaUrl, media_type: mediaType },
+      payload: { id, user_id: user.id, content: newPost, media_url: mediaUrl, media_type: mediaType, event_id: profile?.event_id ?? null },
       description: 'Civic Wall post',
     });
 
