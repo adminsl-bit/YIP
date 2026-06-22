@@ -849,19 +849,13 @@ export const QuestionHourHub = () => {
                       <div className="border-t border-outline-variant/10 px-4 py-3 bg-surface-container-low/40 space-y-3">
                         <p className="text-sm text-on-surface font-body leading-relaxed">{q.content}</p>
 
-                        {q.status === 'addressed' && q.answer && (
-                          <div className="bg-surface-container-lowest rounded-2xl p-3 border-l-4 border-tertiary">
-                            <div className="flex items-center gap-1.5 mb-2">
-                              <span className="material-symbols-outlined text-[14px] text-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                              <span className="text-[9px] font-black uppercase tracking-[0.15em] text-tertiary font-headline">Official Response</span>
-                            </div>
-                            <p className="text-xs text-on-surface-variant italic leading-relaxed font-body">"{q.answer}"</p>
-                          </div>
-                        )}
-
-                        {/* Minister inline answer — only for pending/live questions directed at their ministry */}
-                        {canToggleDiscussion && q.status === 'pending' && (
-                          <MinisterAnswerBox question={q} onAnswered={() => fetchQuestions({ silent: true })} />
+                        {/* Answer panel — read/edit for minister + organizer/admin */}
+                        {(q.status === 'addressed' || (canToggleDiscussion || isModerator)) && (
+                          <QuestionAnswerPanel
+                            question={q}
+                            canEdit={canToggleDiscussion || isModerator}
+                            onSaved={() => fetchQuestions({ silent: true })}
+                          />
                         )}
 
                         <div className="flex items-center gap-3 flex-wrap">
@@ -960,56 +954,110 @@ export const QuestionHourHub = () => {
   );
 };
 
-// ── Minister Answer Box ───────────────────────────────────────────────────────
-// Shown inline on each pending question that belongs to the minister's portfolio.
-// Allows the minister to type and submit their official response regardless of
-// how many votes the question has received.
-const MinisterAnswerBox = ({ question, onAnswered }: { question: Question; onAnswered: () => void }) => {
-  const [answer, setAnswer] = useState('');
+// ── Question Answer Panel ─────────────────────────────────────────────────────
+// Unified panel for viewing, submitting, and editing the official response.
+// Visible to: minister (for their ministry's questions) + organizer + admin.
+// Works for both pending (submit) and addressed (edit) questions.
+const QuestionAnswerPanel = ({
+  question, canEdit, onSaved,
+}: { question: Question; canEdit: boolean; onSaved: () => void }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!answer.trim()) return;
+  const hasAnswer = !!question.answer;
+  const isPending = question.status === 'pending';
+
+  // Open edit/compose form
+  const openForm = () => {
+    setDraft(question.answer ?? '');
+    setEditing(true);
+  };
+
+  const handleSave = async () => {
+    if (!draft.trim()) return;
     setSaving(true);
     const { error } = await supabase
       .from('questions')
-      .update({ answer: answer.trim(), status: 'addressed', is_discussing: false })
+      .update({ answer: draft.trim(), status: 'addressed', is_discussing: false })
       .eq('id', question.id);
     setSaving(false);
-    if (error) { toast.error('Failed to submit response'); return; }
-    toast.success('Response recorded — question marked as addressed');
-    setAnswer('');
-    onAnswered();
+    if (error) { toast.error('Failed to save response'); return; }
+    toast.success(hasAnswer ? 'Response updated' : 'Response recorded — question marked as Addressed');
+    setEditing(false);
+    onSaved();
   };
 
-  return (
-    <div className="mt-2 space-y-2 border-t border-outline-variant/10 pt-3">
-      <p className="text-[9px] font-black uppercase tracking-widest text-primary/70 font-headline flex items-center gap-1.5">
-        <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
-        Official Response — {question.ministry.replace('Ministry of ', '')}
-      </p>
-      <textarea
-        value={answer}
-        onChange={e => setAnswer(e.target.value)}
-        placeholder={`Type your ministry's official response to this question…`}
-        rows={3}
-        className="w-full bg-surface-container-high border border-outline-variant/20 rounded-2xl px-4 py-3 text-sm font-medium font-body resize-none outline-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all"
-      />
-      <div className="flex items-center gap-2 justify-end">
-        <p className="text-[10px] text-on-surface-variant/40 font-body flex-1">
-          Submitting will mark this question as <strong>Addressed</strong> and record your response on the floor.
-        </p>
-        <button
-          onClick={handleSubmit}
-          disabled={!answer.trim() || saving}
-          className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-wider disabled:opacity-40 hover:bg-primary/90 transition-all active:scale-95"
-        >
-          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>send</span>
-          {saving ? 'Submitting…' : 'Submit Response'}
-        </button>
+  // Read-only: addressed question with answer, but user can edit
+  if (hasAnswer && !editing) {
+    return (
+      <div className="bg-surface-container-lowest rounded-2xl p-3 border-l-4 border-tertiary">
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <div className="flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[14px] text-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+            <span className="text-[9px] font-black uppercase tracking-[0.15em] text-tertiary font-headline">Official Response</span>
+          </div>
+          {canEdit && (
+            <button
+              onClick={openForm}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-on-surface-variant/60 hover:bg-surface-container hover:text-primary transition-all"
+            >
+              <span className="material-symbols-outlined text-[12px]">edit</span>
+              Edit
+            </button>
+          )}
+        </div>
+        <p className="text-xs text-on-surface-variant italic leading-relaxed font-body">"{question.answer}"</p>
       </div>
-    </div>
-  );
+    );
+  }
+
+  // No answer yet — only show compose form to authorised users
+  if (!canEdit && !hasAnswer) return null;
+
+  // Compose / edit form
+  if (canEdit && (isPending || editing)) {
+    return (
+      <div className="mt-2 space-y-2 border-t border-outline-variant/10 pt-3">
+        <div className="flex items-center justify-between">
+          <p className="text-[9px] font-black uppercase tracking-widest text-primary/70 font-headline flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
+            {hasAnswer ? 'Edit Response' : `Official Response — ${question.ministry.replace('Ministry of ', '')}`}
+          </p>
+          {editing && (
+            <button onClick={() => setEditing(false)} className="text-[9px] font-bold text-on-surface-variant/40 hover:text-on-surface-variant transition-colors uppercase tracking-wider">
+              Cancel
+            </button>
+          )}
+        </div>
+        <textarea
+          value={draft}
+          onChange={e => setDraft(e.target.value)}
+          placeholder="Type the official response to this question…"
+          rows={3}
+          autoFocus={editing}
+          className="w-full bg-surface-container-high border border-outline-variant/20 rounded-2xl px-4 py-3 text-sm font-medium font-body resize-none outline-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all"
+        />
+        <div className="flex items-center gap-2 justify-end">
+          {!hasAnswer && (
+            <p className="text-[10px] text-on-surface-variant/40 font-body flex-1">
+              Submitting marks this question as <strong>Addressed</strong>.
+            </p>
+          )}
+          <button
+            onClick={handleSave}
+            disabled={!draft.trim() || saving}
+            className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-wider disabled:opacity-40 hover:bg-primary/90 transition-all active:scale-95"
+          >
+            <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>save</span>
+            {saving ? 'Saving…' : hasAnswer ? 'Update Response' : 'Submit Response'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 };
 
 export default QuestionHourHub;
