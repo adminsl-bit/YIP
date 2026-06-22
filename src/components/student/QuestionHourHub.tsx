@@ -291,20 +291,31 @@ export const QuestionHourHub = () => {
 
   const handleVote = async (questionId: string, hasVoted: boolean) => {
     if (!user) return;
+    // Optimistic UI update immediately so the button feels responsive
+    setQuestions(prev => prev.map(q => q.id === questionId
+      ? { ...q, votes_count: q.votes_count + (hasVoted ? -1 : 1), user_has_voted: !hasVoted }
+      : q));
     try {
-      const { queued } = await executeOrQueue(
+      const { error, queued } = await executeOrQueue(
         hasVoted
           ? { table: 'question_votes', type: 'delete', payload: {}, match: { question_id: questionId, user_id: user.id }, description: 'Remove question support' }
           : { table: 'question_votes', type: 'insert', payload: { question_id: questionId, user_id: user.id }, description: 'Support question' }
       );
-      if (queued) {
+      if (error) {
+        // Revert optimistic update on failure
         setQuestions(prev => prev.map(q => q.id === questionId
-          ? { ...q, votes_count: q.votes_count + (hasVoted ? -1 : 1), user_has_voted: !hasVoted }
+          ? { ...q, votes_count: q.votes_count + (hasVoted ? 1 : -1), user_has_voted: hasVoted }
           : q));
-      } else {
-        fetchQuestions({ silent: true });
+        toast.error('Could not record your vote — please try again.');
+        console.error('Vote error:', error);
+        return;
       }
+      if (!queued) fetchQuestions({ silent: true });
     } catch {
+      // Revert on exception too
+      setQuestions(prev => prev.map(q => q.id === questionId
+        ? { ...q, votes_count: q.votes_count + (hasVoted ? 1 : -1), user_has_voted: hasVoted }
+        : q));
       toast.error('Protocol error');
     }
   };
