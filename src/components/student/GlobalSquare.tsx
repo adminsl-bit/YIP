@@ -536,8 +536,11 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
     <div className="flex flex-col bg-white overflow-hidden rounded-2xl md:rounded-3xl shadow-sm border border-outline-variant/10 w-full" style={{ height: 'calc(100svh - 15rem)' }}>
 
       {/* ── Tab Navigation ── */}
-      <div className="px-3 md:px-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 overflow-x-auto gap-2" style={{ scrollbarWidth: 'none' }}>
-        <div className="flex gap-4 md:gap-8 shrink-0">
+      {/* Outer bar: fixed-height row, right section pinned, tab section scrolls internally */}
+      <div className="border-b border-slate-100 flex items-center bg-white shrink-0 min-w-0">
+        {/* Scrollable tabs area — overflow contained here, never escapes to page */}
+        <div className="flex-1 overflow-x-auto min-w-0" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex gap-4 md:gap-8 px-3 md:px-6">
           {visibleTabs.map(tab => (
             <button
               key={tab.id}
@@ -560,24 +563,26 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-3">
+        </div>{/* end scrollable tabs */}
+        {/* Right side — pinned, never scrolls */}
+        <div className="flex items-center gap-2 px-2 shrink-0">
           {isOrgOrJury && (
             <button
               onClick={toggleReported}
-              className={`text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-2 transition-colors font-headline ${
+              className={`text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 transition-colors font-headline ${
                 showReported ? 'bg-red-500 text-white' : 'bg-red-50 text-red-500 hover:bg-red-100'
               }`}
             >
-              <span className="material-symbols-outlined text-[14px]">flag</span>
-              Reported{reportedCount > 0 ? ` (${reportedCount})` : ''}
+              <span className="material-symbols-outlined text-[12px]">flag</span>
+              {reportedCount > 0 ? reportedCount : ''}
             </button>
           )}
-          <p className="text-xs text-slate-400 font-medium bg-slate-50 px-3 py-1 rounded-full flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-            {eventStudentCount ?? '—'} Delegates
+          <p className="text-[10px] text-slate-400 font-medium bg-slate-50 px-2 py-1 rounded-full flex items-center gap-1 whitespace-nowrap">
+            <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse shrink-0" />
+            {eventStudentCount ?? '—'}
           </p>
         </div>
-      </div>
+      </div>{/* end tab nav outer */}
 
       {/* ── Organizer: Party selector strip ── */}
       {isOrganizer && activeChannel === 'party' && !showReported && parties.length > 0 && (
