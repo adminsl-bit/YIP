@@ -126,8 +126,14 @@ export const QuestionHourHub = () => {
   const [questionContent, setQuestionContent] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [viewFilter, setViewFilter] = useState<'trending' | 'assigned' | 'summary'>('trending');
+  // Ministers default to their assigned view so they immediately see questions for their portfolio
+  const [viewFilter, setViewFilter] = useState<'trending' | 'assigned' | 'summary'>(isMinister ? 'assigned' : 'trending');
   const [ministryFilter, setMinistryFilter] = useState<string>('All Portfolios');
+
+  // If profile loads after mount and user is a minister, switch to assigned view
+  useEffect(() => {
+    if (isMinister && viewFilter === 'trending') setViewFilter('assigned');
+  }, [isMinister]);
   const [selectedMinistry, setSelectedMinistry] = useState('');
   const [totalEligible, setTotalEligible] = useState(0);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
@@ -853,6 +859,11 @@ export const QuestionHourHub = () => {
                           </div>
                         )}
 
+                        {/* Minister inline answer — only for pending/live questions directed at their ministry */}
+                        {canToggleDiscussion && q.status === 'pending' && (
+                          <MinisterAnswerBox question={q} onAnswered={() => fetchQuestions({ silent: true })} />
+                        )}
+
                         <div className="flex items-center gap-3 flex-wrap">
                           {/* Support meter */}
                           <div className="flex items-center gap-1.5">
@@ -945,6 +956,58 @@ export const QuestionHourHub = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  );
+};
+
+// ── Minister Answer Box ───────────────────────────────────────────────────────
+// Shown inline on each pending question that belongs to the minister's portfolio.
+// Allows the minister to type and submit their official response regardless of
+// how many votes the question has received.
+const MinisterAnswerBox = ({ question, onAnswered }: { question: Question; onAnswered: () => void }) => {
+  const [answer, setAnswer] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!answer.trim()) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from('questions')
+      .update({ answer: answer.trim(), status: 'addressed', is_discussing: false })
+      .eq('id', question.id);
+    setSaving(false);
+    if (error) { toast.error('Failed to submit response'); return; }
+    toast.success('Response recorded — question marked as addressed');
+    setAnswer('');
+    onAnswered();
+  };
+
+  return (
+    <div className="mt-2 space-y-2 border-t border-outline-variant/10 pt-3">
+      <p className="text-[9px] font-black uppercase tracking-widest text-primary/70 font-headline flex items-center gap-1.5">
+        <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
+        Official Response — {question.ministry.replace('Ministry of ', '')}
+      </p>
+      <textarea
+        value={answer}
+        onChange={e => setAnswer(e.target.value)}
+        placeholder={`Type your ministry's official response to this question…`}
+        rows={3}
+        className="w-full bg-surface-container-high border border-outline-variant/20 rounded-2xl px-4 py-3 text-sm font-medium font-body resize-none outline-none focus:ring-2 focus:ring-primary/20 focus:bg-surface-container-lowest transition-all"
+      />
+      <div className="flex items-center gap-2 justify-end">
+        <p className="text-[10px] text-on-surface-variant/40 font-body flex-1">
+          Submitting will mark this question as <strong>Addressed</strong> and record your response on the floor.
+        </p>
+        <button
+          onClick={handleSubmit}
+          disabled={!answer.trim() || saving}
+          className="flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-xl text-xs font-black uppercase tracking-wider disabled:opacity-40 hover:bg-primary/90 transition-all active:scale-95"
+        >
+          <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>send</span>
+          {saving ? 'Submitting…' : 'Submit Response'}
+        </button>
+      </div>
     </div>
   );
 };
