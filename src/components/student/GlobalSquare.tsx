@@ -521,26 +521,28 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   return (
     <div>
       {/* Page Heading */}
-      <header className="mb-8">
-        <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
+      <header className="mb-4 md:mb-8">
+        <h1 className="text-2xl md:text-4xl font-extrabold font-headline tracking-tight text-primary">
           Civic <span className="text-secondary">Chat Hub</span>
         </h1>
-        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
+        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 flex items-center gap-2 font-headline">
           <span className="material-symbols-outlined text-[12px]">forum</span>
           Delegate Communications Network
         </p>
       </header>
 
-    <div className="flex flex-col bg-white overflow-hidden rounded-3xl shadow-sm border border-outline-variant/10" style={{ height: 'calc(100vh - 11rem)' }}>
+    {/* Height accounts for mobile bottom-nav (4rem) + header + padding.
+        100svh = small viewport height (excludes mobile browser chrome). */}
+    <div className="flex flex-col bg-white overflow-hidden rounded-2xl md:rounded-3xl shadow-sm border border-outline-variant/10 h-[calc(100svh-15rem)] md:h-[calc(100svh-11rem)]">
 
       {/* ── Tab Navigation ── */}
-      <div className="px-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0">
-        <div className="flex gap-8">
+      <div className="px-3 md:px-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 overflow-x-auto gap-2" style={{ scrollbarWidth: 'none' }}>
+        <div className="flex gap-4 md:gap-8 shrink-0">
           {visibleTabs.map(tab => (
             <button
               key={tab.id}
               onClick={() => switchChannel(tab.id)}
-              className={`py-5 text-sm font-bold border-b-2 transition-all font-headline flex items-center gap-1.5 ${
+              className={`py-4 md:py-5 text-xs md:text-sm font-bold border-b-2 transition-all font-headline flex items-center gap-1 whitespace-nowrap ${
                 activeChannel === tab.id && !showReported
                   ? 'text-primary border-primary'
                   : 'text-slate-400 hover:text-slate-600 border-transparent'
@@ -623,7 +625,7 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
         {/* Messages window */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#F8FAFC]"
+          className="flex-1 overflow-y-auto p-3 md:p-6 space-y-4 md:space-y-6 bg-[#F8FAFC]"
           style={{ scrollbarWidth: 'none' }}
         >
           {showReported ? (
@@ -879,7 +881,7 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
       </div>
 
       {/* ── Input Bar ── */}
-      <div className="px-6 py-4 bg-white border-t border-slate-100 shrink-0">
+      <div className="px-3 md:px-6 py-3 md:py-4 bg-white border-t border-slate-100 shrink-0">
         <form onSubmit={handleSend} className="flex items-center gap-3">
           <input
             type="file"
