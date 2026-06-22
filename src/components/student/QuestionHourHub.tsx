@@ -295,7 +295,7 @@ export const QuestionHourHub = () => {
       const { queued } = await executeOrQueue(
         hasVoted
           ? { table: 'question_votes', type: 'delete', payload: {}, match: { question_id: questionId, user_id: user.id }, description: 'Remove question support' }
-          : { table: 'question_votes', type: 'insert', payload: { question_id: questionId, user_id: user.id, event_id: profile?.event_id ?? null }, description: 'Support question' }
+          : { table: 'question_votes', type: 'insert', payload: { question_id: questionId, user_id: user.id }, description: 'Support question' }
       );
       if (queued) {
         setQuestions(prev => prev.map(q => q.id === questionId
@@ -487,7 +487,7 @@ export const QuestionHourHub = () => {
           </div>
         ) : null}
 
-        {canSubmitQuestion && <form onSubmit={handleSubmit} className={`space-y-5 ${myActiveQuestion && !editingId ? 'opacity-40 pointer-events-none select-none' : ''}`}>
+        {canSubmitQuestion && <form data-question-form onSubmit={handleSubmit} className={`space-y-5 ${myActiveQuestion && !editingId ? 'opacity-40 pointer-events-none select-none' : ''}`}>
           <div>
             <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-widest block mb-2 font-headline">
               Target Portfolio
@@ -764,7 +764,15 @@ export const QuestionHourHub = () => {
                         {q.user_id === user?.id && (
                           <>
                             <button
-                              onClick={() => { setEditingId(q.id); setSelectedMinistry(q.ministry); setQuestionContent(q.content); }}
+                              onClick={() => {
+                                setEditingId(q.id);
+                                setSelectedMinistry(q.ministry);
+                                setQuestionContent(q.content);
+                                // On mobile the submit form is above the list — scroll it into view
+                                setTimeout(() => {
+                                  document.querySelector('[data-question-form]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                }, 50);
+                              }}
                               title="Edit question"
                               className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant/50 hover:bg-surface-container hover:text-primary transition-colors"
                             >
