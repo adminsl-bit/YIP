@@ -519,7 +519,7 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   }
 
   return (
-    <div>
+    <div className="w-full overflow-hidden">
       {/* Page Heading */}
       <header className="mb-4 md:mb-8">
         <h1 className="text-2xl md:text-4xl font-extrabold font-headline tracking-tight text-primary">
@@ -625,7 +625,7 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
         {/* Messages window */}
         <div
           ref={scrollRef}
-          className="flex-1 overflow-y-auto p-3 md:p-6 space-y-4 md:space-y-6 bg-[#F8FAFC]"
+          className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-6 space-y-4 md:space-y-6 bg-[#F8FAFC] w-full"
           style={{ scrollbarWidth: 'none' }}
         >
           {showReported ? (
@@ -732,15 +732,15 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
                         </div>
                       )}
 
-                      <div className={`flex items-start gap-3 max-w-[85%] group/msg ${isMe ? 'flex-row-reverse ml-auto' : ''}`}>
+                      <div className={`flex items-start gap-2 md:gap-3 max-w-[85%] min-w-0 group/msg ${isMe ? 'flex-row-reverse ml-auto' : ''}`}>
                         {/* Avatar */}
-                        <div className={`w-10 h-10 rounded-xl mt-1 shadow-sm shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center ${!showAvatar ? 'opacity-0 pointer-events-none' : ''}`}>
+                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl mt-1 shadow-sm shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center ${!showAvatar ? 'opacity-0 pointer-events-none' : ''}`}>
                           {photoUrl
                             ? <img src={photoUrl} alt={sender?.name || ''} className="w-full h-full object-cover" />
                             : <span className="material-symbols-outlined text-[20px] text-on-surface-variant/40">person</span>}
                         </div>
 
-                        <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                        <div className={`flex flex-col min-w-0 flex-1 ${isMe ? 'items-end' : 'items-start'}`}>
                           {showAvatar && (
                             <div className={`flex items-baseline gap-2 mb-1 ${isMe ? 'flex-row-reverse' : ''}`}>
                               <span className={`font-bold text-sm ${isMe ? 'text-primary' : 'text-slate-800'} font-headline`}>
@@ -760,12 +760,12 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
                             <p className={`text-[10px] text-slate-400 -mt-1 mb-1 ${isMe ? 'text-right' : 'text-left'}`}>{subtitle}</p>
                           )}
 
-                          <div className={`relative p-4 rounded-2xl text-sm leading-relaxed font-body ${
+                          <div className={`relative p-3 md:p-4 rounded-2xl text-sm leading-relaxed font-body w-full min-w-0 ${
                             isMe
                               ? 'bg-primary text-white rounded-tr-none shadow-md'
                               : 'bg-white text-on-surface rounded-tl-none shadow-sm border border-slate-100'
                           } ${msg.is_reported ? 'ring-2 ring-red-300' : ''}`}>
-                            {msg.content && <p className="whitespace-pre-wrap break-words">{msg.content}</p>}
+                            {msg.content && <p className="break-words overflow-wrap-anywhere">{msg.content}</p>}
 
                             {msg.attachment_url && (
                               msg.attachment_type?.startsWith('image/') ? (
