@@ -25,6 +25,7 @@ interface StudentDocument {
   is_selected: boolean;
   discussion_order: number | null;
   is_discussing: boolean;
+  is_shared?: boolean;
 }
 
 interface ProfileLite {
@@ -56,7 +57,7 @@ const StatCard = ({ value, label, icon }: { value: string | number; label: strin
   </div>
 );
 
-export const StudentDocumentsTable = () => {
+export const StudentDocumentsTable = ({ showShareToggle = false }: { showShareToggle?: boolean }) => {
   const { profile } = useAuth();
   const eventId = (profile as any)?.event_id ?? null;
   const [documents, setDocuments] = useState<StudentDocument[]>([]);
@@ -349,6 +350,23 @@ export const StudentDocumentsTable = () => {
                             <><ListPlus className="w-3.5 h-3.5 mr-1.5" /> Add to Queue</>
                           )}
                         </Button>
+                        {showShareToggle && (
+                          <Button
+                            variant={doc.is_shared ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={async () => {
+                              const { error } = await (supabase.from('student_documents' as any) as any)
+                                .update({ is_shared: !doc.is_shared })
+                                .eq('id', doc.id);
+                              if (error) toast.error('Failed to update sharing');
+                              else { toast.success(doc.is_shared ? 'Removed from shared' : 'Shared with all students'); fetchDocuments(); }
+                            }}
+                            className="rounded-xl font-bold text-xs"
+                          >
+                            <span className="material-symbols-outlined text-[14px] mr-1" style={{ fontVariationSettings: doc.is_shared ? "'FILL' 1" : "'FILL' 0" }}>share</span>
+                            {doc.is_shared ? 'Shared' : 'Share'}
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

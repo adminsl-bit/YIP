@@ -190,6 +190,7 @@ const OrganizerDashboard = () => {
         { value: 'students',     icon: 'group',           label: 'Students' },
         { value: 'schools',      icon: 'school',          label: 'Schools' },
         { value: 'documents',    icon: 'description',     label: 'Documents' },
+        { value: 'bills-queue',  icon: 'gavel',           label: 'Bills Queue' },
         { value: 'bulk-import',  icon: 'upload_file',     label: 'Bulk Import' },
         { value: 'role-creator', icon: 'manage_accounts', label: 'Role Creator' },
         { value: 'security',     icon: 'security',        label: 'Security' },
@@ -410,6 +411,11 @@ const OrganizerDashboard = () => {
               <TabsContent value="documents" className="m-0 space-y-10">
                 <PageHeader primary="Student" secondary="Documents" icon={<span className="material-symbols-outlined text-[12px]">description</span>} subtitle="Bills & Reference Material Vault" />
                 <StudentDocumentsTable />
+              </TabsContent>
+
+              <TabsContent value="bills-queue" className="m-0 space-y-10">
+                <PageHeader primary="Bills" secondary="Queue" icon={<span className="material-symbols-outlined text-[12px]">gavel</span>} subtitle="Discussion Order & Shared Documents" />
+                <StudentDocumentsTable showShareToggle />
               </TabsContent>
 
               <TabsContent value="bulk-import" className="m-0 space-y-8">

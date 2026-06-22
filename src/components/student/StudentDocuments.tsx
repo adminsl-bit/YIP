@@ -24,6 +24,8 @@ interface StudentDocument {
   file_type: string | null;
   file_size: number | null;
   created_at: string;
+  is_shared?: boolean;
+  uploader_name?: string;
 }
 
 const formatFileSize = (bytes: number | null) => {
@@ -40,7 +42,9 @@ const fileExt = (name: string) => {
 
 export const StudentDocuments = () => {
   const { user, profile } = useAuth();
+  const [activeTab, setActiveTab] = useState<'own' | 'shared'>('shared');
   const [documents, setDocuments] = useState<StudentDocument[]>([]);
+  const [sharedDocuments, setSharedDocuments] = useState<StudentDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [summarizingId, setSummarizingId] = useState<string | null>(null);
@@ -64,8 +68,29 @@ export const StudentDocuments = () => {
     }
   };
 
+  const fetchSharedDocuments = async () => {
+    if (!profile?.event_id) return;
+    try {
+      const { data, error } = await (supabase.from('student_documents' as any) as any)
+        .select('id, user_id, file_name, file_url, file_type, file_size, created_at, is_shared')
+        .eq('event_id', profile.event_id)
+        .eq('is_shared', true)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      // Fetch uploader names
+      const uploaderIds = [...new Set(((data as any[]) || []).map((d: any) => d.user_id))];
+      let nameMap: Record<string, string> = {};
+      if (uploaderIds.length > 0) {
+        const { data: profiles } = await supabase.from('profiles').select('user_id, name').in('user_id', uploaderIds);
+        nameMap = Object.fromEntries((profiles || []).map((p: any) => [p.user_id, p.name]));
+      }
+      setSharedDocuments(((data as any[]) || []).map((d: any) => ({ ...d, uploader_name: nameMap[d.user_id] || 'Organizer' })));
+    } catch (err) { console.error('Error fetching shared documents:', err); }
+  };
+
   useEffect(() => {
     fetchDocuments();
+    fetchSharedDocuments();
     if (!user) return;
 
     const channel = supabase
@@ -176,16 +201,60 @@ export const StudentDocuments = () => {
 
   return (
     <div>
-      <header className="mb-10">
+      <header className="mb-6">
         <h1 className="text-4xl font-extrabold font-headline tracking-tight text-primary">
-          My <span className="text-secondary">Documents</span>
+          Documents
         </h1>
         <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-3 flex items-center gap-2 font-headline">
           <FolderOpen className="w-3 h-3" />
-          Bills & Reference Material
+          Bills, Manifestos &amp; Reference Material
         </p>
       </header>
 
+      {/* Tab switcher */}
+      <div className="flex gap-2 mb-6 p-1 bg-surface-container rounded-2xl w-fit">
+        {(['shared', 'own'] as const).map(tab => (
+          <button key={tab} onClick={() => setActiveTab(tab)}
+            className={`px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab ? 'bg-white text-primary shadow-sm' : 'text-on-surface-variant'}`}>
+            {tab === 'shared' ? `Shared (${sharedDocuments.length})` : `My Documents (${documents.length})`}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Shared documents tab ── */}
+      {activeTab === 'shared' && (
+        <div className="space-y-3">
+          {sharedDocuments.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm p-12 text-center">
+              <FileText className="w-10 h-10 text-on-surface-variant/30 mx-auto mb-4" />
+              <p className="font-body text-on-surface-variant font-medium">No shared documents yet.</p>
+              <p className="text-xs text-on-surface-variant/40 mt-1">Documents shared by your organizer will appear here.</p>
+            </div>
+          ) : sharedDocuments.map(doc => (
+            <div key={doc.id} className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm p-5 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-700 flex items-center justify-center shrink-0 font-headline font-black text-[10px]">
+                {fileExt(doc.file_name)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold font-headline text-on-surface text-sm truncate">{doc.file_name}</p>
+                <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-widest font-headline mt-1">
+                  {formatFileSize(doc.file_size)} · Shared by {doc.uploader_name}
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <a href={doc.file_url} target="_blank" rel="noopener noreferrer" download={doc.file_name}>
+                  <Button variant="ghost" size="icon" className="rounded-xl" title="Download">
+                    <Download className="w-4 h-4" />
+                  </Button>
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Own documents tab ── */}
+      {activeTab === 'own' && <>
       {/* Upload card */}
       <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm p-8 mb-6 flex flex-col sm:flex-row items-center justify-between gap-5">
         <div>
@@ -300,6 +369,7 @@ export const StudentDocuments = () => {
           </div>
         </DialogContent>
       </Dialog>
+      </>}
     </div>
   );
 };
