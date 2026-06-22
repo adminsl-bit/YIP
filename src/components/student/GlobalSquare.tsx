@@ -533,7 +533,7 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
 
     {/* Height accounts for mobile bottom-nav (4rem) + header + padding.
         100svh = small viewport height (excludes mobile browser chrome). */}
-    <div className="flex flex-col bg-white overflow-hidden rounded-2xl md:rounded-3xl shadow-sm border border-outline-variant/10 h-[calc(100svh-15rem)] md:h-[calc(100svh-11rem)]">
+    <div className="flex flex-col bg-white overflow-hidden rounded-2xl md:rounded-3xl shadow-sm border border-outline-variant/10 w-full" style={{ height: 'calc(100svh - 15rem)' }}>
 
       {/* ── Tab Navigation ── */}
       <div className="px-3 md:px-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 overflow-x-auto gap-2" style={{ scrollbarWidth: 'none' }}>
@@ -732,15 +732,17 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
                         </div>
                       )}
 
-                      <div className={`flex items-start gap-2 md:gap-3 max-w-[85%] min-w-0 group/msg ${isMe ? 'flex-row-reverse ml-auto' : ''}`}>
+                      {/* Full-width row: avatar pinned + content fills remaining width */}
+                      <div className={`flex items-start gap-2 w-full group/msg ${isMe ? 'flex-row-reverse' : ''}`}>
                         {/* Avatar */}
-                        <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl mt-1 shadow-sm shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center ${!showAvatar ? 'opacity-0 pointer-events-none' : ''}`}>
+                        <div className={`w-8 h-8 rounded-xl mt-1 shadow-sm shrink-0 overflow-hidden bg-slate-100 flex items-center justify-center ${!showAvatar ? 'opacity-0 pointer-events-none' : ''}`}>
                           {photoUrl
                             ? <img src={photoUrl} alt={sender?.name || ''} className="w-full h-full object-cover" />
-                            : <span className="material-symbols-outlined text-[20px] text-on-surface-variant/40">person</span>}
+                            : <span className="material-symbols-outlined text-[18px] text-on-surface-variant/40">person</span>}
                         </div>
 
-                        <div className={`flex flex-col min-w-0 flex-1 ${isMe ? 'items-end' : 'items-start'}`}>
+                        {/* Content — flex-1 + min-w-0 prevents overflow beyond parent */}
+                        <div className={`flex flex-col min-w-0 flex-1 max-w-[calc(100%-2.5rem)] ${isMe ? 'items-end' : 'items-start'}`}>
                           {showAvatar && (
                             <div className={`flex items-baseline gap-2 mb-1 ${isMe ? 'flex-row-reverse' : ''}`}>
                               <span className={`font-bold text-sm ${isMe ? 'text-primary' : 'text-slate-800'} font-headline`}>
@@ -760,7 +762,7 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
                             <p className={`text-[10px] text-slate-400 -mt-1 mb-1 ${isMe ? 'text-right' : 'text-left'}`}>{subtitle}</p>
                           )}
 
-                          <div className={`relative p-3 md:p-4 rounded-2xl text-sm leading-relaxed font-body w-full min-w-0 ${
+                          <div className={`relative p-3 md:p-4 rounded-2xl text-sm leading-relaxed font-body max-w-full min-w-0 ${
                             isMe
                               ? 'bg-primary text-white rounded-tr-none shadow-md'
                               : 'bg-white text-on-surface rounded-tl-none shadow-sm border border-slate-100'
