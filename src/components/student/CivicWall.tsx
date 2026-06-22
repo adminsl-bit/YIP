@@ -130,9 +130,11 @@ export const CivicWall = () => {
 
   // Video Embed URL Helpers
   const getYoutubeId = (url: string) => {
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
+    // Handles: watch?v=, youtu.be/, embed/, v/, shorts/, live/, &v=
+    const match = url.match(
+      /(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|v\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/
+    );
+    return match ? match[1] : null;
   };
 
   const getInstagramId = (url: string) => {
@@ -690,10 +692,12 @@ export const CivicWall = () => {
                               <div className="relative rounded-2xl overflow-hidden mb-4 aspect-video bg-inverse-surface border border-outline-variant/15 group/video">
                                 {isYoutubeUrl(post.media_url) ? (
                                   <iframe
-                                    src={`https://www.youtube.com/embed/${getYoutubeId(post.media_url)}`}
+                                    src={`https://www.youtube.com/embed/${getYoutubeId(post.media_url)}?rel=0`}
                                     className="w-full h-full border-none"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                     allowFullScreen
+                                    title="YouTube video"
+                                    loading="lazy"
                                   />
                                 ) : isInstagramUrl(post.media_url) ? (
                                   <iframe

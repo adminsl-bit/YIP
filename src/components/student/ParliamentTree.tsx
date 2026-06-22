@@ -84,18 +84,21 @@ export const ParliamentTree = () => {
   // ── Role classification ──────────────────────────────────────────────────
   const p = (s: Profile) => (s.position ?? '').toLowerCase();
 
-  const speaker       = profiles.find(s => p(s).includes('speaker') && !p(s).includes('deputy'));
-  const deputySpeakers = profiles.filter(s => p(s).includes('deputy speaker'));
+  // Apply search filter to special roles too — use filteredProfiles when
+  // searching so PM/LOP/Ministers disappear if they don't match the query
+  const rolePool = searchTerm ? filteredProfiles : profiles;
 
-  const primeMinister       = profiles.find(s => p(s).includes('prime minister'));
-  const leaderOfOpposition  = profiles.find(s => p(s).includes('leader of opposition'));
-  const rulingPartyLeaders  = profiles.filter(s => p(s).includes('party leader') && s.party_alignment === 'ruling_party' && s !== primeMinister);
-  const oppPartyLeaders     = profiles.filter(s => p(s).includes('party leader') && s.party_alignment === 'opposition' && s !== leaderOfOpposition);
-  const ministers           = profiles.filter(s =>
+  const speaker        = rolePool.find(s => p(s).includes('speaker') && !p(s).includes('deputy'));
+  const deputySpeakers = rolePool.filter(s => p(s).includes('deputy speaker'));
+
+  const primeMinister       = rolePool.find(s => p(s).includes('prime minister'));
+  const leaderOfOpposition  = rolePool.find(s => p(s).includes('leader of opposition'));
+  const rulingPartyLeaders  = rolePool.filter(s => p(s).includes('party leader') && s.party_alignment === 'ruling_party' && s !== primeMinister);
+  const oppPartyLeaders     = rolePool.filter(s => p(s).includes('party leader') && s.party_alignment === 'opposition' && s !== leaderOfOpposition);
+  const ministers           = rolePool.filter(s =>
     p(s).includes('minister') && !p(s).includes('prime') && !p(s).includes('shadow')
   );
-  // Match by position text alone — don't require party_alignment since it may not be set
-  const shadowMinisters     = profiles.filter(s => p(s).includes('shadow minister'));
+  const shadowMinisters     = rolePool.filter(s => p(s).includes('shadow minister'));
 
   const specialIds = new Set([
     speaker?.id, ...deputySpeakers.map(s => s.id),
