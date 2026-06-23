@@ -689,22 +689,26 @@ export const CivicWall = () => {
                               </div>
                             )}
                             {post.media_url && post.media_type === 'video' && (
-                              <div className="relative rounded-2xl overflow-hidden mb-4 aspect-video bg-inverse-surface border border-outline-variant/15 group/video">
+                              <div className="relative rounded-2xl overflow-hidden mb-4 bg-slate-100 border border-outline-variant/15 group/video">
                                 {isYoutubeUrl(post.media_url) ? (
-                                  <iframe
-                                    src={`https://www.youtube.com/embed/${getYoutubeId(post.media_url)}?rel=0`}
-                                    className="w-full h-full border-none"
-                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                    allowFullScreen
-                                    title="YouTube video"
-                                    loading="lazy"
-                                  />
+                                  <div className="aspect-video">
+                                    <iframe
+                                      src={`https://www.youtube.com/embed/${getYoutubeId(post.media_url)}?rel=0`}
+                                      className="w-full h-full border-none"
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                      allowFullScreen
+                                      title="YouTube video"
+                                    />
+                                  </div>
                                 ) : isInstagramUrl(post.media_url) ? (
-                                  <iframe
-                                    src={`https://www.instagram.com/p/${getInstagramId(post.media_url)}/embed`}
-                                    className="w-full h-full border-none"
-                                    allowFullScreen
-                                  />
+                                  <div className="aspect-video">
+                                    <iframe
+                                      src={`https://www.instagram.com/p/${getInstagramId(post.media_url)}/embed`}
+                                      className="w-full h-full border-none"
+                                      allowFullScreen
+                                      title="Instagram embed"
+                                    />
+                                  </div>
                                 ) : (
                                   <>
                                     <video 
@@ -726,6 +730,14 @@ export const CivicWall = () => {
                                   </>
                                 )}
                               </div>
+                            )}
+                            {/* Fallback link — if iframe blocked by adblocker/browser */}
+                            {post.media_url && post.media_type === 'video' && (isYoutubeUrl(post.media_url) || isInstagramUrl(post.media_url)) && (
+                              <a href={post.media_url} target="_blank" rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 mb-3 px-3 py-1.5 text-[10px] font-bold text-on-surface-variant/60 hover:text-primary transition-colors">
+                                <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                                Open in {isYoutubeUrl(post.media_url) ? 'YouTube' : 'Instagram'}
+                              </a>
                             )}
 
                             {/* Interaction count row */}
