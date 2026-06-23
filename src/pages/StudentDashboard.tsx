@@ -762,7 +762,7 @@ const StudentDashboard = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#F3F4F6] font-body antialiased">
+    <div className={`flex bg-[#F3F4F6] font-body antialiased ${activeTab === 'messages' ? 'h-dvh overflow-hidden' : 'min-h-screen'}`}>
 
       {/* ── Left Sidebar ── */}
       <aside className="hidden md:flex flex-col h-screen w-64 fixed z-50 bg-white border-r border-outline-variant py-6 px-4">

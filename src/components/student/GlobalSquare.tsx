@@ -439,12 +439,21 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
     }, 0);
   };
 
-  // Render message text with @mentions highlighted
-  const renderWithMentions = (text: string) => {
+  // Render message text with @mentions highlighted.
+  // isMe = true → message is on a dark primary background → use light mention style
+  // isMe = false → message is on a white background → use primary blue mention style
+  const renderWithMentions = (text: string, isMe = false) => {
     const parts = text.split(/(@\S+)/g);
     return parts.map((part, i) =>
       part.startsWith('@') ? (
-        <span key={i} className="text-primary font-bold">{part}</span>
+        <span
+          key={i}
+          className={isMe
+            ? 'font-black underline underline-offset-2 text-white/90'
+            : 'font-black text-primary bg-primary/10 px-1 rounded'}
+        >
+          {part}
+        </span>
       ) : part
     );
   };
@@ -843,7 +852,7 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
                               ? 'bg-primary text-white rounded-tr-none shadow-md'
                               : 'bg-white text-on-surface rounded-tl-none shadow-sm border border-slate-100'
                           } ${msg.is_reported ? 'ring-2 ring-red-300' : ''}`}>
-                            {msg.content && <p className="break-words overflow-wrap-anywhere">{renderWithMentions(msg.content)}</p>}
+                            {msg.content && <p className="break-words overflow-wrap-anywhere">{renderWithMentions(msg.content, isMe)}</p>}
 
                             {msg.attachment_url && (
                               msg.attachment_type?.startsWith('image/') ? (
