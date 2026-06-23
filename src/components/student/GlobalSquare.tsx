@@ -591,21 +591,20 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   }
 
   return (
-    <div className="w-full overflow-hidden">
-      {/* Page Heading */}
-      <header className="mb-4 md:mb-8">
-        <h1 className="text-2xl md:text-4xl font-extrabold font-headline tracking-tight text-primary">
+    <div className="w-full overflow-hidden h-full flex flex-col">
+      {/* Page Heading — compact on mobile to give more room to chat */}
+      <header className="mb-2 md:mb-6 shrink-0 px-1 md:px-0">
+        <h1 className="text-xl md:text-4xl font-extrabold font-headline tracking-tight text-primary">
           Civic <span className="text-secondary">Chat Hub</span>
         </h1>
-        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 flex items-center gap-2 font-headline">
+        <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-1 flex items-center gap-2 font-headline">
           <span className="material-symbols-outlined text-[12px]">forum</span>
           Delegate Communications Network
         </p>
       </header>
 
-    {/* Height accounts for mobile bottom-nav (4rem) + header + padding.
-        100svh = small viewport height (excludes mobile browser chrome). */}
-    <div className="flex flex-col bg-white overflow-hidden rounded-2xl md:rounded-3xl shadow-sm border border-outline-variant/10 w-full" style={{ height: 'calc(100svh - 15rem)' }}>
+    {/* flex-1 fills all remaining height after the header — no fixed calc needed */}
+    <div className="flex flex-col bg-white overflow-hidden rounded-2xl md:rounded-3xl shadow-sm border border-outline-variant/10 w-full flex-1 min-h-0">
 
       {/* ── Tab Navigation ── */}
       {/* Outer bar: fixed-height row, right section pinned, tab section scrolls internally */}

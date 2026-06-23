@@ -881,7 +881,12 @@ const StudentDashboard = () => {
       </Drawer>
 
       {/* ── Main Content ── */}
-      <main className="flex-1 md:ml-64 p-4 sm:p-6 md:p-8 pb-24 md:pb-8">
+      {/* Messages tab gets no padding so GlobalSquare can fill the full height */}
+      <main className={`flex-1 md:ml-64 ${
+        activeTab === 'messages'
+          ? 'flex flex-col overflow-hidden pb-16 md:pb-0 md:p-6'
+          : 'p-4 sm:p-6 md:p-8 pb-24 md:pb-8 overflow-y-auto'
+      }`}>
         {activeTab === 'messages' ? <GlobalSquare /> : renderTabContent()}
       </main>
 
