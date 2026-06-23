@@ -121,16 +121,36 @@ export const PartyLogoUploader: React.FC<PartyLogoUploaderProps> = ({
         if (uploadError) throw uploadError;
 
         const { data } = supabase.storage.from("student-photos").getPublicUrl(path);
+        const logoUrl = data.publicUrl;
+
+        // Update own profile first
         const { error: updateError } = await supabase
           .from("profiles")
-          .update({ party_logo_url: data.publicUrl })
+          .update({ party_logo_url: logoUrl })
           .eq("user_id", user.id);
 
         if (updateError) throw updateError;
 
+        // Propagate logo to all party-mates in the same event who don't have one yet
+        // so the whole party shares a consistent visual identity
+        const { data: myProfile } = await supabase
+          .from("profiles")
+          .select("party_number, event_id")
+          .eq("user_id", user.id)
+          .single();
+
+        if (myProfile?.party_number && myProfile?.event_id) {
+          await supabase
+            .from("profiles")
+            .update({ party_logo_url: logoUrl })
+            .eq("event_id", myProfile.event_id)
+            .eq("party_number", myProfile.party_number)
+            .is("party_logo_url", null);
+        }
+
         await refreshProfile();
         setShowCropper(false);
-        toast({ title: "Logo updated", description: "Your party logo has been updated." });
+        toast({ title: "Logo updated", description: "Party logo updated for all members of your party." });
         setUploading(false);
       }, 'image/png');
 
