@@ -705,7 +705,7 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
       )}
 
       {/* ── Content Split ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0">
 
         {/* Messages window */}
         <div
@@ -826,8 +826,8 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
                             : <span className="material-symbols-outlined text-[18px] text-on-surface-variant/40">person</span>}
                         </div>
 
-                        {/* Content — flex-1 + min-w-0 prevents overflow beyond parent */}
-                        <div className={`flex flex-col min-w-0 flex-1 max-w-[calc(100%-2.5rem)] ${isMe ? 'items-end' : 'items-start'}`}>
+                        {/* Content — max-width caps bubble on desktop; mobile fills up to avatar edge */}
+                        <div className={`flex flex-col min-w-0 max-w-[calc(100%-2.5rem)] md:max-w-[70%] ${isMe ? 'items-end' : 'items-start'}`}>
                           {showAvatar && (
                             <div className={`flex items-baseline gap-2 mb-1 ${isMe ? 'flex-row-reverse' : ''}`}>
                               <span className={`font-bold text-sm ${isMe ? 'text-primary' : 'text-slate-800'} font-headline`}>
