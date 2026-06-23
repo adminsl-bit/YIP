@@ -217,6 +217,10 @@ export const QuestionHourHub = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !questionContent.trim()) return;
+    if (!profile?.event_id) {
+      toast.error('Session not ready — please wait a moment and try again.');
+      return;
+    }
     // Enforce one-question-per-student limit
     if (!editingId && myActiveQuestion) {
       toast.error('You have already submitted a question. Only one question per session is allowed.');
