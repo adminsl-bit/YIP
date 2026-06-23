@@ -600,9 +600,9 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   }
 
   return (
-    <div className="w-full overflow-hidden h-full flex flex-col">
-      {/* Page Heading — compact on mobile to give more room to chat */}
-      <header className="mb-2 md:mb-6 shrink-0 px-1 md:px-0">
+    <div className="w-full">
+      {/* Page Heading */}
+      <header className="mb-3 md:mb-6 px-1 md:px-0">
         <h1 className="text-xl md:text-4xl font-extrabold font-headline tracking-tight text-primary">
           Civic <span className="text-secondary">Chat Hub</span>
         </h1>
@@ -612,8 +612,7 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
         </p>
       </header>
 
-    {/* flex-1 fills all remaining height after the header — no fixed calc needed */}
-    <div className="flex flex-col bg-white overflow-hidden rounded-2xl md:rounded-3xl shadow-sm border border-outline-variant/10 w-full flex-1 min-h-0">
+    <div className="flex flex-col bg-white overflow-hidden rounded-2xl md:rounded-3xl shadow-sm border border-outline-variant/10 w-full">
 
       {/* ── Tab Navigation ── */}
       {/* Outer bar: fixed-height row, right section pinned, tab section scrolls internally */}
@@ -705,13 +704,13 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
       )}
 
       {/* ── Content Split ── */}
-      <div className="flex flex-1 overflow-hidden min-h-0">
+      <div className="flex overflow-hidden">
 
-        {/* Messages window */}
+        {/* Messages window — direct dvh height so it scrolls regardless of flex chain */}
         <div
           ref={scrollRef}
           className="flex-1 overflow-y-auto overflow-x-hidden p-3 md:p-6 space-y-4 md:space-y-6 bg-[#F8FAFC] w-full"
-          style={{ scrollbarWidth: 'none' }}
+          style={{ height: 'calc(100dvh - 18rem)', scrollbarWidth: 'none' }}
         >
           {showReported ? (
             // ── Reported messages panel (organizer/jury only) ──

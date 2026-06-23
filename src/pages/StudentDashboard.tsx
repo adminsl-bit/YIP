@@ -762,7 +762,7 @@ const StudentDashboard = () => {
   };
 
   return (
-    <div className={`flex bg-[#F3F4F6] font-body antialiased ${activeTab === 'messages' ? 'h-dvh overflow-hidden' : 'min-h-screen'}`}>
+    <div className="flex min-h-screen bg-[#F3F4F6] font-body antialiased">
 
       {/* ── Left Sidebar ── */}
       <aside className="hidden md:flex flex-col h-screen w-64 fixed z-50 bg-white border-r border-outline-variant py-6 px-4">
@@ -881,10 +881,9 @@ const StudentDashboard = () => {
       </Drawer>
 
       {/* ── Main Content ── */}
-      {/* Messages tab gets no padding so GlobalSquare can fill the full height */}
       <main className={`flex-1 md:ml-64 ${
         activeTab === 'messages'
-          ? 'flex flex-col overflow-hidden pb-16 md:pb-0 md:p-6'
+          ? 'p-2 sm:p-4 md:p-6 pb-20 md:pb-6'
           : 'p-4 sm:p-6 md:p-8 pb-24 md:pb-8 overflow-y-auto'
       }`}>
         {activeTab === 'messages' ? <GlobalSquare /> : renderTabContent()}
