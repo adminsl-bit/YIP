@@ -61,6 +61,7 @@ const OrganizerDashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("controls");
   const [moreOpen, setMoreOpen] = useState(false);
+  const [unreadChat, setUnreadChat] = useState(0);
   const [stats, setStats] = useState<DashboardStats>({
     totalStudents: 0,
     totalJury: 0,
@@ -68,6 +69,33 @@ const OrganizerDashboard = () => {
     totalAssessments: 0
   });
   const [activeTimer, setActiveTimer] = useState<{ title: string; remaining_seconds: number; status: string } | null>(null);
+
+  // Unread chat badge — same logic as StudentDashboard
+  useEffect(() => {
+    if (!profile?.event_id) return;
+    const STORAGE_KEY = `yip_chat_last_seen_${profile.event_id}`;
+    const countUnread = async () => {
+      const lastSeen = localStorage.getItem(STORAGE_KEY) ?? new Date(0).toISOString();
+      const { count } = await supabase
+        .from('civic_chat_messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('event_id', profile.event_id)
+        .gt('created_at', lastSeen);
+      setUnreadChat(count ?? 0);
+    };
+    if (activeTab === 'square') {
+      localStorage.setItem(STORAGE_KEY, new Date().toISOString());
+      setUnreadChat(0);
+    } else {
+      countUnread();
+    }
+    const channel = supabase.channel('organizer-chat-badge')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'civic_chat_messages', filter: `event_id=eq.${profile.event_id}` }, () => {
+        if (activeTab !== 'square') countUnread();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [activeTab, profile?.event_id]);
 
   useEffect(() => {
     fetchStats();
@@ -229,7 +257,8 @@ const OrganizerDashboard = () => {
                   {group.label}
                 </p>
                 {group.items.map(item => (
-                  <NavTrigger key={item.value} value={item.value} icon={item.icon} label={item.label} />
+                  <NavTrigger key={item.value} value={item.value} icon={item.icon} label={item.label}
+                    badge={item.value === 'square' && unreadChat > 0 ? unreadChat : undefined} />
                 ))}
               </div>
             ))}
@@ -598,13 +627,18 @@ const PageHeader = ({ primary, secondary, icon, subtitle, className = 'mb-0' }: 
   </header>
 );
 
-const NavTrigger = ({ value, label, icon }: { value: string; label: string; icon: string }) => (
+const NavTrigger = ({ value, label, icon, badge }: { value: string; label: string; icon: string; badge?: number }) => (
   <TabsTrigger
     value={value}
     className="flex items-center gap-3 px-3 py-2.5 text-on-surface-variant data-[state=active]:text-primary data-[state=active]:font-bold data-[state=active]:bg-primary/5 data-[state=active]:border-r-4 data-[state=active]:border-primary rounded-lg transition-all duration-200 hover:bg-surface-container justify-start w-full font-medium"
   >
     <span className="material-symbols-outlined text-[20px] shrink-0 group-data-[state=active]:font-fill">{icon}</span>
-    <span className="font-body text-sm whitespace-nowrap">{label}</span>
+    <span className="font-body text-sm whitespace-nowrap flex-1">{label}</span>
+    {badge && badge > 0 && (
+      <span className="ml-auto min-w-[18px] h-[18px] px-1 bg-primary text-white text-[10px] font-black rounded-full flex items-center justify-center shrink-0">
+        {badge > 99 ? '99+' : badge}
+      </span>
+    )}
   </TabsTrigger>
 );
 

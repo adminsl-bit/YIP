@@ -80,6 +80,10 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   const [activeProfiles, setActiveProfiles] = useState<Participant[]>([]);
   const [eventStudentCount, setEventStudentCount] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState('');
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null); // null = not in mention mode
+  const [mentionSuggestions, setMentionSuggestions] = useState<{ user_id: string; name: string; position: string }[]>([]);
+  const [allParticipants, setAllParticipants] = useState<{ user_id: string; name: string; position: string }[]>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -105,6 +109,25 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
   const profilesCacheRef = useRef<Map<string, ProfileLite>>(new Map());
   const activeLoadKeyRef = useRef<string | null>(null);
   const showReportedRef = useRef(false);
+
+  // Load all event participants for @ mention suggestions
+  useEffect(() => {
+    const evId = (profile as any)?.event_id as string | undefined;
+    if (!evId) return;
+    supabase
+      .from('profiles')
+      .select('user_id, name, position, user_type')
+      .eq('event_id', evId)
+      .eq('is_active', true)
+      .order('name')
+      .then(({ data }) => {
+        setAllParticipants(((data as any) ?? []).map((p: any) => ({
+          user_id: p.user_id,
+          name: p.name,
+          position: p.position || p.user_type || 'Delegate',
+        })));
+      });
+  }, [(profile as any)?.event_id]);
 
   // Derived profile values — must be declared before visibleTabs
   const eventId        = (profile as any)?.event_id as string | undefined;
@@ -374,7 +397,56 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
+    setMentionQuery(null);
     sendMessage();
+  };
+
+  // @ mention handlers
+  const handleMessageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setNewMessage(val);
+    // Detect @mention trigger: find last @ that's not followed by a space yet
+    const cursorPos = e.target.selectionStart ?? val.length;
+    const textBefore = val.slice(0, cursorPos);
+    const mentionMatch = textBefore.match(/@([^@\s]*)$/);
+    if (mentionMatch) {
+      const q = mentionMatch[1].toLowerCase();
+      setMentionQuery(q);
+      setMentionSuggestions(
+        allParticipants
+          .filter(p => p.name.toLowerCase().includes(q) && p.user_id !== user?.id)
+          .slice(0, 6)
+      );
+    } else {
+      setMentionQuery(null);
+      setMentionSuggestions([]);
+    }
+  };
+
+  const insertMention = (participant: { name: string }) => {
+    const cursorPos = inputRef.current?.selectionStart ?? newMessage.length;
+    const textBefore = newMessage.slice(0, cursorPos);
+    const textAfter  = newMessage.slice(cursorPos);
+    // Replace the @partial with @FullName
+    const newBefore = textBefore.replace(/@([^@\s]*)$/, `@${participant.name} `);
+    setNewMessage(newBefore + textAfter);
+    setMentionQuery(null);
+    setMentionSuggestions([]);
+    setTimeout(() => {
+      inputRef.current?.focus();
+      const pos = newBefore.length;
+      inputRef.current?.setSelectionRange(pos, pos);
+    }, 0);
+  };
+
+  // Render message text with @mentions highlighted
+  const renderWithMentions = (text: string) => {
+    const parts = text.split(/(@\S+)/g);
+    return parts.map((part, i) =>
+      part.startsWith('@') ? (
+        <span key={i} className="text-primary font-bold">{part}</span>
+      ) : part
+    );
   };
 
   const handleAttachClick = () => fileInputRef.current?.click();
@@ -772,7 +844,7 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
                               ? 'bg-primary text-white rounded-tr-none shadow-md'
                               : 'bg-white text-on-surface rounded-tl-none shadow-sm border border-slate-100'
                           } ${msg.is_reported ? 'ring-2 ring-red-300' : ''}`}>
-                            {msg.content && <p className="break-words overflow-wrap-anywhere">{msg.content}</p>}
+                            {msg.content && <p className="break-words overflow-wrap-anywhere">{renderWithMentions(msg.content)}</p>}
 
                             {msg.attachment_url && (
                               msg.attachment_type?.startsWith('image/') ? (
@@ -922,12 +994,38 @@ export const GlobalSquare = ({ hiddenChannels = [] }: { hiddenChannels?: Channel
             )}
           </div>
           <div className="flex-1 relative">
+            {/* @ mention suggestions dropdown */}
+            {mentionQuery !== null && mentionSuggestions.length > 0 && (
+              <div className="absolute bottom-full mb-2 left-0 right-0 bg-white border border-slate-200 rounded-2xl shadow-xl overflow-hidden z-50 max-h-52 overflow-y-auto">
+                <p className="px-3 py-2 text-[9px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-100">Mention a participant</p>
+                {mentionSuggestions.map(p => (
+                  <button
+                    key={p.user_id}
+                    type="button"
+                    onMouseDown={e => { e.preventDefault(); insertMention(p); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-primary/5 transition-colors text-left"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary text-xs font-black flex items-center justify-center shrink-0">
+                      {p.name.charAt(0)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-800 truncate">{p.name}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{p.position}</p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
             <input
+              ref={inputRef}
               type="text"
               value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
+              onChange={handleMessageChange}
+              onKeyDown={e => {
+                if (e.key === 'Escape') { setMentionQuery(null); setMentionSuggestions([]); }
+              }}
               placeholder={
-                activeChannel === 'global' ? 'Broadcast to the floor…' :
+                activeChannel === 'global' ? 'Broadcast to the floor… (type @ to mention)' :
                 activeChannel === 'party' ? (isOrganizer ? `Message ${eventPartyNames[selectedParty ?? 0] || `Party ${selectedParty ?? '?'}`} wing…` : 'Message your party caucus…') :
                 isOrganizer ? 'Reply to delegates…' : 'Message the organizers…'
               }
