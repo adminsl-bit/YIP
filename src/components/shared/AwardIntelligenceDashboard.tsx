@@ -136,18 +136,25 @@ export const AwardIntelligenceDashboard = ({ juryId, isOrganizer }: AwardIntelli
   }, []);
 
   // ── Computed Data ──
+  const SESSION_KEYS = ['mupi', 'question_hour', 'zero_hour', 'political_acumen', 'committee', 'bill_presentation'] as const;
+
   const studentScores = useMemo(() => {
     const map: Record<string, { scores: Scores; total: number; count: number }> = {};
     assessments.forEach(a => {
+      const s = (a.scores || {}) as Record<string, number>;
+      // Skip assessments where all session scores are 0 — these are reset/cleared entries.
+      // The total_score may still be non-zero (leadership bonus) but there's nothing real to rank.
+      const hasRealScores = SESSION_KEYS.some(k => (s[k] || 0) > 0);
+      if (!hasRealScores) return;
+
       if (!map[a.student_id]) map[a.student_id] = { scores: {}, total: 0, count: 0 };
       const entry = map[a.student_id];
-      const s = (a.scores || {}) as Record<string, number>;
-      Object.keys(s).forEach(k => { (entry.scores as Record<string, number>)[k] = ((entry.scores as Record<string, number>)[k] || 0) + (s[k] || 0); });
+      SESSION_KEYS.forEach(k => { (entry.scores as Record<string, number>)[k] = ((entry.scores as Record<string, number>)[k] || 0) + (s[k] || 0); });
       entry.total += a.total_score || 0;
       entry.count += 1;
     });
     Object.values(map).forEach(entry => {
-      Object.keys(entry.scores).forEach(k => { (entry.scores as Record<string, number>)[k] /= entry.count; });
+      SESSION_KEYS.forEach(k => { (entry.scores as Record<string, number>)[k] /= entry.count; });
       entry.total /= entry.count;
     });
     return map;
