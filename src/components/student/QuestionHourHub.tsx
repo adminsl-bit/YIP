@@ -739,7 +739,7 @@ export const QuestionHourHub = () => {
                 const alignmentBadge = getAlignmentBadge(q.profiles?.party_alignment);
                 const partyLabel = q.profiles?.party_name
                   || (q.profiles?.party_number ? `Party ${PARTY_NUMBER_LABELS[q.profiles.party_number] ?? q.profiles.party_number}` : null);
-                const canToggleDiscussion = isMinister && q.ministry === myMinistry;
+                const canToggleDiscussion = (isMinister && q.ministry === myMinistry) || isModerator;
                 const isExpanded = expandedCards.has(q.id);
 
                 return (
