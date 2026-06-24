@@ -306,7 +306,7 @@ export const PollManagement = () => {
                   {activePolls.length} Live
                 </span>
                 <a
-                  href="/display/combined"
+                  href="/display/polls"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-primary-container transition-colors font-headline shadow-sm shadow-primary/20"
