@@ -270,13 +270,18 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     allAwardVotes.filter(v => v.student_id === userId);
 
   const getSeatRole = (position: string) => {
-    const pos = position?.toLowerCase() || '';
-    if (pos.includes('speaker') && pos.includes('deputy')) return 'deputy_speaker';
-    if (pos.includes('speaker')) return 'speaker';
-    if (pos.includes('prime minister')) return 'prime_minister';
-    if (pos.includes('leader of opposition')) return 'leader_of_opposition';
-    if (pos.includes('party leader')) return 'party_leader';
-    if (pos.includes('minister')) return 'minister';
+    const pos = (position || '').toLowerCase();
+    if (pos.includes('deputy prime minister'))  return 'deputy_prime_minister';
+    if (pos.includes('prime minister'))         return 'prime_minister';
+    if (pos.includes('nominated speaker'))      return 'nominated_speaker';
+    if (pos.includes('deputy speaker'))         return 'deputy_speaker';
+    if (pos.includes('speaker'))                return 'speaker';
+    if (pos.includes('leader of opposition'))   return 'leader_of_opposition';
+    if (pos.includes('coalition leader'))       return 'coalition_leader';
+    if (pos.includes('shadow minister'))        return 'shadow_minister';
+    if (pos.includes('minister'))               return 'minister';
+    if (pos.includes('party leader'))           return 'party_leader';
+    if (pos.includes('committee chair'))        return 'committee_chair';
     return 'mp';
   };
 
