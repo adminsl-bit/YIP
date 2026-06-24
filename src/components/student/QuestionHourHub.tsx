@@ -42,9 +42,11 @@ const FILTER_LABELS: Record<string, string> = {
   'Ministry of Home Affairs':                    'HOME AFFAIRS',
 };
 
-// Extract "Ministry of X" from "Minister of X" or "Shadow Minister of X"
+// Extract "Ministry of X" from "Minister of X" — explicitly excludes Shadow Ministers
+// because shadow ministers raise questions (opposition), they don't answer them.
 const getMinistryFromPosition = (position: string | null | undefined): string | null => {
   if (!position) return null;
+  if (position.toLowerCase().includes('shadow')) return null;
   const match = position.match(/[Mm]inister of (.+)/);
   if (!match) return null;
   return `Ministry of ${match[1]}`;
@@ -662,19 +664,31 @@ export const QuestionHourHub = () => {
         {/* Portfolio filter chips — only on trending tab */}
         {viewFilter === 'trending' && (
           <div className="flex flex-wrap gap-2.5 pb-1">
-            {Object.entries(FILTER_LABELS).map(([full, label]) => (
-              <button
-                key={full}
-                onClick={() => setMinistryFilter(full)}
-                className={`px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-widest whitespace-nowrap transition-all font-headline ${
-                  ministryFilter === full
-                    ? 'bg-primary text-white shadow-sm shadow-primary/20'
-                    : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
+            {Object.entries(FILTER_LABELS).map(([full, label]) => {
+              const portfolioCount = full === 'All Portfolios'
+                ? questions.filter(q => q.status === 'pending').length
+                : questions.filter(q => q.ministry === full && q.status === 'pending').length;
+              return (
+                <button
+                  key={full}
+                  onClick={() => setMinistryFilter(full)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-black text-[10px] uppercase tracking-widest whitespace-nowrap transition-all font-headline ${
+                    ministryFilter === full
+                      ? 'bg-primary text-white shadow-sm shadow-primary/20'
+                      : 'bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high'
+                  }`}
+                >
+                  {label}
+                  {portfolioCount > 0 && (
+                    <span className={`text-[9px] font-black rounded-full px-1.5 py-0.5 min-w-[18px] text-center ${
+                      ministryFilter === full ? 'bg-white/20 text-white' : 'bg-primary/15 text-primary'
+                    }`}>
+                      {portfolioCount}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         )}
 
@@ -992,8 +1006,20 @@ const QuestionAnswerPanel = ({
     onSaved();
   };
 
-  // Read-only: addressed question with answer, but user can edit
+  // Read-only: addressed question with answer, but user can edit or delete
   if (hasAnswer && !editing) {
+    const handleDeleteAnswer = async () => {
+      setSaving(true);
+      const { error } = await supabase
+        .from('questions')
+        .update({ answer: null, status: 'pending' })
+        .eq('id', question.id);
+      setSaving(false);
+      if (error) { toast.error('Failed to remove response'); return; }
+      toast.success('Response removed — question is pending again');
+      onSaved();
+    };
+
     return (
       <div className="bg-surface-container-lowest rounded-2xl p-3 border-l-4 border-tertiary">
         <div className="flex items-center justify-between gap-2 mb-2">
@@ -1002,13 +1028,23 @@ const QuestionAnswerPanel = ({
             <span className="text-[9px] font-black uppercase tracking-[0.15em] text-tertiary font-headline">Official Response</span>
           </div>
           {canEdit && (
-            <button
-              onClick={openForm}
-              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-on-surface-variant/60 hover:bg-surface-container hover:text-primary transition-all"
-            >
-              <span className="material-symbols-outlined text-[12px]">edit</span>
-              Edit
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={openForm}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-on-surface-variant/60 hover:bg-surface-container hover:text-primary transition-all"
+              >
+                <span className="material-symbols-outlined text-[12px]">edit</span>
+                Edit
+              </button>
+              <button
+                onClick={handleDeleteAnswer}
+                disabled={saving}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-on-surface-variant/60 hover:bg-error/10 hover:text-error transition-all disabled:opacity-40"
+              >
+                <span className="material-symbols-outlined text-[12px]">delete</span>
+                Remove
+              </button>
+            </div>
           )}
         </div>
         <p className="text-xs text-on-surface-variant italic leading-relaxed font-body">"{question.answer}"</p>
