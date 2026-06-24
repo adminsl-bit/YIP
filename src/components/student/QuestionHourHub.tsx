@@ -89,7 +89,8 @@ const getAlignmentBadge = (alignment: string | null | undefined) => {
   }
 };
 
-const StatusBadge = ({ status }: { status: string }) => {
+const StatusBadge = ({ status, hasAnswer }: { status: string; hasAnswer: boolean }) => {
+  const effectiveStatus = status === 'addressed' && !hasAnswer ? 'pending' : status;
   const styles: Record<string, string> = {
     pending: 'bg-surface-variant text-on-surface-variant',
     addressed: 'bg-tertiary-fixed text-on-tertiary-fixed',
@@ -101,8 +102,8 @@ const StatusBadge = ({ status }: { status: string }) => {
     rejected: 'REJECTED',
   };
   return (
-    <span className={`px-3 py-1 rounded-full text-[9px] font-black tracking-wider font-headline ${styles[status] || styles.pending}`}>
-      {labels[status] || 'PENDING'}
+    <span className={`px-3 py-1 rounded-full text-[9px] font-black tracking-wider font-headline ${styles[effectiveStatus] || styles.pending}`}>
+      {labels[effectiveStatus] || 'PENDING'}
     </span>
   );
 };
@@ -360,8 +361,12 @@ export const QuestionHourHub = () => {
   // Admin/Organizer moderation: mark a question "Completed" once the minister
   // has spoken on it — closes the live discussion banner for everyone.
   const handleMarkCompleted = async (q: Question) => {
+    const nextStatus = q.status === 'addressed' ? 'pending' : 'addressed';
+    // Warn if marking as answered without any answer text
+    if (nextStatus === 'addressed' && !q.answer) {
+      toast.warning('Marking as answered, but no official response has been recorded yet. The minister should add an answer first.');
+    }
     try {
-      const nextStatus = q.status === 'addressed' ? 'pending' : 'addressed';
       const { error } = await supabase
         .from('questions')
         .update({ status: nextStatus, is_discussing: false })
@@ -785,7 +790,7 @@ export const QuestionHourHub = () => {
                             Live
                           </span>
                         )}
-                        <StatusBadge status={q.status} />
+                        <StatusBadge status={q.status} hasAnswer={!!q.answer} />
 
                         <button
                           onClick={() => !isReadOnly && handleVote(q.id, q.user_has_voted)}
@@ -1065,8 +1070,8 @@ const QuestionAnswerPanel = ({
   // No answer yet — only show compose form to authorised users
   if (!canEdit && !hasAnswer) return null;
 
-  // Compose / edit form
-  if (canEdit && (isPending || editing)) {
+  // Compose / edit form — also shown when status=addressed but no answer was actually saved
+  if (canEdit && (!hasAnswer || editing)) {
     return (
       <div className="mt-2 space-y-2 border-t border-outline-variant/10 pt-3">
         <div className="flex items-center justify-between">
