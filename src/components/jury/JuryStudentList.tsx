@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { AssessmentForm, ComponentScore } from "./AssessmentForm";
+import { AssessmentForm, ComponentScore, getLeadershipBonus } from "./AssessmentForm";
 import { toast } from "@/hooks/use-toast";
 import { executeOrQueue } from "@/lib/executeOrQueue";
 
@@ -285,6 +285,59 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     return `Party ${PARTY_LETTERS[(s.party_number - 1) % PARTY_LETTERS.length] || s.party_number}`;
   };
 
+  // Save a single session score to DB immediately and mark it as locked
+  const handleSessionSave = async (key: string, score: number) => {
+    if (!selectedStudent) return;
+    const existing = allAssessments.find(
+      a => a.student_id === selectedStudent.user_id && !a.session_id
+    );
+    const bonus = getLeadershipBonus(selectedStudent.position);
+
+    if (existing) {
+      const prevScores = existing.scores ?? {};
+      const savedSessions: string[] = prevScores.saved_sessions ?? [];
+      const newScores = {
+        ...prevScores,
+        [key]: score,
+        saved_sessions: [...new Set([...savedSessions, key])],
+      };
+      // Recompute total from all current session scores + bonus
+      const floorTotal = ['mupi','question_hour','zero_hour','political_acumen','committee','bill_presentation']
+        .reduce((sum, k) => sum + (typeof newScores[k] === 'number' ? newScores[k] : 0), 0);
+      const newTotal = Math.min(floorTotal + bonus, 100);
+
+      const { error } = await supabase.from('assessments').update({
+        scores: newScores, total_score: newTotal,
+      }).eq('id', existing.id);
+      if (error) throw error;
+      setAllAssessments(prev => prev.map(a => a.id === existing.id
+        ? { ...a, scores: newScores, total_score: newTotal } : a));
+    } else {
+      // First session save — create the assessment row
+      const id = crypto.randomUUID();
+      const newScores = { [key]: score, saved_sessions: [key] };
+      const newTotal = Math.min(score + bonus, 100);
+      const { error } = await supabase.from('assessments').insert({
+        id,
+        jury_id: juryId,
+        student_id: selectedStudent.user_id,
+        session_id: null,
+        seat_role: getSeatRole(selectedStudent.position),
+        scores: newScores,
+        total_score: newTotal,
+        status: 'draft',
+        notes: '',
+      });
+      if (error) throw error;
+      setAllAssessments(prev => [...prev, {
+        id, student_id: selectedStudent.user_id,
+        scores: newScores, total_score: newTotal,
+        status: 'draft', notes: '', updated_at: new Date().toISOString(), session_id: undefined,
+      } as Assessment]);
+    }
+    toast({ title: "Session Locked", description: `${key.replace(/_/g,' ')} score saved and locked.` });
+  };
+
   const handleAssessmentSubmit = async (
     componentScores: ComponentScore[],
     notes: string,
@@ -299,20 +352,19 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
       toast({ title: "Not allowed", description: "Admin and Journalist roles cannot be scored.", variant: "destructive" });
       return;
     }
+    const bonus = getLeadershipBonus(selectedStudent.position);
     try {
-      // Build scores JSON: { component_key: score, ... }
-      const scoresJson: Record<string, number> = {};
-      let totalScore = 0;
+      // Build scores JSON; preserve saved_sessions metadata
+      const existing = allAssessments.find(a => a.student_id === selectedStudent.user_id && !a.session_id);
+      const savedSessions: string[] = existing?.scores?.saved_sessions ?? [];
+      const scoresJson: Record<string, any> = { saved_sessions: savedSessions };
+      let floorScore = 0;
       componentScores.forEach(({ component, score }) => {
         scoresJson[component] = score;
-        totalScore += score;
+        floorScore += score;
       });
-      totalScore = Math.min(totalScore, 100);
+      const totalScore = Math.min(floorScore + bonus, 100);
 
-      // Single row per jury × student (session_id = null)
-      const existing = allAssessments.find(
-        a => a.student_id === selectedStudent.user_id && !a.session_id
-      );
       const submittedAt = status === 'submitted' ? new Date().toISOString() : null;
       let queued = false;
 
@@ -946,6 +998,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
               student={selectedStudent}
               existingAssessments={getStudentAssessments(selectedStudent.user_id)}
               onSubmit={handleAssessmentSubmit}
+              onSessionSave={handleSessionSave}
               isLocked={isLockedByOrganizer}
               onCancel={() => setSelectedStudent(null)}
             />
