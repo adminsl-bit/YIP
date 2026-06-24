@@ -49,7 +49,7 @@ const isLeadershipRole = (pos: string) =>
 const AWARD_DEFS: AwardDef[] = [
   { key: 'best_parliamentarian', name: 'Best Parliamentarian Award', icon: 'emoji_events', accent: 'primary', basis: 'Highest overall score across all components', formula: (_s, t) => t, maxScore: 100, constraint: null },
   { key: 'best_speaker', name: 'Best Speaker Award', icon: 'gavel', accent: 'primary', basis: 'Highest total — Speaker role only', formula: (_s, t) => t, maxScore: 100, constraint: p => /speaker/i.test(p.position), constraintLabel: 'Speaker only' },
-  { key: 'leadership_excellence', name: 'Leadership Excellence Award', icon: 'star', accent: 'secondary', basis: 'Leadership (50%) + Overall (50%)', formula: (s, t) => sc(s, 'leadership') / 10 * 50 + t * 0.5, maxScore: 100, constraint: p => isLeadershipRole(p.position), constraintLabel: 'Leadership roles' },
+  { key: 'leadership_excellence', name: 'Leadership Excellence Award', icon: 'star', accent: 'secondary', basis: 'Overall score — leadership roles only', formula: (_s, t) => t, maxScore: 100, constraint: p => isLeadershipRole(p.position), constraintLabel: 'Leadership roles' },
   { key: 'best_member_ruling', name: 'Best Member – Ruling Bench', icon: 'account_balance', accent: 'tertiary', basis: 'Highest total — Ruling Party members', formula: (_s, t) => t, maxScore: 100, constraint: p => p.party_alignment === 'ruling_party', constraintLabel: 'Ruling Party' },
   { key: 'best_member_opposition', name: 'Best Member – Opposition Bench', icon: 'record_voice_over', accent: 'error', basis: 'Highest total — Opposition members', formula: (_s, t) => t, maxScore: 100, constraint: p => p.party_alignment === 'opposition', constraintLabel: 'Opposition' },
   { key: 'best_debater', name: 'Best Debater Award', icon: 'forum', accent: 'primary', basis: 'MUPI (40%) + Question Hour (60%)', formula: s => sc(s, 'mupi') / 15 * 40 + sc(s, 'question_hour') / 20 * 60, maxScore: 100, constraint: null },
@@ -57,9 +57,9 @@ const AWARD_DEFS: AwardDef[] = [
   { key: 'best_research', name: 'Best Research & Presentation', icon: 'auto_stories', accent: 'primary', basis: 'MUPI (40%) + Bill Presentation (30%) + Committee (30%)', formula: s => sc(s, 'mupi') / 15 * 40 + sc(s, 'bill_presentation') / 15 * 30 + sc(s, 'committee') / 15 * 30, maxScore: 100, constraint: null },
   { key: 'innovative_ideas', name: 'Innovative Ideas Award', icon: 'lightbulb', accent: 'tertiary', basis: 'Zero Hour (60%) + Committee (40%)', formula: s => sc(s, 'zero_hour') / 15 * 60 + sc(s, 'committee') / 15 * 40, maxScore: 100, constraint: null },
   { key: 'community_impact', name: 'Community Impact Award', icon: 'diversity_3', accent: 'tertiary', basis: 'MUPI (40%) + Zero Hour (30%) + Bill Presentation (30%)', formula: s => sc(s, 'mupi') / 15 * 40 + sc(s, 'zero_hour') / 15 * 30 + sc(s, 'bill_presentation') / 15 * 30, maxScore: 100, constraint: null },
-  { key: 'mvp', name: 'Most Valuable Participant', icon: 'military_tech', accent: 'primary', basis: 'Total score excluding Leadership position points', formula: (s, t) => t - sc(s, 'leadership'), maxScore: 90, constraint: null },
+  { key: 'mvp', name: 'Most Valuable Participant', icon: 'military_tech', accent: 'primary', basis: 'Average of all 6 session scores (most consistent)', formula: s => (sc(s,'mupi')/15 + sc(s,'question_hour')/20 + sc(s,'zero_hour')/15 + sc(s,'political_acumen')/10 + sc(s,'committee')/15 + sc(s,'bill_presentation')/15) / 6 * 100, maxScore: 100, constraint: null },
   { key: 'team_spirit', name: 'Team Spirit Award', icon: 'handshake', accent: 'secondary', basis: 'Committee Discussions & Bill Drafting score', formula: s => sc(s, 'committee') / 15 * 100, maxScore: 100, constraint: null },
-  { key: 'exemplary_decorum', name: 'Exemplary Parliamentary Decorum', icon: 'verified', accent: 'primary', basis: 'Leadership + MUPI + Zero Hour + Bill Presentation', formula: s => sc(s, 'leadership') / 10 * 25 + sc(s, 'mupi') / 15 * 25 + sc(s, 'zero_hour') / 15 * 25 + sc(s, 'bill_presentation') / 15 * 25, maxScore: 100, constraint: null },
+  { key: 'exemplary_decorum', name: 'Exemplary Parliamentary Decorum', icon: 'verified', accent: 'primary', basis: 'MUPI (34%) + Zero Hour (33%) + Bill Presentation (33%)', formula: s => sc(s, 'mupi') / 15 * 34 + sc(s, 'zero_hour') / 15 * 33 + sc(s, 'bill_presentation') / 15 * 33, maxScore: 100, constraint: null },
   { key: 'independent_voice', name: 'Independent Voice of the House', icon: 'person_raised_hand', accent: 'secondary', basis: 'MUPI + Zero Hour + Question Hour — Non-aligned', formula: s => sc(s, 'mupi') / 15 * 34 + sc(s, 'zero_hour') / 15 * 33 + sc(s, 'question_hour') / 20 * 33, maxScore: 100, constraint: p => p.party_alignment === 'non_aligned', constraintLabel: 'Non-aligned' },
   { key: 'best_constituency_rep', name: 'Best Constituency Representative', icon: 'location_on', accent: 'tertiary', basis: 'MUPI (50%) + Question Hour (30%) + Zero Hour (20%)', formula: s => sc(s, 'mupi') / 15 * 50 + sc(s, 'question_hour') / 20 * 30 + sc(s, 'zero_hour') / 15 * 20, maxScore: 100, constraint: null },
 ];
@@ -86,17 +86,37 @@ export const AwardIntelligenceDashboard = ({ juryId, isOrganizer }: AwardIntelli
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
 
   // ── Data Fetching ──
+  // assessments, award_votes, and student_awards do NOT have an event_id column —
+  // we scope them by the event's student IDs fetched first.
   const fetchAll = async () => {
     const eventId = profile?.event_id ?? '';
-    const [profilesRes, assessRes, awardsRes, votesRes, juryRes, studentAwardsRes] = await Promise.all([
-      supabase.from('profiles').select('user_id,name,position,party_alignment,party_number,party_name,photo_url,serial_number').eq('user_type', 'student').eq('is_active', true).eq('event_id', eventId),
-      supabase.from('assessments').select('student_id,scores,total_score,jury_id').eq('status', 'submitted').is('session_id', null).eq('event_id', eventId),
-      supabase.from('awards').select('id,name'),
-      supabase.from('award_votes').select('id,award_id,student_id,jury_id').eq('event_id', eventId),
-      supabase.from('profiles').select('user_id', { count: 'exact', head: true }).eq('user_type', 'jury').eq('event_id', eventId),
-      supabase.from('student_awards').select('id,award_id,student_id').eq('event_id', eventId),
-    ]);
+
+    // Step 1: get event students
+    const profilesRes = await supabase
+      .from('profiles')
+      .select('user_id,name,position,party_alignment,party_number,party_name,photo_url,serial_number')
+      .eq('user_type', 'student').eq('is_active', true).eq('event_id', eventId);
     if (profilesRes.data) setProfiles(profilesRes.data as StudentProfile[]);
+
+    const studentIds = (profilesRes.data || []).map(p => p.user_id);
+
+    // Step 2: fetch remaining data in parallel, scoped by student IDs
+    const [assessRes, awardsRes, votesRes, juryRes, studentAwardsRes] = await Promise.all([
+      studentIds.length > 0
+        ? supabase.from('assessments').select('student_id,scores,total_score,jury_id')
+            .in('student_id', studentIds)
+            .in('status', ['submitted', 'draft']) // include draft so locked sessions count
+            .is('session_id', null)
+        : { data: [] as any[] },
+      supabase.from('awards').select('id,name'),
+      studentIds.length > 0
+        ? supabase.from('award_votes').select('id,award_id,student_id,jury_id').in('student_id', studentIds)
+        : { data: [] as any[] },
+      supabase.from('profiles').select('user_id', { count: 'exact', head: true }).eq('user_type', 'jury').eq('event_id', eventId),
+      studentIds.length > 0
+        ? supabase.from('student_awards').select('id,award_id,student_id').in('student_id', studentIds)
+        : { data: [] as any[] },
+    ]);
     if (assessRes.data) setAssessments(assessRes.data as typeof assessments);
     if (awardsRes.data) setAwards(awardsRes.data);
     if (votesRes.data) setAwardVotes(votesRes.data as typeof awardVotes);

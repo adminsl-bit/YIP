@@ -60,6 +60,7 @@ const OrganizerDashboard = () => {
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("controls");
+  const [awardsInnerTab, setAwardsInnerTab] = useState<'intelligence' | 'management'>('intelligence');
   const [moreOpen, setMoreOpen] = useState(false);
   const [unreadChat, setUnreadChat] = useState(0);
   const [stats, setStats] = useState<DashboardStats>({
@@ -469,7 +470,7 @@ const OrganizerDashboard = () => {
                 <OrganizerLeaderboard />
               </TabsContent>
 
-              <TabsContent value="awards" className="m-0 space-y-8">
+              <TabsContent value="awards" className="m-0 space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5">
                   <PageHeader primary="Parliament" secondary="Awards" icon={<Trophy className="w-3 h-3" />} subtitle="Accolades & Consensus Trophies" className="mb-0" />
                   <Button onClick={() => navigate('/display/awards')} className="bg-secondary/10 text-secondary hover:bg-secondary/20 font-bold px-6 py-5 rounded-2xl border border-secondary/10 shrink-0">
@@ -477,19 +478,37 @@ const OrganizerDashboard = () => {
                   </Button>
                 </div>
 
-                {/* Award Intelligence Dashboard — immersive per-award detail view */}
-                <AwardIntelligenceDashboard isOrganizer />
-
-                {/* Award Management — confirmation and assignment */}
-                <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
-                  <div className="mb-6">
-                    <h2 className="text-xl font-extrabold font-headline text-primary">
-                      Confirm <span className="text-secondary">Awards</span>
-                    </h2>
-                    <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Finalise & assign award winners</p>
-                  </div>
-                  <AwardManagement />
+                {/* Two inner tabs: Score Intelligence | Award Management */}
+                <div className="flex bg-surface-container-high p-1 rounded-full w-fit">
+                  <button
+                    onClick={() => setAwardsInnerTab('intelligence')}
+                    className={`flex items-center gap-2 px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all font-headline ${awardsInnerTab === 'intelligence' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant/60 hover:text-primary'}`}
+                  >
+                    <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>analytics</span>
+                    Score Intelligence
+                  </button>
+                  <button
+                    onClick={() => setAwardsInnerTab('management')}
+                    className={`flex items-center gap-2 px-5 py-2 rounded-full text-[11px] font-black uppercase tracking-widest transition-all font-headline ${awardsInnerTab === 'management' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant/60 hover:text-primary'}`}
+                  >
+                    <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                    Award Management
+                  </button>
                 </div>
+
+                {awardsInnerTab === 'intelligence' && <AwardIntelligenceDashboard isOrganizer />}
+
+                {awardsInnerTab === 'management' && (
+                  <div className="bg-white border border-outline-variant/10 rounded-3xl p-8 shadow-sm">
+                    <div className="mb-6">
+                      <h2 className="text-xl font-extrabold font-headline text-primary">
+                        Confirm <span className="text-secondary">Awards</span>
+                      </h2>
+                      <p className="text-[10px] text-on-surface-variant/40 font-black uppercase tracking-[0.4em] mt-2 font-headline">Finalise & assign award winners</p>
+                    </div>
+                    <AwardManagement />
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="photos" className="m-0 space-y-8">
