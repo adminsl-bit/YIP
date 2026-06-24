@@ -608,7 +608,7 @@ export const AssessmentForm = ({
         <div className="px-8 py-5 bg-surface-container-low border-t border-outline-variant/10 flex flex-col sm:flex-row justify-between items-center gap-4 shrink-0">
           <button
             onClick={() => handleSubmit('draft')}
-            disabled={isSubmitting || floorTotal === 0}
+            disabled={isSubmitting}
             className="flex items-center gap-2 text-on-surface-variant font-bold text-sm hover:text-on-surface transition-colors disabled:opacity-30 font-body"
           >
             <span className="material-symbols-outlined text-sm">cloud_upload</span>

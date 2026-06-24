@@ -368,10 +368,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     notes: string,
     status: 'draft' | 'submitted'
   ) => {
-    if (!selectedStudent || componentScores.length === 0) {
-      toast({ title: "Nothing to save", description: "Enter at least one score.", variant: "destructive" });
-      return;
-    }
+    if (!selectedStudent) return;
     const pos = selectedStudent.position?.toLowerCase() || '';
     if (pos.includes('admin') || pos.includes('journalist')) {
       toast({ title: "Not allowed", description: "Admin and Journalist roles cannot be scored.", variant: "destructive" });
