@@ -12,11 +12,7 @@ import JuryDashboard from "./pages/JuryDashboard";
 import JournalistDashboard from "./pages/JournalistDashboard";
 import OrganizerDashboard from "./pages/OrganizerDashboard";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
-import TimerDisplay from "./pages/TimerDisplay";
-import SessionDisplay from "./pages/SessionDisplay";
-import PollDisplay from "./pages/PollDisplay";
 import CombinedDisplay from "./pages/CombinedDisplay";
-import LeaderboardDisplay from "./pages/LeaderboardDisplay";
 import NotFound from "./pages/NotFound";
 import { AwardShowcase } from "./pages/AwardShowcase";
 import { AuthenticatedRoute } from "./components/AuthenticatedRoute";
@@ -80,12 +76,13 @@ const App = () => (
                 <SuperAdminDashboard />
               </RoleProtectedRoute>
             } />
-            <Route path="/display/timer" element={<TimerDisplay />} />
-            <Route path="/display/session" element={<SessionDisplay />} />
-            <Route path="/display/polls" element={<PollDisplay />} />
-            <Route path="/display/combined" element={<CombinedDisplay />} />
-            <Route path="/display/leaderboard" element={<LeaderboardDisplay />} />
-            <Route path="/display/awards" element={<AwardShowcase />} />
+            {/* All display routes share the unified CombinedDisplay with the correct default tab */}
+            <Route path="/display/timer"       element={<CombinedDisplay defaultTab="timer" />} />
+            <Route path="/display/session"     element={<CombinedDisplay defaultTab="session" />} />
+            <Route path="/display/polls"       element={<CombinedDisplay defaultTab="polls" />} />
+            <Route path="/display/combined"    element={<CombinedDisplay />} />
+            <Route path="/display/leaderboard" element={<CombinedDisplay defaultTab="leaderboard" />} />
+            <Route path="/display/awards"      element={<AwardShowcase />} />
             <Route path="/awards" element={<AwardShowcase />} />
 {/* Public info pages */}
             <Route path="/about" element={<About />} />
