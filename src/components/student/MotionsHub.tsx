@@ -125,9 +125,14 @@ export const MotionsHub = ({ embedded = false }: MotionsHubProps) => {
   const [submitting, setSubmitting] = useState(false);
 
   const [updateMotion, setUpdateMotion] = useState<Motion | null>(null);
+  const [updateType, setUpdateType] = useState<MotionType>('adjournment_motion');
+  const [updateSubject, setUpdateSubject] = useState('');
+  const [updateDetails, setUpdateDetails] = useState('');
   const [updateStatus, setUpdateStatus] = useState<MotionStatus>('pending');
   const [updateOutcome, setUpdateOutcome] = useState('');
   const [updateSubmitting, setUpdateSubmitting] = useState(false);
+  const [deleteMotionId, setDeleteMotionId] = useState<string | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   const fetchMotions = async () => {
     try {
@@ -266,30 +271,33 @@ export const MotionsHub = ({ embedded = false }: MotionsHubProps) => {
     }
   };
 
-  const handleRetract = async (id: string) => {
-    try {
-      const { error } = await supabase.from('motions' as any).delete().eq('id', id);
-      if (error) throw error;
-      toast.success('Motion retracted');
-      fetchMotions();
-    } catch {
-      toast.error('Failed to retract motion');
-    }
-  };
-
   const openUpdateDialog = (m: Motion) => {
     setUpdateMotion(m);
+    setUpdateType(m.motion_type);
+    setUpdateSubject(m.subject);
+    setUpdateDetails(m.details || '');
     setUpdateStatus(m.status);
     setUpdateOutcome(m.outcome || '');
   };
 
   const handleUpdateSave = async () => {
     if (!updateMotion) return;
+    if (!updateSubject.trim()) { toast.error('Subject is required'); return; }
     setUpdateSubmitting(true);
+    const patch: Record<string, any> = {
+      motion_type: updateType,
+      subject: updateSubject.trim(),
+      details: updateDetails.trim() || null,
+    };
+    // Moderators can also change status + outcome; authors editing their own can only touch content
+    if (isModerator) {
+      patch.status = updateStatus;
+      patch.outcome = updateOutcome.trim() || null;
+    }
     try {
       const { error } = await supabase
         .from('motions' as any)
-        .update({ status: updateStatus, outcome: updateOutcome.trim() || null })
+        .update(patch)
         .eq('id', updateMotion.id);
       if (error) throw error;
       toast.success('Motion updated');
@@ -299,6 +307,22 @@ export const MotionsHub = ({ embedded = false }: MotionsHubProps) => {
       toast.error('Failed to update motion');
     } finally {
       setUpdateSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteMotionId) return;
+    setDeleteSubmitting(true);
+    try {
+      const { error } = await supabase.from('motions' as any).delete().eq('id', deleteMotionId);
+      if (error) throw error;
+      toast.success('Motion deleted');
+      fetchMotions();
+    } catch {
+      toast.error('Failed to delete motion');
+    } finally {
+      setDeleteSubmitting(false);
+      setDeleteMotionId(null);
     }
   };
 
@@ -455,7 +479,9 @@ export const MotionsHub = ({ embedded = false }: MotionsHubProps) => {
               {filteredMotions.map((m) => {
                 const p = profiles[m.raised_by];
                 const status = STATUS_CONFIG[m.status] ?? STATUS_CONFIG.pending;
-                const canRetract = m.raised_by === user?.id && m.status === 'pending';
+                const isOwner = m.raised_by === user?.id || m.created_by === user?.id;
+                const canEdit = isModerator || (isOwner && m.status === 'pending');
+                const canDelete = isModerator || (isOwner && m.status === 'pending');
                 return (
                   <TableRow key={m.id}>
                     <TableCell>
@@ -474,13 +500,13 @@ export const MotionsHub = ({ embedded = false }: MotionsHubProps) => {
                     <TableCell className="text-on-surface-variant text-sm max-w-xs">{m.outcome || '—'}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
-                        {isModerator && (
+                        {canEdit && (
                           <Button variant="outline" size="sm" onClick={() => openUpdateDialog(m)} className="rounded-xl font-bold text-xs">
-                            Update
+                            Edit
                           </Button>
                         )}
-                        {canRetract && (
-                          <Button variant="ghost" size="icon" onClick={() => handleRetract(m.id)} className="rounded-xl" title="Retract motion">
+                        {canDelete && (
+                          <Button variant="ghost" size="icon" onClick={() => setDeleteMotionId(m.id)} className="rounded-xl text-on-surface-variant/50 hover:text-error hover:bg-error/10" title="Delete motion">
                             <X className="w-4 h-4" />
                           </Button>
                         )}
@@ -494,48 +520,80 @@ export const MotionsHub = ({ embedded = false }: MotionsHubProps) => {
         </div>
       )}
 
-      {/* Update Dialog — moderators only */}
+      {/* Edit Dialog — author (pending) or moderator */}
       <Dialog open={!!updateMotion} onOpenChange={(open) => !open && setUpdateMotion(null)}>
-        <DialogContent className="rounded-3xl max-w-md">
+        <DialogContent className="rounded-3xl max-w-lg">
           <DialogHeader>
-            <DialogTitle className="font-headline font-extrabold text-on-surface">Update Motion</DialogTitle>
+            <DialogTitle className="font-headline font-extrabold text-on-surface">Edit Motion</DialogTitle>
             <DialogDescription className="font-body text-on-surface-variant">
-              {updateMotion && `${MOTION_TYPES[updateMotion.motion_type]?.label} · ${updateMotion.subject}`}
+              {updateMotion && `Editing: ${updateMotion.subject}`}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-widest block mb-2 font-headline">
-                Status
-              </Label>
-              <Select value={updateStatus} onValueChange={(v) => setUpdateStatus(v as MotionStatus)}>
-                <SelectTrigger className="rounded-xl">
-                  <SelectValue />
-                </SelectTrigger>
+              <Label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-widest block mb-2 font-headline">Motion Type</Label>
+              <Select value={updateType} onValueChange={(v) => setUpdateType(v as MotionType)}>
+                <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(STATUS_CONFIG) as MotionStatus[]).map(s => (
-                    <SelectItem key={s} value={s}>{STATUS_CONFIG[s].label}</SelectItem>
+                  {MOTION_TYPE_ORDER.map(t => (
+                    <SelectItem key={t} value={t}>{MOTION_TYPES[t].label} ({MOTION_TYPES[t].page})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-widest block mb-2 font-headline">
-                Outcome
-              </Label>
-              <Textarea
-                value={updateOutcome}
-                onChange={(e) => setUpdateOutcome(e.target.value)}
-                placeholder="Record the House's decision or remarks..."
-                rows={4}
-                className="rounded-xl"
-              />
+              <Label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-widest block mb-2 font-headline">Subject</Label>
+              <Input value={updateSubject} onChange={(e) => setUpdateSubject(e.target.value)} placeholder="Motion subject" className="rounded-xl" />
             </div>
+            <div>
+              <Label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-widest block mb-2 font-headline">Details</Label>
+              <Textarea value={updateDetails} onChange={(e) => setUpdateDetails(e.target.value)} placeholder="Supporting context (optional)" rows={3} className="rounded-xl" />
+            </div>
+            {isModerator && (
+              <>
+                <div className="border-t border-outline-variant/20 pt-4">
+                  <Label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-widest block mb-2 font-headline">Status</Label>
+                  <Select value={updateStatus} onValueChange={(v) => setUpdateStatus(v as MotionStatus)}>
+                    <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(STATUS_CONFIG) as MotionStatus[]).map(s => (
+                        <SelectItem key={s} value={s}>{STATUS_CONFIG[s].label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-widest block mb-2 font-headline">Outcome</Label>
+                  <Textarea value={updateOutcome} onChange={(e) => setUpdateOutcome(e.target.value)} placeholder="Record the House's decision or remarks..." rows={3} className="rounded-xl" />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setUpdateMotion(null)} className="rounded-xl">Cancel</Button>
             <Button onClick={handleUpdateSave} disabled={updateSubmitting} className="rounded-xl bg-primary hover:bg-primary-container">
-              {updateSubmitting ? 'Saving…' : 'Save'}
+              {updateSubmitting ? 'Saving…' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteMotionId} onOpenChange={(open) => !open && setDeleteMotionId(null)}>
+        <DialogContent className="rounded-3xl max-w-sm">
+          <DialogHeader>
+            <div className="w-12 h-12 bg-error/10 rounded-2xl flex items-center justify-center mb-2">
+              <X className="w-5 h-5 text-error" />
+            </div>
+            <DialogTitle className="font-headline font-bold text-on-surface">Delete Motion?</DialogTitle>
+            <DialogDescription className="font-body text-on-surface-variant">
+              This motion will be permanently removed from the parliamentary record.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 pt-2">
+            <Button variant="outline" onClick={() => setDeleteMotionId(null)} className="rounded-xl flex-1">Cancel</Button>
+            <Button onClick={handleDelete} disabled={deleteSubmitting} className="rounded-xl flex-1 bg-red-500 hover:bg-red-600 text-white">
+              {deleteSubmitting ? 'Deleting…' : 'Delete'}
             </Button>
           </DialogFooter>
         </DialogContent>
