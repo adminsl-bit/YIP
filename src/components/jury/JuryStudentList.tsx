@@ -344,6 +344,25 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
     toast({ title: "Session Locked", description: `${key.replace(/_/g,' ')} score saved and locked.` });
   };
 
+  const handleSessionUnlock = async (key: string) => {
+    if (!selectedStudent) return;
+    const existing = allAssessments.find(
+      a => a.student_id === selectedStudent.user_id && !a.session_id
+    );
+    if (!existing) return;
+    const prevScores = existing.scores ?? {};
+    const savedSessions: string[] = prevScores.saved_sessions ?? [];
+    const newSavedSessions = savedSessions.filter(k => k !== key);
+    const newScores = { ...prevScores, saved_sessions: newSavedSessions };
+    const { error } = await supabase.from('assessments').update({
+      scores: newScores,
+    }).eq('id', existing.id);
+    if (error) throw error;
+    setAllAssessments(prev => prev.map(a => a.id === existing.id
+      ? { ...a, scores: newScores } : a));
+    toast({ title: "Session Unlocked", description: `${key.replace(/_/g,' ')} is now editable again.` });
+  };
+
   const handleAssessmentSubmit = async (
     componentScores: ComponentScore[],
     notes: string,
@@ -1006,6 +1025,7 @@ export const JuryStudentList = ({ juryId }: JuryStudentListProps) => {
               existingAssessments={getStudentAssessments(selectedStudent.user_id)}
               onSubmit={handleAssessmentSubmit}
               onSessionSave={handleSessionSave}
+              onSessionUnlock={handleSessionUnlock}
               isLocked={isLockedByOrganizer}
               onCancel={() => setSelectedStudent(null)}
             />

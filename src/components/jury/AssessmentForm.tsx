@@ -147,6 +147,7 @@ interface AssessmentFormProps {
   existingAssessments: ExistingAssessment[];
   onSubmit: (scores: ComponentScore[], notes: string, status: 'draft' | 'submitted') => Promise<void>;
   onSessionSave?: (key: string, score: number) => Promise<void>;
+  onSessionUnlock?: (key: string) => Promise<void>;
   isLocked?: boolean;
   onCancel?: () => void;
 }
@@ -174,6 +175,7 @@ export const AssessmentForm = ({
   existingAssessments,
   onSubmit,
   onSessionSave,
+  onSessionUnlock,
   isLocked = false,
   onCancel,
 }: AssessmentFormProps) => {
@@ -200,8 +202,9 @@ export const AssessmentForm = ({
   const [savedSessions, setSaved]     = useState<Set<ComponentKey>>(buildSavedSessions);
   const [expanded, setExpanded]       = useState<Set<ComponentKey>>(new Set());
   const [notes, setNotes]             = useState(existingComponent?.notes || '');
-  const [isSubmitting, setIsSubmitting]           = useState(false);
-  const [lockingSession, setLockingSession]       = useState<ComponentKey | null>(null);
+  const [isSubmitting, setIsSubmitting]             = useState(false);
+  const [lockingSession, setLockingSession]         = useState<ComponentKey | null>(null);
+  const [unlockingSession, setUnlockingSession]     = useState<ComponentKey | null>(null);
   const [assessmentsLocked, setAssessmentsLocked] = useState(false);
 
   useEffect(() => {
@@ -266,6 +269,16 @@ export const AssessmentForm = ({
     }
   };
 
+  const handleUnlockSession = async (key: ComponentKey) => {
+    setUnlockingSession(key);
+    try {
+      if (onSessionUnlock) await onSessionUnlock(key);
+      setSaved(prev => { const n = new Set(prev); n.delete(key); return n; });
+    } finally {
+      setUnlockingSession(null);
+    }
+  };
+
   const handleSubmit = async (status: 'draft' | 'submitted') => {
     setIsSubmitting(true);
     try {
@@ -307,7 +320,8 @@ export const AssessmentForm = ({
             const numVal  = parseFloat(val || '0') || 0;
             const hasData = val !== '';
             const pct     = numVal / comp.max;
-            const isLocking = lockingSession === key;
+            const isLocking   = lockingSession === key;
+            const isUnlocking = unlockingSession === key;
 
             return (
               <div
@@ -365,9 +379,25 @@ export const AssessmentForm = ({
                   {/* Score display / input */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     {isLocked_ ? (
-                      <div className="w-14 h-10 text-center flex items-center justify-center">
-                        <span className="text-xl font-black font-headline text-emerald-700">{numVal}</span>
-                      </div>
+                      <>
+                        <div className="w-14 h-10 text-center flex items-center justify-center">
+                          <span className="text-xl font-black font-headline text-emerald-700">{numVal}</span>
+                        </div>
+                        {/* Unlock button */}
+                        {!locked && (
+                          <button
+                            type="button"
+                            onClick={() => handleUnlockSession(key)}
+                            disabled={isUnlocking}
+                            title="Unlock this session to edit the score"
+                            className="flex items-center gap-1 px-2 py-1.5 rounded-xl border border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 text-[9px] font-black uppercase tracking-widest font-headline transition-colors disabled:opacity-50 shrink-0"
+                          >
+                            {isUnlocking
+                              ? <span className="material-symbols-outlined text-[12px] animate-spin">refresh</span>
+                              : <span className="material-symbols-outlined text-[12px]">lock_open</span>}
+                          </button>
+                        )}
+                      </>
                     ) : (
                       <input
                         type="number"
