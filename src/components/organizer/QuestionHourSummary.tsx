@@ -11,10 +11,13 @@ interface QuestionRow {
   id: string;
   ministry: string;
   content: string;
+  answer: string | null;
+  votes_count: number;
   status: 'pending' | 'addressed' | 'rejected';
   is_discussing: boolean;
   created_at: string;
   author: string;
+  party: string;
 }
 
 interface MinistryStat {
@@ -56,21 +59,29 @@ export const QuestionHourSummary = () => {
   const fetchData = async () => {
     try {
       const { data, error } = await supabase
-        .from('questions')
-        .select('id, ministry, content, status, is_discussing, created_at, profiles (name)')
+        .from('questions' as any)
+        .select('id, ministry, content, answer, status, is_discussing, created_at, profiles (name, party_name, party_alignment)')
         .eq('event_id', profile?.event_id ?? '')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      setQuestions((data || []).map(q => {
+
+      const { data: votes } = await supabase.from('question_votes' as any).select('question_id');
+      const voteMap: Record<string, number> = {};
+      ((votes as any[]) || []).forEach((v: any) => { voteMap[v.question_id] = (voteMap[v.question_id] || 0) + 1; });
+
+      setQuestions(((data as any[]) || []).map((q: any) => {
         const profileData = Array.isArray(q.profiles) ? q.profiles[0] : q.profiles;
         return {
           id: q.id,
           ministry: q.ministry,
           content: q.content,
+          answer: q.answer ?? null,
+          votes_count: voteMap[q.id] || 0,
           status: q.status,
           is_discussing: q.is_discussing,
           created_at: q.created_at,
           author: profileData?.name || 'Unknown Delegate',
+          party: profileData?.party_name || profileData?.party_alignment || '',
         };
       }));
     } catch {
@@ -121,10 +132,13 @@ export const QuestionHourSummary = () => {
       const questionsSheet = XLSX.utils.json_to_sheet(questions.map(q => ({
         Ministry: q.ministry,
         Author: q.author,
+        Party: q.party,
         Question: q.content,
+        Answer: q.answer || '',
         Status: STATUS_LABELS[q.status] || q.status,
+        Support: q.votes_count,
         Live: q.is_discussing ? 'Yes' : 'No',
-        'Submitted': new Date(q.created_at).toLocaleString(),
+        Submitted: new Date(q.created_at).toLocaleString(),
       })));
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, summarySheet, 'Ministry Summary');
@@ -182,22 +196,24 @@ export const QuestionHourSummary = () => {
       pdf.text('All Questions', 14, afterSummaryY);
 
       autoTable(pdf, {
-        head: [['Ministry', 'Author', 'Question', 'Status', 'Live']],
+        head: [['Ministry', 'Author', 'Party', 'Question', 'Answer', 'Status', 'Support']],
         body: questions.map(q => [
           q.ministry.replace('Ministry of ', ''),
           q.author,
+          q.party,
           q.content,
+          q.answer || '—',
           STATUS_LABELS[q.status] || q.status,
-          q.is_discussing ? 'Yes' : 'No',
+          String(q.votes_count),
         ]),
         startY: afterSummaryY + 4,
-        styles: { fontSize: 7, cellPadding: 2 },
+        styles: { fontSize: 6.5, cellPadding: 2 },
         headStyles: { fillColor: [19, 41, 143] },
         theme: 'striped',
         margin: { left: 14, right: 14 },
         columnStyles: {
-          0: { cellWidth: 28 }, 1: { cellWidth: 28 }, 2: { cellWidth: 88 },
-          3: { cellWidth: 22 }, 4: { cellWidth: 14 },
+          0: { cellWidth: 22 }, 1: { cellWidth: 20 }, 2: { cellWidth: 18 },
+          3: { cellWidth: 54 }, 4: { cellWidth: 54 }, 5: { cellWidth: 16 }, 6: { cellWidth: 8 },
         },
       });
 
@@ -303,28 +319,45 @@ export const QuestionHourSummary = () => {
         ) : (
           <div className="divide-y divide-outline-variant/10">
             {questions.map(q => (
-              <div key={q.id} className="px-6 py-3.5 flex items-center gap-4">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-primary/70 font-headline shrink-0">
-                      {q.ministry.replace('Ministry of ', '')}
-                    </span>
-                    <span className="text-[10px] text-on-surface-variant/40 font-body shrink-0">· {q.author}</span>
-                    {q.is_discussing && (
-                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-error/10 text-error shrink-0">
-                        <span className="w-1.5 h-1.5 bg-error rounded-full animate-pulse-live" />
-                        Live
+              <div key={q.id} className="px-6 py-4 flex flex-col gap-1.5">
+                <div className="flex items-center gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-primary/70 font-headline shrink-0">
+                        {q.ministry.replace('Ministry of ', '')}
                       </span>
-                    )}
+                      <span className="text-[10px] text-on-surface-variant/40 font-body shrink-0">· {q.author}</span>
+                      {q.party && <span className="text-[9px] font-bold text-on-surface-variant/40 font-body shrink-0">({q.party})</span>}
+                      {q.votes_count > 0 && (
+                        <span className="inline-flex items-center gap-1 text-[9px] font-black text-primary/60 font-headline shrink-0">
+                          <span className="material-symbols-outlined text-[11px]">thumb_up</span>
+                          {q.votes_count}
+                        </span>
+                      )}
+                      {q.is_discussing && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-error/10 text-error shrink-0">
+                          <span className="w-1.5 h-1.5 bg-error rounded-full animate-pulse-live" />
+                          Live
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm font-bold text-on-surface font-body" title={q.content}>{q.content}</p>
                   </div>
-                  <p className="text-sm font-bold text-on-surface font-body truncate" title={q.content}>{q.content}</p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className={`px-3 py-1 rounded-full text-[9px] font-black tracking-wider font-headline ${STATUS_STYLES[q.status] || STATUS_STYLES.pending}`}>
+                      {STATUS_LABELS[q.status] || 'PENDING'}
+                    </span>
+                    <span className="text-[9px] font-black text-on-surface-variant/30 uppercase tracking-widest font-headline hidden sm:inline">
+                      {formatDistanceToNow(new Date(q.created_at), { addSuffix: true })}
+                    </span>
+                  </div>
                 </div>
-                <span className={`px-3 py-1 rounded-full text-[9px] font-black tracking-wider font-headline shrink-0 ${STATUS_STYLES[q.status] || STATUS_STYLES.pending}`}>
-                  {STATUS_LABELS[q.status] || 'PENDING'}
-                </span>
-                <span className="text-[9px] font-black text-on-surface-variant/30 uppercase tracking-widest font-headline shrink-0 hidden sm:inline">
-                  {formatDistanceToNow(new Date(q.created_at), { addSuffix: true })}
-                </span>
+                {q.answer && (
+                  <div className="ml-2 pl-3 border-l-2 border-tertiary/40">
+                    <p className="text-[9px] font-black uppercase tracking-widest text-tertiary font-headline mb-0.5">Official Response</p>
+                    <p className="text-xs text-on-surface-variant italic font-body">{q.answer}</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>

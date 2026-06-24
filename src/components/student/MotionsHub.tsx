@@ -28,7 +28,8 @@ type MotionType =
   | 'no_confidence_motion'
   | 'short_duration_discussion'
   | 'obituary_reference'
-  | 'laying_of_papers';
+  | 'laying_of_papers'
+  | 'impeachment_motion';
 
 type MotionStatus = 'pending' | 'approved' | 'rejected' | 'discussed';
 
@@ -88,6 +89,11 @@ const MOTION_TYPES: Record<MotionType, { label: string; page: string; descriptio
     label: 'Laying of Papers',
     page: 'Handbook p.23',
     description: 'Formally places official documents or reports before the House for record.',
+  },
+  impeachment_motion: {
+    label: 'Impeachment Motion',
+    page: 'Handbook p.25',
+    description: 'A formal motion to remove a constitutional officeholder from their position on grounds of misconduct, violation of the Constitution, or incapacity.',
   },
 };
 

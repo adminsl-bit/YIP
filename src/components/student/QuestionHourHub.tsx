@@ -120,6 +120,8 @@ export const QuestionHourHub = () => {
   const isOpposition   = (profile as any)?.party_alignment === 'opposition' || (profile as any)?.party_alignment === 'non_aligned';
   const canSubmitQuestion = !isRulingParty || isModerator;
   const { settings: systemSettings, loading: settingsLoading, refetch: refetchSettings } = useSystemSettings();
+  // When closed, non-moderators see questions in read-only mode (no submit/answer/vote)
+  const isReadOnly = !isModerator && !settingsLoading && !systemSettings.question_hour_visible;
   const [togglingVisibility, setTogglingVisibility] = useState(false);
 
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -190,13 +192,14 @@ export const QuestionHourHub = () => {
   };
 
   useEffect(() => {
+    if (!profile?.event_id) return; // wait until profile + event_id are ready
     fetchQuestions();
     const channel = supabase.channel('public:questions')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'questions' }, () => fetchQuestions({ silent: true }))
       .on('postgres_changes', { event: '*', schema: 'public', table: 'question_votes' }, () => fetchQuestions({ silent: true }))
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  }, [user, profile?.event_id]);
 
   // Total eligible delegates — used to show what share of the assembly supports a question
   useEffect(() => {
@@ -450,17 +453,15 @@ export const QuestionHourHub = () => {
         )}
       </header>
 
-    {!isModerator && !settingsLoading && !systemSettings.question_hour_visible ? (
-      <div className="py-24 flex flex-col items-center justify-center text-center px-8 bg-surface-container-lowest rounded-3xl border border-outline-variant/15 border-dashed">
-        <span className="material-symbols-outlined text-[40px] text-on-surface-variant/20 mb-4">visibility_off</span>
-        <h4 className="text-lg font-headline font-black text-on-surface-variant/40 uppercase tracking-tight mb-2">
-          Question Hour is Currently Closed
-        </h4>
-        <p className="text-xs text-on-surface-variant/30 max-w-sm leading-relaxed font-body">
-          The Speaker has not yet opened the floor for questions. Check back soon.
-        </p>
+    {isReadOnly && (
+      <div className="mb-4 flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-amber-50 border border-amber-200">
+        <span className="material-symbols-outlined text-amber-600 text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>lock</span>
+        <div>
+          <p className="text-[11px] font-black text-amber-800 uppercase tracking-widest font-headline">Question Hour Closed — Archive View</p>
+          <p className="text-xs text-amber-700 font-body mt-0.5">The Speaker has paused Question Hour. You can browse questions but cannot submit or respond.</p>
+        </div>
       </div>
-    ) : (
+    )}
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start">
 
       {/* ── Left Sidebar ── */}
@@ -510,7 +511,7 @@ export const QuestionHourHub = () => {
           </div>
         ) : null}
 
-        {canSubmitQuestion && <form data-question-form onSubmit={handleSubmit} className={`space-y-5 ${myActiveQuestion && !editingId ? 'opacity-40 pointer-events-none select-none' : ''}`}>
+        {canSubmitQuestion && !isReadOnly && <form data-question-form onSubmit={handleSubmit} className={`space-y-5 ${myActiveQuestion && !editingId ? 'opacity-40 pointer-events-none select-none' : ''}`}>
           <div>
             <label className="text-[10px] font-black text-on-surface-variant/50 uppercase tracking-widest block mb-2 font-headline">
               Target Portfolio
@@ -666,8 +667,8 @@ export const QuestionHourHub = () => {
           <div className="flex flex-wrap gap-2.5 pb-1">
             {Object.entries(FILTER_LABELS).map(([full, label]) => {
               const portfolioCount = full === 'All Portfolios'
-                ? questions.filter(q => q.status === 'pending').length
-                : questions.filter(q => q.ministry === full && q.status === 'pending').length;
+                ? questions.length
+                : questions.filter(q => q.ministry === full).length;
               return (
                 <button
                   key={full}
@@ -739,7 +740,7 @@ export const QuestionHourHub = () => {
                 const alignmentBadge = getAlignmentBadge(q.profiles?.party_alignment);
                 const partyLabel = q.profiles?.party_name
                   || (q.profiles?.party_number ? `Party ${PARTY_NUMBER_LABELS[q.profiles.party_number] ?? q.profiles.party_number}` : null);
-                const canToggleDiscussion = (isMinister && q.ministry === myMinistry) || isModerator;
+                const canToggleDiscussion = (!isReadOnly && isMinister && q.ministry === myMinistry) || isModerator;
                 const isExpanded = expandedCards.has(q.id);
 
                 return (
@@ -787,23 +788,23 @@ export const QuestionHourHub = () => {
                         <StatusBadge status={q.status} />
 
                         <button
-                          onClick={() => handleVote(q.id, q.user_has_voted)}
+                          onClick={() => !isReadOnly && handleVote(q.id, q.user_has_voted)}
+                          disabled={isReadOnly}
                           title={q.user_has_voted ? 'Remove support' : 'Support this question'}
-                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors disabled:opacity-30 disabled:cursor-not-allowed ${
                             q.user_has_voted ? 'bg-primary text-white' : 'text-on-surface-variant/50 hover:bg-surface-container hover:text-primary'
                           }`}
                         >
                           <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: q.user_has_voted ? "'FILL' 1" : "'FILL' 0" }}>thumb_up</span>
                         </button>
 
-                        {q.user_id === user?.id && (
+                        {q.user_id === user?.id && !isReadOnly && (
                           <>
                             <button
                               onClick={() => {
                                 setEditingId(q.id);
                                 setSelectedMinistry(q.ministry);
                                 setQuestionContent(q.content);
-                                // On mobile the submit form is above the list — scroll it into view
                                 setTimeout(() => {
                                   document.querySelector('[data-question-form]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                 }, 50);
@@ -821,6 +822,16 @@ export const QuestionHourHub = () => {
                               <span className="material-symbols-outlined text-[16px]">delete</span>
                             </button>
                           </>
+                        )}
+
+                        {isModerator && q.user_id !== user?.id && (
+                          <button
+                            onClick={() => setDeleteId(q.id)}
+                            title="Delete question"
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant/50 hover:bg-error/10 hover:text-error transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">delete</span>
+                          </button>
                         )}
 
                         {canToggleDiscussion && (
@@ -941,7 +952,6 @@ export const QuestionHourHub = () => {
         )}
       </section>
     </div>
-    )}
 
       {/* ── Delete Dialog ── */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
