@@ -269,6 +269,7 @@ export const AwardIntelligenceDashboard = ({ juryId, isOrganizer }: AwardIntelli
             student_id: selectedCandidate,
             assigned_by_organizer: true,
             assigned_by_user_id: user?.id,
+            event_id: profile?.event_id ?? null,
           });
           if (error) throw error;
           toast({ title: 'Award confirmed', description: 'The recipient has been finalized.' });

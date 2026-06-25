@@ -167,7 +167,8 @@ export const AwardManagement = () => {
         student_id: selectedStudent,
         assigned_by_jury_consensus: false,
         assigned_by_organizer: true,
-        assigned_by_user_id: user?.id
+        assigned_by_user_id: user?.id,
+        event_id: profile?.event_id ?? null,
       }]);
       if (error) throw error;
       toast({ title: "Success", description: "Award assigned successfully" });
