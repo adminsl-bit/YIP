@@ -205,6 +205,36 @@ export const FeatureToggles = () => {
 
   const globalLocked = settings.assessments_locked ?? false;
 
+  const [resetConfirming, setResetConfirming] = useState(false);
+  const [resetting, setResetting] = useState(false);
+
+  const handleResetScores = async () => {
+    if (!profile?.event_id) return;
+    setResetting(true);
+    try {
+      // Get all student IDs for this event
+      const { data: students } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('user_type', 'student')
+        .eq('event_id', profile.event_id);
+      const ids = (students || []).map(s => s.user_id);
+      if (ids.length > 0) {
+        const { error } = await supabase
+          .from('assessments')
+          .delete()
+          .in('student_id', ids);
+        if (error) throw error;
+      }
+      toast({ title: 'Scores Reset', description: 'All jury assessments for this event have been cleared.' });
+      setResetConfirming(false);
+    } catch (e: any) {
+      toast({ title: 'Reset Failed', description: e.message || 'Could not reset scores', variant: 'destructive' });
+    } finally {
+      setResetting(false);
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -284,6 +314,53 @@ export const FeatureToggles = () => {
                 ))}
               </div>
             )}
+
+            {/* Reset All Scores */}
+            <div className="pt-4 border-t border-outline-variant/10">
+              {!resetConfirming ? (
+                <button
+                  type="button"
+                  onClick={() => setResetConfirming(true)}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-error/20 text-error hover:bg-error/5 transition-colors text-sm font-bold font-headline"
+                >
+                  <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+                  Reset All Scores
+                  <span className="ml-auto text-[10px] text-error/50 uppercase tracking-widest font-headline">Destructive</span>
+                </button>
+              ) : (
+                <div className="rounded-2xl border border-error/30 bg-error/5 p-4 space-y-3">
+                  <div className="flex items-start gap-2">
+                    <span className="material-symbols-outlined text-error text-[18px] mt-0.5 shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+                    <div>
+                      <p className="text-sm font-black text-error font-headline">Are you sure?</p>
+                      <p className="text-xs text-on-surface-variant font-body mt-0.5 leading-relaxed">
+                        This will permanently delete <strong>all jury assessments</strong> for this event. Scores, session locks and totals will be wiped. This cannot be undone.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setResetConfirming(false)}
+                      disabled={resetting}
+                      className="flex-1 py-2 rounded-xl border border-outline-variant/30 text-on-surface-variant text-xs font-bold font-headline hover:bg-surface-container transition-colors disabled:opacity-40"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleResetScores}
+                      disabled={resetting}
+                      className="flex-1 py-2 rounded-xl bg-error text-white text-xs font-black font-headline hover:bg-error/90 transition-colors disabled:opacity-40 flex items-center justify-center gap-1.5"
+                    >
+                      {resetting
+                        ? <><span className="material-symbols-outlined text-[14px] animate-spin">refresh</span> Resetting…</>
+                        : <><span className="material-symbols-outlined text-[14px]">delete_forever</span> Yes, Reset All</>}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
           </AccordionContent>
         </AccordionItem>
