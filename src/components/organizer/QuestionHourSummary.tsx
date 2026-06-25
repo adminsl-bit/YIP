@@ -54,7 +54,8 @@ export const QuestionHourSummary = () => {
   const { profile } = useAuth();
   const [questions, setQuestions] = useState<QuestionRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [exporting, setExporting] = useState<'excel' | 'pdf' | null>(null);
+  const [exporting, setExporting] = useState<'excel' | 'pdf' | 'top' | null>(null);
+  const [questionsTab, setQuestionsTab] = useState<'all' | 'top'>('all');
 
   const fetchData = async () => {
     try {
@@ -110,6 +111,23 @@ export const QuestionHourSummary = () => {
       map.set(q.ministry, entry);
     });
     return Array.from(map.values()).sort((a, b) => b.total - a.total);
+  }, [questions]);
+
+  // Top 3 questions per portfolio sorted by support votes
+  const topByPortfolio = useMemo(() => {
+    const grouped = new Map<string, QuestionRow[]>();
+    questions.forEach(q => {
+      if (!grouped.has(q.ministry)) grouped.set(q.ministry, []);
+      grouped.get(q.ministry)!.push(q);
+    });
+    const result: { ministry: string; questions: QuestionRow[] }[] = [];
+    grouped.forEach((qs, ministry) => {
+      result.push({
+        ministry,
+        questions: [...qs].sort((a, b) => b.votes_count - a.votes_count).slice(0, 3),
+      });
+    });
+    return result.sort((a, b) => b.questions[0]?.votes_count - a.questions[0]?.votes_count);
   }, [questions]);
 
   const totals = useMemo(() => ({
@@ -226,6 +244,40 @@ export const QuestionHourSummary = () => {
     }
   };
 
+  const handleExportTopQuestions = () => {
+    setExporting('top');
+    try {
+      // One sheet with all top questions grouped by portfolio
+      const rows: object[] = [];
+      topByPortfolio.forEach(({ ministry, questions: qs }) => {
+        qs.forEach((q, i) => {
+          rows.push({
+            Rank: i + 1,
+            Portfolio: ministry.replace('Ministry of ', ''),
+            Author: q.author,
+            Party: q.party,
+            Question: q.content,
+            Support: q.votes_count,
+            Status: STATUS_LABELS[q.status] || q.status,
+            Answer: q.answer || '',
+          });
+        });
+        rows.push({}); // blank row between portfolios
+      });
+      const ws = XLSX.utils.json_to_sheet(rows);
+      // Set column widths
+      ws['!cols'] = [{ wch: 6 }, { wch: 22 }, { wch: 22 }, { wch: 16 }, { wch: 60 }, { wch: 8 }, { wch: 10 }, { wch: 60 }];
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Top Questions by Portfolio');
+      XLSX.writeFile(wb, `top-questions-${new Date().toISOString().split('T')[0]}.xlsx`);
+      toast.success('Top Questions downloaded');
+    } catch {
+      toast.error('Export failed');
+    } finally {
+      setExporting(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="py-20 flex justify-center">
@@ -309,58 +361,155 @@ export const QuestionHourSummary = () => {
         )}
       </div>
 
-      {/* ── Full question list ── */}
+      {/* ── Questions section with tabs ── */}
       <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm overflow-hidden">
-        <div className="px-6 py-4 border-b border-outline-variant/10">
-          <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-primary font-headline">All Questions</h3>
+
+        {/* Tab bar */}
+        <div className="px-6 py-4 border-b border-outline-variant/10 flex items-center justify-between gap-4 flex-wrap">
+          <div className="flex bg-surface-container-high p-1 rounded-full">
+            <button
+              onClick={() => setQuestionsTab('all')}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all font-headline ${questionsTab === 'all' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant/60 hover:text-primary'}`}
+            >
+              <span className="material-symbols-outlined text-[13px]">list</span>
+              All Questions
+              <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-black ${questionsTab === 'all' ? 'bg-white/20' : 'bg-primary/10 text-primary'}`}>{questions.length}</span>
+            </button>
+            <button
+              onClick={() => setQuestionsTab('top')}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all font-headline ${questionsTab === 'top' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant/60 hover:text-primary'}`}
+            >
+              <span className="material-symbols-outlined text-[13px]">emoji_events</span>
+              Top by Portfolio
+            </button>
+          </div>
+
+          {questionsTab === 'top' && (
+            <button
+              onClick={handleExportTopQuestions}
+              disabled={exporting !== null || topByPortfolio.length === 0}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-surface-container-low hover:bg-surface-container-high text-on-surface text-[10px] font-black uppercase tracking-widest font-headline transition-colors disabled:opacity-40"
+            >
+              <span className="material-symbols-outlined text-[14px]">download</span>
+              {exporting === 'top' ? 'Exporting…' : 'Download'}
+            </button>
+          )}
         </div>
-        {questions.length === 0 ? (
-          <p className="px-6 py-8 text-center text-xs text-on-surface-variant/40 font-body">No questions have been submitted yet.</p>
-        ) : (
-          <div className="divide-y divide-outline-variant/10">
-            {questions.map(q => (
-              <div key={q.id} className="px-6 py-4 flex flex-col gap-1.5">
-                <div className="flex items-center gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-primary/70 font-headline shrink-0">
-                        {q.ministry.replace('Ministry of ', '')}
-                      </span>
-                      <span className="text-[10px] text-on-surface-variant/40 font-body shrink-0">· {q.author}</span>
-                      {q.party && <span className="text-[9px] font-bold text-on-surface-variant/40 font-body shrink-0">({q.party})</span>}
-                      {q.votes_count > 0 && (
-                        <span className="inline-flex items-center gap-1 text-[9px] font-black text-primary/60 font-headline shrink-0">
-                          <span className="material-symbols-outlined text-[11px]">thumb_up</span>
-                          {q.votes_count}
+
+        {/* ── All Questions tab ── */}
+        {questionsTab === 'all' && (
+          questions.length === 0 ? (
+            <p className="px-6 py-8 text-center text-xs text-on-surface-variant/40 font-body">No questions have been submitted yet.</p>
+          ) : (
+            <div className="divide-y divide-outline-variant/10">
+              {questions.map(q => (
+                <div key={q.id} className="px-6 py-4 flex flex-col gap-1.5">
+                  <div className="flex items-center gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-primary/70 font-headline shrink-0">
+                          {q.ministry.replace('Ministry of ', '')}
                         </span>
-                      )}
-                      {q.is_discussing && (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-error/10 text-error shrink-0">
-                          <span className="w-1.5 h-1.5 bg-error rounded-full animate-pulse-live" />
-                          Live
-                        </span>
-                      )}
+                        <span className="text-[10px] text-on-surface-variant/40 font-body shrink-0">· {q.author}</span>
+                        {q.party && <span className="text-[9px] font-bold text-on-surface-variant/40 font-body shrink-0">({q.party})</span>}
+                        {q.votes_count > 0 && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-black text-primary/60 font-headline shrink-0">
+                            <span className="material-symbols-outlined text-[11px]">thumb_up</span>
+                            {q.votes_count}
+                          </span>
+                        )}
+                        {q.is_discussing && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-black uppercase tracking-wider bg-error/10 text-error shrink-0">
+                            <span className="w-1.5 h-1.5 bg-error rounded-full animate-pulse-live" />
+                            Live
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm font-bold text-on-surface font-body" title={q.content}>{q.content}</p>
                     </div>
-                    <p className="text-sm font-bold text-on-surface font-body" title={q.content}>{q.content}</p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`px-3 py-1 rounded-full text-[9px] font-black tracking-wider font-headline ${STATUS_STYLES[q.status] || STATUS_STYLES.pending}`}>
+                        {STATUS_LABELS[q.status] || 'PENDING'}
+                      </span>
+                      <span className="text-[9px] font-black text-on-surface-variant/30 uppercase tracking-widest font-headline hidden sm:inline">
+                        {formatDistanceToNow(new Date(q.created_at), { addSuffix: true })}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={`px-3 py-1 rounded-full text-[9px] font-black tracking-wider font-headline ${STATUS_STYLES[q.status] || STATUS_STYLES.pending}`}>
-                      {STATUS_LABELS[q.status] || 'PENDING'}
-                    </span>
-                    <span className="text-[9px] font-black text-on-surface-variant/30 uppercase tracking-widest font-headline hidden sm:inline">
-                      {formatDistanceToNow(new Date(q.created_at), { addSuffix: true })}
-                    </span>
+                  {q.answer && (
+                    <div className="ml-2 pl-3 border-l-2 border-tertiary/40">
+                      <p className="text-[9px] font-black uppercase tracking-widest text-tertiary font-headline mb-0.5">Official Response</p>
+                      <p className="text-xs text-on-surface-variant italic font-body">{q.answer}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        )}
+
+        {/* ── Top by Portfolio tab ── */}
+        {questionsTab === 'top' && (
+          topByPortfolio.length === 0 ? (
+            <p className="px-6 py-8 text-center text-xs text-on-surface-variant/40 font-body">No questions have been submitted yet.</p>
+          ) : (
+            <div className="divide-y divide-outline-variant/10">
+              {topByPortfolio.map(({ ministry, questions: topQs }) => (
+                <div key={ministry} className="px-6 py-5">
+                  {/* Ministry heading */}
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="material-symbols-outlined text-[16px] text-primary/60" style={{ fontVariationSettings: "'FILL' 1" }}>account_balance</span>
+                    <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-primary font-headline">{ministry.replace('Ministry of ', '')}</h4>
+                    <span className="text-[9px] text-on-surface-variant/40 font-headline ml-auto">Top {topQs.length} by support</span>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {topQs.map((q, idx) => {
+                      const rankCfg = [
+                        { bg: 'bg-amber-50 border-amber-200/60',  badge: 'bg-amber-400 text-white',  icon: 'emoji_events'     },
+                        { bg: 'bg-slate-50 border-slate-200/60',  badge: 'bg-slate-400 text-white',   icon: 'military_tech'    },
+                        { bg: 'bg-orange-50 border-orange-200/60',badge: 'bg-orange-400 text-white',  icon: 'workspace_premium'},
+                      ][idx] ?? { bg: 'bg-surface-container-lowest border-outline-variant/10', badge: 'bg-primary/10 text-primary', icon: 'radio_button_unchecked' };
+
+                      return (
+                        <div key={q.id} className={`flex items-start gap-3 p-3 rounded-2xl border ${rankCfg.bg}`}>
+                          {/* Rank badge */}
+                          <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${rankCfg.badge}`}>
+                            <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>{rankCfg.icon}</span>
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 mb-0.5 flex-wrap">
+                              <span className="text-[10px] text-on-surface-variant/50 font-body shrink-0">{q.author}</span>
+                              {q.party && <span className="text-[9px] text-on-surface-variant/40 font-body shrink-0">({q.party})</span>}
+                              {q.votes_count > 0 && (
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-black text-primary font-headline shrink-0 ml-auto">
+                                  <span className="material-symbols-outlined text-[11px]" style={{ fontVariationSettings: "'FILL' 1" }}>thumb_up</span>
+                                  {q.votes_count} support
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm font-bold text-on-surface font-body leading-snug">{q.content}</p>
+                            {q.answer && (
+                              <div className="mt-1.5 pl-2.5 border-l-2 border-tertiary/40">
+                                <p className="text-xs text-on-surface-variant italic font-body">{q.answer}</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Status */}
+                          <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black tracking-wider font-headline shrink-0 ${STATUS_STYLES[q.status] || STATUS_STYLES.pending}`}>
+                            {STATUS_LABELS[q.status] || 'PENDING'}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-                {q.answer && (
-                  <div className="ml-2 pl-3 border-l-2 border-tertiary/40">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-tertiary font-headline mb-0.5">Official Response</p>
-                    <p className="text-xs text-on-surface-variant italic font-body">{q.answer}</p>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )
         )}
       </div>
     </div>
