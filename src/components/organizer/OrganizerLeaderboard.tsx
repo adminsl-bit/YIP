@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { getLeadershipBonus } from "@/components/jury/AssessmentForm";
 import { useToast } from "@/hooks/use-toast";
 import { useSystemSettings } from "@/hooks/useSystemSettings";
 import { getLocationColumns, getZoneId, getZoneConfig } from "@/lib/regions";
@@ -638,6 +639,69 @@ export const OrganizerLeaderboard = () => {
     );
   }
 
+  // ── Jury Sheet export ─────────────────────────────────────────────────────────
+  const exportJurySheet = async () => {
+    const studentIds = leaderboard.map(e => e.user_id);
+    if (!studentIds.length) return;
+    const { data: assessData } = await supabase
+      .from('assessments')
+      .select('student_id, scores, total_score')
+      .in('student_id', studentIds)
+      .in('status', ['submitted', 'draft'])
+      .is('session_id', null);
+
+    // Average each session score across all jury members per student
+    const avgMap: Record<string, Record<string, number>> = {};
+    const SESSION_KEYS = ['political_acumen','mupi','committee','question_hour','zero_hour','bill_presentation'];
+    (assessData || []).forEach((a: any) => {
+      const s = a.scores || {};
+      if (!avgMap[a.student_id]) { avgMap[a.student_id] = { _count: 0 }; }
+      avgMap[a.student_id]._count++;
+      SESSION_KEYS.forEach(k => { avgMap[a.student_id][k] = (avgMap[a.student_id][k] || 0) + (s[k] || 0); });
+    });
+    Object.values(avgMap).forEach(e => {
+      const cnt = e._count || 1;
+      SESSION_KEYS.forEach(k => { e[k] = Math.round((e[k] || 0) / cnt * 10) / 10; });
+    });
+
+    const rows = leaderboard.map((entry, i) => {
+      const sc = avgMap[entry.user_id] || {};
+      const g = sc.political_acumen || 0;
+      const m = sc.mupi || 0;
+      const cp = sc.committee || 0;
+      const day1 = Math.round((g + m + cp) * 10) / 10;
+      const qh = sc.question_hour || 0;
+      const zh = sc.zero_hour || 0;
+      const cd = sc.bill_presentation || 0;
+      const day2 = Math.round((qh + zh + cd) * 10) / 10;
+      const grand = Math.round((day1 + day2) * 10) / 10;
+      const bonus = getLeadershipBonus(entry.position);
+      return {
+        'Sr N': i + 1,
+        'Student Name': entry.name,
+        'Constituency': entry.constituency || '',
+        'Govt Formation (10)': g,
+        'MUPI (15)': m,
+        'Committee Prep (15)': cp,
+        'Day 1 Total (40)': day1,
+        'Question Hour (20)': qh,
+        'Zero Hour (15)': zh,
+        'Committee Discussion (15)': cd,
+        'Day 2 Total (50)': day2,
+        'Grand Total (90)': grand,
+        'Leadership Bonus': bonus,
+        'Final Total (100)': Math.min(grand + bonus, 100),
+        Remarks: '',
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Jury Evaluation Sheet');
+    XLSX.writeFile(wb, `jury-sheet-${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast({ title: 'Jury Sheet Downloaded', description: 'Exported with per-session averages across all jury members' });
+  };
+
   // ── Export functions ─────────────────────────────────────────────────────────
   const exportToCSV = () => {
     const exportData = filteredLeaderboard.map(entry => ({
@@ -731,6 +795,14 @@ export const OrganizerLeaderboard = () => {
         >
           <span className="material-symbols-outlined text-[18px]">table_view</span>
           CSV
+        </button>
+        <button
+          type="button"
+          onClick={exportJurySheet}
+          className="flex items-center gap-2 px-5 py-3 bg-surface-container-lowest border border-outline-variant/20 rounded-2xl text-sm font-bold font-headline text-on-surface-variant hover:border-emerald-500/30 hover:text-emerald-700 transition-all shadow-sm shrink-0"
+        >
+          <span className="material-symbols-outlined text-[18px]">assignment</span>
+          Jury Sheet
         </button>
         <button
           type="button"

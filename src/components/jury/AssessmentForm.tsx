@@ -6,12 +6,30 @@ import { supabase } from "@/integrations/supabase/client";
 const RING_R = 58;
 const RING_C = 2 * Math.PI * RING_R;
 
-// 6 floor sessions — 90 pts total. Leadership bonus (+0 to +5) is auto-computed from role.
+// 6 floor sessions grouped into Day 1 (3 sessions, /40) and Day 2 (3 sessions, /50).
+// DB keys are unchanged — only labels and order are updated.
+// Leadership bonus (+0 to +5) is auto-computed from role, never jury-entered.
 const SCORING_COMPONENTS = [
+  // ── Day 1 ──────────────────────────────────────────────────────────────────
+  {
+    key: 'political_acumen',
+    label: 'Govt Formation',
+    session: 'Session 1',
+    day: 1 as const,
+    max: 10,
+    icon: 'account_balance',
+    criteria: [
+      { label: 'Coalition Building & Alliance Management',   max: 3 },
+      { label: 'Parliamentary Strategy & Procedural Use',    max: 3 },
+      { label: 'Influence, Negotiation & Vote Mobilisation', max: 2 },
+      { label: 'Political Communication & Floor Presence',   max: 2 },
+    ],
+  },
   {
     key: 'mupi',
-    label: 'Matters of Urgent Public Importance',
-    session: 'Session 1',
+    label: 'MUPI',
+    session: 'Session 2',
+    day: 1 as const,
     max: 15,
     icon: 'record_voice_over',
     criteria: [
@@ -24,25 +42,43 @@ const SCORING_COMPONENTS = [
     ],
   },
   {
+    key: 'committee',
+    label: 'Committee Prep',
+    session: 'Session 3',
+    day: 1 as const,
+    max: 15,
+    icon: 'edit_document',
+    criteria: [
+      { label: 'Initiative',               max: 3 },
+      { label: 'Research Contribution',    max: 3 },
+      { label: 'Drafting Inputs',          max: 3 },
+      { label: 'Team Collaboration',       max: 3 },
+      { label: 'Quality of Committee Work',max: 3 },
+    ],
+  },
+  // ── Day 2 ──────────────────────────────────────────────────────────────────
+  {
     key: 'question_hour',
     label: 'Question Hour',
-    session: 'Session 2',
+    session: 'Session 4',
+    day: 2 as const,
     max: 20,
     icon: 'forum',
     criteria: [
-      { label: 'Quality of Question',       max: 4 },
-      { label: 'Research & Relevance',      max: 3 },
-      { label: 'Parliamentary Procedure',   max: 2 },
-      { label: 'Supplementary Questions',   max: 3 },
-      { label: 'Quality of Response',       max: 4 },
-      { label: 'Subject Knowledge',         max: 2 },
-      { label: 'Handling Supplementaries',  max: 2 },
+      { label: 'Quality of Question',      max: 4 },
+      { label: 'Research & Relevance',     max: 3 },
+      { label: 'Parliamentary Procedure',  max: 2 },
+      { label: 'Supplementary Questions',  max: 3 },
+      { label: 'Quality of Response',      max: 4 },
+      { label: 'Subject Knowledge',        max: 2 },
+      { label: 'Handling Supplementaries', max: 2 },
     ],
   },
   {
     key: 'zero_hour',
     label: 'Zero Hour',
-    session: 'Session 3',
+    session: 'Session 5',
+    day: 2 as const,
     max: 15,
     icon: 'hourglass_empty',
     criteria: [
@@ -55,47 +91,26 @@ const SCORING_COMPONENTS = [
     ],
   },
   {
-    key: 'political_acumen',
-    label: 'Political Acumen & Legislative Strategy',
-    session: 'Session 4',
-    max: 10,
-    icon: 'account_balance',
-    criteria: [
-      { label: 'Coalition Building & Alliance Management',     max: 3 },
-      { label: 'Parliamentary Strategy & Procedural Use',      max: 3 },
-      { label: 'Influence, Negotiation & Vote Mobilisation',   max: 2 },
-      { label: 'Political Communication & Floor Presence',     max: 2 },
-    ],
-  },
-  {
-    key: 'committee',
-    label: 'Committee Discussions & Bill Drafting',
-    session: 'Session 5',
-    max: 15,
-    icon: 'edit_document',
-    criteria: [
-      { label: 'Initiative',               max: 3 },
-      { label: 'Research Contribution',    max: 3 },
-      { label: 'Drafting Inputs',          max: 3 },
-      { label: 'Team Collaboration',       max: 3 },
-      { label: 'Quality of Committee Work',max: 3 },
-    ],
-  },
-  {
     key: 'bill_presentation',
-    label: 'Bill Presentation & Defence',
+    label: 'Committee Discussion',
     session: 'Session 6',
+    day: 2 as const,
     max: 15,
     icon: 'gavel',
     criteria: [
-      { label: 'Quality of Bill Presentation', max: 3 },
-      { label: 'Understanding of Bill',         max: 3 },
+      { label: 'Quality of Presentation',      max: 3 },
+      { label: 'Understanding of Content',      max: 3 },
       { label: 'Defence Against Questions',     max: 5 },
       { label: 'Feasibility of Recommendations',max: 3 },
       { label: 'Parliamentary Conduct',         max: 1 },
     ],
   },
 ] as const;
+
+const DAY1 = SCORING_COMPONENTS.slice(0, 3); // political_acumen, mupi, committee
+const DAY2 = SCORING_COMPONENTS.slice(3);    // question_hour, zero_hour, bill_presentation
+const DAY1_MAX = DAY1.reduce((s, c) => s + c.max, 0); // 40
+const DAY2_MAX = DAY2.reduce((s, c) => s + c.max, 0); // 50
 
 type ComponentKey = typeof SCORING_COMPONENTS[number]['key'];
 
@@ -312,7 +327,31 @@ export const AssessmentForm = ({
             </p>
           </div>
 
-          {SCORING_COMPONENTS.map(comp => {
+          {[
+            { label: 'Day 1', sessions: DAY1, dayMax: DAY1_MAX },
+            { label: 'Day 2', sessions: DAY2, dayMax: DAY2_MAX },
+          ].map(({ label: dayLabel, sessions, dayMax }) => {
+            const dayScore = sessions.reduce((sum, c) => sum + (Math.min(parseFloat(scores[c.key as ComponentKey] || '0') || 0, c.max)), 0);
+            const dayLocked = sessions.every(c => savedSessions.has(c.key as ComponentKey));
+            return (
+              <div key={dayLabel} className="space-y-2">
+                {/* Day header */}
+                <div className={`flex items-center justify-between px-4 py-2.5 rounded-2xl ${dayLocked ? 'bg-emerald-50 border border-emerald-200/60' : 'bg-surface-container border border-outline-variant/10'}`}>
+                  <div className="flex items-center gap-2">
+                    <span className={`material-symbols-outlined text-[16px] ${dayLocked ? 'text-emerald-600' : 'text-primary/60'}`} style={{ fontVariationSettings: "'FILL' 1" }}>
+                      {dayLocked ? 'check_circle' : 'calendar_today'}
+                    </span>
+                    <span className={`font-headline font-black text-[11px] uppercase tracking-widest ${dayLocked ? 'text-emerald-700' : 'text-primary/70'}`}>{dayLabel}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-20 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full transition-all duration-500 ${dayLocked ? 'bg-emerald-400' : 'bg-primary/40'}`} style={{ width: `${(dayScore / dayMax) * 100}%` }} />
+                    </div>
+                    <span className={`text-[11px] font-black font-headline tabular-nums ${dayLocked ? 'text-emerald-700' : 'text-primary'}`}>{dayScore}<span className="text-on-surface-variant/40 font-normal">/{dayMax}</span></span>
+                  </div>
+                </div>
+
+                {sessions.map(comp => {
             const key     = comp.key as ComponentKey;
             const isLocked_ = savedSessions.has(key);
             const isOpen  = expanded.has(key);
@@ -468,6 +507,9 @@ export const AssessmentForm = ({
               </div>
             );
           })}
+          </div>
+        );
+      })}
 
           {/* Notes */}
           <div className="space-y-2 pt-2">
@@ -529,23 +571,38 @@ export const AssessmentForm = ({
           <div className="bg-surface-container-lowest rounded-[2rem] p-5 border border-outline-variant/10">
             <h4 className="font-headline font-bold text-on-surface text-sm mb-3">Breakdown</h4>
             <div className="space-y-2.5">
-              {SCORING_COMPONENTS.map(comp => {
-                const v   = parseFloat(scores[comp.key as ComponentKey] || '0') || 0;
-                const pct = comp.max > 0 ? v / comp.max : 0;
-                const locked_ = savedSessions.has(comp.key as ComponentKey);
+              {[
+                { label: 'Day 1', sessions: DAY1, dayMax: DAY1_MAX },
+                { label: 'Day 2', sessions: DAY2, dayMax: DAY2_MAX },
+              ].map(({ label: dl, sessions, dayMax }) => {
+                const dayScore = sessions.reduce((sum, c) => sum + (parseFloat(scores[c.key as ComponentKey] || '0') || 0), 0);
                 return (
-                  <div key={comp.key}>
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[10px] font-body text-on-surface-variant truncate max-w-[130px] flex items-center gap-1">
-                        {locked_ && <span className="material-symbols-outlined text-[10px] text-emerald-500" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>}
-                        {comp.label}
-                      </span>
-                      <span className={`text-[11px] font-black font-headline shrink-0 ml-2 ${v > 0 ? (locked_ ? 'text-emerald-600' : 'text-primary') : 'text-on-surface-variant/25'}`}>
-                        {v}/{comp.max}
-                      </span>
-                    </div>
-                    <div className="h-1 bg-surface-container rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full transition-all duration-500 ${locked_ ? 'bg-emerald-400' : 'bg-primary/50'}`} style={{ width: `${pct * 100}%` }} />
+                  <div key={dl}>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline mb-1.5">{dl}</p>
+                    {sessions.map(comp => {
+                      const v   = parseFloat(scores[comp.key as ComponentKey] || '0') || 0;
+                      const pct = comp.max > 0 ? v / comp.max : 0;
+                      const locked_ = savedSessions.has(comp.key as ComponentKey);
+                      return (
+                        <div key={comp.key} className="mb-1.5">
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className="text-[10px] font-body text-on-surface-variant truncate max-w-[120px] flex items-center gap-1">
+                              {locked_ && <span className="material-symbols-outlined text-[10px] text-emerald-500" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>}
+                              {comp.label}
+                            </span>
+                            <span className={`text-[11px] font-black font-headline shrink-0 ml-1 ${v > 0 ? (locked_ ? 'text-emerald-600' : 'text-primary') : 'text-on-surface-variant/25'}`}>
+                              {v}/{comp.max}
+                            </span>
+                          </div>
+                          <div className="h-1 bg-surface-container rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full transition-all duration-500 ${locked_ ? 'bg-emerald-400' : 'bg-primary/50'}`} style={{ width: `${pct * 100}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div className="flex justify-between items-center bg-surface-container rounded-xl px-2.5 py-1 mt-1 mb-2">
+                      <span className="text-[10px] font-black text-on-surface-variant/60 font-headline">{dl} Subtotal</span>
+                      <span className="text-[11px] font-black font-headline text-primary">{dayScore} / {dayMax}</span>
                     </div>
                   </div>
                 );
@@ -584,20 +641,30 @@ export const AssessmentForm = ({
               <span className="material-symbols-outlined text-[16px] text-primary">playlist_add_check</span>
               Sessions
             </h4>
-            <div className="space-y-1.5">
-              {SCORING_COMPONENTS.map(comp => {
-                const locked_ = savedSessions.has(comp.key as ComponentKey);
-                const has = (parseFloat(scores[comp.key as ComponentKey] || '0') || 0) > 0;
-                return (
-                  <div key={comp.key} className="flex items-center gap-2">
-                    <span className={`material-symbols-outlined text-[14px] ${locked_ ? 'text-emerald-500' : has ? 'text-amber-400' : 'text-on-surface-variant/20'}`}
-                      style={{ fontVariationSettings: "'FILL' 1" }}>
-                      {locked_ ? 'check_circle' : has ? 'pending' : 'radio_button_unchecked'}
-                    </span>
-                    <span className="text-[10px] font-body text-on-surface-variant truncate">{comp.label}</span>
+            <div className="space-y-3">
+              {[
+                { label: 'Day 1', sessions: DAY1 },
+                { label: 'Day 2', sessions: DAY2 },
+              ].map(({ label: dl, sessions }) => (
+                <div key={dl}>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline mb-1">{dl}</p>
+                  <div className="space-y-1">
+                    {sessions.map(comp => {
+                      const locked_ = savedSessions.has(comp.key as ComponentKey);
+                      const has = (parseFloat(scores[comp.key as ComponentKey] || '0') || 0) > 0;
+                      return (
+                        <div key={comp.key} className="flex items-center gap-2">
+                          <span className={`material-symbols-outlined text-[14px] ${locked_ ? 'text-emerald-500' : has ? 'text-amber-400' : 'text-on-surface-variant/20'}`}
+                            style={{ fontVariationSettings: "'FILL' 1" }}>
+                            {locked_ ? 'check_circle' : has ? 'pending' : 'radio_button_unchecked'}
+                          </span>
+                          <span className="text-[10px] font-body text-on-surface-variant truncate">{comp.label}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
         </div>
