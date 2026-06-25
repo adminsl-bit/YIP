@@ -45,23 +45,23 @@ const sc = (s: Scores, k: keyof Scores) => s[k] ?? 0;
 const isLeadershipRole = (pos: string) =>
   /speaker|prime minister|minister|party leader|coalition leader|leader of opposition/i.test(pos || '');
 
-// ── 15 Award definitions (reused from AwardSuggestions) ─────────────────────
+// ── 15 Award definitions — names match DB exactly ────────────────────────────
 const AWARD_DEFS: AwardDef[] = [
-  { key: 'best_parliamentarian', name: 'Best Parliamentarian Award', icon: 'emoji_events', accent: 'primary', basis: 'Highest overall score across all components', formula: (_s, t) => t, maxScore: 100, constraint: null },
-  { key: 'best_speaker', name: 'Best Speaker Award', icon: 'gavel', accent: 'primary', basis: 'Highest total — Speaker role only', formula: (_s, t) => t, maxScore: 100, constraint: p => /speaker/i.test(p.position), constraintLabel: 'Speaker only' },
-  { key: 'leadership_excellence', name: 'Leadership Excellence Award', icon: 'star', accent: 'secondary', basis: 'Overall score — leadership roles only', formula: (_s, t) => t, maxScore: 100, constraint: p => isLeadershipRole(p.position), constraintLabel: 'Leadership roles' },
-  { key: 'best_member_ruling', name: 'Best Member – Ruling Bench', icon: 'account_balance', accent: 'tertiary', basis: 'Highest total — Ruling Party members', formula: (_s, t) => t, maxScore: 100, constraint: p => p.party_alignment === 'ruling_party', constraintLabel: 'Ruling Party' },
-  { key: 'best_member_opposition', name: 'Best Member – Opposition Bench', icon: 'record_voice_over', accent: 'error', basis: 'Highest total — Opposition members', formula: (_s, t) => t, maxScore: 100, constraint: p => p.party_alignment === 'opposition', constraintLabel: 'Opposition' },
-  { key: 'best_debater', name: 'Best Debater Award', icon: 'forum', accent: 'primary', basis: 'MUPI (40%) + Question Hour (60%)', formula: s => sc(s, 'mupi') / 15 * 40 + sc(s, 'question_hour') / 20 * 60, maxScore: 100, constraint: null },
-  { key: 'most_persuasive', name: 'Most Persuasive Policy Advocate', icon: 'campaign', accent: 'secondary', basis: 'Political Acumen (50%) + MUPI (50%)', formula: s => sc(s, 'political_acumen') / 10 * 50 + sc(s, 'mupi') / 15 * 50, maxScore: 100, constraint: null },
-  { key: 'best_research', name: 'Best Research & Presentation', icon: 'auto_stories', accent: 'primary', basis: 'MUPI (40%) + Bill Presentation (30%) + Committee (30%)', formula: s => sc(s, 'mupi') / 15 * 40 + sc(s, 'bill_presentation') / 15 * 30 + sc(s, 'committee') / 15 * 30, maxScore: 100, constraint: null },
-  { key: 'innovative_ideas', name: 'Innovative Ideas Award', icon: 'lightbulb', accent: 'tertiary', basis: 'Zero Hour (60%) + Committee (40%)', formula: s => sc(s, 'zero_hour') / 15 * 60 + sc(s, 'committee') / 15 * 40, maxScore: 100, constraint: null },
-  { key: 'community_impact', name: 'Community Impact Award', icon: 'diversity_3', accent: 'tertiary', basis: 'MUPI (40%) + Zero Hour (30%) + Bill Presentation (30%)', formula: s => sc(s, 'mupi') / 15 * 40 + sc(s, 'zero_hour') / 15 * 30 + sc(s, 'bill_presentation') / 15 * 30, maxScore: 100, constraint: null },
-  { key: 'mvp', name: 'Most Valuable Participant', icon: 'military_tech', accent: 'primary', basis: 'Average of all 6 session scores (most consistent)', formula: s => (sc(s,'mupi')/15 + sc(s,'question_hour')/20 + sc(s,'zero_hour')/15 + sc(s,'political_acumen')/10 + sc(s,'committee')/15 + sc(s,'bill_presentation')/15) / 6 * 100, maxScore: 100, constraint: null },
-  { key: 'team_spirit', name: 'Team Spirit Award', icon: 'handshake', accent: 'secondary', basis: 'Committee Discussions & Bill Drafting score', formula: s => sc(s, 'committee') / 15 * 100, maxScore: 100, constraint: null },
-  { key: 'exemplary_decorum', name: 'Exemplary Parliamentary Decorum', icon: 'verified', accent: 'primary', basis: 'MUPI (34%) + Zero Hour (33%) + Bill Presentation (33%)', formula: s => sc(s, 'mupi') / 15 * 34 + sc(s, 'zero_hour') / 15 * 33 + sc(s, 'bill_presentation') / 15 * 33, maxScore: 100, constraint: null },
-  { key: 'independent_voice', name: 'Independent Voice of the House', icon: 'person_raised_hand', accent: 'secondary', basis: 'MUPI + Zero Hour + Question Hour — Non-aligned', formula: s => sc(s, 'mupi') / 15 * 34 + sc(s, 'zero_hour') / 15 * 33 + sc(s, 'question_hour') / 20 * 33, maxScore: 100, constraint: p => p.party_alignment === 'non_aligned', constraintLabel: 'Non-aligned' },
-  { key: 'best_constituency_rep', name: 'Best Constituency Representative', icon: 'location_on', accent: 'tertiary', basis: 'MUPI (50%) + Question Hour (30%) + Zero Hour (20%)', formula: s => sc(s, 'mupi') / 15 * 50 + sc(s, 'question_hour') / 20 * 30 + sc(s, 'zero_hour') / 15 * 20, maxScore: 100, constraint: null },
+  { key: 'best_parliamentarian',  name: 'Best Parliamentarian Award',               icon: 'emoji_events',    accent: 'primary',   basis: 'Highest overall score', formula: (_s, t) => t, maxScore: 100, constraint: null },
+  { key: 'best_speaker',          name: 'Best Speaker Award',                        icon: 'gavel',           accent: 'primary',   basis: 'Highest total — Speaker role only', formula: (_s, t) => t, maxScore: 100, constraint: p => /speaker/i.test(p.position), constraintLabel: 'Speaker only' },
+  { key: 'leadership_excellence', name: 'Leadership Excellence Award',               icon: 'star',            accent: 'secondary', basis: 'Overall score — leadership roles only', formula: (_s, t) => t, maxScore: 100, constraint: p => isLeadershipRole(p.position), constraintLabel: 'Leadership roles' },
+  { key: 'best_member_ruling',    name: 'Best Member — Ruling Bench Award',          icon: 'account_balance', accent: 'tertiary',  basis: 'Highest total — Ruling Party members', formula: (_s, t) => t, maxScore: 100, constraint: p => p.party_alignment === 'ruling_party', constraintLabel: 'Ruling Party' },
+  { key: 'best_member_opposition',name: 'Best Member — Opposition Bench Award',      icon: 'record_voice_over',accent: 'error',   basis: 'Highest total — Opposition members', formula: (_s, t) => t, maxScore: 100, constraint: p => p.party_alignment === 'opposition', constraintLabel: 'Opposition' },
+  { key: 'best_debater',          name: 'Best Debater Award',                        icon: 'forum',           accent: 'primary',   basis: 'MUPI (40%) + Question Hour (60%)', formula: s => sc(s, 'mupi') / 15 * 40 + sc(s, 'question_hour') / 20 * 60, maxScore: 100, constraint: null },
+  { key: 'most_persuasive',       name: 'Most Persuasive Policy Advocate',           icon: 'campaign',        accent: 'secondary', basis: 'Political Acumen (50%) + MUPI (50%)', formula: s => sc(s, 'political_acumen') / 10 * 50 + sc(s, 'mupi') / 15 * 50, maxScore: 100, constraint: null },
+  { key: 'best_research',         name: 'Best Research & Presentation Award',        icon: 'auto_stories',    accent: 'primary',   basis: 'MUPI (40%) + Bill Presentation (30%) + Committee (30%)', formula: s => sc(s, 'mupi') / 15 * 40 + sc(s, 'bill_presentation') / 15 * 30 + sc(s, 'committee') / 15 * 30, maxScore: 100, constraint: null },
+  { key: 'innovative_ideas',      name: 'Innovative Ideas Award',                    icon: 'lightbulb',       accent: 'tertiary',  basis: 'Zero Hour (60%) + Committee (40%)', formula: s => sc(s, 'zero_hour') / 15 * 60 + sc(s, 'committee') / 15 * 40, maxScore: 100, constraint: null },
+  { key: 'community_impact',      name: 'Community Impact Award',                    icon: 'diversity_3',     accent: 'tertiary',  basis: 'MUPI (40%) + Zero Hour (30%) + Bill Presentation (30%)', formula: s => sc(s, 'mupi') / 15 * 40 + sc(s, 'zero_hour') / 15 * 30 + sc(s, 'bill_presentation') / 15 * 30, maxScore: 100, constraint: null },
+  { key: 'mvp',                   name: 'Most Valuable Participant (MVP) Award',     icon: 'military_tech',   accent: 'primary',   basis: 'Average of all 6 session scores (most consistent)', formula: s => (sc(s,'mupi')/15 + sc(s,'question_hour')/20 + sc(s,'zero_hour')/15 + sc(s,'political_acumen')/10 + sc(s,'committee')/15 + sc(s,'bill_presentation')/15) / 6 * 100, maxScore: 100, constraint: null },
+  { key: 'team_spirit',           name: 'Team Spirit Award',                         icon: 'handshake',       accent: 'secondary', basis: 'Committee Discussions & Bill Drafting score', formula: s => sc(s, 'committee') / 15 * 100, maxScore: 100, constraint: null },
+  { key: 'exemplary_decorum',     name: 'Exemplary Parliamentary Decorum Award',     icon: 'verified',        accent: 'primary',   basis: 'MUPI (34%) + Zero Hour (33%) + Bill Presentation (33%)', formula: s => sc(s, 'mupi') / 15 * 34 + sc(s, 'zero_hour') / 15 * 33 + sc(s, 'bill_presentation') / 15 * 33, maxScore: 100, constraint: null },
+  { key: 'independent_voice',     name: 'Independent Voice of the House Award',      icon: 'person_raised_hand',accent: 'secondary',basis: 'MUPI + Zero Hour + Question Hour — Non-aligned', formula: s => sc(s, 'mupi') / 15 * 34 + sc(s, 'zero_hour') / 15 * 33 + sc(s, 'question_hour') / 20 * 33, maxScore: 100, constraint: p => p.party_alignment === 'non_aligned', constraintLabel: 'Non-aligned' },
+  { key: 'best_constituency_rep', name: 'Best Constituency Representative Award',    icon: 'location_on',     accent: 'tertiary',  basis: 'MUPI (50%) + Question Hour (30%) + Zero Hour (20%)', formula: s => sc(s, 'mupi') / 15 * 50 + sc(s, 'question_hour') / 20 * 30 + sc(s, 'zero_hour') / 15 * 20, maxScore: 100, constraint: null },
 ];
 
 // ── Props ──────────────────────────────────────────────────────────────────────
@@ -180,10 +180,9 @@ export const AwardIntelligenceDashboard = ({ juryId, isOrganizer }: AwardIntelli
   const awardIdMap = useMemo(() => {
     const map: Record<string, string> = {};
     AWARD_DEFS.forEach(def => {
-      const match = awards.find(a =>
-        a.name.toLowerCase().includes(def.name.split(' ')[1]?.toLowerCase() || '') ||
-        def.name.toLowerCase().includes((a.name.split(' ')[1] || '').toLowerCase())
-      );
+      // Exact name match first, then case-insensitive fallback
+      const match = awards.find(a => a.name === def.name)
+        ?? awards.find(a => a.name.toLowerCase() === def.name.toLowerCase());
       if (match) map[def.key] = match.id;
     });
     return map;
