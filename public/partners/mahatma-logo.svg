@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 100" width="320" height="100">
+  <!-- Background -->
+  <rect width="320" height="100" fill="white"/>
+
+  <!-- Logo mark: orange dot, green arc, blue arc -->
+  <!-- Orange circle -->
+  <circle cx="48" cy="28" r="9" fill="#F7941D"/>
+
+  <!-- Green arc (middle) -->
+  <path d="M 22 52 Q 48 28 74 52" stroke="#4CAF50" stroke-width="7" fill="none" stroke-linecap="round"/>
+
+  <!-- Blue/teal arc (outer) -->
+  <path d="M 10 66 Q 48 32 86 66" stroke="#006B8F" stroke-width="7" fill="none" stroke-linecap="round"/>
+
+  <!-- MAHATMA text -->
+  <text x="100" y="52" font-family="Arial, sans-serif" font-size="30" font-weight="900" fill="#006B8F" letter-spacing="1">MAHATMA</text>
+
+  <!-- TRUTH TRIUMPHS tagline -->
+  <text x="102" y="70" font-family="Arial, sans-serif" font-size="11" font-weight="600" fill="#555" letter-spacing="3">TRUTH TRIUMPHS</text>
+</svg>
