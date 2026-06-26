@@ -210,21 +210,21 @@ export const LandingHero = () => {
           <p className="text-on-surface-variant text-sm max-w-2xl mx-auto">Collaborating with leading institutions to build the leaders of tomorrow.</p>
         </div>
         <div className="container mx-auto px-6">
-          <div className="flex flex-nowrap justify-center items-center gap-8 overflow-x-auto pb-2 scrollbar-none max-w-6xl mx-auto px-4">
+          <div className="flex flex-nowrap justify-center items-center gap-10 overflow-x-auto pb-2 scrollbar-none max-w-7xl mx-auto px-6">
             {[
-              { src: "/partners/cii-logo.png",        alt: "Confederation of Indian Industry" },
-              { src: "/partners/yi-logo.png",          alt: "Young Indians"                   },
-              { src: "/partners/mahatma-logo.svg",     alt: "Mahatma – Truth Triumphs"        },
-              { src: "/partners/thangamayil-logo.png", alt: "Thangamayil Jewellery"           },
-              { src: "/partners/solamalai-logo.png",   alt: "Solamalai Institutions"          },
-              { src: "/partners/thalir-logo.png",      alt: "Thalir"                          },
-              { src: "/partners/strawlabs-logo.png",   alt: "Strawlabs"                       },
+              { src: "/partners/cii-logo.png",        alt: "Confederation of Indian Industry", maxW: "max-w-[100px]" },
+              { src: "/partners/yi-logo.png",          alt: "Young Indians",                    maxW: "max-w-[90px]"  },
+              { src: "/partners/mahatma-logo.svg",     alt: "Mahatma – Truth Triumphs",         maxW: "max-w-[180px]" },
+              { src: "/partners/thangamayil-logo.png", alt: "Thangamayil Jewellery",            maxW: "max-w-[160px]" },
+              { src: "/partners/solamalai-logo.png",   alt: "Solamalai Institutions",           maxW: "max-w-[90px]"  },
+              { src: "/partners/thalir-logo.png",      alt: "Thalir",                           maxW: "max-w-[90px]"  },
+              { src: "/partners/strawlabs-logo.png",   alt: "Strawlabs",                        maxW: "max-w-[120px]" },
             ].map((partner, i) => (
-              <div key={i} className="flex justify-center items-center shrink-0 h-16">
+              <div key={i} className="flex justify-center items-center shrink-0 h-14">
                 <img
                   src={partner.src}
                   alt={partner.alt}
-                  className="h-full w-auto max-w-[140px] object-contain"
+                  className={`h-full w-auto ${partner.maxW} object-contain`}
                 />
               </div>
             ))}

@@ -1,29 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 110" width="380" height="110">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 110">
 
-  <!-- ── Icon mark ── -->
-  <!-- Orange circle (sun) -->
-  <circle cx="56" cy="20" r="12" fill="#F7941D"/>
+  <!-- ── Icon mark — concentric arc swooshes ── -->
 
-  <!-- Green arc / wing (earth) — filled crescent curving left-to-right -->
-  <path d="
-    M 16 62
-    C 16 38, 34 20, 56 20
-    C 42 26, 30 44, 34 64
-    C 28 65, 21 64, 16 62 Z
-  " fill="#5BAE47"/>
+  <!-- Orange circle (top) -->
+  <circle cx="52" cy="18" r="11" fill="#F7941D"/>
 
-  <!-- Teal arc / base (water) — wider, lower -->
-  <path d="
-    M 6 78
-    C 6 44, 28 18, 56 18
-    C 26 30, 14 58, 20 80
-    C 15 80, 9 79, 6 78 Z
-  " fill="#006B8F"/>
+  <!-- Green swoosh arc — medium radius, from upper-right sweeping to lower-left -->
+  <path d="M 62,26 A 38,38 0 0 0 16,60" stroke="#5BAE47" stroke-width="10" fill="none" stroke-linecap="round"/>
+
+  <!-- Teal swoosh arc — larger radius, same sweep direction -->
+  <path d="M 66,34 A 52,52 0 0 0 8,78" stroke="#006B8F" stroke-width="10" fill="none" stroke-linecap="round"/>
 
   <!-- ── Wordmark ── -->
-  <text x="80" y="58" font-family="'Arial Black', Arial, sans-serif" font-size="38" font-weight="900" fill="#006B8F" letter-spacing="1.5">MAHATMA</text>
+  <text x="90" y="58"
+        font-family="'Arial Black', 'Arial Bold', Arial, sans-serif"
+        font-size="36" font-weight="900" fill="#1A5276" letter-spacing="1">MAHATMA</text>
 
   <!-- ── Tagline ── -->
-  <text x="84" y="78" font-family="Arial, sans-serif" font-size="12.5" font-weight="500" fill="#444" letter-spacing="4.5">TRUTH TRIUMPHS</text>
+  <text x="93" y="80"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="12" font-weight="500" fill="#555" letter-spacing="4.5">TRUTH TRIUMPHS</text>
 
 </svg>
