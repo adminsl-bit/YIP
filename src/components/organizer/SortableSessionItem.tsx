@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Play, Pause, CheckCircle } from "lucide-react";
+import { Play, Pause, CheckCircle, RotateCcw, Square } from "lucide-react";
 
 interface SessionItem {
   id: string;
@@ -157,23 +157,44 @@ export const SortableSessionItem = React.memo(({
             {/* Timer + Poll status badges */}
             <div className="flex flex-wrap gap-2 mt-3">
               {linkedTimer && (
-                <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
+                <div className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest border ${
                   linkedTimer.status === 'running'
                     ? 'bg-secondary/10 text-secondary border-secondary/20'
+                    : linkedTimer.status === 'completed' || linkedTimer.remaining_seconds === 0
+                    ? 'bg-error/10 text-error border-error/20'
                     : 'bg-surface-container text-on-surface-variant border-outline-variant/10'
                 }`}>
                   <span className="material-symbols-outlined text-sm">timer</span>
-                  {formatTime(displayRemaining)}
-                  {item.is_active && (
-                    <button
-                      onClick={() => onTimerControl(item.timer_id, linkedTimer.status === 'running' ? 'pause' : 'start')}
-                      className="ml-1 pl-1.5 border-l border-current opacity-60 hover:opacity-100"
-                    >
-                      {linkedTimer.status === 'running'
-                        ? <Pause className="w-2.5 h-2.5" />
-                        : <Play className="w-2.5 h-2.5" />}
-                    </button>
-                  )}
+                  <span className="tabular-nums">{formatTime(displayRemaining)}</span>
+
+                  {/* Play / Pause */}
+                  <button
+                    onClick={() => onTimerControl(item.timer_id, linkedTimer.status === 'running' ? 'pause' : 'start')}
+                    className="ml-0.5 pl-1.5 border-l border-current/30 opacity-70 hover:opacity-100 transition-opacity"
+                    title={linkedTimer.status === 'running' ? 'Pause' : 'Start'}
+                  >
+                    {linkedTimer.status === 'running'
+                      ? <Pause className="w-2.5 h-2.5" />
+                      : <Play className="w-2.5 h-2.5" />}
+                  </button>
+
+                  {/* Reset */}
+                  <button
+                    onClick={() => onTimerControl(item.timer_id, 'reset')}
+                    className="pl-1.5 border-l border-current/30 opacity-70 hover:opacity-100 transition-opacity"
+                    title="Reset timer to full duration"
+                  >
+                    <RotateCcw className="w-2.5 h-2.5" />
+                  </button>
+
+                  {/* Stop */}
+                  <button
+                    onClick={() => onTimerControl(item.timer_id, 'stop')}
+                    className="pl-1.5 border-l border-current/30 opacity-70 hover:opacity-100 transition-opacity"
+                    title="Stop timer"
+                  >
+                    <Square className="w-2.5 h-2.5" />
+                  </button>
                 </div>
               )}
 
