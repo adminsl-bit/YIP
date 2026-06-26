@@ -212,15 +212,15 @@ export const LandingHero = () => {
         <div className="container mx-auto px-6">
           <div className="flex flex-nowrap justify-center items-center gap-10 overflow-x-auto pb-2 scrollbar-none max-w-7xl mx-auto px-6">
             {[
-              { src: "/partners/cii-logo.png",        alt: "Confederation of Indian Industry", maxW: "max-w-[100px]" },
-              { src: "/partners/yi-logo.png",          alt: "Young Indians",                    maxW: "max-w-[90px]"  },
-              { src: "/partners/mahatma-logo.svg",     alt: "Mahatma – Truth Triumphs",         maxW: "max-w-[180px]" },
-              { src: "/partners/thangamayil-logo.png", alt: "Thangamayil Jewellery",            maxW: "max-w-[160px]" },
-              { src: "/partners/solamalai-logo.png",   alt: "Solamalai Institutions",           maxW: "max-w-[90px]"  },
-              { src: "/partners/thalir-logo.png",      alt: "Thalir",                           maxW: "max-w-[90px]"  },
-              { src: "/partners/strawlabs-logo.png",   alt: "Strawlabs",                        maxW: "max-w-[120px]" },
+              { src: "/partners/cii-logo.jpg",         alt: "Confederation of Indian Industry", maxW: "max-w-[110px]", bg: ""                              },
+              { src: "/partners/yi-logo.jpg",           alt: "Young Indians",                    maxW: "max-w-[90px]",  bg: "bg-black rounded-xl p-2"       },
+              { src: "/partners/mahatma-logo.svg",      alt: "Mahatma – Truth Triumphs",         maxW: "max-w-[190px]", bg: ""                              },
+              { src: "/partners/thangamayil-logo.png",  alt: "Thangamayil Jewellery",            maxW: "max-w-[160px]", bg: ""                              },
+              { src: "/partners/solamalai-logo.png",    alt: "Solamalai Institutions",           maxW: "max-w-[90px]",  bg: ""                              },
+              { src: "/partners/thalir-logo.png",       alt: "Thalir",                           maxW: "max-w-[90px]",  bg: ""                              },
+              { src: "/partners/strawlabs-logo.png",    alt: "Strawlabs",                        maxW: "max-w-[120px]", bg: ""                              },
             ].map((partner, i) => (
-              <div key={i} className="flex justify-center items-center shrink-0 h-14">
+              <div key={i} className={`flex justify-center items-center shrink-0 h-14 ${partner.bg}`}>
                 <img
                   src={partner.src}
                   alt={partner.alt}
