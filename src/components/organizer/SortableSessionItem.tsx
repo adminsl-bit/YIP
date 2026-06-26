@@ -46,6 +46,7 @@ interface SortableSessionItemProps {
   onDeleteSession: (sessionId: string) => void;
   onActivateItem: (itemId: string, currentActive: boolean) => void;
   onCompleteItem: (itemId: string) => void;
+  onReactivateItem: (itemId: string) => void;
   formatTime: (seconds: number) => string;
   isAdminStudent?: boolean;
 }
@@ -62,6 +63,7 @@ export const SortableSessionItem = React.memo(({
   onDeleteSession,
   onActivateItem,
   onCompleteItem,
+  onReactivateItem,
   formatTime,
   isAdminStudent = false,
 }: SortableSessionItemProps) => {
@@ -231,9 +233,13 @@ export const SortableSessionItem = React.memo(({
                   {item.is_active ? 'Deactivate' : 'Activate'}
                 </button>
               ) : (
-                <span className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-tertiary/10 text-tertiary border border-tertiary/20">
-                  Done
-                </span>
+                <button
+                  onClick={() => onReactivateItem(item.id)}
+                  title="Move back to pending"
+                  className="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-tertiary/10 text-tertiary border border-tertiary/20 hover:bg-primary hover:text-white hover:border-transparent transition-all"
+                >
+                  Done ↩
+                </button>
               )}
               {item.is_active && item.status === 'active' && (
                 <button onClick={() => onCompleteItem(item.id)} className="p-1.5 bg-tertiary/10 text-tertiary rounded-xl hover:bg-tertiary/20 transition-colors">

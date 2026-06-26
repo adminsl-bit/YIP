@@ -571,6 +571,21 @@ export const SessionManagement = () => {
     }
   };
 
+  const handleReactivateItem = async (itemId: string) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('session_items' as any)
+        .update({ status: 'pending', is_active: false, completed_at: null } as any)
+        .eq('id', itemId);
+      if (error) throw error;
+      toast({ title: "Session Reactivated", description: "Item moved back to pending" });
+      fetchSessionItems();
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to reactivate item", variant: "destructive" });
+    } finally { setLoading(false); }
+  };
+
   const handleCompleteItem = async (itemId: string) => {
     setLoading(true);
     try {
@@ -757,6 +772,7 @@ export const SessionManagement = () => {
                       onDeleteSession={handleDeleteSession}
                       onActivateItem={handleActivateItem}
                       onCompleteItem={handleCompleteItem}
+                      onReactivateItem={handleReactivateItem}
                       formatTime={formatTime}
                     />
                   ))
