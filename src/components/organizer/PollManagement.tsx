@@ -202,8 +202,9 @@ export const PollManagement = () => {
     );
   }
 
-  const activePolls = polls.filter(p => p.is_active);
-  const pastPolls   = polls.filter(p => !p.is_active);
+  const activePolls    = polls.filter(p => p.is_active);
+  const stagedPolls    = polls.filter(p => !p.is_active && !p.show_post_analysis); // created, not yet started
+  const completedPolls = polls.filter(p => !p.is_active && p.show_post_analysis);  // ended
   const totalVotesAcrossAll = Object.values(pollResults).reduce((t, r) => t + r.reduce((st, sr) => st + sr.count, 0), 0);
   const participationRate = totalParticipants > 0
     ? Math.round((totalVotesAcrossAll / (totalParticipants * Math.max(polls.length, 1))) * 100)
@@ -286,8 +287,9 @@ export const PollManagement = () => {
 
             <button type="submit"
               className="w-full py-3 rounded-full bg-gradient-to-r from-primary to-primary-container text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-95 transition-all font-headline flex items-center justify-center gap-1.5">
-              Launch Poll <span className="material-symbols-outlined text-sm">send</span>
+              Create Poll <span className="material-symbols-outlined text-sm">add_circle</span>
             </button>
+            <p className="text-center text-[9px] text-on-surface-variant/40 font-body">Poll will be staged — press Start when ready to open voting</p>
           </form>
         </div>
 
@@ -341,14 +343,61 @@ export const PollManagement = () => {
             </div>
           </div>
 
+          {/* Staged / Ready to Launch */}
+          {stagedPolls.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200/60 rounded-3xl p-7">
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-amber-600 text-xl" style={{ fontVariationSettings: "'FILL' 1" }}>schedule</span>
+                </div>
+                <div>
+                  <h2 className="text-base font-black font-headline text-amber-900 tracking-tight">Staged — Ready to Launch</h2>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-amber-600/70 font-headline mt-0.5">Press Start when the floor is ready · {stagedPolls.length} poll{stagedPolls.length !== 1 ? 's' : ''}</p>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {stagedPolls.map(poll => {
+                  const options = Array.isArray(poll.options) ? poll.options : [];
+                  return (
+                    <div key={poll.id} className="bg-white rounded-2xl border border-amber-200/40 p-5 space-y-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          {poll.heading && <p className="text-[9px] font-black text-amber-600 uppercase tracking-[0.3em] font-headline mb-1">{poll.heading}</p>}
+                          <h4 className="font-headline font-bold text-base text-on-surface leading-tight">{poll.title}</h4>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <button onClick={() => setPollToDelete(poll)}
+                            className="w-8 h-8 rounded-xl flex items-center justify-center text-on-surface-variant/40 hover:bg-error/10 hover:text-error transition-colors">
+                            <Trash className="w-3.5 h-3.5" />
+                          </button>
+                          <button onClick={() => togglePollStatus(poll)}
+                            className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-white text-[11px] font-black uppercase tracking-widest font-headline shadow-md shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
+                            <Play className="w-3.5 h-3.5" /> Start Voting
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {options.map((o: any, i: number) => (
+                          <span key={i} className="px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200/60 text-xs font-bold text-amber-800 font-headline">
+                            {typeof o === 'string' ? o : o.text}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Recently Completed */}
-          {pastPolls.length > 0 && (
+          {completedPolls.length > 0 && (
             <div className="bg-surface-container rounded-3xl p-7 border border-outline-variant/10">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-base font-black font-headline text-on-surface tracking-tight">Recently Completed</h2>
                   <p className="text-[10px] font-black uppercase tracking-widest text-on-surface-variant/40 font-headline mt-1">
-                    Final snapshots · {pastPolls.length} poll{pastPolls.length !== 1 ? 's' : ''}
+                    Final snapshots · {completedPolls.length} poll{completedPolls.length !== 1 ? 's' : ''}
                   </p>
                 </div>
                 <div className="flex gap-3">
@@ -369,7 +418,7 @@ export const PollManagement = () => {
                 </div>
               </div>
               <div className="space-y-3">
-                {pastPolls.map(poll => (
+                {completedPolls.map(poll => (
                   <AnalyticsBento
                     key={poll.id}
                     pollId={poll.id}

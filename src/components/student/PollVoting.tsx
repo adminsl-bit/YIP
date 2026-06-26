@@ -875,41 +875,43 @@ export const AnalyticsBento = ({
 
       </div>
 
-      {/* ── Accordion: single compact row ── */}
+      {/* ── Accordion: grid layout adapts to option count ── */}
       {isExpanded && (
-        <div className="border-t border-outline-variant/10 px-4 py-2 bg-surface-container-low/40 flex items-center gap-3 overflow-hidden">
+        <div className="border-t border-outline-variant/10 px-4 py-3 bg-surface-container-low/40 space-y-3">
 
-          {/* Option tiles */}
-          {options.map((opt, idx) => {
-            const key = getKey(opt);
-            const text = getText(opt);
-            const count = optionCounts[key] || 0;
-            const pct = pctBase > 0 ? (count / pctBase * 100) : 0;
-            const style = getStyle(text, idx);
-            const BAR_COLORS = ['bg-tertiary-fixed', 'bg-error-container', 'bg-primary-container', 'bg-secondary-container'];
-            return (
-              <div key={key} className="flex items-center gap-1.5 shrink-0">
-                <span className={`text-[9px] font-black uppercase tracking-wide font-headline ${style.text}`}>{text}</span>
-                <div className="w-12 h-1 bg-surface-container-high rounded-full overflow-hidden">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                    className={`h-full rounded-full ${BAR_COLORS[idx % BAR_COLORS.length]}`}
-                  />
+          {/* Option grid — 2 cols for ≤4 options, 3 cols for 5+ */}
+          <div className={`grid gap-2 ${options.length > 4 ? 'grid-cols-2 md:grid-cols-3' : 'grid-cols-1 sm:grid-cols-2'}`}>
+            {options.map((opt, idx) => {
+              const key = getKey(opt);
+              const text = getText(opt);
+              const count = optionCounts[key] || 0;
+              const pct = pctBase > 0 ? (count / pctBase * 100) : 0;
+              const style = getStyle(text, idx);
+              const BAR_COLORS = ['bg-tertiary-fixed', 'bg-error-container', 'bg-primary-container', 'bg-secondary-container'];
+              return (
+                <div key={key} className="flex flex-col gap-1 bg-surface-container-lowest rounded-xl p-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[10px] font-black uppercase tracking-wide font-headline truncate ${style.text}`}>{text}</span>
+                    <span className={`text-[10px] font-black font-headline tabular-nums ml-2 shrink-0 ${style.text}`}>{pct.toFixed(0)}% <span className="text-on-surface-variant/40 font-normal">({count})</span></span>
+                  </div>
+                  <div className="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                      className={`h-full rounded-full ${BAR_COLORS[idx % BAR_COLORS.length]}`}
+                    />
+                  </div>
                 </div>
-                <span className={`text-[9px] font-black font-headline ${style.text}`}>{pct.toFixed(0)}%</span>
-                <span className="text-[8px] text-on-surface-variant/40 font-body">({count})</span>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
 
-          <div className="w-px h-3 bg-outline-variant/30 shrink-0" />
-
-          {/* Turnout */}
-          <span className="text-[9px] font-bold text-on-surface-variant/50 font-headline whitespace-nowrap shrink-0">
-            {votedCount}/{totalDelegates} · {turnoutPct.toFixed(0)}%
-          </span>
+          {/* Turnout row */}
+          <div className="flex items-center gap-3 pt-1 border-t border-outline-variant/10">
+            <span className="text-[9px] font-bold text-on-surface-variant/50 font-headline whitespace-nowrap">
+              {votedCount}/{totalDelegates} voted · {turnoutPct.toFixed(0)}% turnout
+            </span>
 
           {/* Recent voters */}
           {recentVoters.length > 0 && (
@@ -942,6 +944,7 @@ export const AnalyticsBento = ({
             </>
           )}
 
+          </div>
         </div>
       )}
 
