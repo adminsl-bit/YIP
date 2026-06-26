@@ -170,6 +170,17 @@ export const PollManagement = () => {
     toast({ title: newStatus ? "Poll Active" : "Poll Stopped", description: outcome ? `Resolution marked as ${outcome.toUpperCase()}` : undefined });
   };
 
+  const requeuePoll = async (pollId: string) => {
+    const { error } = await supabase.from('polls').update({
+      is_active: false,
+      show_post_analysis: false,
+      outcome: null,
+    }).eq('id', pollId);
+    if (error) { toast({ title: "Error", description: "Failed to requeue poll", variant: "destructive" }); return; }
+    fetchPolls();
+    toast({ title: "Poll Requeued", description: "Poll moved back to Staged — press Start when ready." });
+  };
+
   const deletePoll = async (pollId: string) => {
     const { error } = await supabase.from('polls').delete().eq('id', pollId);
     if (error) { toast({ title: "Error", variant: "destructive" }); return; }
@@ -326,6 +337,7 @@ export const PollManagement = () => {
                   poll={poll}
                   results={pollResults[poll.id] || []}
                   onToggle={(outcome?: 'passed' | 'failed') => togglePollStatus(poll, outcome)}
+                  onRequeue={() => requeuePoll(poll.id)}
                   onReset={() => setPollToReset(poll)}
                   onDelete={() => setPollToDelete(poll)}
                   onOpenStage={() => openStageView(poll.id)}
@@ -419,20 +431,29 @@ export const PollManagement = () => {
               </div>
               <div className="space-y-3">
                 {completedPolls.map(poll => (
-                  <AnalyticsBento
-                    key={poll.id}
-                    pollId={poll.id}
-                    options={Array.isArray(poll.options) ? poll.options : []}
-                    refreshTrigger={0}
-                    votingEnabled={false}
-                    pollTitle={poll.title}
-                    pollHeading={poll.heading}
-                    outcome={poll.outcome}
-                    expanded={expandedPolls.has(poll.id)}
-                    onToggleExpand={() => toggleExpanded(poll.id)}
-                    onResetVotes={() => setPollToReset(poll)}
-                    onDeletePoll={() => setPollToDelete(poll)}
-                  />
+                  <div key={poll.id} className="relative group">
+                    <AnalyticsBento
+                      pollId={poll.id}
+                      options={Array.isArray(poll.options) ? poll.options : []}
+                      refreshTrigger={0}
+                      votingEnabled={false}
+                      pollTitle={poll.title}
+                      pollHeading={poll.heading}
+                      outcome={poll.outcome}
+                      expanded={expandedPolls.has(poll.id)}
+                      onToggleExpand={() => toggleExpanded(poll.id)}
+                      onResetVotes={() => setPollToReset(poll)}
+                      onDeletePoll={() => setPollToDelete(poll)}
+                    />
+                    {/* Requeue back to staged */}
+                    <button
+                      onClick={() => requeuePoll(poll.id)}
+                      title="Set back to Ready (staged)"
+                      className="absolute top-3 right-14 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black uppercase tracking-widest font-headline hover:bg-amber-100"
+                    >
+                      <RotateCcw className="w-3 h-3" /> Requeue
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -501,12 +522,14 @@ const PollItem = ({ poll, results, onToggle, onReset, onDelete, onOpenStage, onS
                   <Pause className="w-3 h-3" /> End
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="rounded-2xl shadow-xl border-outline-variant/10 p-2 w-52">
+              <DropdownMenuContent align="end" className="rounded-2xl shadow-xl border-outline-variant/10 p-2 w-56">
                 <div className="px-3 py-1.5 text-[9px] font-black text-on-surface-variant/40 uppercase tracking-widest font-headline">Declare Outcome</div>
                 <DropdownMenuItem onClick={() => onToggle('passed')} className="text-tertiary rounded-xl font-bold p-3"><CheckCircle2 className="w-4 h-4 mr-2" /> Mark Passed</DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onToggle('failed')} className="text-error rounded-xl font-bold p-3"><XCircle className="w-4 h-4 mr-2" /> Mark Failed</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => onToggle()} className="rounded-xl font-bold p-3"><Pause className="w-4 h-4 mr-2" /> Archive No Verdict</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onRequeue} className="text-amber-700 rounded-xl font-bold p-3"><RotateCcw className="w-4 h-4 mr-2" /> Set Back to Ready</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (

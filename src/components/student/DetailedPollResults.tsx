@@ -286,14 +286,15 @@ export const DetailedPollResults = ({
   }
 
   /* ── Open Display (Sovereign Bloom) ── */
-  const maxVotes = Math.max(...optionDisplays.map(o => getVotesForOption(o.id).length), 0);
-  const numOpts  = optionDisplays.length;
-  // Shrink bar height and hide extras as the option count grows
-  const barH = numOpts <= 3 ? 'clamp(52px, 9vh, 96px)'
-             : numOpts <= 5 ? 'clamp(42px, 7vh, 76px)'
-             : numOpts <= 7 ? 'clamp(32px, 5vh, 60px)'
-             : 'clamp(24px, 3.8vh, 48px)';
-  const showAvatars = numOpts <= 5; // hide avatar strip for elections with many candidates
+  const maxVotes  = Math.max(...optionDisplays.map(o => getVotesForOption(o.id).length), 0);
+  const numOpts   = optionDisplays.length;
+  // For ≤5 options: classic two-row (label above, tall bar below)
+  // For 6+ options: compact single-row (name left | bar middle | % right) — halves vertical space
+  const compact   = numOpts >= 6;
+  const barH      = numOpts <= 3 ? 'clamp(52px, 9vh, 96px)'
+                  : numOpts <= 5 ? 'clamp(42px, 7vh, 76px)'
+                  : 'clamp(36px, 4.5vh, 54px)'; // single-row height — a bit taller so name is readable
+  const showAvatars = !compact;
 
   return (
     <div className="h-full flex flex-col bg-surface overflow-hidden relative">
@@ -342,13 +343,13 @@ export const DetailedPollResults = ({
       {/* ── Main area — no scroll, fills remaining height ── */}
       <div className="relative z-10 flex-1 min-h-0 overflow-hidden flex flex-col px-6 md:px-14 lg:px-24 pt-4 pb-4 selection:bg-primary/20">
 
-        {/* Poll question hero */}
-        <h2 className="shrink-0 font-display text-2xl md:text-4xl font-extrabold tracking-tight text-primary leading-tight text-center mb-3 max-w-5xl mx-auto">
+        {/* Poll question hero — smaller when compact to save space */}
+        <h2 className={`shrink-0 font-display font-extrabold tracking-tight text-primary leading-tight text-center max-w-5xl mx-auto ${compact ? 'text-xl md:text-2xl mb-2' : 'text-2xl md:text-4xl mb-3'}`}>
           {pollTitle}
         </h2>
 
-        {/* Stats pill */}
-        <div className="shrink-0 flex flex-wrap gap-4 md:gap-8 items-center justify-center bg-surface-container-low/80 backdrop-blur-md border border-white/20 shadow-xl shadow-primary/5 px-6 md:px-10 py-2.5 rounded-full mb-4 mx-auto">
+        {/* Stats pill — compact variant skips dividers for density */}
+        <div className={`shrink-0 flex items-center justify-center bg-surface-container-low/80 backdrop-blur-md border border-white/20 shadow-xl shadow-primary/5 rounded-full mx-auto ${compact ? 'gap-4 px-6 py-1.5 mb-2' : 'gap-4 md:gap-8 flex-wrap px-6 md:px-10 py-2.5 mb-4'}`}>
           <div className="flex items-center gap-1.5 text-on-surface-variant font-body font-semibold">
             <span className="material-symbols-outlined text-[16px]">groups</span>
             <span className="text-xs">Total Votes: <strong className="text-on-surface">{actualVotes}</strong></span>
@@ -383,44 +384,71 @@ export const DetailedPollResults = ({
             const barWidth = Math.max(pct, count > 0 ? 4 : 0);
 
             return (
-              <div key={opt.id} className="flex flex-col min-h-0">
-                {/* Label row — scales with option count */}
-                <div className="flex items-end justify-between mb-1 px-2 shrink-0">
-                  <span className={`font-display font-bold ${numOpts > 7 ? 'text-base' : numOpts > 5 ? 'text-lg' : 'text-xl'} ${style.textColor} truncate max-w-[55%]`}>{style.label}</span>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className={`font-display font-extrabold ${numOpts > 7 ? 'text-2xl' : numOpts > 5 ? 'text-3xl' : 'text-4xl'} ${style.textColor} transition-all tabular-nums`}>
-                      {pct.toFixed(0)}%
-                    </span>
-                    <span className={`font-body text-on-surface-variant ${numOpts > 7 ? 'text-sm' : 'text-base'}`}>{count}</span>
-                  </div>
-                </div>
+              <div key={opt.id} className="flex flex-col min-h-0 shrink-0">
 
-                {/* Animated bar */}
-                <div className="relative w-full bg-surface-container rounded-full overflow-hidden shadow-inner shrink-0" style={{ height: barH }}>
-                  <motion.div
-                    key={`${opt.id}-${count}`}
-                    initial={{ width: 0, opacity: 0 }}
-                    animate={{ width: `${barWidth}%`, opacity: 1 }}
-                    transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
-                    className="absolute top-0 left-0 h-full rounded-full flex items-center justify-end pr-5"
-                    style={{ background: `linear-gradient(to right, ${style.barFrom}, ${style.barTo})` }}
-                  >
-                    {barWidth > 8 && numOpts <= 7 && (
-                      <span
-                        className="material-symbols-outlined text-white drop-shadow-md"
-                        style={{ fontSize: numOpts > 5 ? '1.5rem' : '1.875rem', fontVariationSettings: "'FILL' 1" }}
-                      >
-                        {style.icon}
-                      </span>
-                    )}
-                  </motion.div>
-                  {/* Show "0 votes" quietly when bar is empty — no "alignment" text */}
-                  {count === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-end pr-4">
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/15 font-headline">0</span>
+                {compact ? (
+                  /* ── COMPACT single-row: [NAME] [====BAR====] [PCT] ── */
+                  <div className="flex items-center gap-3" style={{ height: barH }}>
+                    {/* Fixed-width name label on the left */}
+                    <span
+                      className={`font-display font-black text-sm md:text-base ${style.textColor} shrink-0 text-right`}
+                      style={{ width: 'clamp(120px, 18vw, 220px)', letterSpacing: '0.03em' }}
+                      title={style.label}
+                    >
+                      {style.label}
+                    </span>
+
+                    {/* Bar */}
+                    <div className="relative flex-1 bg-surface-container rounded-full overflow-hidden shadow-inner" style={{ height: barH }}>
+                      <motion.div
+                        key={`${opt.id}-${count}`}
+                        initial={{ width: 0, opacity: 0 }}
+                        animate={{ width: `${barWidth}%`, opacity: 1 }}
+                        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                        className="absolute inset-y-0 left-0 rounded-full"
+                        style={{ background: `linear-gradient(to right, ${style.barFrom}, ${style.barTo})` }}
+                      />
+                      {isWinner && barWidth > 5 && (
+                        <div className="absolute inset-0 flex items-center justify-end pr-3 pointer-events-none">
+                          <span className="material-symbols-outlined text-white/70 drop-shadow" style={{ fontSize: '1.1rem', fontVariationSettings: "'FILL' 1" }}>emoji_events</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+
+                    {/* Percentage on the right */}
+                    <div className="flex items-baseline gap-1 shrink-0" style={{ width: 'clamp(60px, 8vw, 100px)', justifyContent: 'flex-end' }}>
+                      <span className={`font-display font-extrabold text-xl md:text-2xl ${style.textColor} tabular-nums`}>
+                        {pct.toFixed(0)}%
+                      </span>
+                      <span className="text-on-surface-variant/40 text-sm font-body">{count}</span>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── CLASSIC two-row for ≤5 options ── */
+                  <>
+                    <div className="flex items-end justify-between mb-1 px-2 shrink-0">
+                      <span className={`font-display font-bold text-xl ${style.textColor} truncate max-w-[55%]`}>{style.label}</span>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className={`font-display font-extrabold text-4xl ${style.textColor} tabular-nums`}>{pct.toFixed(0)}%</span>
+                        <span className="font-body text-on-surface-variant text-base">{count}</span>
+                      </div>
+                    </div>
+                    <div className="relative w-full bg-surface-container rounded-full overflow-hidden shadow-inner shrink-0" style={{ height: barH }}>
+                      <motion.div
+                        key={`${opt.id}-${count}`}
+                        initial={{ width: 0, opacity: 0 }}
+                        animate={{ width: `${barWidth}%`, opacity: 1 }}
+                        transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+                        className="absolute top-0 left-0 h-full rounded-full flex items-center justify-end pr-5"
+                        style={{ background: `linear-gradient(to right, ${style.barFrom}, ${style.barTo})` }}
+                      >
+                        {barWidth > 8 && (
+                          <span className="material-symbols-outlined text-white drop-shadow-md text-3xl" style={{ fontVariationSettings: "'FILL' 1" }}>{style.icon}</span>
+                        )}
+                      </motion.div>
+                    </div>
+                  </>
+                )}
 
                 {/* Delegate avatar strip — only for polls with few options */}
                 {showAvatars && votes.length > 0 && (
