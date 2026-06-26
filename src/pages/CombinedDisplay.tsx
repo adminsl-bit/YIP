@@ -22,13 +22,12 @@ interface Poll {
 
 const TAB_H = 56; // px
 
+// Session and Scores/Leaderboard are internal-only — not shown on the public stage display
 const TABS: { key: Tab; icon: string; label: string }[] = [
-  { key: 'timer',       icon: 'timer',          label: 'Timer'      },
-  { key: 'session',     icon: 'calendar_today',  label: 'Session'    },
-  { key: 'polls',       icon: 'how_to_vote',     label: 'Votes'      },
-  { key: 'questions',   icon: 'forum',           label: 'Questions'  },
-  { key: 'bills',       icon: 'gavel',           label: 'Bills'      },
-  { key: 'leaderboard', icon: 'leaderboard',     label: 'Scores'     },
+  { key: 'timer',     icon: 'timer',      label: 'Timer'     },
+  { key: 'polls',     icon: 'how_to_vote', label: 'Votes'    },
+  { key: 'questions', icon: 'forum',      label: 'Questions' },
+  { key: 'bills',     icon: 'gavel',      label: 'Bills'     },
 ];
 
 interface Props {

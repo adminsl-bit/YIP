@@ -287,6 +287,13 @@ export const DetailedPollResults = ({
 
   /* ── Open Display (Sovereign Bloom) ── */
   const maxVotes = Math.max(...optionDisplays.map(o => getVotesForOption(o.id).length), 0);
+  const numOpts  = optionDisplays.length;
+  // Shrink bar height and hide extras as the option count grows
+  const barH = numOpts <= 3 ? 'clamp(52px, 9vh, 96px)'
+             : numOpts <= 5 ? 'clamp(42px, 7vh, 76px)'
+             : numOpts <= 7 ? 'clamp(32px, 5vh, 60px)'
+             : 'clamp(24px, 3.8vh, 48px)';
+  const showAvatars = numOpts <= 5; // hide avatar strip for elections with many candidates
 
   return (
     <div className="h-full flex flex-col bg-surface overflow-hidden relative">
@@ -377,19 +384,19 @@ export const DetailedPollResults = ({
 
             return (
               <div key={opt.id} className="flex flex-col min-h-0">
-                {/* Label row */}
-                <div className="flex items-end justify-between mb-1.5 px-2 shrink-0">
-                  <span className={`font-display text-xl font-bold ${style.textColor}`}>{style.label}</span>
-                  <div className="flex items-baseline gap-2">
-                    <span className={`font-display text-4xl font-extrabold ${style.textColor} transition-all`}>
+                {/* Label row — scales with option count */}
+                <div className="flex items-end justify-between mb-1 px-2 shrink-0">
+                  <span className={`font-display font-bold ${numOpts > 7 ? 'text-base' : numOpts > 5 ? 'text-lg' : 'text-xl'} ${style.textColor} truncate max-w-[55%]`}>{style.label}</span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className={`font-display font-extrabold ${numOpts > 7 ? 'text-2xl' : numOpts > 5 ? 'text-3xl' : 'text-4xl'} ${style.textColor} transition-all tabular-nums`}>
                       {pct.toFixed(0)}%
                     </span>
-                    <span className="font-body text-on-surface-variant text-base">{count} votes</span>
+                    <span className={`font-body text-on-surface-variant ${numOpts > 7 ? 'text-sm' : 'text-base'}`}>{count}</span>
                   </div>
                 </div>
 
                 {/* Animated bar */}
-                <div className="relative w-full bg-surface-container rounded-full overflow-hidden shadow-inner shrink-0" style={{ height: 'clamp(40px, 7vh, 80px)' }}>
+                <div className="relative w-full bg-surface-container rounded-full overflow-hidden shadow-inner shrink-0" style={{ height: barH }}>
                   <motion.div
                     key={`${opt.id}-${count}`}
                     initial={{ width: 0, opacity: 0 }}
@@ -398,26 +405,25 @@ export const DetailedPollResults = ({
                     className="absolute top-0 left-0 h-full rounded-full flex items-center justify-end pr-5"
                     style={{ background: `linear-gradient(to right, ${style.barFrom}, ${style.barTo})` }}
                   >
-                    {barWidth > 10 && (
+                    {barWidth > 8 && numOpts <= 7 && (
                       <span
-                        className="material-symbols-outlined text-white text-3xl drop-shadow-md"
-                        style={{ fontVariationSettings: "'FILL' 1" }}
+                        className="material-symbols-outlined text-white drop-shadow-md"
+                        style={{ fontSize: numOpts > 5 ? '1.5rem' : '1.875rem', fontVariationSettings: "'FILL' 1" }}
                       >
                         {style.icon}
                       </span>
                     )}
                   </motion.div>
+                  {/* Show "0 votes" quietly when bar is empty — no "alignment" text */}
                   {count === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[11px] font-black uppercase tracking-[0.3em] text-on-surface-variant/20 font-headline">
-                        No parliamentary alignment
-                      </span>
+                    <div className="absolute inset-0 flex items-center justify-end pr-4">
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/15 font-headline">0</span>
                     </div>
                   )}
                 </div>
 
-                {/* Delegate avatar strip */}
-                {votes.length > 0 && (
+                {/* Delegate avatar strip — only for polls with few options */}
+                {showAvatars && votes.length > 0 && (
                   <div className="mt-1.5 px-2 flex items-center gap-2 overflow-hidden shrink-0">
                     <div className="flex -space-x-1.5">
                       {votes.slice(0, 12).map((vote) => (
