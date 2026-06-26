@@ -140,13 +140,13 @@ export const PollManagement = () => {
         heading: formData.heading.trim() || null,
         options: validOptions,
         created_by: user.id,
-        is_active: true,
+        is_active: false,   // starts inactive — organizer must press Start to open voting
         show_results_publicly: formData.showPublicly,
         ...(profile?.event_id ? { event_id: profile.event_id } : {}),
       });
       if (error) throw error;
-      await supabase.from('system_settings').update({ setting_value: true }).eq('setting_key', 'voting_enabled');
-      toast({ title: "Poll Launched", description: "Voting is now open for participants." });
+      // Do NOT auto-enable voting — organizer presses Start explicitly
+      toast({ title: "Poll Created", description: "Press Start when you're ready to open voting." });
       setFormData({ heading: "", title: "", description: "", options: ["", ""], showPublicly: true, allowMultiple: false });
       fetchPolls();
     } catch { toast({ title: "Error", description: "Failed to create poll", variant: "destructive" }); }

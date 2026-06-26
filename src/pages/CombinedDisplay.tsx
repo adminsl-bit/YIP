@@ -38,6 +38,7 @@ interface Props {
 const CombinedDisplay = ({ defaultTab = 'timer' }: Props) => {
   const [tab, setTab] = useState<Tab>(defaultTab);
   const [activePoll, setActivePoll] = useState<Poll | null>(null);
+  const [readyPoll, setReadyPoll]   = useState<Poll | null>(null); // created but not yet started
 
   useEffect(() => {
     document.title = "YIP — Live Display";
@@ -50,14 +51,30 @@ const CombinedDisplay = ({ defaultTab = 'timer' }: Props) => {
   }, []);
 
   const fetchActivePoll = async () => {
-    const { data } = await supabase
+    // 1. Check for currently active (voting open) poll
+    const { data: active } = await supabase
       .from('polls').select('*').eq('is_active', true)
       .order('created_at', { ascending: false }).limit(1);
-    if (data && data.length > 0) { setActivePoll(data[0] as Poll); return; }
+    if (active && active.length > 0) {
+      setActivePoll(active[0] as Poll);
+      setReadyPoll(null);
+      return;
+    }
+    // 2. Check for a poll that exists but hasn't been started yet (is_active=false, not post-analysis)
+    const { data: ready } = await supabase
+      .from('polls').select('*').eq('is_active', false).eq('show_post_analysis', false)
+      .order('created_at', { ascending: false }).limit(1);
+    if (ready && ready.length > 0) {
+      setActivePoll(null);
+      setReadyPoll(ready[0] as Poll);
+      return;
+    }
+    // 3. Show most recent post-analysis poll
     const { data: post } = await supabase
       .from('polls').select('*').eq('show_post_analysis', true)
       .order('updated_at', { ascending: false }).limit(1);
     setActivePoll((post?.[0] as Poll) ?? null);
+    setReadyPoll(null);
   };
 
   const pollOptions = activePoll
@@ -97,12 +114,20 @@ const CombinedDisplay = ({ defaultTab = 'timer' }: Props) => {
           ))}
         </div>
 
-        {/* Active poll badge */}
+        {/* Poll status badge */}
         {activePoll && (
           <div className="ml-auto flex items-center gap-2 bg-secondary/10 border border-secondary/20 rounded-full px-4 py-1.5 shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
             <span className="text-[9px] font-black uppercase tracking-[0.25em] text-secondary font-headline truncate max-w-[220px]">
               {activePoll.heading || activePoll.title}
+            </span>
+          </div>
+        )}
+        {readyPoll && !activePoll && (
+          <div className="ml-auto flex items-center gap-2 bg-amber-500/10 border border-amber-400/30 rounded-full px-4 py-1.5 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span className="text-[9px] font-black uppercase tracking-[0.25em] text-amber-700 font-headline truncate max-w-[220px]">
+              Ready: {readyPoll.heading || readyPoll.title}
             </span>
           </div>
         )}
@@ -124,32 +149,59 @@ const CombinedDisplay = ({ defaultTab = 'timer' }: Props) => {
         <SessionDisplay />
       </div>
 
-      {/* ── Poll Results tab ── */}
+      {/* ── Poll / Voting tab ── */}
       <div
         className={`overflow-hidden ${tab !== 'polls' ? 'hidden' : ''}`}
         style={{ height: `calc(100vh - ${TAB_H}px)` }}
       >
-        {!activePoll ? (
-          <div className="flex flex-col items-center justify-center h-full gap-4 bg-slate-50">
-            <div className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center">
-              <span
-                className="material-symbols-outlined text-primary/20"
-                style={{ fontSize: '2.5rem', fontVariationSettings: "'FILL' 1" }}
-              >how_to_vote</span>
-            </div>
-            <p className="text-[10px] font-headline font-black uppercase tracking-[0.4em] text-slate-400">
-              No Active Poll
-            </p>
-          </div>
-        ) : (
+        {/* State 1: voting is open */}
+        {activePoll && (
           <DetailedPollResults
             pollId={activePoll.id}
             pollTitle={activePoll.title}
             pollHeading={activePoll.heading}
-            options={pollOptions}
+            options={(Array.isArray(activePoll.options) ? activePoll.options : []).map((o: any) =>
+              typeof o === 'string' ? { id: o, text: o } : o)}
             isOrganizer={false}
             isActive={activePoll.is_active}
           />
+        )}
+
+        {/* State 2: poll created but organiser hasn't started voting yet */}
+        {!activePoll && readyPoll && (
+          <div className="flex flex-col items-center justify-center h-full gap-8 bg-background">
+            <div className="w-24 h-24 rounded-[2rem] bg-amber-400/10 flex items-center justify-center animate-pulse">
+              <span className="material-symbols-outlined text-amber-500" style={{ fontSize: '3rem', fontVariationSettings: "'FILL' 1" }}>how_to_vote</span>
+            </div>
+            <div className="text-center space-y-3 max-w-lg px-8">
+              <p className="text-[11px] font-black uppercase tracking-[0.4em] text-amber-600 font-headline">Voting Opens Soon</p>
+              <h2 className="text-3xl md:text-4xl font-extrabold font-headline text-on-surface tracking-tight leading-tight">
+                {readyPoll.heading || readyPoll.title}
+              </h2>
+              <p className="text-sm text-on-surface-variant font-body">Standby — the organiser will open voting shortly</p>
+            </div>
+            {/* Option preview — shows options without counts */}
+            <div className="flex flex-wrap justify-center gap-3 px-8 max-w-2xl">
+              {(Array.isArray(readyPoll.options) ? readyPoll.options : []).map((o: any, i: number) => {
+                const text = typeof o === 'string' ? o : o.text;
+                return (
+                  <div key={i} className="px-6 py-3 rounded-2xl bg-surface-container border border-outline-variant/20 font-headline font-black text-sm text-on-surface uppercase tracking-widest">
+                    {text}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* State 3: no poll at all */}
+        {!activePoll && !readyPoll && (
+          <div className="flex flex-col items-center justify-center h-full gap-4 bg-background">
+            <div className="w-16 h-16 rounded-2xl bg-primary/5 flex items-center justify-center">
+              <span className="material-symbols-outlined text-primary/20" style={{ fontSize: '2.5rem', fontVariationSettings: "'FILL' 1" }}>how_to_vote</span>
+            </div>
+            <p className="text-[10px] font-headline font-black uppercase tracking-[0.4em] text-on-surface-variant/30">No Poll Scheduled</p>
+          </div>
         )}
       </div>
 
