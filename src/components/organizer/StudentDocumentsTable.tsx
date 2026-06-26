@@ -125,6 +125,33 @@ export const StudentDocumentsTable = ({ showShareToggle = false }: { showShareTo
   );
   const currentDocIndex = selectedDocs.findIndex(d => d.is_discussing);
 
+  const handleCreateBillPoll = async (doc: StudentDocument) => {
+    if (!profile?.event_id || !user) return;
+    const cleanName = doc.file_name.replace(/\.(docx?|pdf|txt)$/i, '');
+    // Check if poll already exists
+    const { data: existing } = await supabase
+      .from('polls')
+      .select('id')
+      .eq('event_id', profile.event_id)
+      .eq('heading', cleanName)
+      .limit(1);
+    if (existing && existing.length > 0) {
+      toast.success('Vote poll already exists for this bill — find it in the Ballot section');
+      return;
+    }
+    const { error } = await supabase.from('polls').insert({
+      title: `Vote: ${cleanName.slice(0, 80)}`,
+      heading: cleanName,
+      options: ['Yes', 'No'],
+      created_by: user.id,
+      is_active: false,
+      show_results_publicly: true,
+      event_id: profile.event_id,
+    });
+    if (error) { toast.error('Failed to create poll'); return; }
+    toast.success(`Poll created for "${cleanName.slice(0, 50)}…" — find it in Ballot → Staged`);
+  };
+
   const handleToggleQueue = async (doc: StudentDocument) => {
     try {
       if (doc.is_selected) {
@@ -281,6 +308,14 @@ export const StudentDocumentsTable = ({ showShareToggle = false }: { showShareTo
                     <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full font-headline shrink-0 ${stateCls}`}>
                       {stateLabel}
                     </span>
+                    <Button
+                      variant="ghost" size="sm"
+                      className="rounded-xl text-primary/60 hover:text-primary hover:bg-primary/8 font-headline font-black text-[9px] uppercase tracking-widest shrink-0 gap-1"
+                      onClick={() => handleCreateBillPoll(doc)}
+                      title="Create Yes/No vote poll for this bill"
+                    >
+                      <Gavel className="w-3 h-3" /> Vote
+                    </Button>
                     <Button variant="ghost" size="icon" className="rounded-xl text-error hover:text-error shrink-0" onClick={() => handleToggleQueue(doc)}>
                       <X className="w-4 h-4" />
                     </Button>
