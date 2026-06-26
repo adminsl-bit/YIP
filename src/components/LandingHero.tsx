@@ -215,7 +215,7 @@ export const LandingHero = () => {
               { src: "/partners/cii-logo.png",          alt: "Confederation of Indian Industry", bg: "bg-[#3d2e80]" },
               { src: "/partners/yi-logo.png",            alt: "Young Indians",                    bg: "bg-black"     },
               { src: "/partners/mahatma-logo.png",       alt: "Mahatma – Truth Triumphs",         bg: "bg-white"     },
-              { src: "/partners/thangamayil-logo.png",   alt: "Thangamayil Jewellery",            bg: "bg-[#8b1a1a]" },
+              { src: "/partners/thangamayil-logo.png",   alt: "Thangamayil Jewellery",            bg: "bg-white"     },
               { src: "/partners/solamalai-logo.png",     alt: "Solamalai Institutions",           bg: "bg-white"     },
               { src: "/partners/thalir-logo.png",        alt: "Thalir",                           bg: "bg-white"     },
               { src: "/partners/strawlabs-logo.png",     alt: "Strawlabs",                        bg: "bg-white"     },
