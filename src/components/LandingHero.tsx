@@ -210,16 +210,17 @@ export const LandingHero = () => {
           <p className="text-on-surface-variant text-sm max-w-2xl mx-auto">Collaborating with leading institutions to build the leaders of tomorrow.</p>
         </div>
         <div className="container mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-center max-w-5xl mx-auto">
+          <div className="flex flex-wrap justify-center gap-5 max-w-5xl mx-auto">
             {[
               { src: "/partners/cii-logo.png",          alt: "Confederation of Indian Industry", bg: "bg-[#3d2e80]" },
               { src: "/partners/yi-logo.png",            alt: "Young Indians",                    bg: "bg-black"     },
-              { src: "/partners/thangamayil-logo.png",   alt: "Thangamayil Jewellery",            bg: "bg-white"     },
-              { src: "/partners/solamalai-logo.png",     alt: "Solamalai College of Engineering", bg: "bg-white"     },
+              { src: "/partners/mahatma-logo.png",       alt: "Mahatma – Truth Triumphs",         bg: "bg-white"     },
+              { src: "/partners/thangamayil-logo.png",   alt: "Thangamayil Jewellery",            bg: "bg-[#8b1a1a]" },
+              { src: "/partners/solamalai-logo.png",     alt: "Solamalai Institutions",           bg: "bg-white"     },
               { src: "/partners/thalir-logo.png",        alt: "Thalir",                           bg: "bg-white"     },
               { src: "/partners/strawlabs-logo.png",     alt: "Strawlabs",                        bg: "bg-white"     },
             ].map((partner, i) => (
-              <div key={i} className={`flex justify-center items-center p-3 ${partner.bg} border border-outline-variant/10 rounded-xl h-20 overflow-hidden`}>
+              <div key={i} className={`flex justify-center items-center p-3 ${partner.bg} border border-outline-variant/10 rounded-xl h-20 w-36 overflow-hidden shrink-0`}>
                 <img
                   src={partner.src}
                   alt={partner.alt}
