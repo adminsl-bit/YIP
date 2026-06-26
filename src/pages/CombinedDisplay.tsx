@@ -42,11 +42,21 @@ const CombinedDisplay = ({ defaultTab = 'timer' }: Props) => {
   useEffect(() => {
     document.title = "YIP — Live Display";
     fetchActivePoll();
+
+    // Realtime for instant sync
     const ch = supabase
       .channel('combined_display_polls')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, fetchActivePoll)
       .subscribe();
-    return () => { supabase.removeChannel(ch); };
+
+    // Fallback interval — display screens stay open for hours and realtime
+    // websockets can silently drop; this ensures we never stay on a stale state
+    const interval = setInterval(fetchActivePoll, 10_000);
+
+    return () => {
+      supabase.removeChannel(ch);
+      clearInterval(interval);
+    };
   }, []);
 
   const fetchActivePoll = async () => {
@@ -75,6 +85,11 @@ const CombinedDisplay = ({ defaultTab = 'timer' }: Props) => {
     setActivePoll((post?.[0] as Poll) ?? null);
     setReadyPoll(null);
   };
+
+  // Auto-switch to Votes tab whenever a poll becomes ready or active
+  useEffect(() => {
+    if (activePoll || readyPoll) setTab('polls');
+  }, [activePoll?.id, readyPoll?.id]);
 
   const pollOptions = activePoll
     ? (Array.isArray(activePoll.options) ? activePoll.options : []).map((o: any) =>
