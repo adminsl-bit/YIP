@@ -21,96 +21,96 @@ BEGIN
   DELETE FROM session_items WHERE event_id = ev;
 
   -- ──────────────────────────────────────────────
-  --  DAY 1  –  2026-06-28
+  --  DAY 1  –  2026-06-27
   -- ──────────────────────────────────────────────
   INSERT INTO session_items (title, description, bill_type, sort_order, session_date, event_id, created_by) VALUES
   ('Registration',
    '8:00 AM – 9:00 AM · Delegate registration and check-in',
-   'general_discussion', 10, '2026-06-28', ev, org),
+   'general_discussion', 10, '2026-06-27', ev, org),
 
   ('Inaugural Ceremony',
    '9:00 AM – 10:00 AM · Opening of the session',
-   'general_discussion', 20, '2026-06-28', ev, org),
+   'general_discussion', 20, '2026-06-27', ev, org),
 
   ('Speaker Election / Selection',
    '10:00 AM – 10:15 AM · Election or selection of the Speaker of the House',
-   'general_discussion', 30, '2026-06-28', ev, org),
+   'general_discussion', 30, '2026-06-27', ev, org),
 
   ('Speaker Oath · PM & LOP Address',
    '10:15 AM – 10:30 AM · Speaker oath taking; Prime Minister and Leader of Opposition each deliver a 1-minute address',
-   'general_discussion', 40, '2026-06-28', ev, org),
+   'general_discussion', 40, '2026-06-27', ev, org),
 
   ('90-Second Speeches — Part 1',
    '10:30 AM – 11:15 AM · Delegates deliver their 90-second Matters of Urgent Public Importance speeches',
-   'general_discussion', 50, '2026-06-28', ev, org),
+   'general_discussion', 50, '2026-06-27', ev, org),
 
   ('Break',
    '11:15 AM – 11:30 AM',
-   'general_discussion', 60, '2026-06-28', ev, org),
+   'general_discussion', 60, '2026-06-27', ev, org),
 
   ('90-Second Speeches — Part 2',
    '11:30 AM – 1:00 PM · Delegates continue 90-second MUPI speeches',
-   'general_discussion', 70, '2026-06-28', ev, org),
+   'general_discussion', 70, '2026-06-27', ev, org),
 
   ('Lunch Break',
    '1:00 PM – 2:00 PM',
-   'general_discussion', 80, '2026-06-28', ev, org),
+   'general_discussion', 80, '2026-06-27', ev, org),
 
   ('Question Hour',
    '2:00 PM – 2:45 PM · 5 questions, 8 minutes each (including 5 follow-ups per question)',
-   'question_hour', 90, '2026-06-28', ev, org),
+   'question_hour', 90, '2026-06-27', ev, org),
 
   ('Committee Bill Presentations — 4 Bills',
    '2:45 PM – 3:45 PM · 4 committee bills, 10 minutes each (4 min presentation + 4 min Q&A + 2 min closing)',
-   'committee_report', 100, '2026-06-28', ev, org),
+   'committee_report', 100, '2026-06-27', ev, org),
 
   ('Instructions & Closing Remarks — Day 1',
    '3:45 PM – 4:00 PM · Day 1 wrap-up and instructions for Day 2',
-   'general_discussion', 110, '2026-06-28', ev, org);
+   'general_discussion', 110, '2026-06-27', ev, org);
 
   -- ──────────────────────────────────────────────
-  --  DAY 2  –  2026-06-29
+  --  DAY 2  –  2026-06-28   (sort_order 200–290 to avoid collisions with Day 1)
   -- ──────────────────────────────────────────────
   INSERT INTO session_items (title, description, bill_type, sort_order, session_date, event_id, created_by) VALUES
   ('Recap & Instructions',
    '9:00 AM – 9:15 AM · Event mentor and chair recap of Day 1; instructions for the day',
-   'general_discussion', 10, '2026-06-29', ev, org),
+   'general_discussion', 200, '2026-06-28', ev, org),
 
   ('90-Second Speeches — Remaining',
    '9:15 AM – 11:15 AM · Remaining delegates deliver their 90-second MUPI speeches',
-   'general_discussion', 20, '2026-06-29', ev, org),
+   'general_discussion', 210, '2026-06-28', ev, org),
 
   ('Break',
    '11:15 AM – 11:30 AM',
-   'general_discussion', 30, '2026-06-29', ev, org),
+   'general_discussion', 220, '2026-06-28', ev, org),
 
   ('Question Hour — Pending Questions',
    '11:30 AM – 12:30 PM · Remaining 5 questions, 8 minutes each',
-   'question_hour', 40, '2026-06-29', ev, org),
+   'question_hour', 230, '2026-06-28', ev, org),
 
   ('Committee Bill Presentations — 2 Bills',
    '12:30 PM – 1:00 PM · 2 committee bills',
-   'committee_report', 50, '2026-06-29', ev, org),
+   'committee_report', 240, '2026-06-28', ev, org),
 
   ('Lunch Break',
    '1:00 PM – 2:00 PM',
-   'general_discussion', 60, '2026-06-29', ev, org),
+   'general_discussion', 250, '2026-06-28', ev, org),
 
   ('Zero Hour',
    '2:00 PM – 3:00 PM · Zero Hour — delegates raise urgent matters of public concern',
-   'general_discussion', 70, '2026-06-29', ev, org),
+   'general_discussion', 260, '2026-06-28', ev, org),
 
   ('Committee Bill Presentations — 2 Bills',
    '3:00 PM – 3:30 PM · Final 2 committee bills',
-   'committee_report', 80, '2026-06-29', ev, org),
+   'committee_report', 270, '2026-06-28', ev, org),
 
   ('Consolidation of Speeches',
    '3:30 PM – 4:00 PM · Review and consolidation of delegate speeches for scoring',
-   'general_discussion', 90, '2026-06-29', ev, org),
+   'general_discussion', 280, '2026-06-28', ev, org),
 
   ('Valediction',
    '4:00 PM – 5:00 PM · Closing ceremony, award presentation and valediction',
-   'general_discussion', 100, '2026-06-29', ev, org);
+   'general_discussion', 290, '2026-06-28', ev, org);
 
 END $$;
 

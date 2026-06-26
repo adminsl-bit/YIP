@@ -663,12 +663,12 @@ export const SessionManagement = () => {
   };
 
   const getBillTypeBadge = (type: string) => {
+    if (type === 'general_discussion') return null; // no tag for general agenda items
     const variants = {
       private_member_bill: 'secondary',
       government_bill: 'default',
       committee_report: 'outline',
       question_hour: 'destructive',
-      general_discussion: 'secondary',
     };
     return <Badge variant={variants[type as keyof typeof variants] as any}>{getBillTypeLabel(type)}</Badge>;
   };
