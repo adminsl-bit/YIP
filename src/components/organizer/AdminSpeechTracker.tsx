@@ -12,6 +12,18 @@ const PARTY_COLORS: Record<number, string> = {
 const partyColor = (n: number) => PARTY_COLORS[n] ?? 'bg-surface-container text-on-surface-variant';
 const partyLabel = (n: number) => (['No Party', 'A', 'B', 'C', 'D', 'E'] as const)[n] ?? String(n);
 
+const StatCard = ({
+  value, label, icon, color = 'text-primary',
+}: { value: number; label: string; icon: string; color?: string }) => (
+  <div className="bg-white p-6 rounded-3xl border border-outline-variant/10 shadow-sm">
+    <div className="w-11 h-11 bg-primary/8 rounded-xl flex items-center justify-center mb-4">
+      <span className={`material-symbols-outlined text-xl ${color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{icon}</span>
+    </div>
+    <p className="text-[10px] text-on-surface-variant/50 font-black uppercase tracking-[0.2em] mb-1 font-headline">{label}</p>
+    <h3 className="text-2xl font-extrabold font-headline tracking-tight text-primary">{value.toLocaleString()}</h3>
+  </div>
+);
+
 export const AdminSpeechTracker = () => {
   const { profile } = useAuth();
   const {
@@ -35,171 +47,108 @@ export const AdminSpeechTracker = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <div className="text-center space-y-4">
-          <span className="material-symbols-outlined text-[40px] text-primary animate-spin block mx-auto">refresh</span>
-          <p className="text-sm text-on-surface-variant font-body">Loading student data…</p>
-        </div>
+        <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6 animate-in fade-in duration-700">
+  const FilterPill = ({
+    active, onClick, icon, label,
+  }: { active: boolean; onClick: () => void; icon: string; label: string }) => (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`shrink-0 flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-black font-headline uppercase tracking-wide transition-all ${
+        active
+          ? 'bg-primary text-white shadow-[0_2px_8px_rgba(19,41,143,0.25)]'
+          : 'bg-surface-container-lowest border border-outline-variant/20 text-on-surface-variant hover:border-primary/20 hover:text-primary'
+      }`}
+    >
+      {icon && <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: active ? "'FILL' 1" : "'FILL' 0" }}>{icon}</span>}
+      {label}
+    </button>
+  );
 
-      {/* ── Organizer override banner ── */}
+  return (
+    <div className="space-y-8 animate-in fade-in duration-700">
+
+      {/* ── Organizer override notice ── */}
       {isOrganizer && (
-        <div className="p-4 bg-primary-container/10 border border-primary-container/20 rounded-2xl flex items-center gap-4">
-          <div className="w-10 h-10 rounded-full bg-primary-container text-white flex items-center justify-center shrink-0">
-            <span className="material-symbols-outlined text-[20px]">shield_person</span>
+        <div className="flex items-center gap-4 p-4 bg-primary/5 border border-primary/15 rounded-2xl">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-primary text-[20px]" style={{ fontVariationSettings: "'FILL' 1" }}>shield_person</span>
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="font-headline font-bold text-sm text-primary">Organizer Override Mode</h3>
+            <p className="font-headline font-bold text-sm text-primary">Organizer Override Mode</p>
             <p className="text-xs text-on-surface-variant font-body mt-0.5">
-              You can track speeches for all students and override recordings made by admin students.
+              You can record speeches for all students and override admin-student entries.
             </p>
           </div>
-          <div className="px-4 py-2 bg-primary text-white text-xs font-bold rounded-full shrink-0 font-headline">
-            Active Mode
-          </div>
+          <span className="px-3 py-1.5 bg-primary text-white text-[10px] font-black rounded-full font-headline uppercase tracking-widest shrink-0">
+            Active
+          </span>
         </div>
       )}
 
-      {/* ── Stats bento grid ── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-surface-container-lowest p-6 rounded-[2rem] shadow-sm flex flex-col justify-between border-b-4 border-primary/10">
-          <div className="flex justify-between items-start">
-            <span className="text-[10px] font-black uppercase tracking-widest text-outline font-headline">Total Students</span>
-            <span className="material-symbols-outlined text-primary/30">group</span>
-          </div>
-          <div className="mt-4">
-            <span className="text-4xl font-extrabold text-primary font-headline">{String(totalCount).padStart(2, '0')}</span>
-          </div>
-        </div>
-
-        <div className="bg-surface-container-lowest p-6 rounded-[2rem] shadow-sm flex flex-col justify-between border-b-4 border-tertiary-fixed-dim/20">
-          <div className="flex justify-between items-start">
-            <span className="text-[10px] font-black uppercase tracking-widest text-outline font-headline">Have Spoken</span>
-            <span className="material-symbols-outlined text-tertiary-fixed-dim/40">mic</span>
-          </div>
-          <div className="mt-4">
-            <span className="text-4xl font-extrabold text-tertiary-container font-headline">{String(spokeCount).padStart(2, '0')}</span>
-          </div>
-        </div>
-
-        <div className="bg-surface-container-lowest p-6 rounded-[2rem] shadow-sm flex flex-col justify-between border-b-4 border-secondary-container/20">
-          <div className="flex justify-between items-start">
-            <span className="text-[10px] font-black uppercase tracking-widest text-outline font-headline">Not Spoken</span>
-            <span className="material-symbols-outlined text-secondary-container/30">mic_off</span>
-          </div>
-          <div className="mt-4">
-            <span className="text-4xl font-extrabold text-secondary font-headline">{String(notSpokeCount).padStart(2, '0')}</span>
-          </div>
-        </div>
-
-        <div className="bg-surface-container-lowest p-6 rounded-[2rem] shadow-sm flex flex-col justify-between border-b-4 border-primary-fixed-dim/30">
-          <div className="flex justify-between items-start">
-            <span className="text-[10px] font-black uppercase tracking-widest text-outline font-headline">Jury Scored</span>
-            <span className="material-symbols-outlined text-primary-fixed-dim/40">grading</span>
-          </div>
-          <div className="mt-4">
-            <span className="text-4xl font-extrabold text-on-primary-fixed-variant font-headline">{String(scoredCount).padStart(2, '0')}</span>
-          </div>
-        </div>
+      {/* ── Stats ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard value={totalCount}    label="Total Students" icon="group"         color="text-primary" />
+        <StatCard value={spokeCount}    label="Have Spoken"    icon="mic"            color="text-tertiary" />
+        <StatCard value={notSpokeCount} label="Not Spoken Yet" icon="mic_off"        color="text-secondary" />
+        <StatCard value={scoredCount}   label="Jury Scored"    icon="grading"        color="text-primary" />
       </div>
 
-      {/* ── Filter shell ── */}
-      <div className="bg-surface-container-low rounded-[1.5rem] p-4 space-y-3">
-        {/* Search row */}
+      {/* ── Search + Filters ── */}
+      <div className="space-y-3">
+        {/* Search */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 px-4 py-2.5 bg-surface-container-lowest rounded-2xl border border-outline-variant/20 flex-1">
+          <div className="flex items-center gap-2 px-4 py-3 bg-white border border-outline-variant/20 rounded-2xl flex-1 shadow-sm">
             <span className="material-symbols-outlined text-outline text-[20px]">search</span>
             <input
-              className="w-full bg-transparent border-none focus:ring-0 text-sm font-medium font-body outline-none placeholder:text-on-surface-variant/40 text-on-surface"
-              placeholder="Search by name or serial..."
+              className="flex-1 bg-transparent border-none focus:ring-0 text-sm font-medium font-body outline-none placeholder:text-on-surface-variant/40 text-on-surface"
+              placeholder="Search by name or serial number..."
               value={filters.searchQuery}
               onChange={e => setFilters({ ...filters, searchQuery: e.target.value })}
             />
+            {filters.searchQuery && (
+              <button onClick={() => setFilters({ ...filters, searchQuery: '' })} className="text-outline hover:text-on-surface transition-colors">
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            )}
           </div>
-          <span className="text-xs text-outline font-medium font-body shrink-0">
-            <span className="font-bold text-on-surface">{filteredCount}</span> / <span className="font-bold text-on-surface">{totalCount}</span> students
+          <span className="text-xs text-on-surface-variant/60 font-body shrink-0">
+            <span className="font-bold text-on-surface">{filteredCount}</span> / {totalCount}
           </span>
         </div>
 
-        {/* Pill filters row */}
+        {/* Filter pills */}
         <div className="flex flex-wrap items-center gap-2">
 
-          {/* Speech status pills */}
-          {([
-            { value: 'all',       label: 'All',        icon: 'group' },
-            { value: 'spoken',    label: 'Spoken',     icon: 'mic' },
-            { value: 'not-spoken',label: 'Not Spoken', icon: 'mic_off' },
-          ] as const).map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => setFilters({ ...filters, hasSpeech: opt.value })}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black font-headline uppercase tracking-wide transition-all ${
-                filters.hasSpeech === opt.value
-                  ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-[0_2px_8px_rgba(19,41,143,0.25)]'
-                  : 'bg-surface-container-lowest text-on-surface-variant border border-outline-variant/20 hover:border-primary/20 hover:text-primary'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[13px]">{opt.icon}</span>
-              {opt.label}
-            </button>
-          ))}
+          {/* Speech status */}
+          <FilterPill active={filters.hasSpeech === 'all'}        onClick={() => setFilters({ ...filters, hasSpeech: 'all' })}        icon="group"   label="All" />
+          <FilterPill active={filters.hasSpeech === 'spoken'}     onClick={() => setFilters({ ...filters, hasSpeech: 'spoken' })}     icon="mic"     label="Spoken" />
+          <FilterPill active={filters.hasSpeech === 'not-spoken'} onClick={() => setFilters({ ...filters, hasSpeech: 'not-spoken' })} icon="mic_off" label="Not Spoken" />
 
-          {/* Divider */}
-          <div className="w-px h-5 bg-outline-variant/30 mx-1" />
+          <div className="w-px h-5 bg-outline-variant/30 mx-0.5" />
 
-          {/* Score status pills */}
-          {([
-            { value: 'all',        label: 'All Scores', icon: 'star_border' },
-            { value: 'scored',     label: 'Scored',     icon: 'star' },
-            { value: 'not-scored', label: 'No Score',   icon: 'star_half' },
-          ] as const).map(opt => (
-            <button
-              key={opt.value}
-              onClick={() => setFilters({ ...filters, hasScore: opt.value })}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black font-headline uppercase tracking-wide transition-all ${
-                filters.hasScore === opt.value
-                  ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-[0_2px_8px_rgba(19,41,143,0.25)]'
-                  : 'bg-surface-container-lowest text-on-surface-variant border border-outline-variant/20 hover:border-primary/20 hover:text-primary'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: opt.value === 'scored' ? "'FILL' 1" : "'FILL' 0" }}>{opt.icon}</span>
-              {opt.label}
-            </button>
-          ))}
-
-          {/* Divider */}
-          {uniqueParties.length > 0 && <div className="w-px h-5 bg-outline-variant/30 mx-1" />}
+          {/* Score status */}
+          <FilterPill active={filters.hasScore === 'all'}         onClick={() => setFilters({ ...filters, hasScore: 'all' })}         icon="star_border" label="All Scores" />
+          <FilterPill active={filters.hasScore === 'scored'}      onClick={() => setFilters({ ...filters, hasScore: 'scored' })}      icon="star"        label="Scored" />
+          <FilterPill active={filters.hasScore === 'not-scored'}  onClick={() => setFilters({ ...filters, hasScore: 'not-scored' })}  icon="star_half"   label="No Score" />
 
           {/* Party pills */}
           {uniqueParties.length > 0 && (
             <>
-              <button
-                onClick={() => setFilters({ ...filters, partyNumber: null })}
-                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-black font-headline uppercase tracking-wide transition-all ${
-                  filters.partyNumber === null
-                    ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-[0_2px_8px_rgba(19,41,143,0.25)]'
-                    : 'bg-surface-container-lowest text-on-surface-variant border border-outline-variant/20 hover:border-primary/20 hover:text-primary'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[13px]">flag</span>
-                All Parties
-              </button>
+              <div className="w-px h-5 bg-outline-variant/30 mx-0.5" />
+              <FilterPill active={filters.partyNumber === null} onClick={() => setFilters({ ...filters, partyNumber: null })} icon="flag" label="All Parties" />
               {uniqueParties.map(party => (
-                <button
+                <FilterPill
                   key={party}
+                  active={filters.partyNumber === party}
                   onClick={() => setFilters({ ...filters, partyNumber: party })}
-                  className={`px-4 py-1.5 rounded-full text-xs font-black font-headline uppercase tracking-wide transition-all ${
-                    filters.partyNumber === party
-                      ? 'bg-gradient-to-r from-primary to-primary-container text-white shadow-[0_2px_8px_rgba(19,41,143,0.25)]'
-                      : 'bg-surface-container-lowest text-on-surface-variant border border-outline-variant/20 hover:border-primary/20 hover:text-primary'
-                  }`}
-                >
-                  Party {partyLabel(party)}
-                </button>
+                  icon="groups"
+                  label={`Party ${partyLabel(party)}`}
+                />
               ))}
             </>
           )}
@@ -208,100 +157,95 @@ export const AdminSpeechTracker = () => {
 
       {/* ── Student rows ── */}
       {students.length === 0 ? (
-        <div className="bg-surface-container-lowest rounded-[2rem] px-8 py-16 text-center shadow-sm">
+        <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm px-8 py-16 text-center">
           <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20 block mb-3" style={{ fontVariationSettings: "'FILL' 1" }}>group</span>
           <p className="text-sm text-on-surface-variant/50 font-body">No students found. Try adjusting your filters.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {students.map(student => (
-            <div
-              key={student.user_id}
-              className="group bg-surface-container-lowest rounded-3xl p-4 flex items-center justify-between shadow-sm hover:shadow-md transition-all border border-transparent hover:border-primary-fixed-dim/30"
-            >
-              {/* Left: serial + avatar + info */}
-              <div className="flex items-center gap-5 min-w-0">
+        <div className="bg-white rounded-3xl border border-outline-variant/10 shadow-sm overflow-hidden">
+          <div className="divide-y divide-outline-variant/10">
+            {students.map(student => (
+              <div
+                key={student.user_id}
+                className="group flex items-center gap-4 px-6 py-4 hover:bg-surface-container-lowest transition-colors"
+              >
                 {/* Serial */}
-                <div className="text-xs font-bold text-primary bg-primary/5 px-3 py-1.5 rounded-lg w-16 text-center shrink-0 font-headline">
-                  {student.serial_number}
-                </div>
+                <span className="text-[11px] font-black text-primary/60 font-headline w-10 text-center shrink-0">
+                  #{student.serial_number}
+                </span>
 
                 {/* Avatar */}
                 <div className="relative shrink-0">
                   {student.photo_url ? (
-                    <img
-                      src={student.photo_url}
-                      alt={student.name}
-                      className="w-12 h-12 rounded-2xl object-cover bg-surface-container"
-                    />
+                    <img src={student.photo_url} alt={student.name}
+                      className="w-11 h-11 rounded-2xl object-cover" />
                   ) : (
-                    <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                      <span className="text-base font-headline font-bold text-primary">
+                    <div className="w-11 h-11 rounded-2xl bg-primary/10 flex items-center justify-center">
+                      <span className="text-sm font-headline font-bold text-primary">
                         {student.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
                       </span>
                     </div>
                   )}
                   {student.speech_count > 0 && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-tertiary-fixed rounded-full border-2 border-white animate-pulse" />
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-white" />
                   )}
                 </div>
 
                 {/* Name + position */}
-                <div className="min-w-0">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-headline font-bold text-on-surface">{student.name}</h4>
-                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md ${partyColor(student.party_number)}`}>
-                      Party {partyLabel(student.party_number)}
+                    <span className="font-headline font-bold text-on-surface text-sm">{student.name}</span>
+                    <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md font-headline ${partyColor(student.party_number)}`}>
+                      {partyLabel(student.party_number) !== 'No Party' ? `Party ${partyLabel(student.party_number)}` : 'No Party'}
                     </span>
                   </div>
-                  <p className="text-xs text-outline font-medium font-body truncate">
+                  <p className="text-xs text-on-surface-variant/50 font-body truncate mt-0.5">
                     {student.position}{student.constituency ? ` · ${student.constituency}` : ''}
                   </p>
                   {student.last_speech_at && (
-                    <p className="text-[10px] text-on-surface-variant/50 font-body flex items-center gap-1 mt-0.5">
+                    <p className="text-[10px] text-on-surface-variant/40 font-body flex items-center gap-1 mt-0.5">
                       <span className="material-symbols-outlined text-[11px]">schedule</span>
-                      {formatDistanceToNow(new Date(student.last_speech_at), { addSuffix: true })}
+                      Last: {formatDistanceToNow(new Date(student.last_speech_at), { addSuffix: true })}
                     </p>
                   )}
                 </div>
-              </div>
 
-              {/* Right: speech+score stats + actions */}
-              <div className="flex items-center gap-10 shrink-0">
-                <div className="flex flex-col items-end gap-1">
-                  <div className="flex items-center gap-1 text-[10px] text-outline font-bold font-body">
-                    <span className="material-symbols-outlined text-[14px]">voice_chat</span>
-                    {student.speech_count} Speech{student.speech_count !== 1 ? 'es' : ''}
+                {/* Counts */}
+                <div className="flex flex-col items-end gap-0.5 shrink-0 w-24">
+                  <div className={`flex items-center gap-1 text-[11px] font-black font-headline ${student.speech_count > 0 ? 'text-primary' : 'text-on-surface-variant/30'}`}>
+                    <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: "'FILL' 1" }}>mic</span>
+                    {student.speech_count} speech{student.speech_count !== 1 ? 'es' : ''}
                   </div>
-                  <div className="flex items-center gap-1 text-[10px] text-outline font-bold font-body">
-                    <span className="material-symbols-outlined text-[14px]">star</span>
-                    {student.has_jury_score ? `${student.assessment_count} Score${student.assessment_count !== 1 ? 's' : ''}` : 'No Score'}
+                  <div className={`flex items-center gap-1 text-[11px] font-bold font-body ${student.has_jury_score ? 'text-tertiary' : 'text-on-surface-variant/30'}`}>
+                    <span className="material-symbols-outlined text-[13px]" style={{ fontVariationSettings: student.has_jury_score ? "'FILL' 1" : "'FILL' 0" }}>star</span>
+                    {student.has_jury_score ? `${student.assessment_count} scored` : 'no score'}
                   </div>
                 </div>
 
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={e => { e.preventDefault(); e.stopPropagation(); recordSpeech(student.user_id); }}
-                    className="bg-primary hover:bg-primary-container text-white h-12 px-6 rounded-2xl flex items-center gap-2 font-bold font-body transition-all active:scale-95 shadow-[0_4px_12px_rgba(19,41,143,0.2)] hover:shadow-[0_6px_16px_rgba(19,41,143,0.3)]"
-                  >
-                    <span className="material-symbols-outlined text-[18px]" style={{ fontVariationSettings: "'FILL' 1" }}>mic</span>
-                    +1
-                  </button>
+                {/* Actions */}
+                <div className="flex items-center gap-2 shrink-0">
                   {student.speech_count > 0 && (
                     <button
                       type="button"
                       onClick={e => { e.preventDefault(); e.stopPropagation(); undoLastSpeech(student.user_id); }}
-                      className="h-12 px-4 rounded-2xl bg-surface-container text-on-surface-variant flex items-center gap-1.5 font-bold text-sm font-body hover:bg-surface-container-high transition-colors opacity-0 group-hover:opacity-100"
+                      className="h-10 px-3 rounded-xl bg-surface-container text-on-surface-variant flex items-center gap-1.5 text-xs font-bold font-body hover:bg-surface-container-high transition-colors opacity-0 group-hover:opacity-100"
                     >
-                      <span className="material-symbols-outlined text-[16px]">undo</span>
+                      <span className="material-symbols-outlined text-[15px]">undo</span>
                       Undo
                     </button>
                   )}
+                  <button
+                    type="button"
+                    onClick={e => { e.preventDefault(); e.stopPropagation(); recordSpeech(student.user_id); }}
+                    className="h-10 px-5 rounded-xl bg-primary text-white flex items-center gap-2 font-bold font-headline text-sm shadow-sm shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-[16px]" style={{ fontVariationSettings: "'FILL' 1" }}>mic</span>
+                    +1
+                  </button>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       )}
     </div>
