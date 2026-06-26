@@ -10,7 +10,7 @@ import { PollVoting } from '@/components/student/PollVoting';
 import { QuestionHourHub } from '@/components/student/QuestionHourHub';
 import { GlobalSquare } from '@/components/student/GlobalSquare';
 import { BreakingNewsTicker } from '@/components/display/BreakingNewsTicker';
-import { SpeechTrackingView } from '@/components/student/SpeechTrackingView';
+import { AdminSpeechTracker } from '@/components/organizer/AdminSpeechTracker';
 import { AgendaView } from '@/components/student/AgendaView';
 import { StudentDocuments } from '@/components/student/StudentDocuments';
 import { MotionsHub } from '@/components/student/MotionsHub';
@@ -906,7 +906,7 @@ const SpeechTrackerTabWrapper = () => (
         Parliamentary Participation Monitor
       </p>
     </header>
-    <SpeechTrackingView />
+    <AdminSpeechTracker />
   </div>
 );
 
