@@ -27,7 +27,7 @@ const SCORING_COMPONENTS = [
   },
   {
     key: 'mupi',
-    label: 'MUPI',
+    label: '90-Second Speech',
     session: 'Session 2',
     day: 1 as const,
     max: 15,
