@@ -40,6 +40,12 @@ export const AdminSpeechTracker = () => {
   const isOrganizer = profile?.user_type === 'organizer';
   const uniqueParties = Array.from(new Set(students.map(s => s.party_number))).sort((a, b) => a - b);
 
+  // Use actual party_name from student data when available
+  const getPartyDisplayLabel = (partyNum: number) => {
+    const sample = students.find(s => s.party_number === partyNum);
+    return (sample as any)?.party_name || `Party ${partyLabel(partyNum)}`;
+  };
+
   const spokeCount    = students.filter(s => s.speech_count > 0).length;
   const notSpokeCount = students.filter(s => s.speech_count === 0).length;
   const scoredCount   = students.filter(s => s.has_jury_score).length;
@@ -147,7 +153,7 @@ export const AdminSpeechTracker = () => {
                   active={filters.partyNumber === party}
                   onClick={() => setFilters({ ...filters, partyNumber: party })}
                   icon="groups"
-                  label={`Party ${partyLabel(party)}`}
+                  label={getPartyDisplayLabel(party)}
                 />
               ))}
             </>
@@ -196,7 +202,7 @@ export const AdminSpeechTracker = () => {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-headline font-bold text-on-surface text-sm">{student.name}</span>
                     <span className={`px-2 py-0.5 text-[9px] font-black uppercase tracking-widest rounded-md font-headline ${partyColor(student.party_number)}`}>
-                      {partyLabel(student.party_number) !== 'No Party' ? `Party ${partyLabel(student.party_number)}` : 'No Party'}
+                      {getPartyDisplayLabel(student.party_number)}
                     </span>
                   </div>
                   <p className="text-xs text-on-surface-variant/50 font-body truncate mt-0.5">
