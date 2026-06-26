@@ -478,7 +478,7 @@ export const PollManagement = () => {
 
 /* ── Sub-components ──────────────────────────────────────────────────────── */
 
-const PollItem = ({ poll, results, onToggle, onReset, onDelete, onOpenStage, onShowResults, showDetails }: any) => {
+const PollItem = ({ poll, results, onToggle, onRequeue, onReset, onDelete, onOpenStage, onShowResults, showDetails }: any) => {
   const totalVotes = results.reduce((t: number, r: any) => t + r.count, 0);
   const options = Array.isArray(poll.options) ? poll.options : [];
 
