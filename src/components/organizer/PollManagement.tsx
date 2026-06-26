@@ -345,11 +345,23 @@ export const PollManagement = () => {
                   showDetails={showDetailedResults === poll.id}
                 />
               )) : (
-                <div className="bg-surface-container-lowest border-2 border-dashed border-outline-variant/20 rounded-3xl p-14 text-center flex flex-col items-center gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-primary/20 text-3xl">how_to_vote</span>
+                <div className="flex flex-col items-center justify-center gap-5 py-16 px-8 text-center">
+                  <div className="w-20 h-20 rounded-[2rem] bg-primary/5 flex items-center justify-center">
+                    <span
+                      className="material-symbols-outlined text-primary/20"
+                      style={{ fontSize: '3rem', fontVariationSettings: "'FILL' 1" }}
+                    >
+                      how_to_vote
+                    </span>
                   </div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-on-surface-variant/40 font-headline">No active polls — launch one from the form</p>
+                  <div className="space-y-1.5">
+                    <h4 className="text-sm font-headline font-black text-on-surface-variant/40 uppercase tracking-tight">
+                      No Active Polls
+                    </h4>
+                    <p className="text-xs text-on-surface-variant/30 font-body max-w-xs leading-relaxed">
+                      Create a poll using the form on the left, or start one from the Staged queue below.
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
