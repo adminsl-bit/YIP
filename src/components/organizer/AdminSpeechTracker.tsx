@@ -28,6 +28,7 @@ export const AdminSpeechTracker = () => {
   const { profile } = useAuth();
   const {
     students,
+    allStudents,
     loading,
     filters,
     setFilters,
@@ -38,17 +39,18 @@ export const AdminSpeechTracker = () => {
   } = useAdminSpeechTracking();
 
   const isOrganizer = profile?.user_type === 'organizer';
-  const uniqueParties = Array.from(new Set(students.map(s => s.party_number))).sort((a, b) => a - b);
+  // Party list and party label from the unfiltered list so filtering doesn't hide parties
+  const uniqueParties = Array.from(new Set(allStudents.map(s => s.party_number))).sort((a, b) => a - b);
 
-  // Use actual party_name from student data when available
   const getPartyDisplayLabel = (partyNum: number) => {
-    const sample = students.find(s => s.party_number === partyNum);
+    const sample = allStudents.find(s => s.party_number === partyNum);
     return (sample as any)?.party_name || `Party ${partyLabel(partyNum)}`;
   };
 
-  const spokeCount    = students.filter(s => s.speech_count > 0).length;
-  const notSpokeCount = students.filter(s => s.speech_count === 0).length;
-  const scoredCount   = students.filter(s => s.has_jury_score).length;
+  // Stats always from the unfiltered list — counts stay accurate regardless of active filter
+  const spokeCount    = allStudents.filter(s => s.speech_count > 0).length;
+  const notSpokeCount = allStudents.filter(s => s.speech_count === 0).length;
+  const scoredCount   = allStudents.filter(s => s.has_jury_score).length;
 
   if (loading) {
     return (

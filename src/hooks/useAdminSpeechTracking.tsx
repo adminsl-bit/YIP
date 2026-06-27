@@ -230,7 +230,8 @@ export const useAdminSpeechTracking = () => {
   );
 
   return {
-    students: filteredStudents,
+    students: filteredStudents,       // filtered — for the list
+    allStudents: students,            // unfiltered — for stat card counts
     loading,
     filters,
     setFilters,
