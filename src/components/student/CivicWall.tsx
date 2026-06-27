@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { executeOrQueue } from '@/lib/executeOrQueue';
+import jsPDF from 'jspdf';
 import { formatDistanceToNow } from 'date-fns';
 import {
   AlertDialog,
@@ -67,6 +68,81 @@ export const CivicWall = () => {
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<{id: string, type: 'post' | 'comment'} | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
+
+  const handleExportPDF = async () => {
+    if (posts.length === 0) return;
+    setExportingPdf(true);
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const W = 210; const M = 14;
+      // Header bar
+      pdf.setFillColor(19, 41, 143);
+      pdf.rect(0, 0, W, 20, 'F');
+      pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9); pdf.setTextColor(255, 255, 255);
+      pdf.text('NATIONAL YOUTH PARLIAMENT', M, 8);
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7.5);
+      pdf.text('CIVIC WALL — ALL POSTS', M, 14);
+      pdf.setFontSize(7);
+      pdf.text(new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }).toUpperCase(), W - M, 11, { align: 'right' });
+
+      let y = 28;
+      // Summary line
+      pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(69, 70, 83);
+      pdf.text(`${posts.length} posts — exported ${new Date().toLocaleString()}`, M, y);
+      y += 8;
+      pdf.setDrawColor(19, 41, 143); pdf.setLineWidth(0.3); pdf.line(M, y, W - M, y);
+      y += 6;
+
+      for (const post of posts) {
+        if (y > 265) { pdf.addPage(); y = 14; }
+        const name = post.profiles?.name || 'Unknown';
+        const pos  = post.profiles?.position || '';
+        const time = new Date(post.created_at).toLocaleString();
+        const likes = post.civic_likes?.length ?? 0;
+        const comments = post.civic_comments?.length ?? 0;
+
+        // Author line
+        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8.5); pdf.setTextColor(19, 41, 143);
+        pdf.text(name, M, y);
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(120, 120, 135);
+        pdf.text(`  ${pos}`, M + pdf.getTextWidth(name) + 1, y);
+        pdf.text(time, W - M, y, { align: 'right' });
+        y += 5;
+
+        // Post content (wrapped)
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(30, 30, 45);
+        const lines = pdf.splitTextToSize(post.content, W - 2 * M);
+        if (y + lines.length * 4.5 > 270) { pdf.addPage(); y = 14; }
+        pdf.text(lines, M, y);
+        y += lines.length * 4.5 + 2;
+
+        // Likes + comments
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7); pdf.setTextColor(150, 150, 165);
+        pdf.text(`♥ ${likes}  💬 ${comments}`, M, y);
+        y += 3;
+
+        pdf.setDrawColor(220, 220, 230); pdf.setLineWidth(0.2); pdf.line(M, y, W - M, y);
+        y += 5;
+      }
+
+      // Footer
+      const pages = (pdf as any).getNumberOfPages();
+      for (let i = 1; i <= pages; i++) {
+        pdf.setPage(i);
+        pdf.setFillColor(19, 41, 143); pdf.rect(0, 287, W, 10, 'F');
+        pdf.setFont('helvetica', 'normal'); pdf.setFontSize(6.5); pdf.setTextColor(255, 255, 255);
+        pdf.text('YIP PARLIAMENT HUB — CIVIC WALL ARCHIVE', M, 293);
+        pdf.text(`Page ${i} of ${pages}`, W - M, 293, { align: 'right' });
+      }
+
+      pdf.save(`civic-wall-${new Date().toISOString().split('T')[0]}.pdf`);
+      toast({ title: 'PDF Downloaded', description: `${posts.length} posts exported` });
+    } catch (e) {
+      console.error(e);
+      toast({ title: 'Export failed', variant: 'destructive' });
+    } finally { setExportingPdf(false); }
+  };
 
   // Media Attachment States & Refs
   const imageInputRef = useRef<HTMLInputElement | null>(null);
@@ -472,14 +548,26 @@ export const CivicWall = () => {
           </p>
         </div>
         
-        <div className="relative group w-full lg:w-80">
-          <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-on-surface-variant/30 text-[18px] transition-colors group-focus-within:text-primary">search</span>
-          <input 
-            className="w-full bg-surface-container-high/50 border-none rounded-xl py-3 pl-12 pr-6 text-sm focus:ring-4 focus:ring-primary/5 focus:bg-surface-container-lowest transition-all outline-none font-medium placeholder:text-on-surface-variant/20 shadow-sm" 
-            placeholder="Search the assembly..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="flex items-center gap-3">
+          <div className="relative group w-full lg:w-72">
+            <span className="material-symbols-outlined absolute left-5 top-1/2 -translate-y-1/2 text-on-surface-variant/30 text-[18px] transition-colors group-focus-within:text-primary">search</span>
+            <input
+              className="w-full bg-surface-container-high/50 border-none rounded-xl py-3 pl-12 pr-6 text-sm focus:ring-4 focus:ring-primary/5 focus:bg-surface-container-lowest transition-all outline-none font-medium placeholder:text-on-surface-variant/20 shadow-sm"
+              placeholder="Search the assembly..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          {posts.length > 0 && (
+            <button
+              onClick={handleExportPDF}
+              disabled={exportingPdf}
+              className="flex items-center gap-2 px-4 py-3 rounded-xl bg-primary text-white text-[11px] font-black uppercase tracking-widest font-headline shadow-sm shadow-primary/20 hover:bg-primary/90 transition-all disabled:opacity-40 shrink-0"
+            >
+              <span className="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+              {exportingPdf ? 'Exporting…' : 'Download PDF'}
+            </button>
+          )}
         </div>
       </div>
 

@@ -98,6 +98,7 @@ export const ImpactStory = () => {
   const [organizerCount, setOrganizerCount] = useState(0);
   const [juryCount, setJuryCount] = useState(0);
   const [totalChatMessages, setTotalChatMessages] = useState(0);
+  const [totalCivicPosts, setTotalCivicPosts] = useState(0);
   const [speechHighlights, setSpeechHighlights] = useState<SpeechRow[]>([]);
   const [speechStudentNameMap, setSpeechStudentNameMap] = useState<Map<string, string>>(new Map());
   const [settings, setSettings] = useState<Settings>(DEFAULT_SETTINGS);
@@ -133,6 +134,7 @@ export const ImpactStory = () => {
         { count: organizerCountRes },
         { count: juryCountRes },
         { count: chatMessageCount },
+        { count: civicPostCount },
         { data: speechData },
       ] = await Promise.all([
         supabase.rpc('list_events_for_super_admin'),
@@ -152,6 +154,7 @@ export const ImpactStory = () => {
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'organizer'),
         supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('user_type', 'jury'),
         supabase.from('civic_chat_messages' as any).select('id', { count: 'exact', head: true }),
+        supabase.from('civic_posts' as any).select('id', { count: 'exact', head: true }),
         supabase.from('student_speeches' as any)
           .select('id, student_id, notes, session_info, recorded_at, event_id')
           .not('notes', 'is', null)
@@ -214,6 +217,7 @@ export const ImpactStory = () => {
       setOrganizerCount(organizerCountRes || 0);
       setJuryCount(juryCountRes || 0);
       setTotalChatMessages(chatMessageCount || 0);
+      setTotalCivicPosts(civicPostCount || 0);
 
       const speechesArr = ((speechData as unknown as SpeechRow[] | null) || []).filter(s => s.notes && s.notes.trim().length > 0);
       const topSpeeches = speechesArr.slice(0, 3);
@@ -900,6 +904,16 @@ export const ImpactStory = () => {
                 <p className="text-[9px] text-on-surface-variant font-black uppercase tracking-wider font-headline mt-1">Civic Square Messages</p>
               </div>
             </div>
+
+            <div className="rounded-2xl p-5 bg-surface-container-lowest border border-outline-variant/10 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-tertiary/10 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[18px] text-tertiary" style={{ fontVariationSettings: "'FILL' 1" }}>public</span>
+              </div>
+              <div>
+                <p className="text-xl md:text-2xl font-black font-headline text-on-surface leading-none">{totalCivicPosts}</p>
+                <p className="text-[9px] text-on-surface-variant font-black uppercase tracking-wider font-headline mt-1">Civic Wall Posts</p>
+              </div>
+            </div>
           </div>
 
           {/* Resolutions: Passed vs Failed */}
@@ -1316,6 +1330,7 @@ export const ImpactStory = () => {
               { v: `${voterTurnout}%`,                     l: 'Voter Turnout',       c: '#003e29' },
               { v: totalSpeeches,                          l: 'Speeches Recorded',   c: '#13298f' },
               { v: totalChatMessages,                      l: 'Civic Square Msgs',   c: '#ac3509' },
+              { v: totalCivicPosts,                        l: 'Civic Wall Posts',     c: '#006B8F' },
             ].map(s => (
               <div key={s.l} style={{ flex: 1, background: '#ffffff', borderRadius: 14, padding: '20px 18px', border: '1px solid #e6e8ea', textAlign: 'center' }}>
                 <div style={{ fontSize: 26, fontWeight: 900, color: s.c, lineHeight: 1, marginBottom: 8 }}>{s.v}</div>
