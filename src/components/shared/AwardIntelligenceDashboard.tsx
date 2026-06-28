@@ -368,22 +368,29 @@ export const AwardIntelligenceDashboard = ({ juryId, isOrganizer }: AwardIntelli
       <div className="pb-3">
         <div className="flex flex-wrap items-center gap-2">
           {AWARD_DEFS.map((award, idx) => {
-            const isActive = idx === activeAwardIdx;
-            const hasVotes = Object.keys(voteCount[award.key] ?? {}).length > 0;
+            const isActive    = idx === activeAwardIdx;
+            const hasVotes    = Object.keys(voteCount[award.key] ?? {}).length > 0;
+            const isConfirmed = studentAwards.some(sa => sa.award_id === awardIdMap[award.key]);
             return (
               <button
                 key={award.key}
                 onClick={() => setActiveAwardIdx(idx)}
-                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full font-headline font-bold text-xs transition-all duration-300 flex items-center gap-1.5 ${isActive
+                className={`flex-shrink-0 px-3.5 py-1.5 rounded-full font-headline font-bold text-xs transition-all duration-300 flex items-center gap-1.5 ${
+                  isActive
                     ? 'bg-gradient-to-r from-primary to-primary-container text-on-primary shadow-[0_4px_16px_rgba(19,41,143,0.25)]'
-                    : 'bg-surface-container-lowest border border-outline-variant/10 text-on-surface hover:border-primary/30 hover:bg-primary/5'
-                  }`}
+                    : isConfirmed
+                      ? 'bg-emerald-50 border border-emerald-300/60 text-emerald-800'
+                      : 'bg-surface-container-lowest border border-outline-variant/10 text-on-surface hover:border-primary/30 hover:bg-primary/5'
+                }`}
               >
                 {award.name.replace(' Award', '')}
+                {isConfirmed && !isActive && (
+                  <span className="material-symbols-outlined text-[13px] text-emerald-600" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                )}
                 {isActive && (
                   <span className="material-symbols-outlined text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                 )}
-                {!isActive && hasVotes && (
+                {!isActive && !isConfirmed && hasVotes && (
                   <span className="w-2 h-2 rounded-full bg-tertiary-container shrink-0" />
                 )}
               </button>
