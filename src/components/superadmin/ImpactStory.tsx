@@ -90,6 +90,7 @@ export const ImpactStory = () => {
   const [winnerNameMap, setWinnerNameMap] = useState<Map<string, string>>(new Map());
   const [totalVotes, setTotalVotes] = useState(0);
   const [totalAssessments, setTotalAssessments] = useState(0);
+  const [draftAssessments, setDraftAssessments] = useState(0);
   const [avgJuryScore, setAvgJuryScore] = useState(0);
   const [totalParties, setTotalParties] = useState(0);
   const [totalCommittees, setTotalCommittees] = useState(0);
@@ -181,8 +182,11 @@ export const ImpactStory = () => {
         setWinnerNameMap(new Map((winnerProfiles || []).map(p => [p.user_id, p.name])));
       }
 
-      const submittedAssessments = ((assessmentData as unknown as { total_score: number; status: string }[] | null) || []).filter(a => a.status === 'submitted');
+      const allAssessments = (assessmentData as unknown as { total_score: number; status: string }[] | null) || [];
+      const submittedAssessments = allAssessments.filter(a => a.status === 'submitted');
+      const draftAssessmentsArr = allAssessments.filter(a => a.status === 'draft');
       setTotalAssessments(submittedAssessments.length);
+      setDraftAssessments(draftAssessmentsArr.length);
       setAvgJuryScore(
         submittedAssessments.length > 0
           ? Math.round((submittedAssessments.reduce((s, a) => s + (a.total_score || 0), 0) / submittedAssessments.length) * 10) / 10
@@ -491,10 +495,10 @@ export const ImpactStory = () => {
   ];
 
   const capacityStats = [
-    { label: 'Organizer Volunteers',     value: organizerCount,     icon: 'manage_accounts' },
-    { label: 'Jury Members',             value: juryCount,          icon: 'gavel' },
-    { label: 'Assessments Completed',    value: totalAssessments,   icon: 'fact_check' },
-    { label: 'Avg. Jury Score',          value: avgJuryScore,       icon: 'star' },
+    { label: 'Organizer Volunteers',    value: organizerCount,                                                                              icon: 'manage_accounts', pending: false },
+    { label: 'Jury Members',           value: juryCount,                                                                                   icon: 'gavel',           pending: false },
+    { label: 'Jury Assessments',       value: totalAssessments > 0 ? totalAssessments : `${draftAssessments} in progress`,                 icon: 'fact_check',      pending: totalAssessments === 0 && draftAssessments > 0 },
+    { label: 'Avg. Jury Score',        value: totalAssessments > 0 ? `${avgJuryScore} / 100` : 'Pending submission',                      icon: 'star',            pending: totalAssessments === 0 },
   ];
 
   const journeySteps = [
@@ -951,13 +955,26 @@ export const ImpactStory = () => {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {capacityStats.map(stat => (
-              <div key={stat.label} className="bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant/10 shadow-[0_4px_32px_0_rgba(19,41,143,0.06)] flex flex-col gap-2">
-                <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[18px] text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>{stat.icon}</span>
+              <div key={stat.label} className={`rounded-2xl p-5 border shadow-[0_4px_32px_0_rgba(19,41,143,0.06)] flex flex-col gap-2 ${
+                stat.pending
+                  ? 'bg-amber-50 border-amber-200/60'
+                  : 'bg-surface-container-lowest border-outline-variant/10'
+              }`}>
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${stat.pending ? 'bg-amber-100' : 'bg-primary/10'}`}>
+                  <span className={`material-symbols-outlined text-[18px] ${stat.pending ? 'text-amber-600' : 'text-primary'}`}
+                    style={{ fontVariationSettings: "'FILL' 1" }}>{stat.icon}</span>
                 </div>
                 <div>
-                  <p className="text-2xl font-black font-headline text-on-surface leading-none">{stat.value}</p>
+                  <p className={`text-xl font-black font-headline leading-tight ${stat.pending ? 'text-amber-700 text-base' : 'text-on-surface text-2xl'}`}>
+                    {stat.value}
+                  </p>
                   <p className="text-[10px] text-on-surface-variant font-body mt-1">{stat.label}</p>
+                  {stat.pending && (
+                    <span className="inline-flex items-center gap-1 mt-1 text-[9px] font-black uppercase tracking-widest text-amber-600 font-headline">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                      Awaiting jury
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
@@ -1427,9 +1444,10 @@ export const ImpactStory = () => {
           </div>
           <div style={{ display: 'flex', gap: 14 }}>
             {capacityStats.map(s => (
-              <div key={s.label} style={{ flex: 1, background: '#f7f9fb', borderRadius: 14, padding: '20px 22px', border: '1px solid #e6e8ea' }}>
-                <div style={{ fontSize: 28, fontWeight: 900, color: '#13298f', lineHeight: 1, marginBottom: 7 }}>{s.value}</div>
+              <div key={s.label} style={{ flex: 1, background: s.pending ? '#fffbeb' : '#f7f9fb', borderRadius: 14, padding: '20px 22px', border: `1px solid ${s.pending ? '#fcd34d' : '#e6e8ea'}` }}>
+                <div style={{ fontSize: s.pending ? 14 : 28, fontWeight: 900, color: s.pending ? '#b45309' : '#13298f', lineHeight: 1.2, marginBottom: 7 }}>{s.value}</div>
                 <div style={{ fontSize: 9.5, fontWeight: 700, color: '#757684', textTransform: 'uppercase', letterSpacing: '0.09em' }}>{s.label}</div>
+                {s.pending && <div style={{ fontSize: 8, color: '#d97706', marginTop: 4, fontWeight: 700 }}>● AWAITING JURY SUBMISSION</div>}
               </div>
             ))}
           </div>
