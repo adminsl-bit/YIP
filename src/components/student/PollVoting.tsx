@@ -35,13 +35,14 @@ export const PollVoting = () => {
   const [submitting, setSubmitting] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!profile?.event_id) return; // wait for profile to load before fetching
     fetchData();
     const channel = supabase
       .channel('poll_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'polls' }, () => fetchData())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [profile?.event_id]); // re-run when event_id becomes available
 
   const fetchData = async () => {
     try {
