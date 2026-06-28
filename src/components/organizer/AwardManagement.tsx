@@ -85,24 +85,29 @@ export const AwardManagement = () => {
 
       const { data: studentAwardsData, error: studentAwardsError } = await supabase
         .from('student_awards')
-        .select(`id, award_id, student_id, assigned_at, assigned_by_jury_consensus, assigned_by_organizer, awards (name)`)
+        .select('id, award_id, student_id, assigned_at, assigned_by_jury_consensus, assigned_by_organizer')
         .eq('event_id', profile?.event_id ?? '')
         .order('assigned_at', { ascending: false });
       if (studentAwardsError) throw studentAwardsError;
 
-      const studentIds = studentAwardsData?.map(sa => sa.student_id) || [];
-      const { data: awardStudentsData, error: awardStudentsError } = await supabase
-        .from('profiles')
-        .select('user_id, name, position, party_number, photo_url')
-        .in('user_id', studentIds);
-      if (awardStudentsError) throw awardStudentsError;
+      const studentIds = (studentAwardsData || []).map(sa => sa.student_id);
+      const [awardStudentsRes] = await Promise.all([
+        studentIds.length > 0
+          ? supabase.from('profiles').select('user_id, name, position, party_number, photo_url').in('user_id', studentIds)
+          : { data: [] as any[] },
+      ]);
 
-      const enrichedStudentAwards = studentAwardsData?.map(sa => ({
+      // Build award name lookup from already-fetched awardsData
+      const awardNameMap: Record<string, string> = {};
+      (awardsData || []).forEach((a: any) => { awardNameMap[a.id] = a.name; });
+
+      const enrichedStudentAwards = (studentAwardsData || []).map(sa => ({
         ...sa,
-        profiles: awardStudentsData?.find(s => s.user_id === sa.student_id) || {
+        awards: { name: awardNameMap[sa.award_id] || 'Unknown Award' },
+        profiles: (awardStudentsRes.data || []).find((s: any) => s.user_id === sa.student_id) || {
           name: 'Unknown', position: 'Unknown', party_number: 0, photo_url: null
-        }
-      })) || [];
+        },
+      }));
 
       setAwards(awardsData || []);
       setStudents(studentsData || []);
