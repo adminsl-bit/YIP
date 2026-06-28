@@ -263,7 +263,22 @@ export const AwardManagement = () => {
                       <SelectValue placeholder="Choose an award" />
                     </SelectTrigger>
                     <SelectContent className="rounded-2xl border-none bg-surface-container-lowest shadow-xl">
-                      {awards.map(a => <SelectItem key={a.id} value={a.id} className="font-body">{a.name}</SelectItem>)}
+                      {awards.map(a => {
+                        const assignedTo = studentAwards.find(sa => sa.award_id === a.id);
+                        return (
+                          <SelectItem key={a.id} value={a.id} className="font-body">
+                            <span className="flex items-center justify-between gap-3 w-full">
+                              <span>{a.name}</span>
+                              {assignedTo && (
+                                <span className="text-[10px] font-black text-emerald-600 flex items-center gap-1 shrink-0">
+                                  <span className="material-symbols-outlined text-[11px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                                  {(assignedTo as any).profiles?.name || 'Assigned'}
+                                </span>
+                              )}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
@@ -410,8 +425,14 @@ export const AwardManagement = () => {
                         )}
                       </td>
                       <td className="px-6 py-5">
-                        <span className="text-sm font-bold text-on-surface font-body">{assignedCount}</span>
-                        <span className="text-xs text-on-surface-variant font-body ml-1">student{assignedCount !== 1 ? 's' : ''}</span>
+                        {assignedCount > 0 ? (
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-black text-emerald-700 font-headline">
+                            <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>verified</span>
+                            {studentAwards.filter(sa => sa.award_id === award.id).map(sa => (sa as any).profiles?.name || 'Assigned').join(', ')}
+                          </span>
+                        ) : (
+                          <span className="text-xs text-on-surface-variant/40 font-body">Not assigned</span>
+                        )}
                       </td>
                       <td className="px-6 py-5 text-sm font-medium text-on-surface-variant font-body whitespace-nowrap">
                         {new Date(award.created_at).toLocaleDateString()}
