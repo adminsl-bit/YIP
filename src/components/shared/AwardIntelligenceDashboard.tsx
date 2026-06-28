@@ -264,12 +264,17 @@ export const AwardIntelligenceDashboard = ({ juryId, isOrganizer }: AwardIntelli
         } else {
           if (existing) await supabase.from('student_awards').delete().eq('id', existing.id);
           const { data: { user } } = await supabase.auth.getUser();
+          // Derive event_id from the candidate's profile when assigning user (super_admin) has no event_id
+          const eventId = profile?.event_id
+            ?? profiles.find(p => p.user_id === selectedCandidate)?.user_id
+              ? (await supabase.from('profiles').select('event_id').eq('user_id', selectedCandidate).single()).data?.event_id
+              : null;
           const { error } = await supabase.from('student_awards').insert({
             award_id: awardId,
             student_id: selectedCandidate,
             assigned_by_organizer: true,
             assigned_by_user_id: user?.id,
-            event_id: profile?.event_id ?? null,
+            event_id: eventId ?? null,
           });
           if (error) throw error;
           toast({ title: 'Award confirmed', description: 'The recipient has been finalized.' });

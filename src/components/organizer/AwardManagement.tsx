@@ -162,13 +162,17 @@ export const AwardManagement = () => {
     }
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      // Fall back to candidate's event_id when assigning user (super_admin) has no event_id
+      const eventId = profile?.event_id
+        ?? (await supabase.from('profiles').select('event_id').eq('user_id', selectedStudent).single()).data?.event_id
+        ?? null;
       const { error } = await supabase.from('student_awards').insert([{
         award_id: selectedAward,
         student_id: selectedStudent,
         assigned_by_jury_consensus: false,
         assigned_by_organizer: true,
         assigned_by_user_id: user?.id,
-        event_id: profile?.event_id ?? null,
+        event_id: eventId,
       }]);
       if (error) throw error;
       toast({ title: "Success", description: "Award assigned successfully" });
